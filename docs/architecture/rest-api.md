@@ -34,6 +34,11 @@ Everything is served under `/wp-json`, as in WordPress:
 | GET                      | `/wp/v2/block-types`, `/wp/v2/block-types/{namespace}`, `/wp/v2/block-types/{namespace}/{name}` | `edit_posts` (any type) | Registered block types: attributes, context, supports, `is_dynamic`. `?namespace=` filters. |
 | GET / POST               | `/wp/v2/block-renderer/{namespace}/{name}` | `edit_posts`, or `edit_post` with `post_id` | Renders a dynamic block: `{ rendered }`. Takes `attributes` (query `attributes[key]=…` or JSON body), `post_id`, `context`. |
 | GET                      | `/wp/v2/block-patterns/patterns`, `/wp/v2/block-patterns/categories` | `edit_posts` (any type) | Registered patterns and pattern categories. |
+| GET                      | `/pressbase/v1/render?url=/path/`      | public (drafts and private posts need the right capability) | A page of the public site: `{ status, headers, html }`. Used by `apps/web`. See [Themes](themes.md). |
+| GET                      | `/wp/v2/themes`, `/wp/v2/themes/{stylesheet}` | `switch_themes`; `edit_posts` for the active theme (`?status=active`) | Installed themes (`WP_REST_Themes_Controller` fields: `stylesheet`, `template`, `name`, `version`, `screenshot`, `status`, `is_block_theme`…). |
+| POST                     | `/pressbase/v1/themes/{stylesheet}/activate` | `switch_themes` | Activates a block theme (`switch_theme()`). |
+| GET / HEAD               | `/wp-content/themes/{theme}/{path}`, `/wp-includes/{path}` | public | Theme assets and WordPress's front-end CSS (outside `/wp-json`). |
+| POST                     | `/wp-login.php?action=postpass` | public | The post password form: sets the `wp-postpass` cookie and redirects back. |
 | GET / POST               | `/wp/v2/blocks`                        | read: `edit_posts` · create: `publish_posts` | Synced patterns (`wp_block`). Same parameters as posts. |
 | GET / POST / PUT / PATCH / DELETE | `/wp/v2/blocks/{id}`          | `edit_post` / `delete_post` | One synced pattern: `title.raw`, `content.raw`, `wp_pattern_sync_status`; write it with `meta.wp_pattern_sync_status`. |
 
@@ -118,6 +123,10 @@ The shape matches WordPress:
 | `block_cannot_read`                | 401 / 403 | Block renderer without `edit_posts`, or without `edit_post` on `post_id`.  |
 | `block_invalid`                    | 404       | Block renderer for an unknown or static (non-dynamic) block.               |
 | `rest_cannot_view`                 | 401 / 403 | Block patterns or pattern categories without edit rights.                  |
+| `rest_cannot_view_themes`          | 401 / 403 | Listing themes without `switch_themes`.                                    |
+| `rest_cannot_manage_themes`        | 401 / 403 | Activating a theme without `switch_themes`.                                |
+| `rest_theme_not_found`             | 404       | No installed theme with that folder name.                                  |
+| `pressbase_theme_not_block_theme`  | 400       | Activating a theme without `templates/index.html`.                        |
 | `pressbase_db_*`                   | 400       | Installer database problems. `data.hint` holds the next step for the user. |
 | `pressbase_already_installed`      | 409       | Installer called on an installed site.                                     |
 

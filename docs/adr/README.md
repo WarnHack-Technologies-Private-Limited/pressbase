@@ -14,3 +14,4 @@ To write one, copy [template.md](template.md) to `NNNN-short-title.md` and open 
 | [0004](0004-gpl-license.md)               | GPL-2.0-or-later                                          | Accepted |
 | [0005](0005-password-hashing.md)          | scrypt from the Node standard library                     | Accepted |
 | [0006](0006-wordpress-compatible-rest.md) | WordPress-compatible REST surface under /wp-json          | Accepted |
+| [0007](0007-public-rendering.md)          | Core renders the public site; apps/web serves it          | Accepted |
