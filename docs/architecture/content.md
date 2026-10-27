@@ -10,7 +10,7 @@ Everything a site publishes is a **post** row with a `type`. WordPress works the
 |---|---|---|
 | `post` | core | Blog posts. Categories and tags. Revisions. |
 | `page` | core | Hierarchical (`parent_id`), ordered (`menu_order`). Revisions. |
-| `attachment` | core | Media library items (endpoints arrive with Media). |
+| `attachment` | core | Media library items. See [Media](media.md). |
 | `revision` | core | Snapshots of a post's title, content and excerpt. |
 | `wp_block` | core | Synced patterns (with the block editor). |
 
@@ -121,19 +121,10 @@ const { posts, found, maxPages } = await queryPosts(kernel, {
 - `sanitizePostTitle()` allows a few inline tags; `stripTags()` removes all of them.
 - These run only for users without `unfiltered_html`. Administrators and editors keep raw HTML, as in WordPress.
 
-## Rendering, for now
+## Rendering
 
-`content.rendered` in the REST API is the content with block delimiters removed, which is the saved HTML of static blocks. Dynamic blocks (latest posts, navigation, …) render once the block engine lands in v0.3.
+`content.rendered` in the REST API is the content run through the block renderer (`kernel.blocks.render()`, WordPress's `do_blocks()`): static blocks give their saved HTML, dynamic blocks (latest posts, categories, post title…) render on the server with the post as their context. See [Blocks](blocks.md).
 
-## The admin's writing view
+## The admin's editor
 
-The interim editor (`apps/admin/src/lib/simple-blocks.ts`) converts lightweight text into Gutenberg block markup:
-
-- paragraphs;
-- `##` headings;
-- `-` and `1.` lists;
-- `>` quotes;
-- `---` separators;
-- `**bold**`, `*italic*`, `` `code` `` and `[links](https://…)`.
-
-It's lossless: content it can't represent exactly opens in **code view** instead, so nothing is silently changed.
+Posts and pages are written in the Gutenberg block editor (`@wordpress/block-editor`), and saved as standard block markup. A **Code** view edits that markup directly. Content that isn't block markup opens as a Custom HTML block, unchanged. Autosaves are revisions with the slug `{id}-autosave-v1` (`content/autosaves.ts`). See [Block editor](block-editor.md).

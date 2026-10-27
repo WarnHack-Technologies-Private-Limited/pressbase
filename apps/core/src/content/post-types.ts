@@ -44,6 +44,8 @@ export interface PostTypeArgs {
   restBase?: string;
   /** Singular and plural capability bases, e.g. ['page', 'pages']. */
   capabilityType?: string | [string, string];
+  /** Overrides for individual capabilities, as WordPress's `capabilities` argument. */
+  capabilities?: Partial<PostTypeCapabilities>;
   /** Map meta capabilities (edit_post on one post) to primitive ones. */
   mapMetaCap?: boolean;
   /** Taxonomies attached at registration; taxonomies can also attach themselves. */
@@ -109,7 +111,7 @@ export class PostTypeRegistry {
       showInRest: args.showInRest ?? false,
       restBase: args.restBase ?? name,
       mapMetaCap: args.mapMetaCap ?? true,
-      cap: capabilitiesFor(args.capabilityType ?? 'post'),
+      cap: { ...capabilitiesFor(args.capabilityType ?? 'post'), ...args.capabilities },
       builtin,
     };
     this.#types.set(name, type);
@@ -196,6 +198,23 @@ export function registerCorePostTypes(registry: PostTypeRegistry): void {
       showInRest: true,
       restBase: 'blocks',
       capabilityType: 'block',
+      // As WordPress: reading raw patterns needs edit_posts, creating them
+      // publish_posts, and the other *_blocks capabilities map to their *_posts
+      // equivalents (map_meta_cap()'s $block_caps).
+      capabilities: {
+        read: 'edit_posts',
+        create_posts: 'publish_posts',
+        edit_posts: 'edit_posts',
+        edit_others_posts: 'edit_others_posts',
+        publish_posts: 'publish_posts',
+        read_private_posts: 'read_private_posts',
+        delete_posts: 'delete_posts',
+        delete_private_posts: 'delete_private_posts',
+        delete_published_posts: 'delete_published_posts',
+        delete_others_posts: 'delete_others_posts',
+        edit_private_posts: 'edit_private_posts',
+        edit_published_posts: 'edit_published_posts',
+      },
       supports: ['title', 'editor', 'revisions'],
     },
     true,

@@ -28,6 +28,8 @@ The kit lives in `apps/admin/src/components/ui/`. Use these before writing new m
   hint="Never shown publicly." error={errors.email} />
 ```
 
+`TextAreaField` is the multi-line version, for captions and descriptions.
+
 - Fields are required by default. Mark the exceptions with `optional`, which shows "(optional)". Required is the norm, so we don't put asterisks everywhere.
 - The hint explains; the error corrects. Both can show at once.
 - `PasswordField isNew` adds generate, copy and a strength meter. Pass `context` (username, email) so passwords built from personal details are rated weak.
@@ -92,7 +94,26 @@ toast('Could not save.', { tone: 'danger' });
 | Component | Pattern |
 |---|---|
 | `PostList` | Status tabs with counts. Search, plus a category filter for posts. Row actions appear on hover or focus, and always on touch. Bulk selection reveals a bulk bar. Pages show as an indented tree. Filters live in the URL, so views can be shared. |
-| `PostEditor` | Sticky action bar: back, status badge, save state, a secondary action and one primary action whose label says exactly what will happen (Publish / Schedule / Update / Submit for review). Writing canvas with Write/Code views. A sidebar of collapsible panels. ⌘/Ctrl+S saves. A warning before leaving with unsaved changes. |
+| `PostEditor` | Sticky action bar: back, status badge, save state, a secondary action and one primary action whose label says exactly what will happen (Publish / Schedule / Update / Submit for review), and a Settings toggle. The canvas is the block editor (below) with a **Code** view for raw markup. A sidebar with **Post** and **Block** tabs; the Block tab opens when a block is selected. ⌘/Ctrl+S saves, from inside the canvas too. A warning before leaving with unsaved changes. A newer autosave or browser copy is offered back in a calm notice (Restore / Dismiss), never a modal. |
 | `TagInput` | ARIA combobox: type, then Enter or comma; arrow keys move through suggestions; Backspace removes the last tag. New tags are created on save. |
 | `TermsScreen` | Add form on the left, table on the right, inline editing in place. |
 
+## Media: `components/media/`
+
+| Component | Pattern |
+|---|---|
+| `MediaLibrary` | Thumbnail grid with type filter and search in the URL, "Load more", an upload button and drop-anywhere uploads. Each upload shows its own progress; errors stay until dismissed, and a finished batch ends in a toast. |
+| `MediaGrid` | One tab stop for the whole grid; arrow keys, Home and End move between tiles. Each tile is a button named by the title, type and dimensions. |
+| `MediaDetails` | `<dialog>`: preview, file facts, URL with Copy, editable alt text / title / caption / description with an explicit Save, and *Delete permanently* behind a `ConfirmDialog`. Arrow keys page between items. Closing with unsaved changes asks first. Full screen on phones. |
+| `MediaPicker` | Choose one item or upload one (it's then selected). `allowedTypes` limits the kinds; `title` and `selectLabel` name the task ("Set featured image"). Double-click chooses at once. |
+
+## Block editor: `components/block-editor/`
+
+Gutenberg inside Pressbase's chrome. Architecture and wiring: [Block editor](../architecture/block-editor.md).
+
+- **Layout.** The editor fills the viewport under the action bar; the canvas and the sidebar scroll on their own, like WordPress. The title sits inside the canvas, in the content's typeface, so the page reads like what will be published.
+- **Our toolbar, their tools.** The editor toolbar (Add block, Undo, Redo, List view, word count, Visual/Code) is built from our `Button`s and follows the admin theme. Gutenberg's own UI (block toolbar, inserter, list view, inspector, popovers) keeps its familiar look, with our accent colour and softer radii.
+- **Light islands in dark mode.** WordPress's components are light-only, and the canvas previews content in the colours readers see. So the canvas, the inserter and list view panels, the Block tab and every popover stay light in dark mode. They're framed as paper on a dark desk, not themed halfway. The `lightScope` class (exported by the block editor) re-declares the light tokens for any container of WordPress UI.
+- **Panels.** Add block and List view open a panel on the canvas's left edge: beside the canvas when there's room, over it when there isn't. Opening moves focus into the panel (search field / tree); Escape closes it and returns focus to its toggle. Choosing a block closes the inserter and focuses the new block.
+- **Narrow screens.** Below 1100px the sidebar is a drawer from the right, opened with the Settings toggle and closed with Escape or its close button. Below 480px the canvas runs edge to edge.
+- **Unavailable features are hidden, not broken.** Blocks that need server pieces that aren't there yet are left out of the inserter; uploads without a media library explain what to do instead ("Use “Insert from URL” instead").

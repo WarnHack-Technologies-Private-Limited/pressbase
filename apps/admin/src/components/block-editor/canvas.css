@@ -1,0 +1,278 @@
+/*
+ * Styles inside the block editor's canvas iframe (served as /editor-assets/canvas.css).
+ *
+ * Until themes arrive (v0.4) this stands in for a theme: readable serif
+ * typography, a content column and the layout rules WordPress's global
+ * stylesheet provides (is-layout-flow/constrained/flex/grid). The canvas is
+ * always light, like paper, in both admin themes: WordPress's editor UI is
+ * light-only, and content previews in the colours readers will see.
+ */
+
+:root {
+  color-scheme: light;
+  --wp-admin-theme-color: #3b4cca;
+  --wp-admin-theme-color--rgb: 59, 76, 202;
+  --wp-admin-theme-color-darker-10: #3343c0;
+  --wp-admin-theme-color-darker-10--rgb: 51, 67, 192;
+  --wp-admin-theme-color-darker-20: #2f3db0;
+  --wp-admin-theme-color-darker-20--rgb: 47, 61, 176;
+  --wp-admin-border-width-focus: 2px;
+  --wp--style--global--content-size: 680px;
+  --wp--style--global--wide-size: 1000px;
+  --wp--style--block-gap: 1.5rem;
+  --pressbase-serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --pressbase-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans",
+    Arial, sans-serif;
+  --pressbase-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --pressbase-text: #1b1b19;
+  --pressbase-muted: #5c5c57;
+  --pressbase-subtle: #73736d;
+  --pressbase-link: #3343c0;
+  --pressbase-sunken: #f0f0ec;
+}
+
+html {
+  background: #ffffff;
+}
+
+body.editor-styles-wrapper {
+  margin: 0;
+  padding: 2.5rem 2.5rem 8rem;
+  background: #ffffff;
+  color: var(--pressbase-text);
+  font-family: var(--pressbase-serif);
+  font-size: 1.1875rem;
+  line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------------------------------------------------------------- title */
+
+.pressbase-title-wrapper {
+  max-width: var(--wp--style--global--content-size);
+  margin: 0 auto 1.75rem;
+}
+
+.pressbase-title {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--pressbase-text);
+  font-family: var(--pressbase-serif);
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  resize: none;
+  overflow: hidden;
+  outline: none;
+}
+
+.pressbase-title::placeholder {
+  color: var(--pressbase-subtle);
+  opacity: 1;
+}
+
+/* --------------------------------------------------------------- layout */
+
+.is-root-container {
+  padding-bottom: 2rem;
+}
+
+.is-root-container > :where(:not(.alignleft):not(.alignright):not(.alignfull)) {
+  max-width: var(--wp--style--global--content-size);
+  /* biome-ignore lint/complexity/noImportantStyles: as WordPress's layout styles, beating blocks' own margins. */
+  margin-left: auto !important;
+  /* biome-ignore lint/complexity/noImportantStyles: as WordPress's layout styles, beating blocks' own margins. */
+  margin-right: auto !important;
+}
+
+.is-root-container > .alignwide {
+  max-width: var(--wp--style--global--wide-size);
+}
+
+.is-root-container > *,
+:where(.is-layout-flow, .is-layout-constrained) > * {
+  margin-block-start: var(--wp--style--block-gap);
+  margin-block-end: 0;
+}
+
+.is-root-container > :first-child,
+:where(.is-layout-flow, .is-layout-constrained) > :first-child {
+  margin-block-start: 0;
+}
+
+.is-layout-constrained > :where(:not(.alignleft):not(.alignright):not(.alignfull)) {
+  max-width: var(--wp--style--global--content-size);
+  /* biome-ignore lint/complexity/noImportantStyles: as WordPress's layout styles, beating blocks' own margins. */
+  margin-left: auto !important;
+  /* biome-ignore lint/complexity/noImportantStyles: as WordPress's layout styles, beating blocks' own margins. */
+  margin-right: auto !important;
+}
+
+.is-layout-constrained > .alignwide {
+  max-width: var(--wp--style--global--wide-size);
+}
+
+:where(.is-layout-flow, .is-layout-constrained, .is-root-container) > .alignleft {
+  float: left;
+  margin-inline: 0 2em;
+}
+
+:where(.is-layout-flow, .is-layout-constrained, .is-root-container) > .alignright {
+  float: right;
+  margin-inline: 2em 0;
+}
+
+:where(.is-layout-flow, .is-layout-constrained, .is-root-container) > .aligncenter {
+  /* biome-ignore lint/complexity/noImportantStyles: as WordPress's layout styles, beating blocks' own margins. */
+  margin-left: auto !important;
+  /* biome-ignore lint/complexity/noImportantStyles: as WordPress's layout styles, beating blocks' own margins. */
+  margin-right: auto !important;
+}
+
+body .is-layout-flex {
+  display: flex;
+}
+
+.is-layout-flex {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.is-layout-flex > :is(*, div) {
+  margin: 0;
+}
+
+body .is-layout-grid {
+  display: grid;
+}
+
+.is-layout-grid > :is(*, div) {
+  margin: 0;
+}
+
+:where(.is-layout-flex, .is-layout-grid) {
+  gap: 0.5em;
+}
+
+:where(.wp-block-columns.is-layout-flex) {
+  gap: 2em;
+}
+
+/* ----------------------------------------------------------- typography */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--pressbase-serif);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.005em;
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: 2.25rem;
+}
+
+h2 {
+  font-size: 1.75rem;
+}
+
+h3 {
+  font-size: 1.4rem;
+}
+
+h4 {
+  font-size: 1.2rem;
+}
+
+h5,
+h6 {
+  font-size: 1rem;
+}
+
+a {
+  color: var(--pressbase-link);
+  text-underline-offset: 0.2em;
+}
+
+ul,
+ol {
+  padding-left: 1.5em;
+}
+
+code,
+kbd,
+pre {
+  font-family: var(--pressbase-mono);
+  font-size: 0.875em;
+}
+
+:not(pre) > code {
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+  background: var(--pressbase-sunken);
+}
+
+pre {
+  padding: 1em 1.25em;
+  border-radius: 8px;
+  background: var(--pressbase-sunken);
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+figcaption,
+.wp-element-caption {
+  color: var(--pressbase-muted);
+  font-family: var(--pressbase-sans);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+hr,
+.wp-block-separator {
+  border: 0;
+  border-top: 1px solid #c7c7c0;
+}
+
+.wp-block-quote {
+  border-left: 3px solid var(--pressbase-text);
+  padding-left: 1.25em;
+  font-style: italic;
+}
+
+.wp-block-quote cite {
+  font-style: normal;
+}
+
+.wp-block-button__link {
+  font-family: var(--pressbase-sans);
+  font-size: 1rem;
+}
+
+/* Placeholders and UI the blocks draw inside the canvas use the admin font. */
+.components-placeholder,
+.block-editor-warning,
+.block-editor-default-block-appender__content {
+  font-family: var(--pressbase-sans);
+}
+
+@media (max-width: 600px) {
+  body.editor-styles-wrapper {
+    padding: 1.5rem 1.25rem 6rem;
+    font-size: 1.0625rem;
+  }
+
+  .pressbase-title {
+    font-size: 1.75rem;
+  }
+}

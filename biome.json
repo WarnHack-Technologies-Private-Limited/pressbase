@@ -1,7 +1,15 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.6.3/schema.json",
   "files": {
-    "includes": ["**", "!**/migrations", "!**/.next", "!**/.turbo", "!**/next-env.d.ts", "!**/*.md"]
+    "includes": [
+      "**",
+      "!**/migrations",
+      "!**/.next",
+      "!**/.turbo",
+      "!**/next-env.d.ts",
+      "!**/*.md",
+      "!**/.claude"
+    ]
   },
   "formatter": {
     "indentStyle": "space",
@@ -26,8 +34,12 @@
       "includes": ["**/*.test.ts"],
       "linter": {
         "rules": {
-          "suspicious": { "noExplicitAny": "off" },
-          "style": { "noNonNullAssertion": "off" }
+          "suspicious": {
+            "noExplicitAny": "off"
+          },
+          "style": {
+            "noNonNullAssertion": "off"
+          }
         }
       }
     }

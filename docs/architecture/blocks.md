@@ -1,0 +1,127 @@
+# Blocks
+
+How Pressbase parses, renders and serves blocks. Content is stored as WordPress block markup, so posts move between WordPress and Pressbase unchanged:
+
+```html
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">Hello</h3>
+<!-- /wp:heading -->
+
+<!-- wp:latest-posts {"postsToShow":3} /-->
+```
+
+There are two layers:
+
+| Layer | Location | What it does |
+|---|---|---|
+| `@pressbase/blocks` | `packages/blocks` | Parser, serialiser, block type registry, renderer, escaping. No database, no kernel: the host injects a hook bus and services. |
+| Core integration | `apps/core/src/blocks/` | `kernel.blocks`: the server-rendered core blocks, patterns, and do_blocks() wired to the kernel's data and hooks. REST routes in `apps/core/src/routes/blocks.ts`. |
+
+## Static and dynamic blocks
+
+- A **static** block (paragraph, heading, group, image…) is rendered by the editor when the post is saved. Its saved HTML is its output; the server only removes the delimiters and puts inner blocks in place. Static blocks need no registration on the server.
+- A **dynamic** block has a `render` callback. Its output is produced on every view, from attributes and data: latest posts, categories, the post title of the post being shown. In the editor, dynamic blocks preview through `/wp/v2/block-renderer` (ServerSideRender).
+
+## The pipeline
+
+`kernel.blocks.render(content, { context, user, rest })` is WordPress's `do_blocks()`:
+
+1. **Parse.** `parseBlocks(content)` returns WordPress's exact tree: `{ blockName, attrs, innerBlocks, innerHTML, innerContent }`. HTML outside blocks becomes freeform blocks (`blockName: null`); `innerContent` has a `null` wherever an inner block sits.
+2. **Render each top-level block** (`render_block()`):
+   1. `pre_render_block` filter: return a string to short-circuit.
+   2. `render_block_data` filter: change the parsed block (attributes, inner blocks).
+   3. `render_block_context` filter: change the context the block starts with. Top-level blocks start with `{ postId, postType }` of the post being rendered.
+3. **WP_Block::render()** for every block, recursively:
+   1. Attributes are prepared: values that don't match their schema are dropped, then defaults fill the gaps (`prepare_attributes_for_render()`).
+   2. Inner blocks render first, each through the same three filters with its parent block as the last argument. Context flows down: a block passes everything it received, plus its `providesContext` attributes, and each block sees only the names in its `usesContext`.
+   3. Dynamic blocks call `render(attributes, innerContent, block)`.
+   4. `render_block`, then `render_block_{name}` filter the output.
+
+`content.rendered` in `/wp/v2/posts`, `/wp/v2/pages` and revisions comes from this pipeline. Rendering is async: callbacks query the database.
+
+### Safety
+
+- **Escaping.** Render callbacks escape every value they print with `escHtml`, `escAttr` and `escUrl` (WordPress's `esc_html`, `esc_attr`, `esc_url`). `escUrl` rejects `javascript:`, `data:` and other schemes outside `wp_allowed_protocols()`.
+- **Titles and excerpts** printed by dynamic blocks go through the title allow-list again, so `<script>` in a title saved by an administrator can't run inside a block. WordPress prints such titles raw; this is a deliberate hardening.
+- **Recursion.** `block.withRecursionGuard(key, fn, fallback)` refuses to enter a render that is already in progress further up the tree. `core/block` uses it per pattern ID (a synced pattern that contains itself renders as nothing at the repeat), and `core/latest-posts` per post when showing full content. A depth cap (100) is the last line of defence.
+- **Attribute JSON** is serialised with `--`, `<`, `>`, `&`, quotes and backslashes as unicode escapes, so it can never close the comment early.
+
+## Registering a block
+
+```ts
+kernel.blocks.registerBlockType('my-plugin/notice', {
+  title: 'Notice',
+  category: 'widgets',
+  attributes: {
+    tone: { type: 'string', enum: ['info', 'warning'], default: 'info' },
+  },
+  usesContext: ['postId'],
+  supports: { align: true, color: { background: true } },
+  render: async (attributes, content, block) => {
+    const { kernel } = block.services;
+    const post = await kernel.posts.get(Number(block.context.postId));
+    return `<div ${getBlockWrapperAttributes(block, { class: `is-${attributes.tone}` })}>
+      ${escHtml(post?.title ?? '')}${content}
+    </div>`;
+  },
+});
+```
+
+- Names are `namespace/name`, lowercase. Keys follow `block.json`, so a `block.json` file can be spread into the arguments.
+- Every block gets the `lock` and `metadata` attributes; supports add theirs (`align`, `anchor`, `className`, `style`, `textColor`, `backgroundColor`, `gradient`, `fontSize`, `fontFamily`, `borderColor`, `layout`), as WordPress's block supports do.
+- `block.services` in core is `{ kernel, user, rest }`. `block.context`, `block.innerBlocks`, `block.parent`, `block.renderContent()`, `block.renderInnerBlocks()`, `block.uniqueId()` and `block.withRecursionGuard()` are available too.
+- `getBlockWrapperAttributes(block, extra)` builds the outer element's attributes: your classes first, then align, colour, custom class, the generated `wp-block-{name}` class, font size and family, plus the anchor `id`. Spacing, border and layout styles wait for the `theme.json` engine (v0.4).
+
+The package works without core too:
+
+```ts
+import { BlockTypeRegistry, renderBlocks } from '@pressbase/blocks';
+const registry = new BlockTypeRegistry<{ db: Db }>();
+registry.register('demo/now', { render: () => `<time>${new Date().toISOString()}</time>` });
+const html = await renderBlocks(content, { registry, hooks, services: { db }, context: { postId: 1 } });
+```
+
+## Server-rendered core blocks
+
+Ported from `wp-includes/blocks/*.php`, with the same markup and class names so themes style them. Their attributes, context and supports come from WordPress's `block.json` files (`apps/core/src/blocks/metadata.ts`).
+
+| Block | Data | Notes |
+|---|---|---|
+| `core/latest-posts` | `queryPosts` | Title, author, date, excerpt or full content, grid classes. Featured images arrive with Media. |
+| `core/categories` | `kernel.terms` | List (with hierarchy and counts) or dropdown; any taxonomy. |
+| `core/archives` | posts by month | Monthly or yearly, list or dropdown, with counts. |
+| `core/tag-cloud` | `kernel.terms` | Sizes scaled as `wp_generate_tag_cloud()` does. |
+| `core/page-list` | published pages | Nested; navigation classes when inside a Navigation block. |
+| `core/search` | — | The search form; width, radius and custom colours. |
+| `core/site-title`, `core/site-tagline` | options | Escaped on output. |
+| `core/loginout` | current user | Links to the admin's login screen; "login as form" shows the link. |
+| `core/block` | `wp_block` post | Synced pattern reference, with the recursion guard. |
+| `core/post-title`, `core/post-date`, `core/post-excerpt`, `core/post-author-name`, `core/post-terms` | `postId` from context | Render nothing without a post. |
+
+## Patterns
+
+- **Registered patterns**: `kernel.blocks.registerBlockPattern(name, { title, content, categories, … })` and `registerBlockPatternCategory(name, { label, description })`. Core registers WordPress's pattern categories and six built-in patterns (hero, two columns of text, call to action, quote, about me, image and text) made of core blocks in exactly the markup the editor saves. Served by `/wp/v2/block-patterns/patterns` and `/categories`; `core/pattern` references inside are resolved before they're sent.
+- **Synced patterns** are `wp_block` posts at `/wp/v2/blocks`. A post shows one with `<!-- wp:block {"ref":12} /-->`. Responses carry `title.raw` and `content.raw` in every context and no rendered fields, and `wp_pattern_sync_status` (`''` synced, `unsynced`, `partial`) as a top-level field; it is written through `meta.wp_pattern_sync_status`. Reading needs `edit_posts`, creating `publish_posts`.
+
+## How it maps to WordPress
+
+| WordPress | Pressbase |
+|---|---|
+| `class-wp-block-parser.php` (`parse_blocks()`) | `packages/blocks/src/parser.ts` |
+| `serialize_block()`, `serialize_blocks()`, `serialize_block_attributes()` in `blocks.php` | `packages/blocks/src/serializer.ts` |
+| `class-wp-block-type.php`, `class-wp-block-type-registry.php` | `packages/blocks/src/registry.ts` |
+| `class-wp-block.php`, `render_block()`, `do_blocks()` | `packages/blocks/src/block.ts` |
+| `get_block_wrapper_attributes()`, `block-supports/*.php` | `packages/blocks/src/supports.ts` |
+| `rest_validate_value_from_schema()` (attribute subset) | `packages/blocks/src/schema.ts` |
+| `esc_html()`, `esc_attr()`, `esc_url()`, `wp_strip_all_tags()` | `packages/blocks/src/escape.ts` |
+| `wp-includes/blocks/*.php` | `apps/core/src/blocks/library/` |
+| `WP_Block_Patterns_Registry`, `block-patterns.php` | `apps/core/src/blocks/patterns.ts`, `kernel.blocks` |
+| REST block types, renderer, patterns, pattern categories, blocks controllers | `apps/core/src/routes/blocks.ts` |
+
+## Not yet
+
+- Block bindings, the Interactivity API directives and hooked blocks (Block Hooks API).
+- Style variations registry, `variations` callbacks (`post-terms` taxonomy variations), `wp_pattern_category`.
+- Asset handles (`editor_script_handles` and friends are empty: the admin bundles the editor).
+- Spacing, border, layout and duotone styles from block supports (with `theme.json`, v0.4).
+- `wpautop`, `wptexturize` and shortcodes in `the_content`.

@@ -8,12 +8,16 @@ import {
 } from './http';
 import type { Kernel } from './kernel';
 import { authRoutes } from './routes/auth';
+import { autosavesRoutes } from './routes/autosaves';
+import { blockRoutes } from './routes/blocks';
 import { dashboardRoutes, postCountRoutes } from './routes/dashboard';
 import { installRoutes } from './routes/install';
+import { mediaRoutes } from './routes/media';
 import { postsRoutes } from './routes/posts';
 import { settingsRoutes } from './routes/settings';
 import { termsRoutes } from './routes/terms';
 import { typeRoutes } from './routes/types';
+import { uploadsRoutes } from './routes/uploads';
 import { userRoutes } from './routes/users';
 import { PRESSBASE_VERSION } from './version';
 
@@ -73,6 +77,21 @@ export function createApp(kernel: Kernel) {
   }
   for (const taxonomy of kernel.taxonomies.all()) {
     if (taxonomy.showInRest) installed.route(`/wp/v2/${taxonomy.restBase}`, termsRoutes(taxonomy));
+  }
+  // Media: the attachments controller, plus the uploaded files themselves, which
+  // WordPress serves from /wp-content/uploads outside the REST API.
+  installed.route('/wp/v2/media', mediaRoutes());
+  app.route('/wp-content/uploads', uploadsRoutes());
+
+  // Block engine (v0.3): /wp/v2/block-types, /block-renderer, /block-patterns and
+  // /blocks (synced patterns). See docs/architecture/blocks.md.
+  installed.route('/wp/v2', blockRoutes(kernel));
+
+  // Autosaves (WP_REST_Autosaves_Controller) for the same types, when they keep revisions.
+  for (const type of kernel.postTypes.all()) {
+    if (type.showInRest && ['post', 'page'].includes(type.name) && type.supports.has('revisions')) {
+      installed.route(`/wp/v2/${type.restBase}`, autosavesRoutes(type));
+    }
   }
   api.route('/', installed);
 

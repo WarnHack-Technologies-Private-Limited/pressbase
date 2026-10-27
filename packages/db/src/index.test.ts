@@ -1,3 +1,6 @@
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { sql } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { connect, driverFor } from './index';
@@ -41,6 +44,19 @@ describe('migrations', () => {
       ]);
     } finally {
       await connection.close();
+    }
+  });
+});
+
+describe('embedded database on disk', () => {
+  it('creates missing parent folders (a fresh data directory)', async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'pressbase-db-'));
+    try {
+      const connection = await connect(`pglite:${path.join(root, 'not', 'yet', 'there', 'db')}`);
+      await connection.migrate();
+      await connection.close();
+    } finally {
+      await rm(root, { recursive: true, force: true });
     }
   });
 });

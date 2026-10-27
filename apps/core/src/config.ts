@@ -13,6 +13,8 @@ export interface Config {
   databaseFromEnv: boolean;
   /** When set, the installer refuses to run without this code. */
   setupToken: string | undefined;
+  /** Largest upload accepted, in megabytes (PRESSBASE_MAX_UPLOAD_MB). Default 64. */
+  maxUploadMb?: number;
 }
 
 export interface SiteConfigFile {
@@ -30,6 +32,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv = process.env): Promise<
     databaseUrl: env.DATABASE_URL || file?.databaseUrl,
     databaseFromEnv: Boolean(env.DATABASE_URL),
     setupToken: env.PRESSBASE_SETUP_TOKEN || undefined,
+    maxUploadMb: Number(env.PRESSBASE_MAX_UPLOAD_MB) > 0 ? Number(env.PRESSBASE_MAX_UPLOAD_MB) : 64,
   };
 }
 

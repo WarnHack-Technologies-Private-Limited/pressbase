@@ -56,9 +56,6 @@ export const SECTION_GROUPS: SectionGroup[] = [
         label: 'Media',
         icon: Image,
         capability: 'upload_files',
-        release: 'v0.2',
-        summary:
-          'Upload images and files, with automatic resizing and local or S3-compatible storage.',
       },
       {
         slug: 'comments',

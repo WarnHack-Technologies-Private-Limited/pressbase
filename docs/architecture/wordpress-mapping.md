@@ -33,6 +33,16 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | `get_permalink` | `apps/core/src/content/permalinks.ts` | Uses `permalink_structure`. |
 | `wp_kses_post`, `sanitize_title` | `apps/core/src/content/sanitize.ts` | Keeps block delimiters intact. |
 | `WP_REST_Posts_Controller`, `WP_REST_Terms_Controller`, `WP_REST_Users_Controller` (read), types / taxonomies / statuses controllers | `apps/core/src/routes/posts.ts`, `terms.ts`, `users.ts`, `types.ts` | See [REST API](rest-api.md). |
+| `parse_blocks`, `serialize_blocks`, `WP_Block_Parser` | `packages/blocks` (`parseBlocks`, `serializeBlocks`) | Same output shape. See [Blocks](blocks.md). |
+| `WP_Block_Type_Registry`, `register_block_type` | `BlockTypeRegistry`; `kernel.blocks.registerBlockType()` | Keys follow `block.json`. |
+| `WP_Block`, `render_block`, `do_blocks` | `packages/blocks/src/block.ts`; `kernel.blocks.render()` | Async render callbacks; same filters. |
+| `esc_html`, `esc_attr`, `esc_url` | `escHtml`, `escAttr`, `escUrl` in `@pressbase/blocks` | |
+| `wp-includes/blocks/*.php` (dynamic blocks) | `apps/core/src/blocks/library/` | Latest posts, categories, archives, tag cloud, page list, search, site title and tagline, login/out, synced pattern, post title/date/excerpt/author/terms. |
+| `register_block_pattern`, `register_block_pattern_category` | `kernel.blocks.registerBlockPattern()`, `registerBlockPatternCategory()` | |
+| `WP_REST_Block_Types_Controller`, `WP_REST_Block_Renderer_Controller`, `WP_REST_Block_Patterns_Controller`, `WP_REST_Block_Pattern_Categories_Controller`, `WP_REST_Blocks_Controller` | `apps/core/src/routes/blocks.ts` | See [REST API](rest-api.md). |
+| `wp_handle_upload()`, `wp_unique_filename()`, `sanitize_file_name()`, `wp_check_filetype_and_ext()`, `wp_create_image_subsizes()`, `wp_delete_attachment()` | `apps/core/src/media/` | Storage adapters instead of direct disk writes; sharp instead of GD/Imagick. See [Media](media.md). |
+| `WP_REST_Attachments_Controller` | `apps/core/src/routes/media.ts` | |
+| `upload.php`, `options-media.php`, the media modal | `/admin/media`, `/admin/settings/media`, `MediaPicker` | |
 | `edit.php`, `post.php`, `edit-tags.php`, `options-reading.php`, `options-writing.php` | `/admin/posts`, `/admin/posts/{id}`, `/admin/posts/categories`, `/admin/settings/reading`, `/admin/settings/writing` | |
 
 ## Planned
@@ -40,9 +50,7 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | WordPress                                      | Pressbase (planned)                             | Release |
 | ---------------------------------------------- | ------------------------------------------- | ------- |
 | Autosave | Autosaves endpoint, with the block editor | v0.3 |
-| `wp_handle_upload`, image sizes                | Media service (sharp, storage adapters)     | v0.2    |
 | Application passwords                          | `Authorization: Basic` in core              | v0.2    |
-| `parse_blocks`, `render_block`                 | `packages/blocks`                           | v0.3    |
 | `WP_Theme_JSON`, template loader, `WP_Rewrite` | `packages/theme-json`, router in `apps/web` | v0.4    |
 | Plugins API, `activate_plugin`                 | Plugin loader + `plugin.json`               | v0.5    |
 | `wp-cron.php`                                  | pg-boss job queue                           | v0.5    |

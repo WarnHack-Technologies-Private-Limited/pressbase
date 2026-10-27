@@ -1,9 +1,31 @@
 'use client';
 
-import { ArrowLeft, ChevronDown } from 'lucide-react';
+import { ArrowLeft, ChevronDown, PanelRight, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { ApiError, api } from '@/lib/api';
+import {
+  AUTOSAVE_INTERVAL_MS,
+  backupKey,
+  browserStorage,
+  clearBackup,
+  type EditableFields,
+  fieldsOfAutosave,
+  type LocalBackup,
+  newerAutosave,
+  type RestAutosave,
+  readBackup,
+  usefulBackup,
+  writeBackup,
+} from '@/lib/autosave';
 import {
   type ContentType,
   formatLocalDate,
@@ -13,22 +35,25 @@ import {
   type RestTerm,
   STATUS_LABELS,
 } from '@/lib/content';
-import { blocksToText, textToBlocks } from '@/lib/simple-blocks';
+import { BlockEditor, type BlockEditorHandle, lightScope } from '../block-editor';
 import { useCurrentUser } from '../shell/current-user';
 import { Button, ButtonLink } from '../ui/button';
 import { ConfirmDialog } from '../ui/dialog';
 import { Badge, EmptyState, Notice } from '../ui/surface';
 import { useToast } from '../ui/toast';
 import styles from './editor.module.css';
+import { FeaturedImage } from './featured-image';
 import { TagInput, type TagToken } from './tag-input';
 
-type Mode = 'write' | 'code';
+type Mode = 'visual' | 'code';
 type Visibility = 'public' | 'password' | 'private';
+type SidebarTab = 'post' | 'block';
+/** Revisions include autosaves (as in WordPress); the history panel leaves those out. */
+type Revision = RestRevision & { slug?: string };
 
+/** Everything in the sidebar and the title. The content is tracked separately. */
 interface Form {
   title: string;
-  body: string;
-  mode: Mode;
   excerpt: string;
   slug: string;
   visibility: Visibility;
@@ -42,12 +67,11 @@ interface Form {
   tags: TagToken[];
   parent: number;
   menuOrder: number;
+  featuredMedia: number;
 }
 
 const EMPTY: Form = {
   title: '',
-  body: '',
-  mode: 'write',
   excerpt: '',
   slug: '',
   visibility: 'public',
@@ -60,14 +84,12 @@ const EMPTY: Form = {
   tags: [],
   parent: 0,
   menuOrder: 0,
+  featuredMedia: 0,
 };
 
 function formFrom(post: RestPost, tags: TagToken[]): Form {
-  const text = blocksToText(post.content.raw);
   return {
     title: post.title.raw,
-    body: text ?? post.content.raw,
-    mode: text === undefined ? 'code' : 'write',
     excerpt: post.excerpt.raw,
     slug: post.slug,
     visibility: post.status === 'private' ? 'private' : post.password ? 'password' : 'public',
@@ -80,6 +102,7 @@ function formFrom(post: RestPost, tags: TagToken[]): Form {
     tags,
     parent: post.parent ?? 0,
     menuOrder: post.menu_order ?? 0,
+    featuredMedia: post.featured_media ?? 0,
   };
 }
 
@@ -94,6 +117,18 @@ function useAutoGrow(value: string) {
     el.style.height = `${el.scrollHeight}px`;
   }, [value]);
   return ref;
+}
+
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    const update = () => setMatches(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, [query]);
+  return matches;
 }
 
 function Panel({
@@ -129,11 +164,19 @@ function categoryTree(categories: RestTerm[]): (RestTerm & { depth: number })[] 
   return out;
 }
 
+const timeOf = (local: string) => formatLocalDate(local).split(' at ')[1] ?? local;
+
+/** A restore offer shown above the editor: an autosave or the browser's copy. */
+type RestoreOffer =
+  | { kind: 'autosave'; fields: EditableFields; when: string }
+  | { kind: 'backup'; fields: EditableFields; when: string };
+
 export function PostEditor({ config, id }: { config: ContentType; id?: number }) {
   const router = useRouter();
   const me = useCurrentUser();
   const toast = useToast();
   const can = (cap: string) => Boolean(me.capabilities[cap]);
+  const narrow = useMediaQuery('(max-width: 1100px)');
 
   const [post, setPost] = useState<RestPost | null>(null);
   const [form, setForm] = useState<Form>(EMPTY);
@@ -145,12 +188,30 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
   const [categories, setCategories] = useState<RestTerm[]>([]);
   const [newCategory, setNewCategory] = useState<string | null>(null);
   const [pages, setPages] = useState<RestPost[]>([]);
-  const [revisions, setRevisions] = useState<RestRevision[]>([]);
+  const [revisions, setRevisions] = useState<Revision[]>([]);
   const [confirm, setConfirm] = useState<'unpublish' | 'trash' | 'leave' | null>(null);
-  const [codeNotice, setCodeNotice] = useState(false);
+
+  // Content. In the visual editor the blocks live inside BlockEditor; `content`
+  // is what it was mounted with (or the code view's text), `current` the
+  // latest serialized content, `savedContent` the last saved content.
+  const [mode, setMode] = useState<Mode>('visual');
+  const [content, setContent] = useState('');
+  const [current, setCurrent] = useState('');
+  const [savedContent, setSavedContent] = useState('');
+  const [editorKey, setEditorKey] = useState(0);
+  const editor = useRef<BlockEditorHandle | null>(null);
+  const savedContentRef = useRef('');
+  savedContentRef.current = savedContent;
+
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [tab, setTab] = useState<SidebarTab>('post');
+  const [inspector, setInspector] = useState<HTMLDivElement | null>(null);
+  const [offer, setOffer] = useState<RestoreOffer | null>(null);
+  const [autosavedAt, setAutosavedAt] = useState<string | null>(null);
+  const [backupReady, setBackupReady] = useState(false);
 
   const titleRef = useAutoGrow(form.title);
-  const bodyRef = useAutoGrow(form.body);
+  const codeRef = useAutoGrow(mode === 'code' ? content : '');
   const set = <K extends keyof Form>(key: K, value: Form[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
@@ -159,20 +220,42 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
   const isOwn = !post || post.author === me.id;
   const canPublish = can(config.cap.publish);
   const canSticky = config.type === 'post' && can(config.cap.editOthers) && canPublish;
-  const dirty = useMemo(() => JSON.stringify(form) !== JSON.stringify(saved), [form, saved]);
+  const canUpload = can('upload_files');
+  const formDirty = useMemo(() => JSON.stringify(form) !== JSON.stringify(saved), [form, saved]);
+  const dirty = formDirty || current !== savedContent;
+  const storageKey = backupKey(config.type, post?.id ?? id);
+
+  // The sidebar starts closed on tablets and phones, where it covers the canvas.
+  useEffect(() => setSidebarOpen(!narrow), [narrow]);
+
+  /** The content right now, without waiting for the editor's debounce. */
+  const readContent = useCallback(
+    () => (mode === 'visual' && editor.current ? editor.current.getContent() : content),
+    [mode, content],
+  );
+
+  /** Replaces the content (a revision, an autosave): the visual editor remounts. */
+  const replaceContent = useCallback((next: string) => {
+    editor.current = null;
+    setContent(next);
+    setCurrent(next);
+    setEditorKey((k) => k + 1);
+  }, []);
 
   /* ------------------------------------------------------------ loading */
 
   const loadRevisions = useCallback(
     async (postId: number) => {
-      setRevisions(
-        await api<RestRevision[]>(`/wp/v2/${config.base}/${postId}/revisions`).catch(() => []),
+      const all = await api<Revision[]>(`/wp/v2/${config.base}/${postId}/revisions`).catch(
+        () => [],
       );
+      setRevisions(all.filter((r) => !r.slug?.includes('-autosave-')));
     },
     [config.base],
   );
 
   useEffect(() => {
+    const storage = browserStorage();
     if (config.taxonomies) {
       api<RestTerm[]>('/wp/v2/categories?per_page=100&orderby=name')
         .then(setCategories)
@@ -186,7 +269,13 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
         .catch(() => {});
     }
     if (!id) {
-      setTimeout(() => titleRef.current?.focus(), 0);
+      const backup = usefulBackup(readBackup(storage, backupKey(config.type)), {
+        title: '',
+        content: '',
+        excerpt: '',
+      });
+      if (backup) setOffer({ kind: 'backup', fields: backup, when: timeOfMs(backup.savedAt) });
+      setBackupReady(true);
       return;
     }
     (async () => {
@@ -205,8 +294,39 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
         setPost(loaded);
         setForm(initial);
         setSaved(initial);
-        setCodeNotice(initial.mode === 'code' && loaded.content.raw.trim() !== '');
+        setContent(loaded.content.raw);
+        setCurrent(loaded.content.raw);
+        setSavedContent(loaded.content.raw);
         loadRevisions(loaded.id);
+
+        // Offer a newer autosave first, else a newer local copy.
+        const savedFields = {
+          title: loaded.title.raw,
+          content: loaded.content.raw,
+          excerpt: loaded.excerpt.raw,
+        };
+        const autosaves = await api<RestAutosave[]>(
+          `/wp/v2/${config.base}/${loaded.id}/autosaves?context=edit`,
+        ).catch(() => []);
+        const autosave = newerAutosave(
+          { ...savedFields, id: loaded.id, modified_gmt: loaded.modified_gmt },
+          autosaves,
+          me.id,
+        );
+        const backup = usefulBackup(
+          readBackup(storage, backupKey(config.type, loaded.id)),
+          savedFields,
+          loaded.modified_gmt,
+        );
+        if (autosave) {
+          setOffer({
+            kind: 'autosave',
+            fields: fieldsOfAutosave(autosave),
+            when: formatLocalDate(autosave.modified),
+          });
+        } else if (backup) {
+          setOffer({ kind: 'backup', fields: backup, when: timeOfMs(backup.savedAt) });
+        }
       } catch (err) {
         if (
           err instanceof ApiError &&
@@ -216,9 +336,10 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
         else setError({ title: 'Could not load this item.' });
       } finally {
         setLoading(false);
+        setBackupReady(true);
       }
     })();
-  }, [id, config, loadRevisions, titleRef]);
+  }, [id, config, loadRevisions, me.id]);
 
   // Warn before closing the tab with unsaved changes.
   useEffect(() => {
@@ -227,6 +348,23 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
   }, [dirty]);
+
+  // The browser's copy: written shortly after each change, removed once saved.
+  useEffect(() => {
+    if (!backupReady || offer) return;
+    const storage = browserStorage();
+    const timer = setTimeout(() => {
+      if (!dirty) return clearBackup(storage, storageKey);
+      const backup: LocalBackup = {
+        title: form.title,
+        excerpt: form.excerpt,
+        content: current,
+        savedAt: Date.now(),
+      };
+      writeBackup(storage, storageKey, backup);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [backupReady, offer, dirty, form.title, form.excerpt, current, storageKey]);
 
   /* ------------------------------------------------------------- saving */
 
@@ -267,9 +405,10 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
         else nextStatus = target;
         // A scheduled date makes "publish" become "future" on the server.
 
+        const sentContent = readContent();
         const body: Record<string, unknown> = {
           title: form.title,
-          content: form.mode === 'write' ? textToBlocks(form.body) : form.body,
+          content: sentContent,
           excerpt: form.excerpt,
           status: nextStatus,
           password: form.visibility === 'password' ? form.password : '',
@@ -289,6 +428,7 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
           body.categories = form.categories;
           body.tags = tagIds;
         }
+        if (canUpload) body.featured_media = form.featuredMedia;
         if (canSticky) body.sticky = form.sticky;
         if (config.hierarchical) {
           body.parent = form.parent;
@@ -303,11 +443,17 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
           },
         );
         const next = formFrom(result, tags);
-        // Keep the writer's text exactly as typed; the server only normalises markup.
-        if (form.mode === 'write') next.body = form.body;
         setPost(result);
         setForm(next);
         setSaved(next);
+        // The editor keeps what the writer sees; the server only normalises markup.
+        setSavedContent(sentContent);
+        setCurrent(sentContent);
+        if (mode === 'code') setContent(sentContent);
+        setAutosavedAt(null);
+        setOffer(null);
+        clearBackup(browserStorage(), storageKey);
+        clearBackup(browserStorage(), backupKey(config.type));
         loadRevisions(result.id);
 
         const noun = config.singular;
@@ -331,13 +477,27 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
         setBusy(null);
       }
     },
-    [form, post, status, isLive, config, canSticky, loadRevisions, toast, router],
+    [
+      form,
+      post,
+      status,
+      isLive,
+      config,
+      canSticky,
+      loadRevisions,
+      toast,
+      router,
+      readContent,
+      mode,
+      storageKey,
+    ],
   );
 
-  // Cmd/Ctrl+S saves without leaving the keyboard.
+  // Cmd/Ctrl+S saves without leaving the keyboard (also from inside the canvas,
+  // whose key presses the block editor forwards to this window).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+      if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 's') {
         e.preventDefault();
         if (busy) return;
         if (isLive || status === 'pending') save('keep', 'update');
@@ -348,12 +508,70 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
     return () => window.removeEventListener('keydown', onKey);
   }, [save, isLive, status, busy]);
 
+  /* ----------------------------------------------------------- autosave */
+
+  // Every minute while there are unsaved changes, as WordPress's editor does.
+  const autosaveState = useRef({ dirty, busy, post, form, readContent, offer });
+  autosaveState.current = { dirty, busy, post, form, readContent, offer };
+  useEffect(() => {
+    let running = false;
+    const timer = setInterval(async () => {
+      const state = autosaveState.current;
+      if (running || !state.dirty || state.busy || !state.post || state.offer) return;
+      running = true;
+      const fields = {
+        title: state.form.title,
+        excerpt: state.form.excerpt,
+        content: state.readContent(),
+      };
+      try {
+        const result = await api<RestAutosave>(`/wp/v2/${config.base}/${state.post.id}/autosaves`, {
+          method: 'POST',
+          body: fields,
+        });
+        if (result.id === state.post.id) {
+          // A draft by its author: the post itself was updated.
+          setSaved((s) => ({ ...s, title: fields.title, excerpt: fields.excerpt }));
+          setSavedContent(fields.content);
+          setPost((p) =>
+            p ? { ...p, modified: result.modified, modified_gmt: result.modified_gmt } : p,
+          );
+        }
+        setAutosavedAt(result.modified);
+      } catch {
+        // Silent: the local copy still protects the writing, and saving reports errors.
+      } finally {
+        running = false;
+      }
+    }, AUTOSAVE_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [config.base]);
+
+  const restore = () => {
+    if (!offer) return;
+    setForm((f) => ({ ...f, title: offer.fields.title, excerpt: offer.fields.excerpt }));
+    replaceContent(offer.fields.content);
+    setOffer(null);
+    toast(
+      offer.kind === 'autosave'
+        ? 'Autosave restored. Save to keep it.'
+        : 'Copy restored. Save to keep it.',
+    );
+  };
+  const dismissOffer = () => {
+    if (offer?.kind === 'backup') clearBackup(browserStorage(), storageKey);
+    setOffer(null);
+  };
+
+  /* -------------------------------------------------------------- other */
+
   const trash = async () => {
     if (!post) return;
     setBusy('trash');
     try {
       await api(`/wp/v2/${config.base}/${post.id}`, { method: 'DELETE' });
       setSaved(form);
+      setSavedContent(current);
       toast(`${config.singular} moved to the Trash.`);
       router.push(`/admin/${config.base}`);
     } catch (err) {
@@ -378,22 +596,41 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
     }
   };
 
-  const switchMode = (mode: Mode) => {
-    if (mode === form.mode) return;
-    if (mode === 'code') {
-      set('body', textToBlocks(form.body));
-      set('mode', 'code');
-      return;
+  const switchMode = (next: Mode) => {
+    if (next === mode) return;
+    if (next === 'code') {
+      const markup = readContent();
+      editor.current = null;
+      setContent(markup);
+      setCurrent(markup);
     }
-    const text = blocksToText(form.body);
-    if (text === undefined) {
-      toast('This content has blocks the writing view can’t show. Keep editing it as code.', {
-        tone: 'danger',
-      });
-      return;
-    }
-    setForm((f) => ({ ...f, body: text, mode: 'write' }));
-    setCodeNotice(false);
+    setMode(next);
+  };
+
+  const onEditorReady = useCallback(
+    (handle: BlockEditorHandle) => {
+      editor.current = handle;
+      // Untouched content: compare against the editor's own serialization,
+      // so a first parse/serialize pass doesn't count as a change.
+      setSavedContent((s) => (s === content ? handle.baseline : s));
+      setCurrent(handle.baseline);
+    },
+    [content],
+  );
+  const onNotice = useCallback(
+    (message: string, tone: 'success' | 'danger') => toast(message, { tone }),
+    [toast],
+  );
+  const onSelectionChange = useCallback((selected: boolean) => {
+    setTab(selected ? 'block' : 'post');
+  }, []);
+
+  const onTabKey = (event: ReactKeyboardEvent) => {
+    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+    event.preventDefault();
+    const next = tab === 'post' ? 'block' : 'post';
+    setTab(next);
+    document.getElementById(`editor-tab-${next}`)?.focus();
   };
 
   /* ------------------------------------------------------------ render */
@@ -439,7 +676,6 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
     primaryAction = () => save('publish', 'primary');
   }
 
-  const words = form.mode === 'write' ? form.body.split(/\s+/).filter(Boolean).length : 0;
   const editableParents = pages.filter((p) => {
     if (!post) return true;
     // Exclude this page and its descendants.
@@ -452,8 +688,45 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
     return true;
   });
 
+  const saveState = busy
+    ? 'Saving…'
+    : dirty
+      ? autosavedAt
+        ? `Unsaved changes · autosaved ${timeOf(autosavedAt)}`
+        : 'Unsaved changes'
+      : post
+        ? 'All changes saved'
+        : '';
+
+  const modeSwitch = (
+    <fieldset className={styles.modes}>
+      <legend className="visually-hidden">Editor view</legend>
+      <button
+        type="button"
+        className={styles.mode}
+        aria-pressed={mode === 'visual'}
+        onClick={() => switchMode('visual')}
+      >
+        Visual
+      </button>
+      <button
+        type="button"
+        className={styles.mode}
+        aria-pressed={mode === 'code'}
+        onClick={() => switchMode('code')}
+      >
+        Code
+      </button>
+    </fieldset>
+  );
+
   return (
     <>
+      <h1 className="visually-hidden">
+        {post
+          ? `Edit ${config.singular.toLowerCase()}`
+          : `Add new ${config.singular.toLowerCase()}`}
+      </h1>
       <div className={styles.bar}>
         <button type="button" className={styles.back} onClick={leave}>
           <ArrowLeft size={16} aria-hidden="true" /> {config.plural}
@@ -470,7 +743,7 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
           )}
         </span>
         <span className={styles.saveState} aria-live="polite">
-          {busy ? 'Saving…' : dirty ? 'Unsaved changes' : post ? 'All changes saved' : ''}
+          {saveState}
         </span>
         <span className={styles.spacer} />
         {isLive && canPublish ? (
@@ -503,353 +776,451 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
         >
           {primaryLabel}
         </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          className={styles.sidebarToggle}
+          icon={<PanelRight size={18} aria-hidden="true" />}
+          aria-label="Settings"
+          title="Settings"
+          aria-expanded={sidebarOpen}
+          aria-controls="editor-sidebar"
+          data-active={sidebarOpen || undefined}
+          onClick={() => setSidebarOpen((open) => !open)}
+        />
       </div>
 
       {error && (
-        <div style={{ marginBottom: 'var(--space-4)' }}>
+        <div className={styles.notice}>
           <Notice tone="danger" title={error.title}>
             {error.hint}
           </Notice>
         </div>
       )}
 
-      <div className={styles.layout}>
-        <section className={styles.canvas} aria-label="Writing area">
-          <textarea
-            ref={titleRef}
-            className={styles.title}
-            rows={1}
-            placeholder="Add title"
-            aria-label="Title"
-            value={form.title}
-            onChange={(e) => set('title', e.target.value.replace(/\n/g, ' '))}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                bodyRef.current?.focus();
-              }
-            }}
-          />
-          <div className={styles.modeRow}>
-            <span>
-              {form.mode === 'write'
-                ? `${words.toLocaleString('en')} ${words === 1 ? 'word' : 'words'} · ${Math.max(1, Math.round(words / 230))} min read`
-                : 'Editing block markup'}
+      {offer && (
+        <div className={styles.notice}>
+          <Notice
+            tone="info"
+            title={
+              offer.kind === 'autosave'
+                ? `There’s an autosave from ${offer.when} that’s newer than this version.`
+                : `This browser has unsaved changes from ${offer.when}.`
+            }
+          >
+            <span className={styles.noticeActions}>
+              <Button size="sm" onClick={restore}>
+                {offer.kind === 'autosave' ? 'Restore the autosave' : 'Restore the changes'}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={dismissOffer}>
+                Dismiss
+              </Button>
             </span>
-            <fieldset className={styles.modes}>
-              <legend className="visually-hidden">Editor view</legend>
-              <button
-                type="button"
-                className={styles.mode}
-                aria-pressed={form.mode === 'write'}
-                onClick={() => switchMode('write')}
-              >
-                Write
-              </button>
-              <button
-                type="button"
-                className={styles.mode}
-                aria-pressed={form.mode === 'code'}
-                onClick={() => switchMode('code')}
-              >
-                Code
-              </button>
-            </fieldset>
-          </div>
-          {codeNotice && (
-            <Notice tone="info" title="Opened in code view">
-              This content uses blocks the writing view can’t show yet. The full block editor
-              arrives in v0.3.
-            </Notice>
-          )}
-          <textarea
-            ref={bodyRef}
-            className={styles.body}
-            data-mode={form.mode}
-            placeholder={form.mode === 'write' ? 'Start writing…' : '<!-- wp:paragraph -->…'}
-            aria-label="Content"
-            spellCheck={form.mode === 'write'}
-            value={form.body}
-            onChange={(e) => set('body', e.target.value)}
-          />
-          {form.mode === 'write' && (
-            <p className={styles.hint}>
-              Shortcuts: <code>## Heading</code> <code>- list</code> <code>1. list</code>{' '}
-              <code>&gt; quote</code> <code>**bold**</code> <code>*italic*</code>{' '}
-              <code>[link](https://…)</code> <code>---</code>
-            </p>
+          </Notice>
+        </div>
+      )}
+
+      <div className={styles.layout} data-sidebar={sidebarOpen ? 'open' : 'closed'}>
+        <section className={styles.canvas} aria-label="Content">
+          {mode === 'visual' ? (
+            <BlockEditor
+              key={editorKey}
+              initialContent={content}
+              title={form.title}
+              onTitleChange={(title) => set('title', title)}
+              onContentChange={setCurrent}
+              onReady={onEditorReady}
+              inspector={inspector}
+              onSelectionChange={onSelectionChange}
+              toolbarEnd={modeSwitch}
+              postId={post?.id}
+              canUnfilteredHtml={can('unfiltered_html')}
+              focusTitle={!id}
+              onNotice={onNotice}
+            />
+          ) : (
+            <div className={styles.code}>
+              <div className={styles.codeBar}>
+                <span>Editing block markup</span>
+                {modeSwitch}
+              </div>
+              <div className={styles.codeBody}>
+                <textarea
+                  ref={titleRef}
+                  className={styles.title}
+                  rows={1}
+                  placeholder="Add title"
+                  aria-label="Add title"
+                  value={form.title}
+                  onChange={(e) => set('title', e.target.value.replace(/\n/g, ' '))}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      codeRef.current?.focus();
+                    }
+                  }}
+                />
+                <textarea
+                  ref={codeRef}
+                  className={styles.body}
+                  placeholder="<!-- wp:paragraph -->…"
+                  aria-label="Block markup"
+                  spellCheck={false}
+                  value={content}
+                  onChange={(e) => {
+                    setContent(e.target.value);
+                    setCurrent(e.target.value);
+                  }}
+                />
+              </div>
+            </div>
           )}
         </section>
 
-        <aside className={styles.sidebar} aria-label={`${config.singular} settings`}>
-          <Panel title="Publishing">
-            <fieldset className={styles.radios}>
-              <legend>Visibility</legend>
-              {(
-                [
-                  ['public', 'Public', true],
-                  ['password', 'Password protected', true],
-                  ['private', 'Private', canPublish],
-                ] as const
-              ).map(([value, label, allowed]) =>
-                allowed ? (
-                  <label key={value} className={styles.radio}>
-                    <input
-                      type="radio"
-                      name="visibility"
-                      checked={form.visibility === value}
-                      onChange={() => set('visibility', value)}
-                    />
-                    {label}
-                  </label>
-                ) : null,
-              )}
-              {form.visibility === 'password' && (
-                <input
-                  className={styles.small}
-                  aria-label="Password"
-                  placeholder="Choose a password"
-                  value={form.password}
-                  onChange={(e) => set('password', e.target.value)}
-                />
-              )}
-            </fieldset>
+        <aside
+          id="editor-sidebar"
+          className={styles.sidebar}
+          aria-label={`${config.singular} settings`}
+          hidden={!sidebarOpen}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape' && narrow && !event.defaultPrevented) {
+              setSidebarOpen(false);
+              document
+                .querySelector<HTMLButtonElement>('[aria-controls="editor-sidebar"]')
+                ?.focus();
+            }
+          }}
+        >
+          <div className={styles.tabsRow}>
+            <div className={styles.tabs} role="tablist" aria-label="Settings" onKeyDown={onTabKey}>
+              {(['post', 'block'] as const).map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="tab"
+                  id={`editor-tab-${value}`}
+                  aria-controls={`editor-tabpanel-${value}`}
+                  aria-selected={tab === value}
+                  tabIndex={tab === value ? 0 : -1}
+                  className={styles.tab}
+                  onClick={() => setTab(value)}
+                >
+                  {value === 'post' ? config.singular : 'Block'}
+                </button>
+              ))}
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              className={styles.sidebarClose}
+              aria-label="Close settings"
+              icon={<X size={16} aria-hidden="true" />}
+              onClick={() => setSidebarOpen(false)}
+            />
+          </div>
 
-            {canPublish && (
+          <div
+            role="tabpanel"
+            id="editor-tabpanel-post"
+            aria-labelledby="editor-tab-post"
+            hidden={tab !== 'post'}
+            className={styles.tabPanel}
+          >
+            <Panel title="Publishing">
               <fieldset className={styles.radios}>
-                <legend>Publish</legend>
-                <label className={styles.radio}>
+                <legend>Visibility</legend>
+                {(
+                  [
+                    ['public', 'Public', true],
+                    ['password', 'Password protected', true],
+                    ['private', 'Private', canPublish],
+                  ] as const
+                ).map(([value, label, allowed]) =>
+                  allowed ? (
+                    <label key={value} className={styles.radio}>
+                      <input
+                        type="radio"
+                        name="visibility"
+                        checked={form.visibility === value}
+                        onChange={() => set('visibility', value)}
+                      />
+                      {label}
+                    </label>
+                  ) : null,
+                )}
+                {form.visibility === 'password' && (
                   <input
-                    type="radio"
-                    name="when"
-                    checked={!form.schedule}
-                    onChange={() => set('schedule', false)}
-                  />
-                  {status === 'publish' && post
-                    ? `Published ${formatLocalDate(post.date)}`
-                    : 'Immediately'}
-                </label>
-                <label className={styles.radio}>
-                  <input
-                    type="radio"
-                    name="when"
-                    checked={form.schedule}
-                    onChange={() =>
-                      setForm((f) => ({
-                        ...f,
-                        schedule: true,
-                        date: f.date || new Date(Date.now() + 864e5).toISOString().slice(0, 16),
-                      }))
-                    }
-                  />
-                  {status === 'publish' ? 'Change date' : 'Schedule for later'}
-                </label>
-                {form.schedule && (
-                  <input
-                    type="datetime-local"
                     className={styles.small}
-                    aria-label="Publish date and time (site time zone)"
-                    value={form.date}
-                    onChange={(e) => set('date', e.target.value)}
+                    aria-label="Password"
+                    placeholder="Choose a password"
+                    value={form.password}
+                    onChange={(e) => set('password', e.target.value)}
                   />
                 )}
               </fieldset>
-            )}
 
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="slug">
-                URL slug
-              </label>
-              <input
-                id="slug"
-                className={styles.small}
-                value={form.slug}
-                placeholder="Generated from the title"
-                onChange={(e) => set('slug', e.target.value)}
-                spellCheck={false}
-              />
-              {post?.status === 'publish' && <span className={styles.urlPreview}>{post.link}</span>}
-            </div>
+              {canPublish && (
+                <fieldset className={styles.radios}>
+                  <legend>Publish</legend>
+                  <label className={styles.radio}>
+                    <input
+                      type="radio"
+                      name="when"
+                      checked={!form.schedule}
+                      onChange={() => set('schedule', false)}
+                    />
+                    {status === 'publish' && post
+                      ? `Published ${formatLocalDate(post.date)}`
+                      : 'Immediately'}
+                  </label>
+                  <label className={styles.radio}>
+                    <input
+                      type="radio"
+                      name="when"
+                      checked={form.schedule}
+                      onChange={() =>
+                        setForm((f) => ({
+                          ...f,
+                          schedule: true,
+                          date: f.date || new Date(Date.now() + 864e5).toISOString().slice(0, 16),
+                        }))
+                      }
+                    />
+                    {status === 'publish' ? 'Change date' : 'Schedule for later'}
+                  </label>
+                  {form.schedule && (
+                    <input
+                      type="datetime-local"
+                      className={styles.small}
+                      aria-label="Publish date and time (site time zone)"
+                      value={form.date}
+                      onChange={(e) => set('date', e.target.value)}
+                    />
+                  )}
+                </fieldset>
+              )}
 
-            <label className={styles.check}>
-              <input
-                type="checkbox"
-                checked={form.comments}
-                onChange={(e) => set('comments', e.target.checked)}
-              />
-              Allow comments
-            </label>
-            {canSticky && (
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="slug">
+                  URL slug
+                </label>
+                <input
+                  id="slug"
+                  className={styles.small}
+                  value={form.slug}
+                  placeholder="Generated from the title"
+                  onChange={(e) => set('slug', e.target.value)}
+                  spellCheck={false}
+                />
+                {post?.status === 'publish' && (
+                  <span className={styles.urlPreview}>{post.link}</span>
+                )}
+              </div>
+
               <label className={styles.check}>
                 <input
                   type="checkbox"
-                  checked={form.sticky}
-                  onChange={(e) => set('sticky', e.target.checked)}
+                  checked={form.comments}
+                  onChange={(e) => set('comments', e.target.checked)}
                 />
-                Stick to the top of the blog
+                Allow comments
               </label>
+              {canSticky && (
+                <label className={styles.check}>
+                  <input
+                    type="checkbox"
+                    checked={form.sticky}
+                    onChange={(e) => set('sticky', e.target.checked)}
+                  />
+                  Stick to the top of the blog
+                </label>
+              )}
+            </Panel>
+
+            {/* Between Publishing and the taxonomies, where WordPress puts it. */}
+            {canUpload && (
+              <Panel title="Featured image" defaultOpen={Boolean(form.featuredMedia)}>
+                <FeaturedImage
+                  value={form.featuredMedia}
+                  onChange={(id) => set('featuredMedia', id)}
+                />
+              </Panel>
             )}
-          </Panel>
 
-          {config.taxonomies && (
-            <Panel title="Categories">
-              <ul className={styles.termList}>
-                {categoryTree(categories).map((c) => (
-                  <li key={c.id} style={{ paddingLeft: `${c.depth * 1.25}rem` }}>
-                    <label className={styles.check}>
-                      <input
-                        type="checkbox"
-                        checked={form.categories.includes(c.id)}
-                        onChange={(e) =>
-                          set(
-                            'categories',
-                            e.target.checked
-                              ? [...form.categories, c.id]
-                              : form.categories.filter((x) => x !== c.id),
-                          )
-                        }
-                      />
-                      {c.name}
-                    </label>
-                  </li>
-                ))}
-              </ul>
-              {can('manage_categories') &&
-                (newCategory === null ? (
-                  <button
-                    type="button"
-                    className={styles.linkButton}
-                    onClick={() => setNewCategory('')}
-                  >
-                    + Add new category
-                  </button>
-                ) : (
-                  <div className={styles.inlineAdd}>
-                    <input
-                      className={styles.small}
-                      aria-label="New category name"
-                      value={newCategory}
-                      // biome-ignore lint/a11y/noAutofocus: the user just asked to type a name.
-                      autoFocus
-                      onChange={(e) => setNewCategory(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          addCategory();
-                        }
-                        if (e.key === 'Escape') setNewCategory(null);
-                      }}
-                    />
-                    <Button size="sm" onClick={addCategory}>
-                      Add
-                    </Button>
-                  </div>
-                ))}
-            </Panel>
-          )}
-
-          {config.taxonomies && (
-            <Panel title="Tags">
-              <TagInput value={form.tags} onChange={(tags) => set('tags', tags)} />
-            </Panel>
-          )}
-
-          {config.hierarchical && (
-            <Panel title="Page attributes">
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="parent">
-                  Parent page
-                </label>
-                <select
-                  id="parent"
-                  className={styles.small}
-                  value={form.parent}
-                  onChange={(e) => set('parent', Number(e.target.value))}
-                >
-                  <option value={0}>(no parent)</option>
-                  {editableParents.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {plainTitle(p.title.rendered) || '(no title)'}
-                    </option>
+            {config.taxonomies && (
+              <Panel title="Categories">
+                <ul className={styles.termList}>
+                  {categoryTree(categories).map((c) => (
+                    <li key={c.id} style={{ paddingLeft: `${c.depth * 1.25}rem` }}>
+                      <label className={styles.check}>
+                        <input
+                          type="checkbox"
+                          checked={form.categories.includes(c.id)}
+                          onChange={(e) =>
+                            set(
+                              'categories',
+                              e.target.checked
+                                ? [...form.categories, c.id]
+                                : form.categories.filter((x) => x !== c.id),
+                            )
+                          }
+                        />
+                        {c.name}
+                      </label>
+                    </li>
                   ))}
-                </select>
-              </div>
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="order">
-                  Order
-                </label>
-                <input
-                  id="order"
-                  type="number"
-                  className={styles.small}
-                  value={form.menuOrder}
-                  onChange={(e) => set('menuOrder', Number(e.target.value) || 0)}
-                />
-              </div>
-            </Panel>
-          )}
-
-          <Panel title="Excerpt" defaultOpen={Boolean(form.excerpt)}>
-            <div className={styles.field}>
-              <label className="visually-hidden" htmlFor="excerpt">
-                Excerpt
-              </label>
-              <textarea
-                id="excerpt"
-                className={styles.small}
-                value={form.excerpt}
-                onChange={(e) => set('excerpt', e.target.value)}
-              />
-              <span className={styles.hint}>
-                A short summary for lists and search results. Leave empty to use the opening words.
-              </span>
-            </div>
-          </Panel>
-
-          {revisions.length > 0 && (
-            <Panel title={`Revisions (${revisions.length})`} defaultOpen={false}>
-              <ul className={styles.revisions}>
-                {revisions.slice(0, 10).map((r, i) => (
-                  <li key={r.id}>
-                    <span>
-                      {formatLocalDate(r.date)}
-                      {i === 0 ? ' · current' : ''}
-                    </span>
-                    {i > 0 && (
-                      <button
-                        type="button"
-                        className={styles.linkButton}
-                        onClick={() => {
-                          const text = blocksToText(r.content.raw);
-                          setForm((f) => ({
-                            ...f,
-                            title: r.title.raw,
-                            excerpt: r.excerpt.raw,
-                            body: text ?? r.content.raw,
-                            mode: text === undefined ? 'code' : 'write',
-                          }));
-                          toast('Revision loaded. Save to keep it.');
+                </ul>
+                {can('manage_categories') &&
+                  (newCategory === null ? (
+                    <button
+                      type="button"
+                      className={styles.linkButton}
+                      onClick={() => setNewCategory('')}
+                    >
+                      + Add new category
+                    </button>
+                  ) : (
+                    <div className={styles.inlineAdd}>
+                      <input
+                        className={styles.small}
+                        aria-label="New category name"
+                        value={newCategory}
+                        // biome-ignore lint/a11y/noAutofocus: the user just asked to type a name.
+                        autoFocus
+                        onChange={(e) => setNewCategory(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addCategory();
+                          }
+                          if (e.key === 'Escape') {
+                            e.stopPropagation();
+                            setNewCategory(null);
+                          }
                         }}
-                      >
-                        Load
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </Panel>
-          )}
+                      />
+                      <Button size="sm" onClick={addCategory}>
+                        Add
+                      </Button>
+                    </div>
+                  ))}
+              </Panel>
+            )}
 
-          {post && (isOwn ? can(config.cap.delete) : can(config.cap.editOthers)) && (
-            <button
-              type="button"
-              className={styles.linkButton}
-              data-tone="danger"
-              onClick={() => setConfirm('trash')}
-            >
-              Move to Trash
-            </button>
-          )}
+            {config.taxonomies && (
+              <Panel title="Tags">
+                <TagInput value={form.tags} onChange={(tags) => set('tags', tags)} />
+              </Panel>
+            )}
+
+            {config.hierarchical && (
+              <Panel title="Page attributes">
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="parent">
+                    Parent page
+                  </label>
+                  <select
+                    id="parent"
+                    className={styles.small}
+                    value={form.parent}
+                    onChange={(e) => set('parent', Number(e.target.value))}
+                  >
+                    <option value={0}>(no parent)</option>
+                    {editableParents.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {plainTitle(p.title.rendered) || '(no title)'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="order">
+                    Order
+                  </label>
+                  <input
+                    id="order"
+                    type="number"
+                    className={styles.small}
+                    value={form.menuOrder}
+                    onChange={(e) => set('menuOrder', Number(e.target.value) || 0)}
+                  />
+                </div>
+              </Panel>
+            )}
+
+            <Panel title="Excerpt" defaultOpen={Boolean(form.excerpt)}>
+              <div className={styles.field}>
+                <label className="visually-hidden" htmlFor="excerpt">
+                  Excerpt
+                </label>
+                <textarea
+                  id="excerpt"
+                  className={styles.small}
+                  value={form.excerpt}
+                  onChange={(e) => set('excerpt', e.target.value)}
+                />
+                <span className={styles.hint}>
+                  A short summary for lists and search results. Leave empty to use the opening
+                  words.
+                </span>
+              </div>
+            </Panel>
+
+            {revisions.length > 0 && (
+              <Panel title={`Revisions (${revisions.length})`} defaultOpen={false}>
+                <ul className={styles.revisions}>
+                  {revisions.slice(0, 10).map((r, i) => (
+                    <li key={r.id}>
+                      <span>
+                        {formatLocalDate(r.date)}
+                        {i === 0 ? ' · current' : ''}
+                      </span>
+                      {i > 0 && (
+                        <button
+                          type="button"
+                          className={styles.linkButton}
+                          onClick={() => {
+                            setForm((f) => ({ ...f, title: r.title.raw, excerpt: r.excerpt.raw }));
+                            replaceContent(r.content.raw);
+                            toast('Revision loaded. Save to keep it.');
+                          }}
+                        >
+                          Load
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+            )}
+
+            {post && (isOwn ? can(config.cap.delete) : can(config.cap.editOthers)) && (
+              <button
+                type="button"
+                className={styles.linkButton}
+                data-tone="danger"
+                onClick={() => setConfirm('trash')}
+              >
+                Move to Trash
+              </button>
+            )}
+          </div>
+
+          <div
+            role="tabpanel"
+            id="editor-tabpanel-block"
+            aria-labelledby="editor-tab-block"
+            hidden={tab !== 'block'}
+            className={`${styles.tabPanel} ${styles.inspector} ${lightScope}`}
+          >
+            {mode === 'code' ? (
+              <p className={styles.inspectorEmpty}>
+                Block settings are in the visual editor. Switch to Visual to use them.
+              </p>
+            ) : (
+              <div ref={setInspector} />
+            )}
+          </div>
         </aside>
       </div>
 
@@ -884,6 +1255,8 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
         onCancel={() => setConfirm(null)}
         onConfirm={() => {
           setSaved(form);
+          setSavedContent(current);
+          clearBackup(browserStorage(), storageKey);
           router.push(listHref);
         }}
       >
@@ -891,4 +1264,9 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
       </ConfirmDialog>
     </>
   );
+}
+
+/** "3:04 PM" from a timestamp, in the browser's time zone. */
+function timeOfMs(ms: number): string {
+  return new Date(ms).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
