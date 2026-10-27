@@ -32,7 +32,7 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | `WP_Query` | `apps/core/src/content/query.ts` (`queryPosts`) | Same argument names. |
 | `get_permalink` | `apps/core/src/content/permalinks.ts` | Uses `permalink_structure`. |
 | `wp_kses_post`, `sanitize_title` | `apps/core/src/content/sanitize.ts` | Keeps block delimiters intact. |
-| `WP_REST_Posts_Controller`, `WP_REST_Terms_Controller`, `WP_REST_Users_Controller` (read), types / taxonomies / statuses controllers | `apps/core/src/routes/posts.ts`, `terms.ts`, `users.ts`, `types.ts` | See [REST API](rest-api.md). |
+| `WP_REST_Posts_Controller`, `WP_REST_Terms_Controller`, `WP_REST_Users_Controller`, types / taxonomies / statuses controllers | `apps/core/src/routes/posts.ts`, `terms.ts`, `users.ts`, `types.ts` | See [REST API](rest-api.md). |
 | `parse_blocks`, `serialize_blocks`, `WP_Block_Parser` | `packages/blocks` (`parseBlocks`, `serializeBlocks`) | Same output shape. See [Blocks](blocks.md). |
 | `WP_Block_Type_Registry`, `register_block_type` | `BlockTypeRegistry`; `kernel.blocks.registerBlockType()` | Keys follow `block.json`. |
 | `WP_Block`, `render_block`, `do_blocks` | `packages/blocks/src/block.ts`; `kernel.blocks.render()` | Async render callbacks; same filters. |
@@ -43,6 +43,12 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | `wp_handle_upload()`, `wp_unique_filename()`, `sanitize_file_name()`, `wp_check_filetype_and_ext()`, `wp_create_image_subsizes()`, `wp_delete_attachment()` | `apps/core/src/media/` | Storage adapters instead of direct disk writes; sharp instead of GD/Imagick. See [Media](media.md). |
 | `WP_REST_Attachments_Controller` | `apps/core/src/routes/media.ts` | |
 | `upload.php`, `options-media.php`, the media modal | `/admin/media`, `/admin/settings/media`, `MediaPicker` | |
+| `wp_insert_user`, `wp_update_user`, `wp_delete_user` (with reassign), `validate_username`, `is_email`, `count_users`, `count_many_users_posts` | `apps/core/src/people/users.ts`, `validation.ts` | See [People](people.md). |
+| `WP_Application_Passwords`, `wp_authenticate_application_password`, `WP_REST_Application_Passwords_Controller` | `apps/core/src/people/application-passwords.ts`, `routes/application-passwords.ts` | `Authorization: Basic` middleware; SHA-256 digests like WordPress 6.8's `wp_fast_hash`. |
+| `wp_mail` (PHPMailer) | `kernel.mail` (`apps/core/src/mail/`, nodemailer) | SMTP from env, else a development outbox. Same filters and actions. |
+| `retrieve_password`, `get_password_reset_key`, `check_password_reset_key`, `reset_password`, `wp-login.php?action=lostpassword` / `rp` | `apps/core/src/people/password-reset.ts`, `routes/password-reset.ts`; `/lost-password`, `/reset-password` | Same `user_activation_key` format (`time:hash`), 24-hour expiry. |
+| `wp_new_user_notification`, `send_password_change_email`, `send_email_change_email` | `people/password-reset.ts` | |
+| `users.php`, `user-new.php`, `user-edit.php`, `profile.php` | `/admin/users`, `/admin/users/new`, `/admin/users/{id}`, `/admin/profile` | |
 | `edit.php`, `post.php`, `edit-tags.php`, `options-reading.php`, `options-writing.php` | `/admin/posts`, `/admin/posts/{id}`, `/admin/posts/categories`, `/admin/settings/reading`, `/admin/settings/writing` | |
 
 ## Planned
@@ -50,7 +56,6 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | WordPress                                      | Pressbase (planned)                             | Release |
 | ---------------------------------------------- | ------------------------------------------- | ------- |
 | Autosave | Autosaves endpoint, with the block editor | v0.3 |
-| Application passwords                          | `Authorization: Basic` in core              | v0.2    |
 | `WP_Theme_JSON`, template loader, `WP_Rewrite` | `packages/theme-json`, router in `apps/web` | v0.4    |
 | Plugins API, `activate_plugin`                 | Plugin loader + `plugin.json`               | v0.5    |
 | `wp-cron.php`                                  | pg-boss job queue                           | v0.5    |

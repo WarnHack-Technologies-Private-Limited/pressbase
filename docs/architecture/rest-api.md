@@ -15,7 +15,10 @@ Everything is served under `/wp-json`, as in WordPress:
 | POST                     | `/pressbase/v1/install`                | before install   | Install the site and sign in the administrator.                   |
 | POST                     | `/pressbase/v1/auth/login`             | public           | `{ login, password, remember }` → session cookie.                 |
 | POST                     | `/pressbase/v1/auth/logout`            | public           | End the current session.                                          |
-| GET                      | `/wp/v2/users/me`                  | logged in        | The current user, with roles and capabilities.                    |
+| GET                      | `/wp/v2/users/me`                  | logged in        | The current user, with the edit fields (roles, capabilities, profile). |
+| POST                     | `/pressbase/v1/auth/lost-password` | public           | `{ login }` → emails a reset link. Same answer whether or not the account exists. See [People](people.md#password-reset). |
+| POST                     | `/pressbase/v1/auth/check-reset-key` | public         | `{ login, key }` → `200`, or `400 invalid_key` / `expired_key`.   |
+| POST                     | `/pressbase/v1/auth/reset-password` | public          | `{ login, key, password }` → sets the password and logs the user out everywhere. |
 | GET / POST / PUT / PATCH | `/wp/v2/settings`                  | `manage_options` | Read or update registered settings.                               |
 | GET                      | `/pressbase/v1/dashboard`              | `read`           | Counts, recent content and system facts for the dashboard.        |
 | GET                      | `/pressbase/v1/post-counts/{type}`     | `edit_{type}s`   | Items per status, for the admin's status tabs (`wp_count_posts`). |
@@ -27,7 +30,14 @@ Everything is served under `/wp-json`, as in WordPress:
 | GET / POST               | `/wp/v2/categories`, `/wp/v2/tags`     | read: public · create: see below | Terms. `DELETE ?force=true` only (terms have no trash). |
 | GET / POST / PUT / PATCH / DELETE | `/wp/v2/{categories\|tags}/{id}` | `edit_term` / `delete_term` | One term.                                           |
 | GET                      | `/wp/v2/types`, `/wp/v2/taxonomies`, `/wp/v2/statuses` | public | Registered post types, taxonomies and statuses (labels, capabilities with `context=edit`). |
-| GET                      | `/wp/v2/users`, `/wp/v2/users/{id}`    | public: published authors only · `list_users`: everyone | People. `context=edit` adds username, email and roles. |
+| GET                      | `/wp/v2/users`, `/wp/v2/users/{id}`    | public: published authors only · `list_users`: everyone | People. `context=edit` adds username, email, first/last name, nickname, locale, registered date, roles and capabilities. `roles=editor,author` filters (needs `list_users`). |
+| POST                     | `/wp/v2/users`                     | `create_users` (+ `promote_users` for `roles`) | Create a user: `username`, `email`, `password` required. Pressbase adds `send_user_notification` to email a "set your password" link. |
+| POST / PUT / PATCH       | `/wp/v2/users/{id\|me}`            | `edit_user` (yourself, or `edit_users`); `promote_user` for `roles` | Update. Usernames can't change. See [People](people.md#who-may-do-what). |
+| DELETE                   | `/wp/v2/users/{id\|me}?force=true&reassign={id\|false}` | `delete_users` | Delete; `reassign` moves the user's content, `false` deletes it. The last administrator can't be deleted. |
+| GET                      | `/pressbase/v1/user-counts`        | `list_users`     | `{ total, roles: { role: n, none: n }, posts: { id: n } }` (`count_users()`; posts for `?include=1,2`). |
+| GET / POST / DELETE      | `/wp/v2/users/{id\|me}/application-passwords` | `edit_user` | List, create (`{ name, app_id? }`; the response carries the password, once) or revoke all. |
+| GET / POST / PUT / PATCH / DELETE | `/wp/v2/users/{id\|me}/application-passwords/{uuid}` | `edit_user` | One application password: read, rename, revoke. |
+| GET                      | `/wp/v2/users/me/application-passwords/introspect` | Basic auth | The application password the request used. |
 | GET / POST               | `/wp/v2/media`                     | read: public (as the parent post) · upload: `upload_files` | List or upload media. See *Media* below. |
 | GET / POST / PUT / PATCH / DELETE | `/wp/v2/media/{id}`       | `read_post` / `edit_post` / `delete_post` | One attachment. `DELETE` needs `?force=true` (no Trash). |
 | GET / HEAD               | `/wp-content/uploads/{path}`       | public           | The uploaded files themselves (outside `/wp-json`). See [Media](media.md#serving-files). |
@@ -118,13 +128,27 @@ The shape matches WordPress:
 | `block_cannot_read`                | 401 / 403 | Block renderer without `edit_posts`, or without `edit_post` on `post_id`.  |
 | `block_invalid`                    | 404       | Block renderer for an unknown or static (non-dynamic) block.               |
 | `rest_cannot_view`                 | 401 / 403 | Block patterns or pattern categories without edit rights.                  |
+| `rest_cannot_create_user`, `rest_cannot_edit`, `rest_cannot_edit_roles`, `rest_user_cannot_delete` | 401 / 403 | See [People](people.md#who-may-do-what). |
+| `rest_user_invalid_username`, `existing_user_login`, `existing_user_email`, `rest_user_invalid_email`, `rest_user_invalid_password`, `rest_user_invalid_slug`, `rest_user_invalid_argument` | 400 | User input problems; `data.params` names the field. |
+| `rest_user_invalid_role`           | 400 / 403 | Unknown role (400), giving yourself a role without `edit_users`, or removing the last administrator (403). |
+| `rest_user_invalid_reassign`       | 400       | `reassign` is the user being deleted, or doesn't exist.                    |
+| `rest_missing_callback_param`      | 400       | A required parameter is missing (`username`, `email`, `password`, `reassign`). |
+| `invalid_username`, `invalid_email`, `incorrect_password` | 401 | `Authorization: Basic` with an unknown user or a wrong application password. |
+| `application_password_empty_name`, `application_password_duplicate_name` | 400 / 409 | Application password names must be given and unique per user. |
+| `rest_application_password_not_found` | 404    | No application password with that UUID.                                   |
+| `rest_cannot_list_application_passwords` and the other `rest_cannot_*_application_password*` codes | 401 / 403 | Managing someone else's application passwords without `edit_users`. |
+| `invalid_key`, `expired_key`       | 400       | Password reset link that is wrong, used or older than 24 hours.            |
 | `pressbase_db_*`                   | 400       | Installer database problems. `data.hint` holds the next step for the user. |
 | `pressbase_already_installed`      | 409       | Installer called on an installed site.                                     |
 
 ## Authentication
 
 - **Browser:** a session cookie (`pressbase_session`) from `auth/login` or the installer. Every unsafe request also needs the `X-Pressbase-Request: 1` header.
-- **API clients:** application passwords over `Authorization: Basic` are planned for v0.2. Requests with an `Authorization` header are exempt from the CSRF header rule.
+- **API clients:** application passwords over `Authorization: Basic base64(username:password)`, created on the Profile screen or through the API. Requests with an `Authorization` header are exempt from the CSRF header rule, and any session cookie they carry is ignored. Bad credentials answer `401` (`incorrect_password`, `invalid_username`, `invalid_email`). See [People](people.md#application-passwords).
+
+```bash
+curl -u 'admin:abcd EFGH 1234 ijkl MNOP 5678' https://example.com/wp-json/wp/v2/users/me
+```
 
 ## Adding a route
 

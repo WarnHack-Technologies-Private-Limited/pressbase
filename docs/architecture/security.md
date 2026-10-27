@@ -15,6 +15,14 @@ How Pressbase protects a site today, and what's still missing. Update this page 
 | Open redirects             | Login only redirects to `/admin…` paths.                                                                                                                                                       |
 | Stored XSS through content | Users without `unfiltered_html` (Authors, Contributors) have titles, content and excerpts sanitised to WordPress's allowed post HTML. Scripts, event handlers and `javascript:` URLs are removed. Block delimiters are validated and re-encoded so their JSON can't close the comment early. |
 | Account enumeration through the API | `/wp/v2/users` lists only people with published content unless the viewer has `list_users`; emails only appear with `context=edit`. |
+| Stolen API credentials     | Application passwords are random (24 characters, ~142 bits), stored only as SHA-256 digests, shown once, revocable one by one, and record when and from where they were last used. They work only on the REST API, never on the login form. Failed Basic-auth attempts are throttled per address. |
+| CSRF through API credentials | A request with an `Authorization` header skips the CSRF header check, so core authenticates it by that header alone and ignores any session cookie it carries. |
+| Account takeover by reset link | Reset keys are 20 random characters; the database holds only `time:sha256`. They're compared in constant time, work once, are replaced by a newer request, expire after 24 hours, and are cleared by any password change. A successful reset logs the user out everywhere. |
+| Account enumeration through password reset | `lost-password` gives the same answer whether or not the account exists, and sends the email without waiting for it, so response times don't differ. Per-account email limits are silent. |
+| Inbox flooding             | At most 10 reset requests per address and 3 reset emails per account every 15 minutes. |
+| Locking the site out       | Nobody can give themselves a role without `edit_users`, and the last administrator can't be demoted or deleted. |
+| Unnoticed account changes  | A password change logs out the account's other sessions and emails the account; an email change notifies the old address. |
+| Mail on disk               | Without SMTP, outgoing mail (including reset links) goes to `<dataDir>/outbox` with mode `0600`. Configure SMTP for any real site. |
 | Mass assignment            | Settings updates accept only registered settings. Each is validated, and nothing is saved if any field fails.                                                                                  |
 
 ## Known gaps (tracked for upcoming releases)
@@ -23,3 +31,5 @@ How Pressbase protects a site today, and what's still missing. Update this page 
 - **Client IP behind proxies.** It's read from `X-Forwarded-For`, which a client can spoof. That's acceptable only because the per-login limit doesn't depend on IP. A trusted-proxy setting is planned.
 - **Login lockout.** An attacker can deliberately trigger the per-login limit (20 attempts per 15 minutes) to lock out a known username.
 - **Security headers.** CSP and similar headers on the admin app.
+- **Basic auth reveals unknown usernames.** As in WordPress, a wrong username answers `invalid_username` and a wrong password `incorrect_password`. Throttling limits how fast this can be probed.
+- **Application passwords over plain HTTP.** WordPress refuses them without HTTPS outside local development; Pressbase allows them everywhere for now. Serve the site over HTTPS.

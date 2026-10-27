@@ -34,8 +34,9 @@ WordPress lets an administrator upload a plugin and use it immediately. A Next.j
 3. In core, middleware runs in this order:
    1. `requireRequestHeader` (CSRF);
    2. `loadSessionUser` (cookie → user and capabilities);
-   3. for routes that need an installed site, `requireInstalled`;
-   4. per route, `requireCapability(...)`.
+   3. `applicationPasswordAuth` (`Authorization: Basic` → user; replaces any cookie user, see [People](people.md#application-passwords));
+   4. for routes that need an installed site, `requireInstalled`;
+   5. per route, `requireCapability(...)`.
 4. Errors come back in WordPress's shape: `{ code, message, data: { status } }`.
 
 Admin **server components** call core directly through `coreGet()` (`apps/admin/src/lib/core.ts`), forwarding the visitor's cookies. **Client components** use `api()` (`apps/admin/src/lib/api.ts`), which adds the CSRF header.
@@ -72,6 +73,8 @@ apps/
     http.ts              middleware, error helpers
     auth/                passwords, sessions, users, capabilities, rate limiting
     install/             installer logic and database helpers
+    people/              users, application passwords, password reset
+    mail/                kernel.mail (wp_mail): SMTP or the development outbox
     options/             Options API and the settings registry
     routes/              one file per REST resource
   admin/src/

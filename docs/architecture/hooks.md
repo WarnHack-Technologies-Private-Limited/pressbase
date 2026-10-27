@@ -86,5 +86,29 @@ Undeclared names still work, with `unknown` arguments.
 | `render_block_{name}` | filter | `content, parsedBlock, block` | after `render_block`, for one block type, e.g. `render_block_core/paragraph` |
 | `wp_creating_autosave` | action | `autosave, isUpdate` | before an existing autosave revision is overwritten |
 | `rest_prepare_autosave` | filter | `item, revision`     | each autosave in a REST response                   |
+| `user_register`  | action | `userId`                   | after a user is created (`wp_insert_user`)         |
+| `profile_update` | action | `userId, oldUser`          | after a user is updated                            |
+| `set_user_role`  | action | `userId, role, oldRoles`   | when a user's roles change                         |
+| `delete_user` / `deleted_user` | action | `userId, reassign, user` | around deleting a user (`reassign` is a user ID or null) |
+| `illegal_user_logins` | filter | `logins`              | usernames that can't be registered                 |
+| `rest_prepare_user` | filter | `item, user, context`   | each user in a REST response                       |
+| `rest_insert_user`, `rest_after_insert_user` | action | `user, body, creating` | after a user is created or updated through the REST API |
+| `rest_delete_user` | action | `user, response`         | after a user is deleted through the REST API       |
+| `wp_create_application_password` | action | `userId, item, plainPassword, args` | after an application password is created |
+| `wp_update_application_password` | action | `userId, item, update` | after one is renamed                            |
+| `wp_delete_application_password` | action | `userId, item` | after one is revoked                                    |
+| `wp_authenticate_application_password_errors` | action | `errors, user, item, password` | a valid application password is about to be accepted; `errors.add(code, message)` refuses it |
+| `application_password_did_authenticate` | action | `user, item` | after a request authenticates with one              |
+| `application_password_failed_authentication` | action | `{ code, message }` | after a failed attempt                       |
+| `wp_is_application_passwords_available`, `wp_is_application_passwords_available_for_user` | filter | `available[, userId]` | turn application passwords off for the site or a user |
+| `pre_wp_mail`    | filter | `null, message`            | before sending; return a boolean to short-circuit  |
+| `wp_mail`        | filter | `message`                  | the message `kernel.mail.send()` is about to send  |
+| `wp_mail_from`, `wp_mail_from_name` | filter | `address` / `name` | the sender                                      |
+| `wp_mail_succeeded` / `wp_mail_failed` | action | `message` / `error` | after a message is sent or fails              |
+| `lostpassword_post` | action | `user or null`          | a lost-password request, before anything is sent   |
+| `retrieve_password`, `retrieve_password_key` | action | `login[, key]` | a reset key is being created / was created       |
+| `retrieve_password_title`, `retrieve_password_message` | filter | `title, login, user` / `message, key, login, user` | the reset email |
+| `password_reset_expiration` | filter | `seconds`        | how long reset links last (default 24 hours)       |
+| `password_reset` / `after_password_reset` | action | `user` | before / after a reset sets the password (the password itself is not passed) |
 
 **When you add a hook to core,** use WordPress's name if WordPress has an equivalent. Add it to this table and declare its types.

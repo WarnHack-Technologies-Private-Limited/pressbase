@@ -7,12 +7,14 @@ import {
   restError,
 } from './http';
 import type { Kernel } from './kernel';
+import { applicationPasswordAuth } from './people/application-passwords';
 import { authRoutes } from './routes/auth';
 import { autosavesRoutes } from './routes/autosaves';
 import { blockRoutes } from './routes/blocks';
 import { dashboardRoutes, postCountRoutes } from './routes/dashboard';
 import { installRoutes } from './routes/install';
 import { mediaRoutes } from './routes/media';
+import { peopleRoutes } from './routes/people';
 import { postsRoutes } from './routes/posts';
 import { settingsRoutes } from './routes/settings';
 import { termsRoutes } from './routes/terms';
@@ -46,6 +48,12 @@ export function createApp(kernel: Kernel) {
   const api = new Hono<AppEnv>({ strict: false });
   api.use(requireRequestHeader);
   api.use(loadSessionUser);
+
+  // People (v0.2): API clients authenticate with application passwords over
+  // `Authorization: Basic`, after the cookie check; then the application
+  // password, user count and password reset routes. See docs/architecture/people.md.
+  api.use(applicationPasswordAuth());
+  api.route('/', peopleRoutes());
 
   api.get('/', async (c) => {
     const ready = kernel.state === 'ready';

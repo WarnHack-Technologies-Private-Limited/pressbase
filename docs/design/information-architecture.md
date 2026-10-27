@@ -27,6 +27,10 @@ Items the user can't access are **hidden, not disabled**, as in WordPress. Items
 | `/admin/posts/new`, `/admin/posts/{id}` | The editor (same for pages)                                    |
 | `/admin/posts/categories`, `/admin/posts/tags` | Taxonomy management, reached through the Posts sub-navigation |
 | `/admin/media`           | Media library. Filters in the URL: `?type=image&s=beach`           |
+| `/admin/users`           | Users. Filters in the URL: `?role=editor&s=grace&paged=2`          |
+| `/admin/users/new`, `/admin/users/{id}` | Add user, edit user (your own account redirects to Profile) |
+| `/admin/profile`         | Your profile and application passwords (from the user menu)        |
+| `/lost-password`, `/reset-password?key=…&login=…` | Forgot your password, choose a new one (linked from `/login`) |
 | `/admin/{section}`       | Sections that aren't built yet show what's coming                  |
 | `/admin/settings/{page}` | Settings: general, writing, reading, discussion, media, permalinks |
 
