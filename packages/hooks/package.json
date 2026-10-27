@@ -1,0 +1,19 @@
+{
+  "name": "@pressbase/hooks",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Actions and filters: the extension backbone of Pressbase, modelled on WordPress's WP_Hook.",
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p ."
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  }
+}

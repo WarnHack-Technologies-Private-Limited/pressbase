@@ -1,0 +1,28 @@
+{
+  "name": "@pressbase/db",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pressbase's PostgreSQL schema, connection factory and migrations.",
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts"
+  },
+  "scripts": {
+    "generate": "drizzle-kit generate",
+    "test": "vitest run",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.12",
+    "drizzle-orm": "0.45.4",
+    "postgres": "3.4.9"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "drizzle-kit": "0.31.11",
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  }
+}

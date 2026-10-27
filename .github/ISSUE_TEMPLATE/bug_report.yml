@@ -1,0 +1,35 @@
+name: Bug report
+description: Something doesn't work as it should.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: And what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to …
+        2. Click …
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Pressbase version
+      placeholder: "0.1.0"
+  - type: dropdown
+    id: database
+    attributes:
+      label: Database
+      options: [PostgreSQL, Built-in database, Not sure]
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      render: text

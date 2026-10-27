@@ -1,0 +1,92 @@
+import { connect, type DatabaseConnection } from '@pressbase/db';
+import { HookBus } from '@pressbase/hooks';
+import type { Config } from './config';
+import { registerCoreSettings, SettingsRegistry } from './options/settings';
+import { Options } from './options/store';
+import { DB_VERSION } from './version';
+
+/**
+ * Where the site is in its life cycle. The admin app routes on this:
+ * needs-database and needs-install go to the installer, ready goes to the dashboard.
+ */
+export type SiteState = 'needs-database' | 'needs-install' | 'ready';
+
+/**
+ * The kernel owns the long-lived pieces of a running site — the replacement
+ * for the globals WordPress sets up in wp-settings.php.
+ *
+ * Boot order: config → database (+ migrations) → options → `init` action.
+ */
+export class Kernel {
+  readonly hooks = new HookBus();
+  readonly settings = new SettingsRegistry();
+  #connection: DatabaseConnection | undefined;
+  #options: Options | undefined;
+  #state: SiteState = 'needs-database';
+
+  constructor(readonly config: Config) {
+    registerCoreSettings(this.settings);
+  }
+
+  get state(): SiteState {
+    return this.#state;
+  }
+
+  get connection(): DatabaseConnection {
+    if (!this.#connection) throw new Error('The database is not connected yet.');
+    return this.#connection;
+  }
+
+  get db() {
+    return this.connection.db;
+  }
+
+  get options(): Options {
+    if (!this.#options)
+      throw new Error('Options are not available before the database is connected.');
+    return this.#options;
+  }
+
+  async boot(): Promise<void> {
+    if (this.config.databaseUrl) await this.useDatabase(this.config.databaseUrl);
+  }
+
+  /** Connects, applies pending migrations and works out whether the site is installed. */
+  async useDatabase(url: string): Promise<SiteState> {
+    const connection = await connect(url);
+    try {
+      await connection.migrate();
+    } catch (error) {
+      await connection.close();
+      throw error;
+    }
+    await this.#connection?.close();
+    this.#connection = connection;
+    this.#options = new Options(connection.db, this.hooks);
+    return this.refreshState();
+  }
+
+  async refreshState(): Promise<SiteState> {
+    if (!this.#options) {
+      this.#state = 'needs-database';
+      return this.#state;
+    }
+    await this.#options.load();
+    const installedVersion = await this.#options.get<number | undefined>('pressbase_db_version');
+    const wasReady = this.#state === 'ready';
+    this.#state = installedVersion === undefined ? 'needs-install' : 'ready';
+    if (installedVersion !== undefined && !wasReady) {
+      if (installedVersion < DB_VERSION) {
+        // Data upgrades will run here (WordPress's wp_upgrade()). None exist yet.
+        await this.#options.set('pressbase_db_version', DB_VERSION);
+      }
+      await this.hooks.doAction('init');
+    }
+    return this.#state;
+  }
+
+  async shutdown(): Promise<void> {
+    await this.#connection?.close();
+    this.#connection = undefined;
+  }
+}

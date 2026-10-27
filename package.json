@@ -1,0 +1,43 @@
+{
+  "name": "pressbase",
+  "private": true,
+  "description": "The open-source WordPress alternative built on TypeScript, Next.js and PostgreSQL.",
+  "homepage": "https://github.com/WarnHack-Technologies-Private-Limited/pressbase#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WarnHack-Technologies-Private-Limited/pressbase.git"
+  },
+  "bugs": {
+    "url": "https://github.com/WarnHack-Technologies-Private-Limited/pressbase/issues"
+  },
+  "keywords": [
+    "cms",
+    "wordpress-alternative",
+    "headless-cms",
+    "blog",
+    "nextjs",
+    "postgresql",
+    "typescript",
+    "publishing"
+  ],
+  "license": "GPL-2.0-or-later",
+  "packageManager": "pnpm@12.15.0",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "db:generate": "pnpm --filter @pressbase/db generate",
+    "db:up": "docker compose up -d postgres"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.3",
+    "turbo": "2.11.10",
+    "typescript": "5.9.3"
+  }
+}

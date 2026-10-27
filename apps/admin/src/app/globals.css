@@ -1,0 +1,241 @@
+/*
+ * Pressbase design tokens. Documented in docs/design/tokens.md — change both together.
+ *
+ * Components use semantic tokens (--color-text, --color-accent…), never raw
+ * values, so themes and dark mode only redefine this file.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Typography */
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans",
+    Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --text-xs: 0.75rem; /* 12px — badges, meta */
+  --text-sm: 0.8125rem; /* 13px — help text, table meta */
+  --text-md: 0.875rem; /* 14px — admin body */
+  --text-lg: 1rem; /* 16px — inputs on touch, lead text */
+  --text-xl: 1.25rem; /* 20px — card titles */
+  --text-2xl: 1.5rem; /* 24px — page titles */
+  --text-3xl: 1.875rem; /* 30px — installer headlines */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+
+  /* Spacing — 4px grid */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* Shape */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 999px;
+  --control-height: 2.5rem; /* 40px: above WCAG 2.2's 24px target minimum */
+  --control-height-sm: 2rem;
+
+  /* Colour — light */
+  --color-canvas: #f6f6f3;
+  --color-surface: #ffffff;
+  --color-surface-sunken: #f0f0ec;
+  --color-surface-hover: #f3f3ef;
+  --color-border: #e2e2dc;
+  --color-border-strong: #c7c7c0;
+  --color-text: #1b1b19;
+  --color-text-muted: #5c5c57;
+  --color-text-subtle: #73736d;
+  --color-text-on-accent: #ffffff;
+
+  --color-accent: #3b4cca;
+  --color-accent-hover: #2f3db0;
+  --color-accent-soft: #eef0fd;
+  --color-accent-text: #3343c0;
+
+  --color-success: #1a7f4b;
+  --color-success-soft: #e7f5ed;
+  --color-warning: #8a5a00;
+  --color-warning-soft: #fdf4dc;
+  --color-danger: #c22f2a;
+  --color-danger-hover: #a52520;
+  --color-danger-soft: #fcebea;
+
+  --focus-ring: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-accent);
+
+  /* Depth */
+  --shadow-xs: 0 1px 2px rgb(20 20 18 / 0.05);
+  --shadow-sm: 0 1px 3px rgb(20 20 18 / 0.08), 0 1px 2px rgb(20 20 18 / 0.04);
+  --shadow-md: 0 6px 20px rgb(20 20 18 / 0.08), 0 2px 6px rgb(20 20 18 / 0.04);
+  --shadow-lg: 0 16px 48px rgb(20 20 18 / 0.14);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+
+  /* Layout */
+  --sidebar-width: 248px;
+  --content-max: 1080px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-canvas: #121211;
+    --color-surface: #1a1a19;
+    --color-surface-sunken: #151514;
+    --color-surface-hover: #232321;
+    --color-border: #2c2c2a;
+    --color-border-strong: #45453f;
+    --color-text: #ededea;
+    --color-text-muted: #a9a9a2;
+    --color-text-subtle: #8e8e87;
+    --color-accent: #5b6cf0;
+    --color-accent-hover: #6e7ef5;
+    --color-accent-soft: #23264a;
+    --color-accent-text: #a3adff;
+    --color-success: #4cc283;
+    --color-success-soft: #15291e;
+    --color-warning: #e2b44b;
+    --color-warning-soft: #2c2412;
+    --color-danger: #ff7b73;
+    --color-danger-hover: #ff958e;
+    --color-danger-soft: #331816;
+    --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-sm: 0 1px 3px rgb(0 0 0 / 0.5);
+    --shadow-md: 0 6px 20px rgb(0 0 0 / 0.5);
+    --shadow-lg: 0 16px 48px rgb(0 0 0 / 0.6);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-canvas: #121211;
+  --color-surface: #1a1a19;
+  --color-surface-sunken: #151514;
+  --color-surface-hover: #232321;
+  --color-border: #2c2c2a;
+  --color-border-strong: #45453f;
+  --color-text: #ededea;
+  --color-text-muted: #a9a9a2;
+  --color-text-subtle: #8e8e87;
+  --color-accent: #5b6cf0;
+  --color-accent-hover: #6e7ef5;
+  --color-accent-soft: #23264a;
+  --color-accent-text: #a3adff;
+  --color-success: #4cc283;
+  --color-success-soft: #15291e;
+  --color-warning: #e2b44b;
+  --color-warning-soft: #2c2412;
+  --color-danger: #ff7b73;
+  --color-danger-hover: #ff958e;
+  --color-danger-soft: #331816;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+  }
+}
+
+/* Base */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--color-canvas);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  line-height: var(--leading-tight);
+  font-weight: var(--weight-semibold);
+  text-wrap: balance;
+}
+
+a {
+  color: var(--color-accent-text);
+  text-underline-offset: 0.2em;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+::selection {
+  background: var(--color-accent-soft);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: var(--space-4);
+  top: -100px;
+  z-index: 100;
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.skip-link:focus {
+  top: var(--space-4);
+}

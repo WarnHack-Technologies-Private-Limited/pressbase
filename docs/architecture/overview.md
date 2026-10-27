@@ -1,0 +1,95 @@
+# Architecture overview
+
+## The pieces
+
+```
+ Browser
+    │  same origin (http://localhost:3000)
+    ▼
+┌───────────────────────────────┐   /wp-json/*    ┌──────────────────────────────────┐
+│ apps/admin  (Next.js)         │ ──────────────▶ │ apps/core  (Hono on Node.js)     │
+│ • installer, login, dashboard │   proxied by    │ • Kernel: config, hooks, options │
+│ • server components fetch     │   next.config   │ • REST API: wp/v2 + pressbase/v1     │
+│   core with the user's cookie │   rewrites      │ • installer, auth, capabilities  │
+└───────────────────────────────┘                 └───────────────┬──────────────────┘
+                                                                  │ @pressbase/db (Drizzle)
+                                                                  ▼
+                                                   PostgreSQL ─ or ─ PGlite (embedded)
+```
+
+| Process             | Port | Responsibility                                                     |
+| ------------------- | ---- | ------------------------------------------------------------------ |
+| `apps/core`         | 4000 | Owns all data and all rules. Everything goes through its REST API. |
+| `apps/admin`        | 3000 | The admin interface. Holds no business logic; it calls core.       |
+| `apps/web` _(v0.4)_ | —    | The public site, rendering themes through core.                    |
+
+### Why core is separate from Next.js
+
+WordPress lets an administrator upload a plugin and use it immediately. A Next.js app is compiled at build time, so code that arrives later can't join the build. Keeping plugins' server code in a plain Node process, which can `import()` code at runtime, keeps that WordPress promise. Next.js does what it's best at: routing, rendering and caching the admin and, later, the public site. The full reasoning is in [ADR 0003](../adr/0003-core-separate-from-next.md).
+
+## Request flow
+
+1. The browser calls `/wp-json/...` on the admin origin.
+2. `next.config.ts` rewrites the request to core (`CORE_URL`, default `http://localhost:4000`). The browser only ever sees one origin, so cookies are first-party and no CORS is needed.
+3. In core, middleware runs in this order:
+   1. `requireRequestHeader` (CSRF);
+   2. `loadSessionUser` (cookie → user and capabilities);
+   3. for routes that need an installed site, `requireInstalled`;
+   4. per route, `requireCapability(...)`.
+4. Errors come back in WordPress's shape: `{ code, message, data: { status } }`.
+
+Admin **server components** call core directly through `coreGet()` (`apps/admin/src/lib/core.ts`), forwarding the visitor's cookies. **Client components** use `api()` (`apps/admin/src/lib/api.ts`), which adds the CSRF header.
+
+## Boot sequence
+
+`apps/core/src/server.ts` → `Kernel.boot()`. This is Pressbase's version of `wp-settings.php`.
+
+```
+loadConfig()          env vars, then <dataDir>/config.json
+  └─ Kernel()
+       └─ registerCoreSettings()
+  └─ boot()
+       └─ useDatabase(url)       if a database is configured
+            ├─ connect()         postgres-js or PGlite
+            ├─ migrate()         pending SQL migrations, every boot
+            └─ refreshState()
+                 ├─ options.load()            autoloaded options
+                 ├─ state = needs-install | ready
+                 └─ if ready: data upgrades, then the `init` action
+```
+
+The kernel's `state` drives the whole product: `needs-database` → `needs-install` → `ready`. See [Installer](installer.md).
+
+## Repository layout
+
+```
+apps/
+  core/src/
+    server.ts            process entry
+    app.ts               routes and middleware wiring
+    kernel.ts            life cycle, state, shared services
+    config.ts            env + config.json
+    http.ts              middleware, error helpers
+    auth/                passwords, sessions, users, capabilities, rate limiting
+    install/             installer logic and database helpers
+    options/             Options API and the settings registry
+    routes/              one file per REST resource
+  admin/src/
+    app/                 Next.js routes (install, login, admin/…)
+    components/ui/       design-system components
+    components/shell/    admin chrome: sidebar, top bar, page header
+    lib/                 API clients, sections (IA), helpers
+packages/
+  db/                    schema.ts, migrations/, connect()
+  hooks/                 HookBus
+docs/                    you are here
+```
+
+## Where things will go next
+
+| Coming in                                     | Location                                 |
+| --------------------------------------------- | ---------------------------------------- |
+| Post types, taxonomies, `ContentQuery` (v0.2) | `apps/core/src/content/`                 |
+| Block parsing and rendering (v0.3)            | `packages/blocks`                        |
+| `theme.json` engine (v0.4)                    | `packages/theme-json`                    |
+| Plugin loader and SDK (v0.5)                  | `apps/core/src/plugins/`, `packages/sdk` |

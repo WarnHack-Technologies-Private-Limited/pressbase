@@ -1,0 +1,12 @@
+node_modules/
+.next/
+dist/
+.turbo/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Local runtime data (config.json, embedded database, uploads)
+.pressbase/
+.env
+.env.local
