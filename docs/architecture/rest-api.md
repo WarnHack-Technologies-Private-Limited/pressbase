@@ -5,7 +5,7 @@ Everything is served under `/wp-json`, as in WordPress:
 - `wp/v2/*` routes match WordPress's names, fields and behaviour, so existing clients work.
 - `pressbase/v1/*` routes are Pressbase's own.
 
-## Endpoints (v0.1)
+## Endpoints
 
 | Method                   | Route                              | Access           | Purpose                                                           |
 | ------------------------ | ---------------------------------- | ---------------- | ----------------------------------------------------------------- |
@@ -18,8 +18,40 @@ Everything is served under `/wp-json`, as in WordPress:
 | GET                      | `/wp/v2/users/me`                  | logged in        | The current user, with roles and capabilities.                    |
 | GET / POST / PUT / PATCH | `/wp/v2/settings`                  | `manage_options` | Read or update registered settings.                               |
 | GET                      | `/pressbase/v1/dashboard`              | `read`           | Counts, recent content and system facts for the dashboard.        |
+| GET                      | `/pressbase/v1/post-counts/{type}`     | `edit_{type}s`   | Items per status, for the admin's status tabs (`wp_count_posts`). |
+| GET / POST               | `/wp/v2/posts`, `/wp/v2/pages`         | read: public · write: see below | List and create. Supports WordPress's collection parameters. |
+| GET / POST / PUT / PATCH / DELETE | `/wp/v2/{posts\|pages}/{id}`  | `read_post` / `edit_post` / `delete_post` | One item. `DELETE` trashes; `?force=true` deletes permanently. |
+| GET                      | `/wp/v2/{posts\|pages}/{id}/revisions` | `edit_post`     | Revision history, newest first.                                   |
+| GET / POST               | `/wp/v2/categories`, `/wp/v2/tags`     | read: public · create: see below | Terms. `DELETE ?force=true` only (terms have no trash). |
+| GET / POST / PUT / PATCH / DELETE | `/wp/v2/{categories\|tags}/{id}` | `edit_term` / `delete_term` | One term.                                           |
+| GET                      | `/wp/v2/types`, `/wp/v2/taxonomies`, `/wp/v2/statuses` | public | Registered post types, taxonomies and statuses (labels, capabilities with `context=edit`). |
+| GET                      | `/wp/v2/users`, `/wp/v2/users/{id}`    | public: published authors only · `list_users`: everyone | People. `context=edit` adds username, email and roles. |
 
 Routes other than the index and installer return `503 pressbase_not_installed` until the site is installed.
+
+### Collections: posts and pages
+
+The same parameters as WordPress: `context`, `page`, `per_page` (max 100), `search`, `after`, `before`, `modified_after`, `modified_before`, `author`, `author_exclude`, `include`, `exclude`, `offset`, `order`, `orderby` (`date`, `modified`, `title`, `slug`, `id`, `include`, `author`, `parent`, `relevance`, plus `menu_order` for pages), `slug`, `status`, `sticky`, `parent`, `parent_exclude`, `menu_order`, and one filter per taxonomy (`categories`, `categories_exclude`, `tags`, `tags_exclude`). List parameters accept `a,b`, `a[]=x&a[]=y` or repeated keys.
+
+Responses carry `X-WP-Total`, `X-WP-TotalPages` and a `Link` header with `prev` and `next`.
+
+### Who may write what
+
+These rules are ported from `WP_REST_Posts_Controller` and `map_meta_cap()`:
+
+| Action | Needs |
+|---|---|
+| Create a post | `edit_posts` (pages: `edit_pages`) |
+| Publish, schedule or make private | `publish_posts`, else `403 rest_cannot_publish` |
+| Edit someone else's post | `edit_others_posts`, plus `edit_published_posts` once it is live |
+| Write as another author | `edit_others_posts` (`rest_cannot_edit_others`) |
+| Make a post sticky | `edit_others_posts` and `publish_posts` |
+| Assign a term | `assign_term` for each term (`edit_posts` for the core taxonomies) |
+| Create a category | `manage_categories` |
+| Create a tag | `edit_posts`, so writers can add tags while editing, as in WordPress |
+| Read drafts and other non-public statuses | `edit_posts` (`401/403 rest_forbidden_status`) |
+
+Content, titles and excerpts from users without `unfiltered_html` are sanitised (see [Content](content.md#sanitising)).
 
 ## Errors
 
@@ -42,6 +74,12 @@ The shape matches WordPress:
 | `pressbase_missing_request_header` | 403       | An unsafe request without `X-Pressbase-Request` (see Security).                |
 | `pressbase_invalid_credentials`    | 401       | Login failed. The message is the same whether the user exists or not.      |
 | `pressbase_too_many_attempts`      | 429       | Login throttled. A `Retry-After` header is set.                            |
+| `rest_post_invalid_id`             | 404       | No such post or page.                                                      |
+| `rest_cannot_publish`, `rest_cannot_edit`, `rest_cannot_delete` | 401 / 403 | See *Who may write what*.                    |
+| `rest_already_trashed`             | 410       | `DELETE` on an item already in the Trash (use `?force=true`).              |
+| `rest_post_invalid_page_number`    | 400       | `page` is past the last page.                                              |
+| `term_exists`                      | 400       | A term with that name or slug exists; `data.term_id` is the existing term. |
+| `rest_trash_not_supported`         | 501       | `DELETE` on a term without `?force=true`.                                  |
 | `pressbase_db_*`                   | 400       | Installer database problems. `data.hint` holds the next step for the user. |
 | `pressbase_already_installed`      | 409       | Installer called on an installed site.                                     |
 

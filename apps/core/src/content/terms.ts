@@ -192,7 +192,7 @@ export class TermsService {
     if (input.parent && !tax.hierarchical) {
       throw new TermError(
         'rest_taxonomy_not_hierarchical',
-        'Can not set parent term, taxonomy is not hierarchical.',
+        'Cannot set parent term, taxonomy is not hierarchical.',
       );
     }
 
@@ -274,7 +274,7 @@ export class TermsService {
       if (!tax?.hierarchical && input.parent) {
         throw new TermError(
           'rest_taxonomy_not_hierarchical',
-          'Can not set parent term, taxonomy is not hierarchical.',
+          'Cannot set parent term, taxonomy is not hierarchical.',
         );
       }
       if (input.parent === id)
@@ -393,15 +393,13 @@ export class TermsService {
       }
       if (wanted.length) {
         const order = new Map(termIds.map((id, i) => [id, i]));
-        await tx
-          .insert(termRelationships)
-          .values(
-            wanted.map((w) => ({
-              objectId,
-              termTaxonomyId: w.ttId,
-              termOrder: order.get(w.termId) ?? 0,
-            })),
-          );
+        await tx.insert(termRelationships).values(
+          wanted.map((w) => ({
+            objectId,
+            termTaxonomyId: w.ttId,
+            termOrder: order.get(w.termId) ?? 0,
+          })),
+        );
       }
     });
     await this.recount([...touched]);

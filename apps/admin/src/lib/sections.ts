@@ -44,18 +44,12 @@ export const SECTION_GROUPS: SectionGroup[] = [
         label: 'Posts',
         icon: PenSquare,
         capability: 'edit_posts',
-        release: 'v0.2',
-        summary:
-          'Write, schedule and organise posts with categories and tags. The block editor follows in v0.3.',
       },
       {
         slug: 'pages',
         label: 'Pages',
         icon: FileText,
         capability: 'edit_pages',
-        release: 'v0.2',
-        summary:
-          'Build the lasting parts of your site, such as About and Contact, arranged in a hierarchy.',
       },
       {
         slug: 'media',

@@ -7,8 +7,8 @@ import styles from './settings.module.css';
 /** WordPress's settings screens, in the same order. Unbuilt ones show their release. */
 const PAGES = [
   { slug: 'general', label: 'General' },
-  { slug: 'writing', label: 'Writing', release: 'v0.2' },
-  { slug: 'reading', label: 'Reading', release: 'v0.2' },
+  { slug: 'writing', label: 'Writing' },
+  { slug: 'reading', label: 'Reading' },
   { slug: 'discussion', label: 'Discussion', release: 'v0.2' },
   { slug: 'media', label: 'Media', release: 'v0.2' },
   { slug: 'permalinks', label: 'Permalinks', release: 'v0.4' },

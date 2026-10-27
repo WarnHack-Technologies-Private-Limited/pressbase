@@ -125,7 +125,10 @@ export function termsRoutes(taxonomy: Taxonomy) {
 
   app.post('/', async (c) => {
     const kernel = c.get('kernel');
-    if (!userCan(c.get('user'), taxonomy.cap.edit_terms)) {
+    // Hierarchical taxonomies need edit_terms; flat ones (tags) only assign_terms,
+    // so writers can add new tags while editing — as in WordPress.
+    const cap = taxonomy.hierarchical ? taxonomy.cap.edit_terms : taxonomy.cap.assign_terms;
+    if (!userCan(c.get('user'), cap)) {
       return restError(
         c,
         authStatus(c),

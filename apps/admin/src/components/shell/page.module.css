@@ -173,3 +173,13 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+a.listTitle {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+a.listTitle:hover {
+  color: var(--color-accent-text);
+  text-decoration: underline;
+}

@@ -1,0 +1,70 @@
+.region {
+  position: fixed;
+  bottom: var(--space-6);
+  left: 50%;
+  z-index: 60;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  background: var(--color-text);
+  color: var(--color-canvas);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-lg);
+  pointer-events: auto;
+  animation: rise var(--duration-base) var(--ease-out);
+}
+
+.toast[data-tone="danger"] {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.action {
+  height: 2rem;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-full);
+  background: rgb(255 255 255 / 0.14);
+  color: inherit;
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+
+.action:hover {
+  background: rgb(255 255 255 / 0.24);
+}
+
+.dismiss {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.dismiss:hover {
+  opacity: 1;
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+}

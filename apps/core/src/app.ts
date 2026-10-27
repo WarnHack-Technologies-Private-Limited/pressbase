@@ -8,7 +8,7 @@ import {
 } from './http';
 import type { Kernel } from './kernel';
 import { authRoutes } from './routes/auth';
-import { dashboardRoutes } from './routes/dashboard';
+import { dashboardRoutes, postCountRoutes } from './routes/dashboard';
 import { installRoutes } from './routes/install';
 import { postsRoutes } from './routes/posts';
 import { settingsRoutes } from './routes/settings';
@@ -60,6 +60,7 @@ export function createApp(kernel: Kernel) {
   installed.use(requireInstalled);
   installed.route('/pressbase/v1/auth', authRoutes());
   installed.route('/pressbase/v1/dashboard', dashboardRoutes());
+  installed.route('/pressbase/v1/post-counts', postCountRoutes());
   installed.route('/wp/v2/users', userRoutes());
   installed.route('/wp/v2/settings', settingsRoutes());
   installed.route('/wp/v2', typeRoutes());

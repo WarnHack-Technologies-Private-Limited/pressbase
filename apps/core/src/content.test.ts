@@ -227,8 +227,11 @@ describe('roles and permissions', () => {
     expect(editOthers.status).toBe(403);
     expect(editOthers.body.code).toBe('rest_cannot_edit');
 
-    const tag = await contributor.request('POST', '/wp/v2/tags', { name: 'Nope' });
-    expect(tag.status).toBe(403);
+    // Writers may add tags while editing, but categories are managed by editors.
+    expect((await contributor.request('POST', '/wp/v2/tags', { name: 'Idea' })).status).toBe(201);
+    expect((await contributor.request('POST', '/wp/v2/categories', { name: 'Nope' })).status).toBe(
+      403,
+    );
   });
 
   it('lets authors publish their own posts only', async () => {

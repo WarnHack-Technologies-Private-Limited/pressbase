@@ -8,6 +8,8 @@ import { api } from '@/lib/api';
 import type { Me } from '@/lib/core';
 import { SECTION_GROUPS } from '@/lib/sections';
 import { Button } from '../ui/button';
+import { ToastProvider } from '../ui/toast';
+import { CurrentUserProvider } from './current-user';
 import styles from './shell.module.css';
 
 function initials(name: string): string {
@@ -204,7 +206,9 @@ export function AdminShell({
           </div>
         </header>
         <main id="main" className={styles.content} tabIndex={-1}>
-          {children}
+          <CurrentUserProvider user={user}>
+            <ToastProvider>{children}</ToastProvider>
+          </CurrentUserProvider>
         </main>
       </div>
     </div>

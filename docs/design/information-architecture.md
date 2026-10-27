@@ -23,7 +23,10 @@ Items the user can't access are **hidden, not disabled**, as in WordPress. Items
 | `/install`               | Installer (redirects to `/admin` once installed)                   |
 | `/login`                 | Login (supports `?redirect_to=/admin/...`)                         |
 | `/admin`                 | Dashboard                                                          |
-| `/admin/{section}`       | Section index (posts, pages, …)                                    |
+| `/admin/posts`, `/admin/pages` | Lists. Filters in the URL: `?status=draft&s=launch&cat=3&paged=2` |
+| `/admin/posts/new`, `/admin/posts/{id}` | The editor (same for pages)                                    |
+| `/admin/posts/categories`, `/admin/posts/tags` | Taxonomy management, reached through the Posts sub-navigation |
+| `/admin/{section}`       | Sections that aren't built yet show what's coming                  |
 | `/admin/settings/{page}` | Settings: general, writing, reading, discussion, media, permalinks |
 
 URLs are nouns, lowercase and stable. The equivalent WordPress screens (`edit.php`, `options-general.php`) will redirect here once the public site exists.

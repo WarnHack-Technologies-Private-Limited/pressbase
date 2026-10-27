@@ -234,8 +234,9 @@ export class PostsService {
    */
   async untrash(id: number): Promise<Post> {
     const post = await this.get(id);
-    if (!post || post.status !== 'trash')
+    if (post?.status !== 'trash') {
       throw new PostError('rest_post_invalid_id', 'Invalid post ID.', 404);
+    }
     const slug = post.slug.replace(/__trashed$/, '');
     await this.#db
       .update(schema.posts)
