@@ -10,3 +10,6 @@ next-env.d.ts
 .pressbase/
 .env
 .env.local
+
+# Local AI-assistant worktrees and settings
+.claude/
