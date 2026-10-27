@@ -101,9 +101,6 @@ export const SECTION_GROUPS: SectionGroup[] = [
         label: 'Users',
         icon: Users,
         capability: 'list_users',
-        release: 'v0.2',
-        summary:
-          'Invite people and give them a role: Administrator, Editor, Author, Contributor or Subscriber.',
       },
       {
         slug: 'tools',

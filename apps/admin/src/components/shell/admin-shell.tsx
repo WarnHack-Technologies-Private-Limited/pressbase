@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, LogOut, Menu } from 'lucide-react';
+import { ChevronDown, LogOut, Menu, UserRound } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
@@ -190,14 +190,19 @@ export function AdminShell({
                   <div className={styles.userMenuMeta}>{user.email}</div>
                   {role && <div className={styles.userMenuMeta}>{role}</div>}
                 </div>
-                <button
-                  type="button"
+                <Link
+                  href="/admin/profile"
                   role="menuitem"
                   className={styles.menuItem}
-                  onClick={logOut}
-                  // biome-ignore lint/a11y/noAutofocus: focus moves into the menu when it opens.
+                  style={{ color: 'inherit', textDecoration: 'none' }}
+                  onClick={() => setMenuOpen(false)}
+                  // Focus moves into the menu when it opens.
                   autoFocus
                 >
+                  <UserRound size={16} aria-hidden="true" />
+                  Profile
+                </Link>
+                <button type="button" role="menuitem" className={styles.menuItem} onClick={logOut}>
                   <LogOut size={16} aria-hidden="true" />
                   Log out
                 </button>

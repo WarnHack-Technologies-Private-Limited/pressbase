@@ -68,6 +68,19 @@ See `.env.example`. Core reads the repo-root `.env` in development.
 | `PRESSBASE_SETUP_TOKEN` | —                             | Require this code in the installer               |
 | `PORT`              | `4000`                        | Core's port                                      |
 | `CORE_URL`          | `http://localhost:4000`       | Where the admin app reaches core                 |
+| `PRESSBASE_SMTP_URL` | —                            | SMTP server as a URL, e.g. `smtps://user:pass@smtp.example.com:465`. Wins over the fields below. |
+| `PRESSBASE_SMTP_HOST`, `PRESSBASE_SMTP_PORT`, `PRESSBASE_SMTP_USER`, `PRESSBASE_SMTP_PASS`, `PRESSBASE_SMTP_SECURE` | — · `587` (`465` when secure) | SMTP server as separate settings. `SECURE=true` uses TLS from the start. |
+| `PRESSBASE_MAIL_FROM` | site title + `pressbase@<site host>` | Sender, e.g. `"The Morning Paper <hello@example.com>"` |
+
+## Email
+
+Without SMTP settings, Pressbase doesn't send email. It writes each message to `<data dir>/outbox/` instead (`apps/core/.pressbase/outbox/` by default) as an `.eml` file you can open in a mail app, plus a `.json` summary, and logs a line like:
+
+```
+[mail] SMTP isn’t set up; saved “[My Site] Password reset” to …/outbox/2026-10-27T09-30-00-000Z-1a2b3c.eml
+```
+
+That's enough to finish password resets and welcome emails locally: open the newest file and follow the link. Set `PRESSBASE_SMTP_URL` (or the separate `PRESSBASE_SMTP_*` variables) for a real site. Outbox files contain working reset links, so they're readable only by the server's user; delete them when you're done. See [People](../architecture/people.md#mail).
 
 ## Troubleshooting
 

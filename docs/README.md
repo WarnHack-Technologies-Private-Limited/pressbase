@@ -16,6 +16,7 @@ These docs live with the code and change in the same pull requests. If a doc is 
 - [Media](architecture/media.md): uploads, storage, image sizes, file serving and its security.
 - [Hooks](architecture/hooks.md): actions and filters, and the hooks core fires.
 - [Blocks](architecture/blocks.md): parsing, rendering, dynamic blocks and patterns.
+- [People](architecture/people.md): users and roles, application passwords, mail, password reset.
 - [REST API](architecture/rest-api.md): endpoints, errors, authentication.
 - [Block editor](architecture/block-editor.md): how Gutenberg runs in the admin, api-fetch, hidden blocks, autosave.
 - [Installer](architecture/installer.md): site states, the install flow, configuration.

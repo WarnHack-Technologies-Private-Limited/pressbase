@@ -107,6 +107,16 @@ toast('Could not save.', { tone: 'danger' });
 | `MediaDetails` | `<dialog>`: preview, file facts, URL with Copy, editable alt text / title / caption / description with an explicit Save, and *Delete permanently* behind a `ConfirmDialog`. Arrow keys page between items. Closing with unsaved changes asks first. Full screen on phones. |
 | `MediaPicker` | Choose one item or upload one (it's then selected). `allowedTypes` limits the kinds; `title` and `selectLabel` name the task ("Set featured image"). Double-click chooses at once. With `multiple`, several items are picked in order (numbered tiles, "N selected" footer with **Clear**, Shift+click for a range), and `multipleLabel(n)` names the button ("Create gallery (3)"). |
 
+## People: `components/people/`
+
+| Component | Pattern |
+|---|---|
+| `UserList` | Role tabs with counts, search, initials avatars. Row actions: Edit, Delete. Bulk: change role, delete. You can't select or delete yourself here. |
+| `DeleteUsersDialog` | `ConfirmDialog` with a choice: give the content to another user (the default, preselected) or delete it too. |
+| `UserEditor` | Profile and Edit user: role radio cards, name with a display-name chooser, contact, bio, password (hidden behind "Set a new password"), application passwords, and a separate danger card for deletion. Save bar as in Settings. |
+| `ApplicationPasswords` | Create with a name; the new password appears once in a warning-toned box with Copy, and focus moves to it. List with created / last used / last IP; Revoke asks first. |
+| `LostPasswordForm`, `ResetPasswordForm` | `AuthLayout` screens. The reset link is checked before the form appears; expired or used links say so and offer a new one. |
+
 ## Block editor: `components/block-editor/`
 
 Gutenberg inside Pressbase's chrome. Architecture and wiring: [Block editor](../architecture/block-editor.md).
