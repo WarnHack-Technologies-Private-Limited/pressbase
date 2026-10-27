@@ -14,6 +14,7 @@ These docs live with the code and change in the same pull requests. If a doc is 
 - [Database](architecture/database.md): tables, how columns map from WordPress, migrations.
 - [Content](architecture/content.md): post types, statuses, taxonomies, queries, permissions, sanitising.
 - [Hooks](architecture/hooks.md): actions and filters, and the hooks core fires.
+- [Blocks](architecture/blocks.md): parsing, rendering, dynamic blocks and patterns.
 - [REST API](architecture/rest-api.md): endpoints, errors, authentication.
 - [Installer](architecture/installer.md): site states, the install flow, configuration.
 - [Security](architecture/security.md): threat model and protections.

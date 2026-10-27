@@ -1,0 +1,22 @@
+{
+  "name": "@pressbase/blocks",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Block parsing, serialising, registration and server rendering, ported from WordPress's blocks.php and WP_Block.",
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@pressbase/hooks": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  }
+}

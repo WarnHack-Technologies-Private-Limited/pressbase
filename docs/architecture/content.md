@@ -121,9 +121,9 @@ const { posts, found, maxPages } = await queryPosts(kernel, {
 - `sanitizePostTitle()` allows a few inline tags; `stripTags()` removes all of them.
 - These run only for users without `unfiltered_html`. Administrators and editors keep raw HTML, as in WordPress.
 
-## Rendering, for now
+## Rendering
 
-`content.rendered` in the REST API is the content with block delimiters removed, which is the saved HTML of static blocks. Dynamic blocks (latest posts, navigation, …) render once the block engine lands in v0.3.
+`content.rendered` in the REST API is the content run through the block renderer (`kernel.blocks.render()`, WordPress's `do_blocks()`): static blocks give their saved HTML, dynamic blocks (latest posts, categories, post title…) render on the server with the post as their context. See [Blocks](blocks.md).
 
 ## The admin's writing view
 

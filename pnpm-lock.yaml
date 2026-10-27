@@ -253,6 +253,9 @@ importers:
       "@hono/node-server":
         specifier: 2.1.5
         version: 2.1.5(hono@4.13.14)
+      "@pressbase/blocks":
+        specifier: workspace:*
+        version: link:../../packages/blocks
       "@pressbase/db":
         specifier: workspace:*
         version: link:../../packages/db
@@ -281,6 +284,19 @@ importers:
       "@types/sanitize-html":
         specifier: 2.16.2
         version: 2.16.2
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: 5.0.5
+        version: 5.0.5(@types/node@26.6.5)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))
+
+  packages/blocks:
+    dependencies:
+      "@pressbase/hooks":
+        specifier: workspace:*
+        version: link:../hooks
+    devDependencies:
       typescript:
         specifier: 5.9.3
         version: 5.9.3

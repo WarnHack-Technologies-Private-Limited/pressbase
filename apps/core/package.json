@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@hono/node-server": "2.1.5",
+    "@pressbase/blocks": "workspace:*",
     "@pressbase/db": "workspace:*",
     "@pressbase/hooks": "workspace:*",
     "drizzle-orm": "0.45.4",

@@ -8,6 +8,7 @@ import {
 } from './http';
 import type { Kernel } from './kernel';
 import { authRoutes } from './routes/auth';
+import { blockRoutes } from './routes/blocks';
 import { dashboardRoutes, postCountRoutes } from './routes/dashboard';
 import { installRoutes } from './routes/install';
 import { postsRoutes } from './routes/posts';
@@ -74,6 +75,11 @@ export function createApp(kernel: Kernel) {
   for (const taxonomy of kernel.taxonomies.all()) {
     if (taxonomy.showInRest) installed.route(`/wp/v2/${taxonomy.restBase}`, termsRoutes(taxonomy));
   }
+
+  // Block engine (v0.3): /wp/v2/block-types, /block-renderer, /block-patterns and
+  // /blocks (synced patterns). See docs/architecture/blocks.md.
+  installed.route('/wp/v2', blockRoutes(kernel));
+
   api.route('/', installed);
 
   app.route('/wp-json', api);

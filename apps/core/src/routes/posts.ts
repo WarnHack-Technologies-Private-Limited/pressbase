@@ -108,7 +108,14 @@ async function prepareItem(post: Post, p: Prepared): Promise<Record<string, unkn
     title: edit ? { raw: post.title, rendered: post.title } : { rendered: post.title },
     content: {
       ...(edit ? { raw: post.content } : {}),
-      rendered: unlocked ? renderBlocksAsStatic(post.content) : '',
+      // the_content → do_blocks(): dynamic blocks render with this post as context.
+      rendered: unlocked
+        ? await kernel.blocks.render(post.content, {
+            context: kernel.blocks.contextFor(post),
+            user: p.user,
+            rest: true,
+          })
+        : '',
       protected: isProtected,
       block_version: /<!-- wp:/.test(post.content) ? 1 : 0,
     },
@@ -549,6 +556,7 @@ export function postsRoutes(type: PostType) {
     try {
       const post = await kernel.posts.insert(type.name, input);
       await setSticky(kernel, post.id, sticky);
+      await kernel.hooks.doAction(`rest_insert_${type.name}`, post, await readJson(c), true);
       const prepared = await prepareContext(kernel, type, user, 'edit', [post]);
       c.header('Location', `/wp-json/wp/v2/${type.restBase}/${post.id}`);
       return c.json(await prepareItem(post, prepared), 201);
@@ -580,6 +588,7 @@ export function postsRoutes(type: PostType) {
       if (existing.status === 'trash' && input.status) await kernel.posts.untrash(existing.id);
       const post = await kernel.posts.update(existing.id, input);
       await setSticky(kernel, post.id, sticky);
+      await kernel.hooks.doAction(`rest_insert_${type.name}`, post, await readJson(c), false);
       const prepared = await prepareContext(kernel, type, user, 'edit', [post]);
       return c.json(await prepareItem(post, prepared));
     } catch (error) {
@@ -640,8 +649,17 @@ export function postsRoutes(type: PostType) {
     const revisions = await kernel.posts.revisions(post.id);
     c.header('X-WP-Total', String(revisions.length));
     c.header('X-WP-TotalPages', '1');
+    const rendered = await Promise.all(
+      revisions.map((r) =>
+        kernel.blocks.render(r.content, {
+          context: kernel.blocks.contextFor(post),
+          user,
+          rest: true,
+        }),
+      ),
+    );
     return c.json(
-      revisions.map((r) => ({
+      revisions.map((r, i) => ({
         id: r.id,
         author: r.authorId ?? 0,
         date: toLocalString(r.date, timeZone),
@@ -651,7 +669,7 @@ export function postsRoutes(type: PostType) {
         parent: post.id,
         slug: r.slug,
         title: { raw: r.title, rendered: r.title },
-        content: { raw: r.content, rendered: renderBlocksAsStatic(r.content) },
+        content: { raw: r.content, rendered: rendered[i] ?? '' },
         excerpt: { raw: r.excerpt, rendered: r.excerpt ? `<p>${r.excerpt}</p>\n` : '' },
       })),
     );
