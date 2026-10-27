@@ -125,4 +125,30 @@ export function registerCoreSettings(registry: SettingsRegistry): void {
     schema: postId,
     default: 1,
   });
+  // Settings → Media (options-media.php). Not in WordPress's /wp/v2/settings; exposed for the admin.
+  const pixels = z
+    .number({ message: 'Enter a number of pixels.' })
+    .int({ message: 'Enter a whole number of pixels.' })
+    .min(0, { message: 'Enter 0 or more.' })
+    .max(10000, { message: 'Enter 10,000 pixels or fewer.' });
+  for (const [name, fallback] of [
+    ['thumbnail_size_w', 150],
+    ['thumbnail_size_h', 150],
+    ['medium_size_w', 300],
+    ['medium_size_h', 300],
+    ['large_size_w', 1024],
+    ['large_size_h', 1024],
+  ] as const) {
+    registry.register(name, { option: name, schema: pixels, default: fallback });
+  }
+  registry.register('thumbnail_crop', {
+    option: 'thumbnail_crop',
+    schema: z.boolean(),
+    default: true,
+  });
+  registry.register('uploads_use_yearmonth_folders', {
+    option: 'uploads_use_yearmonth_folders',
+    schema: z.boolean(),
+    default: true,
+  });
 }

@@ -63,7 +63,8 @@ See `.env.example`. Core reads the repo-root `.env` in development.
 | Variable            | Default                       | Purpose                                          |
 | ------------------- | ----------------------------- | ------------------------------------------------ |
 | `DATABASE_URL`      | —                             | PostgreSQL URL, or `pglite:<dir>`                |
-| `PRESSBASE_DATA_DIR`    | `./.pressbase` (relative to core) | `config.json`, built-in database, future uploads |
+| `PRESSBASE_DATA_DIR`    | `./.pressbase` (relative to core) | `config.json`, built-in database, `uploads/` |
+| `PRESSBASE_MAX_UPLOAD_MB` | `64`                        | Largest file the media library accepts           |
 | `PRESSBASE_SETUP_TOKEN` | —                             | Require this code in the installer               |
 | `PORT`              | `4000`                        | Core's port                                      |
 | `CORE_URL`          | `http://localhost:4000`       | Where the admin app reaches core                 |

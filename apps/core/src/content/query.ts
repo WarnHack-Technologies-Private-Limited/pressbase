@@ -82,6 +82,8 @@ export interface QueryArgs {
   post_parent__in?: number[];
   post_parent__not_in?: number[];
   s?: string;
+  /** Full MIME types (`image/png`) or media types (`image`), as in WordPress. */
+  post_mime_type?: string | string[];
   tax_query?: TaxQueryClause[];
   meta_query?: MetaQueryClause[];
   date_after?: Date;
@@ -228,6 +230,18 @@ export async function queryPosts(kernel: Kernel, input: QueryArgs): Promise<Quer
   if (args.date_before) where.push(sql`${posts.date} < ${args.date_before}`);
   if (args.modified_after) where.push(sql`${posts.modified} > ${args.modified_after}`);
   if (args.modified_before) where.push(sql`${posts.modified} < ${args.modified_before}`);
+
+  // wp_post_mime_type_where(): `image` matches every image/* type.
+  const mimeTypes = list(args.post_mime_type)?.filter(Boolean);
+  if (mimeTypes?.length) {
+    where.push(
+      or(
+        ...mimeTypes.map((m) =>
+          m.includes('/') ? eq(posts.mimeType, m) : ilike(posts.mimeType, `${escapeLike(m)}/%`),
+        ),
+      ),
+    );
+  }
 
   // Search: every word must appear in the title, excerpt or content (WordPress's parse_search).
   const words = (args.s ?? '').trim().split(/\s+/).filter(Boolean).slice(0, 10);

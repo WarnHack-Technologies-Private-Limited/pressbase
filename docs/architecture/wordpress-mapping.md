@@ -33,6 +33,9 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | `get_permalink` | `apps/core/src/content/permalinks.ts` | Uses `permalink_structure`. |
 | `wp_kses_post`, `sanitize_title` | `apps/core/src/content/sanitize.ts` | Keeps block delimiters intact. |
 | `WP_REST_Posts_Controller`, `WP_REST_Terms_Controller`, `WP_REST_Users_Controller` (read), types / taxonomies / statuses controllers | `apps/core/src/routes/posts.ts`, `terms.ts`, `users.ts`, `types.ts` | See [REST API](rest-api.md). |
+| `wp_handle_upload()`, `wp_unique_filename()`, `sanitize_file_name()`, `wp_check_filetype_and_ext()`, `wp_create_image_subsizes()`, `wp_delete_attachment()` | `apps/core/src/media/` | Storage adapters instead of direct disk writes; sharp instead of GD/Imagick. See [Media](media.md). |
+| `WP_REST_Attachments_Controller` | `apps/core/src/routes/media.ts` | |
+| `upload.php`, `options-media.php`, the media modal | `/admin/media`, `/admin/settings/media`, `MediaPicker` | |
 | `edit.php`, `post.php`, `edit-tags.php`, `options-reading.php`, `options-writing.php` | `/admin/posts`, `/admin/posts/{id}`, `/admin/posts/categories`, `/admin/settings/reading`, `/admin/settings/writing` | |
 
 ## Planned
@@ -40,7 +43,6 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | WordPress                                      | Pressbase (planned)                             | Release |
 | ---------------------------------------------- | ------------------------------------------- | ------- |
 | Autosave | Autosaves endpoint, with the block editor | v0.3 |
-| `wp_handle_upload`, image sizes                | Media service (sharp, storage adapters)     | v0.2    |
 | Application passwords                          | `Authorization: Basic` in core              | v0.2    |
 | `parse_blocks`, `render_block`                 | `packages/blocks`                           | v0.3    |
 | `WP_Theme_JSON`, template loader, `WP_Rewrite` | `packages/theme-json`, router in `apps/web` | v0.4    |

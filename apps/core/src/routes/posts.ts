@@ -10,6 +10,7 @@ import { type OrderBy, type QueryArgs, queryPosts, type TaxQueryClause } from '.
 import { renderBlocksAsStatic, stripTags } from '../content/sanitize';
 import { type AppEnv, invalidParams, readJson, restError } from '../http';
 import type { Kernel } from '../kernel';
+import { featuredMediaIds, isValidFeaturedMedia, setFeaturedMedia } from '../media/featured';
 import {
   authStatus,
   boolParam,
@@ -45,6 +46,8 @@ interface Prepared {
   links: PermalinkContext;
   terms: Map<string, Map<number, number[]>>;
   sticky: Set<number>;
+  /** Featured image (_thumbnail_id) per post. */
+  thumbnails: Map<number, number>;
   password?: string;
 }
 
@@ -74,6 +77,7 @@ async function prepareContext(
     links: await permalinkContext(kernel),
     terms,
     sticky,
+    thumbnails: await featuredMediaIds(kernel, ids),
     password,
   };
 }
@@ -122,7 +126,7 @@ async function prepareItem(post: Post, p: Prepared): Promise<Record<string, unkn
       protected: isProtected,
     },
     author: post.authorId ?? 0,
-    featured_media: 0,
+    ...(type.supports.has('thumbnail') ? { featured_media: p.thumbnails.get(post.id) ?? 0 } : {}),
     comment_status: post.commentStatus,
     ping_status: post.pingStatus,
     template: '',
@@ -241,6 +245,7 @@ function bodySchema() {
     sticky: z.boolean().optional(),
     parent: z.number().int().min(0).optional(),
     menu_order: z.number().int().optional(),
+    featured_media: z.number().int().min(0).optional(),
   });
 }
 
@@ -468,6 +473,14 @@ export function postsRoutes(type: PostType) {
       );
     }
 
+    if (
+      data.featured_media !== undefined &&
+      type.supports.has('thumbnail') &&
+      !(await isValidFeaturedMedia(kernel, data.featured_media))
+    ) {
+      return restError(c, 400, 'rest_invalid_featured_media', 'Invalid featured media ID.');
+    }
+
     const terms: Record<string, number[]> = {};
     for (const taxonomy of taxonomiesFor(kernel)) {
       const value = raw[taxonomy.restBase];
@@ -545,10 +558,12 @@ export function postsRoutes(type: PostType) {
     }
     const input = await toInput(c);
     if (input instanceof Response) return input;
-    const sticky = ((await readJson(c)) as { sticky?: boolean } | undefined)?.sticky;
+    const { sticky, featured_media } =
+      ((await readJson(c)) as { sticky?: boolean; featured_media?: number } | undefined) ?? {};
     try {
       const post = await kernel.posts.insert(type.name, input);
       await setSticky(kernel, post.id, sticky);
+      if (type.supports.has('thumbnail')) await setFeaturedMedia(kernel, post.id, featured_media);
       const prepared = await prepareContext(kernel, type, user, 'edit', [post]);
       c.header('Location', `/wp-json/wp/v2/${type.restBase}/${post.id}`);
       return c.json(await prepareItem(post, prepared), 201);
@@ -574,12 +589,14 @@ export function postsRoutes(type: PostType) {
     }
     const input = await toInput(c, existing);
     if (input instanceof Response) return input;
-    const sticky = ((await readJson(c)) as { sticky?: boolean } | undefined)?.sticky;
+    const { sticky, featured_media } =
+      ((await readJson(c)) as { sticky?: boolean; featured_media?: number } | undefined) ?? {};
     try {
       // Changing the status of a trashed post restores it first, as the admin's "Restore" does.
       if (existing.status === 'trash' && input.status) await kernel.posts.untrash(existing.id);
       const post = await kernel.posts.update(existing.id, input);
       await setSticky(kernel, post.id, sticky);
+      if (type.supports.has('thumbnail')) await setFeaturedMedia(kernel, post.id, featured_media);
       const prepared = await prepareContext(kernel, type, user, 'edit', [post]);
       return c.json(await prepareItem(post, prepared));
     } catch (error) {

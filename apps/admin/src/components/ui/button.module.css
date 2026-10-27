@@ -85,6 +85,17 @@
   background: var(--color-danger-hover);
 }
 
+/* Dark mode's danger red is light, so white text on it fails contrast; use dark text. */
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme="light"])) .danger {
+    color: var(--color-canvas);
+  }
+}
+
+:global(:root[data-theme="dark"]) .danger {
+  color: var(--color-canvas);
+}
+
 .spinner {
   width: 1em;
   height: 1em;

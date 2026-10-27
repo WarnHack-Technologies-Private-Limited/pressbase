@@ -61,6 +61,14 @@
   color: var(--color-text-subtle);
 }
 
+textarea.control {
+  height: auto;
+  min-height: 4.5rem;
+  padding: var(--space-2) var(--space-3);
+  line-height: var(--leading-normal);
+  resize: vertical;
+}
+
 select.control {
   appearance: none;
   padding-right: var(--space-8);

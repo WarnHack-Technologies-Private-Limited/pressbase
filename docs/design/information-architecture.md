@@ -26,6 +26,7 @@ Items the user can't access are **hidden, not disabled**, as in WordPress. Items
 | `/admin/posts`, `/admin/pages` | Lists. Filters in the URL: `?status=draft&s=launch&cat=3&paged=2` |
 | `/admin/posts/new`, `/admin/posts/{id}` | The editor (same for pages)                                    |
 | `/admin/posts/categories`, `/admin/posts/tags` | Taxonomy management, reached through the Posts sub-navigation |
+| `/admin/media`           | Media library. Filters in the URL: `?type=image&s=beach`           |
 | `/admin/{section}`       | Sections that aren't built yet show what's coming                  |
 | `/admin/settings/{page}` | Settings: general, writing, reading, discussion, media, permalinks |
 
