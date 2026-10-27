@@ -4,11 +4,13 @@
   "tasks": {
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "passThroughEnv": ["CORE_URL", "PORT", "DATABASE_URL", "PRESSBASE_*"]
     },
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": ["CORE_URL"]
     },
     "test": {
       "outputs": []
