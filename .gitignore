@@ -1,6 +1,8 @@
 node_modules/
 .next/
 dist/
+# …except WordPress's front-end CSS, which core serves at /wp-includes/css/dist/.
+!apps/core/static/**/dist/
 .turbo/
 coverage/
 *.tsbuildinfo

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { RestMedia } from '@/lib/media';
-import { kindsFor, toEditorMedia } from './media-shape';
+import { kindsFor, pickerCopy, toEditorMedia } from './media-shape';
 
 const media = {
   id: 7,
@@ -45,5 +45,25 @@ describe('media library bridge', () => {
     expect(kindsFor(['image', 'video'])).toEqual(['image', 'video']);
     expect(kindsFor(['application/pdf'])).toBeUndefined();
     expect(kindsFor(undefined)).toBeUndefined();
+  });
+});
+
+describe('pickerCopy', () => {
+  it('names the picker and its button for each MediaUpload request', () => {
+    expect(pickerCopy({ kind: 'image' })).toEqual({
+      title: 'Choose an image',
+      selectLabel: 'Insert',
+    });
+    const create = pickerCopy({ kind: 'image', multiple: true, gallery: true });
+    expect(create.title).toBe('Create gallery');
+    expect(create.multipleLabel?.(0)).toBe('Create gallery');
+    expect(create.multipleLabel?.(3)).toBe('Create gallery (3)');
+    const add = pickerCopy({ kind: 'image', multiple: true, gallery: true, addToGallery: true });
+    expect(add.title).toBe('Edit gallery');
+    expect(add.multipleLabel?.(5)).toBe('Update gallery (5)');
+    const several = pickerCopy({ kind: 'image', multiple: true });
+    expect(several.multipleLabel?.(1)).toBe('Insert 1 image');
+    expect(several.multipleLabel?.(3)).toBe('Insert 3 images');
+    expect(pickerCopy({ multiple: true }).multipleLabel?.(2)).toBe('Insert 2 items');
   });
 });

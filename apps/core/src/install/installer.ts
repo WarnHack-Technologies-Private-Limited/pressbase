@@ -91,8 +91,9 @@ function defaultOptions(site: SiteInput): Record<string, unknown> {
     large_size_w: 1024,
     large_size_h: 1024,
     active_plugins: [],
-    template: 'default',
-    stylesheet: 'default',
+    // The bundled block theme (themes/twentytwentyfive), as WordPress installs its default theme.
+    template: 'twentytwentyfive',
+    stylesheet: 'twentytwentyfive',
     user_roles: DEFAULT_ROLES,
     fresh_site: true,
     pressbase_version: PRESSBASE_VERSION,

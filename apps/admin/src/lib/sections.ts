@@ -62,8 +62,6 @@ export const SECTION_GROUPS: SectionGroup[] = [
         label: 'Comments',
         icon: MessageSquare,
         capability: 'moderate_comments',
-        release: 'v0.2',
-        summary: 'Read, reply to and moderate the conversation on your site.',
       },
     ],
   },
@@ -75,8 +73,6 @@ export const SECTION_GROUPS: SectionGroup[] = [
         label: 'Appearance',
         icon: Paintbrush,
         capability: 'switch_themes',
-        release: 'v0.4',
-        summary: 'Choose a theme and edit templates, styles and navigation in the site editor.',
       },
     ],
   },
@@ -101,9 +97,6 @@ export const SECTION_GROUPS: SectionGroup[] = [
         label: 'Users',
         icon: Users,
         capability: 'list_users',
-        release: 'v0.2',
-        summary:
-          'Invite people and give them a role: Administrator, Editor, Author, Contributor or Subscriber.',
       },
       {
         slug: 'tools',

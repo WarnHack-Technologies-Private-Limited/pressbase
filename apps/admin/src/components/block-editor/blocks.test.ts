@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { allowedBlockTypes, countWords, readingMinutes, unavailableReason } from './blocks';
-import { NO_FEATURES, toEditorPattern } from './features';
+import { NO_FEATURES, namespaceListed, toEditorPattern } from './features';
 
 const REGISTERED = [
   'core/paragraph',
@@ -32,7 +32,33 @@ describe('allowedBlockTypes', () => {
       'core/embed',
       'core/block',
       'core/latest-posts',
+      // Server-rendered like Latest Posts, now that core has comments.
+      'core/comments',
     ]);
+  });
+
+  it('offers only the dynamic blocks the server can render, once it reports them', () => {
+    const features = {
+      blockRenderer: true,
+      oembed: false,
+      syncedPatterns: [],
+      blockTypes: [{ name: 'core/latest-posts', is_dynamic: true }],
+    };
+    expect(unavailableReason('core/latest-posts', features)).toBeNull();
+    expect(unavailableReason('core/query', features)).toBe('not rendered by the server yet');
+    // Static blocks don't depend on the server.
+    for (const name of [
+      'core/image',
+      'core/gallery',
+      'core/media-text',
+      'core/cover',
+      'core/file',
+      'core/audio',
+      'core/video',
+    ]) {
+      expect(unavailableReason(name, features), name).toBeNull();
+      expect(unavailableReason(name, NO_FEATURES), name).toBeNull();
+    }
   });
 
   it('explains why a block is unavailable', () => {
@@ -75,5 +101,16 @@ describe('toEditorPattern', () => {
       viewportWidth: 1200,
       inserter: true,
     });
+  });
+});
+
+describe('namespaceListed', () => {
+  it('skips routes whose namespace the REST index doesn’t list', () => {
+    const index = { namespaces: ['pressbase/v1', 'wp/v2'] };
+    expect(namespaceListed(index, '/oembed/1.0/proxy')).toBe(false);
+    expect(namespaceListed(index, '/wp/v2/media?per_page=1')).toBe(true);
+    expect(namespaceListed({ namespaces: ['oembed/1.0'] }, 'oembed/1.0/proxy')).toBe(true);
+    // No index: probe the route itself.
+    expect(namespaceListed(undefined, '/oembed/1.0/proxy')).toBe(true);
   });
 });

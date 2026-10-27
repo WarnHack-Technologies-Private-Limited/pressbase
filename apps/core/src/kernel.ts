@@ -1,14 +1,19 @@
 import { connect, type DatabaseConnection } from '@pressbase/db';
 import { HookBus } from '@pressbase/hooks';
 import { BlocksService } from './blocks/service';
+import { registerCommentNotifications } from './comments/notify';
+import { CommentsService } from './comments/service';
 import type { Config } from './config';
 import { PostStatusRegistry } from './content/post-statuses';
 import { PostTypeRegistry, registerCorePostTypes } from './content/post-types';
 import { PostsService } from './content/posts';
 import { registerCoreTaxonomies, TaxonomyRegistry } from './content/taxonomies';
 import { TermsService } from './content/terms';
+import { Mailer } from './mail/mailer';
 import { registerCoreSettings, SettingsRegistry } from './options/settings';
 import { Options } from './options/store';
+import { ThemesService } from './themes/service';
+import { registerThemeSupports } from './themes/supports';
 import { DB_VERSION } from './version';
 
 /**
@@ -34,6 +39,12 @@ export class Kernel {
   readonly terms = new TermsService(this);
   /** Block types, patterns and do_blocks() (see docs/architecture/blocks.md). */
   readonly blocks = new BlocksService(this);
+  /** wp_mail(): SMTP, or the development outbox (see docs/architecture/people.md). */
+  readonly mail = new Mailer(this);
+  /** Comments, moderation and the Discussion settings (see docs/architecture/comments.md). */
+  readonly comments = new CommentsService(this);
+  /** Installed themes, the active theme and its theme.json (see docs/architecture/themes.md). */
+  readonly themes = new ThemesService(this);
   #connection: DatabaseConnection | undefined;
   #options: Options | undefined;
   #state: SiteState = 'needs-database';
@@ -42,6 +53,8 @@ export class Kernel {
     registerCoreSettings(this.settings);
     registerCorePostTypes(this.postTypes);
     registerCoreTaxonomies(this.taxonomies);
+    registerCommentNotifications(this);
+    registerThemeSupports(this);
   }
 
   get state(): SiteState {

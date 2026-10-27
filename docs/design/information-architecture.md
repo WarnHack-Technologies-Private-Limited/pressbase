@@ -27,6 +27,11 @@ Items the user can't access are **hidden, not disabled**, as in WordPress. Items
 | `/admin/posts/new`, `/admin/posts/{id}` | The editor (same for pages)                                    |
 | `/admin/posts/categories`, `/admin/posts/tags` | Taxonomy management, reached through the Posts sub-navigation |
 | `/admin/media`           | Media library. Filters in the URL: `?type=image&s=beach`           |
+| `/admin/users`           | Users. Filters in the URL: `?role=editor&s=grace&paged=2`          |
+| `/admin/users/new`, `/admin/users/{id}` | Add user, edit user (your own account redirects to Profile) |
+| `/admin/profile`         | Your profile and application passwords (from the user menu)        |
+| `/lost-password`, `/reset-password?key=…&login=…` | Forgot your password, choose a new one (linked from `/login`) |
+| `/admin/comments`        | Comments. Filters in the URL: `?comment_status=moderated&s=spam&paged=2`; `?c=12` opens one comment for editing (themes' "Edit" links) |
 | `/admin/{section}`       | Sections that aren't built yet show what's coming                  |
 | `/admin/settings/{page}` | Settings: general, writing, reading, discussion, media, permalinks |
 
@@ -36,8 +41,8 @@ URLs are nouns, lowercase and stable. The equivalent WordPress screens (`edit.ph
 
 The dashboard answers three questions, in this order:
 1. **Is anything wrong?** Warnings, such as search engines being discouraged.
-2. **What's the state of my site?** At a glance: posts, drafts, pages, comments, and pending moderation.
-3. **What should I do next?** The _Get your site ready_ checklist, _Recently edited_, _Site health_.
+2. **What's the state of my site?** At a glance: posts, drafts, pages, comments, and pending moderation. "N awaiting moderation" links to the Pending tab.
+3. **What should I do next?** The _Get your site ready_ checklist, _Recently edited_, _Site health_, and for moderators _Recent comments_ (beside _Recently edited_, like WordPress's Activity widget).
 
 ## Settings
 

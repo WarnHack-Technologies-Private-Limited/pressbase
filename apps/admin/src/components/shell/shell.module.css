@@ -150,6 +150,21 @@
   flex: 1;
 }
 
+.visitSite {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.visitSite:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+}
+
 .userButton {
   display: flex;
   align-items: center;

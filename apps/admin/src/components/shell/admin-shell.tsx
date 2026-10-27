@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, LogOut, Menu } from 'lucide-react';
+import { ChevronDown, ExternalLink, LogOut, Menu, UserRound } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
@@ -32,11 +32,14 @@ function useIsNarrow(query = '(max-width: 860px)') {
 export function AdminShell({
   user,
   siteName,
+  siteUrl,
   version,
   children,
 }: {
   user: Me;
   siteName: string;
+  /** The public site's address (the `home` option). */
+  siteUrl: string;
   version: string;
   children: ReactNode;
 }) {
@@ -168,6 +171,11 @@ export function AdminShell({
             icon={<Menu size={18} aria-hidden="true" />}
           />
           <div className={styles.spacer} />
+          <a href={siteUrl || '/'} className={styles.visitSite} target="_blank" rel="noreferrer">
+            Visit site
+            <ExternalLink size={14} aria-hidden="true" />
+            <span className="visually-hidden">(opens in a new tab)</span>
+          </a>
           <div ref={menuRef}>
             <button
               ref={menuButtonRef}
@@ -190,14 +198,19 @@ export function AdminShell({
                   <div className={styles.userMenuMeta}>{user.email}</div>
                   {role && <div className={styles.userMenuMeta}>{role}</div>}
                 </div>
-                <button
-                  type="button"
+                <Link
+                  href="/admin/profile"
                   role="menuitem"
                   className={styles.menuItem}
-                  onClick={logOut}
-                  // biome-ignore lint/a11y/noAutofocus: focus moves into the menu when it opens.
+                  style={{ color: 'inherit', textDecoration: 'none' }}
+                  onClick={() => setMenuOpen(false)}
+                  // Focus moves into the menu when it opens.
                   autoFocus
                 >
+                  <UserRound size={16} aria-hidden="true" />
+                  Profile
+                </Link>
+                <button type="button" role="menuitem" className={styles.menuItem} onClick={logOut}>
                   <LogOut size={16} aria-hidden="true" />
                   Log out
                 </button>

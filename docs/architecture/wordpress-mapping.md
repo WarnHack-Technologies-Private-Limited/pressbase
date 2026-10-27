@@ -32,17 +32,37 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | `WP_Query` | `apps/core/src/content/query.ts` (`queryPosts`) | Same argument names. |
 | `get_permalink` | `apps/core/src/content/permalinks.ts` | Uses `permalink_structure`. |
 | `wp_kses_post`, `sanitize_title` | `apps/core/src/content/sanitize.ts` | Keeps block delimiters intact. |
-| `WP_REST_Posts_Controller`, `WP_REST_Terms_Controller`, `WP_REST_Users_Controller` (read), types / taxonomies / statuses controllers | `apps/core/src/routes/posts.ts`, `terms.ts`, `users.ts`, `types.ts` | See [REST API](rest-api.md). |
+| `WP_REST_Posts_Controller`, `WP_REST_Terms_Controller`, `WP_REST_Users_Controller`, types / taxonomies / statuses controllers | `apps/core/src/routes/posts.ts`, `terms.ts`, `users.ts`, `types.ts` | See [REST API](rest-api.md). |
 | `parse_blocks`, `serialize_blocks`, `WP_Block_Parser` | `packages/blocks` (`parseBlocks`, `serializeBlocks`) | Same output shape. See [Blocks](blocks.md). |
 | `WP_Block_Type_Registry`, `register_block_type` | `BlockTypeRegistry`; `kernel.blocks.registerBlockType()` | Keys follow `block.json`. |
 | `WP_Block`, `render_block`, `do_blocks` | `packages/blocks/src/block.ts`; `kernel.blocks.render()` | Async render callbacks; same filters. |
 | `esc_html`, `esc_attr`, `esc_url` | `escHtml`, `escAttr`, `escUrl` in `@pressbase/blocks` | |
-| `wp-includes/blocks/*.php` (dynamic blocks) | `apps/core/src/blocks/library/` | Latest posts, categories, archives, tag cloud, page list, search, site title and tagline, login/out, synced pattern, post title/date/excerpt/author/terms. |
+| `wp-includes/blocks/*.php` (dynamic blocks) | `apps/core/src/blocks/library/` | Latest posts, categories, archives, tag cloud, page list, search, site title and tagline, login/out, synced pattern, post title/date/excerpt/author/terms, and the comment blocks. |
 | `register_block_pattern`, `register_block_pattern_category` | `kernel.blocks.registerBlockPattern()`, `registerBlockPatternCategory()` | |
 | `WP_REST_Block_Types_Controller`, `WP_REST_Block_Renderer_Controller`, `WP_REST_Block_Patterns_Controller`, `WP_REST_Block_Pattern_Categories_Controller`, `WP_REST_Blocks_Controller` | `apps/core/src/routes/blocks.ts` | See [REST API](rest-api.md). |
 | `wp_handle_upload()`, `wp_unique_filename()`, `sanitize_file_name()`, `wp_check_filetype_and_ext()`, `wp_create_image_subsizes()`, `wp_delete_attachment()` | `apps/core/src/media/` | Storage adapters instead of direct disk writes; sharp instead of GD/Imagick. See [Media](media.md). |
 | `WP_REST_Attachments_Controller` | `apps/core/src/routes/media.ts` | |
+| `WP_Theme_JSON`, `WP_Theme_JSON_Resolver`, `wp_get_global_stylesheet()`, `wp_get_typography_font_size_value()`, `wp_get_layout_style()`, `WP_Font_Face` | `packages/theme-json` | See [Themes](themes.md). |
+| `WP_Theme`, `wp_get_themes()`, `switch_theme()`, `_register_theme_block_patterns()` | `apps/core/src/themes/` (`kernel.themes`) | Pattern PHP is interpreted, never run. |
+| `block-supports/layout.php`, `elements.php`, `position.php`, `block-style-variations.php` | `apps/core/src/themes/supports.ts` | Render filters. |
+| `WP::parse_request()`, `WP_Rewrite` rules, the main `WP_Query`, `redirect_canonical()` | `apps/core/src/frontend/query.ts` | |
+| `template-loader.php`, `get_*_template()` | `apps/core/src/frontend/hierarchy.ts` | |
+| `template-canvas.php`, `get_the_block_template_html()`, `wp_get_document_title()`, `get_body_class()` | `apps/core/src/frontend/render.ts` | |
+| `WP_REST_Themes_Controller` | `apps/core/src/routes/themes.ts` | Plus theme activation. |
+| `themes.php` | `/admin/appearance` | |
+| `wp-content/themes/twentytwentyfive` | `themes/twentytwentyfive` | Bundled, unchanged. |
 | `upload.php`, `options-media.php`, the media modal | `/admin/media`, `/admin/settings/media`, `MediaPicker` | |
+| `wp_insert_user`, `wp_update_user`, `wp_delete_user` (with reassign), `validate_username`, `is_email`, `count_users`, `count_many_users_posts` | `apps/core/src/people/users.ts`, `validation.ts` | See [People](people.md). |
+| `WP_Application_Passwords`, `wp_authenticate_application_password`, `WP_REST_Application_Passwords_Controller` | `apps/core/src/people/application-passwords.ts`, `routes/application-passwords.ts` | `Authorization: Basic` middleware; SHA-256 digests like WordPress 6.8's `wp_fast_hash`. |
+| `wp_mail` (PHPMailer) | `kernel.mail` (`apps/core/src/mail/`, nodemailer) | SMTP from env, else a development outbox. Same filters and actions. |
+| `retrieve_password`, `get_password_reset_key`, `check_password_reset_key`, `reset_password`, `wp-login.php?action=lostpassword` / `rp` | `apps/core/src/people/password-reset.ts`, `routes/password-reset.ts`; `/lost-password`, `/reset-password` | Same `user_activation_key` format (`time:hash`), 24-hour expiry. |
+| `wp_new_user_notification`, `send_password_change_email`, `send_email_change_email` | `people/password-reset.ts` | |
+| `users.php`, `user-new.php`, `user-edit.php`, `profile.php` | `/admin/users`, `/admin/users/new`, `/admin/users/{id}`, `/admin/profile` | |
+| `wp_new_comment()`, `wp_allow_comment()`, `check_comment()`, `wp_check_comment_disallowed_list()`, `wp_insert_comment()`, `wp_update_comment()`, `wp_set_comment_status()`, `wp_trash_comment()`, `wp_spam_comment()`, `wp_delete_comment()`, `wp_update_comment_count()`, `wp_count_comments()`, `WP_Comment_Query` | `apps/core/src/comments/service.ts` (`kernel.comments`) | See [Comments](comments.md). Disallowed keys mark spam rather than trash. |
+| `get_comment_link()`, `get_page_of_comment()`, `get_avatar_url()`, `wp_rel_ugc()`, `$allowedtags` | `apps/core/src/comments/links.ts`, `format.ts` | |
+| `WP_REST_Comments_Controller` | `apps/core/src/routes/comments.ts` | Anonymous comments allowed by default. |
+| `wp-comments-post.php` | `POST /wp-comments-post`, `apps/core/src/routes/comments-post.ts` | |
+| `edit-comments.php`, `options-discussion.php` | `/admin/comments`, `/admin/settings/discussion` | |
 | `edit.php`, `post.php`, `edit-tags.php`, `options-reading.php`, `options-writing.php` | `/admin/posts`, `/admin/posts/{id}`, `/admin/posts/categories`, `/admin/settings/reading`, `/admin/settings/writing` | |
 
 ## Planned
@@ -50,8 +70,7 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | WordPress                                      | Pressbase (planned)                             | Release |
 | ---------------------------------------------- | ------------------------------------------- | ------- |
 | Autosave | Autosaves endpoint, with the block editor | v0.3 |
-| Application passwords                          | `Authorization: Basic` in core              | v0.2    |
-| `WP_Theme_JSON`, template loader, `WP_Rewrite` | `packages/theme-json`, router in `apps/web` | v0.4    |
+| Site editor (`wp_template`, `wp_global_styles`, `wp_navigation`) | Admin site editor | later |
 | Plugins API, `activate_plugin`                 | Plugin loader + `plugin.json`               | v0.5    |
 | `wp-cron.php`                                  | pg-boss job queue                           | v0.5    |
 | Importer, wp-cli                               | Migration tool, `pressbase` CLI                 | v0.6    |

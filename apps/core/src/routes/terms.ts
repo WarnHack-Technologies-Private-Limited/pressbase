@@ -25,12 +25,16 @@ import {
 
 const BASE_PATH: Record<string, string> = { category: 'category', post_tag: 'tag' };
 
+/** get_term_link(): the term's archive URL (served by the public site from v0.4). */
+export const termLink = (home: string, taxonomy: string, slug: string) =>
+  `${home}/${BASE_PATH[taxonomy] ?? taxonomy}/${slug}/`;
+
 function prepare(term: Term, taxonomy: Taxonomy, home: string, context: string) {
   const item: Record<string, unknown> = {
     id: term.id,
     count: term.count,
     description: term.description,
-    link: `${home}/${BASE_PATH[taxonomy.name] ?? taxonomy.name}/${term.slug}/`,
+    link: termLink(home, taxonomy.name, term.slug),
     name: term.name,
     slug: term.slug,
     taxonomy: taxonomy.name,

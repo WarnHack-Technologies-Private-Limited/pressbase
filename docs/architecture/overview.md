@@ -21,7 +21,7 @@
 | ------------------- | ---- | ------------------------------------------------------------------ |
 | `apps/core`         | 4000 | Owns all data and all rules. Everything goes through its REST API. |
 | `apps/admin`        | 3000 | The admin interface. Holds no business logic; it calls core.       |
-| `apps/web` _(v0.4)_ | —    | The public site, rendering themes through core.                    |
+| `apps/web`          | 3001 | The public site: forwards each page to core's renderer ([ADR 0007](../adr/0007-public-rendering.md)). |
 
 ### Why core is separate from Next.js
 
@@ -29,13 +29,20 @@ WordPress lets an administrator upload a plugin and use it immediately. A Next.j
 
 ## Request flow
 
+### The public site
+
+Any path the admin doesn't own (`/`, `/2026/10/27/hello/`, `/category/news/`) is rewritten to `apps/web`, which asks core to render it (`GET /wp-json/pressbase/v1/render?url=…`) and returns the HTML with core's status and headers. Core runs the main query, picks a template from the active block theme and renders it. See [Themes and the public site](themes.md).
+
+### The admin and the API
+
 1. The browser calls `/wp-json/...` on the admin origin.
 2. `next.config.ts` rewrites the request to core (`CORE_URL`, default `http://localhost:4000`). The browser only ever sees one origin, so cookies are first-party and no CORS is needed.
 3. In core, middleware runs in this order:
    1. `requireRequestHeader` (CSRF);
    2. `loadSessionUser` (cookie → user and capabilities);
-   3. for routes that need an installed site, `requireInstalled`;
-   4. per route, `requireCapability(...)`.
+   3. `applicationPasswordAuth` (`Authorization: Basic` → user; replaces any cookie user, see [People](people.md#application-passwords));
+   4. for routes that need an installed site, `requireInstalled`;
+   5. per route, `requireCapability(...)`.
 4. Errors come back in WordPress's shape: `{ code, message, data: { status } }`.
 
 Admin **server components** call core directly through `coreGet()` (`apps/admin/src/lib/core.ts`), forwarding the visitor's cookies. **Client components** use `api()` (`apps/admin/src/lib/api.ts`), which adds the CSRF header.
@@ -72,8 +79,12 @@ apps/
     http.ts              middleware, error helpers
     auth/                passwords, sessions, users, capabilities, rate limiting
     install/             installer logic and database helpers
+    people/              users, application passwords, password reset
+    mail/                kernel.mail (wp_mail): SMTP or the development outbox
     options/             Options API and the settings registry
     routes/              one file per REST resource
+    themes/              theme discovery, PHP pattern loader, theme block supports, assets
+    frontend/            request routing, main query, template hierarchy, page rendering
   admin/src/
     app/                 Next.js routes (install, login, admin/…)
     components/ui/       design-system components
@@ -82,6 +93,10 @@ apps/
 packages/
   db/                    schema.ts, migrations/, connect()
   hooks/                 HookBus
+  blocks/                block parser, registry, renderer, block supports
+  theme-json/            theme.json engine: merging, global stylesheet, layout styles
+themes/                  bundled block themes (Twenty Twenty-Five)
+apps/web/                the public site (Next.js route handler)
 docs/                    you are here
 ```
 
@@ -91,5 +106,4 @@ docs/                    you are here
 | --------------------------------------------- | ---------------------------------------- |
 | Post types, taxonomies, `ContentQuery` (v0.2) | `apps/core/src/content/`                 |
 | Block parsing and rendering (v0.3)            | `packages/blocks`                        |
-| `theme.json` engine (v0.4)                    | `packages/theme-json`                    |
 | Plugin loader and SDK (v0.5)                  | `apps/core/src/plugins/`, `packages/sdk` |

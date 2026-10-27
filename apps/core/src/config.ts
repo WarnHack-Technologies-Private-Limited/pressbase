@@ -15,6 +15,21 @@ export interface Config {
   setupToken: string | undefined;
   /** Largest upload accepted, in megabytes (PRESSBASE_MAX_UPLOAD_MB). Default 64. */
   maxUploadMb?: number;
+  /** Outgoing email (see mail/mailer.ts). Without SMTP, mail goes to <dataDir>/outbox. */
+  mail?: MailConfig;
+}
+
+export interface MailConfig {
+  /** PRESSBASE_SMTP_URL, e.g. smtps://user:pass@smtp.example.com:465. Wins over the separate fields. */
+  smtpUrl?: string;
+  host?: string;
+  port?: number;
+  user?: string;
+  pass?: string;
+  /** Use TLS from the start (port 465). Otherwise STARTTLS is used when offered. */
+  secure?: boolean;
+  /** PRESSBASE_MAIL_FROM, e.g. "Pressbase <wordpress@example.com>". */
+  from?: string;
 }
 
 export interface SiteConfigFile {
@@ -33,6 +48,17 @@ export async function loadConfig(env: NodeJS.ProcessEnv = process.env): Promise<
     databaseFromEnv: Boolean(env.DATABASE_URL),
     setupToken: env.PRESSBASE_SETUP_TOKEN || undefined,
     maxUploadMb: Number(env.PRESSBASE_MAX_UPLOAD_MB) > 0 ? Number(env.PRESSBASE_MAX_UPLOAD_MB) : 64,
+    mail: {
+      smtpUrl: env.PRESSBASE_SMTP_URL || undefined,
+      host: env.PRESSBASE_SMTP_HOST || undefined,
+      port: Number(env.PRESSBASE_SMTP_PORT) > 0 ? Number(env.PRESSBASE_SMTP_PORT) : undefined,
+      user: env.PRESSBASE_SMTP_USER || undefined,
+      pass: env.PRESSBASE_SMTP_PASS || undefined,
+      secure: env.PRESSBASE_SMTP_SECURE
+        ? ['1', 'true', 'yes'].includes(env.PRESSBASE_SMTP_SECURE)
+        : undefined,
+      from: env.PRESSBASE_MAIL_FROM || undefined,
+    },
   };
 }
 

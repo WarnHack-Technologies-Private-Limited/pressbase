@@ -1,8 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useRef, useState } from 'react';
 import { ApiError, api } from '@/lib/api';
+import auth from '../people/auth-pages.module.css';
 import { Button } from '../ui/button';
 import { Checkbox, PasswordField, TextField } from '../ui/field';
 import { Notice } from '../ui/surface';
@@ -77,6 +79,9 @@ export function LoginForm({ siteName, redirectTo }: { siteName: string; redirect
       <Button type="submit" variant="primary" fullWidth loading={busy}>
         {busy ? 'Logging in…' : 'Log in'}
       </Button>
+      <p className={auth.alt}>
+        <Link href="/lost-password">Forgot your password?</Link>
+      </p>
     </form>
   );
 }

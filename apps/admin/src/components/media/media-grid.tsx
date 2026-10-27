@@ -23,13 +23,15 @@ function tileLabel(media: RestMedia): string {
 /**
  * The thumbnail grid. Each item is a button; arrow keys move between them
  * (one tab stop for the whole grid), Home and End jump to the ends.
- * In `select` mode, buttons are toggles (aria-pressed) for the picker.
+ * In `select` mode, buttons are toggles (aria-pressed) for the picker; with
+ * `selectedIds` several can be on, each badged with its place in the order.
  */
 export function MediaGrid({
   items,
   label,
   mode = 'open',
   selectedId,
+  selectedIds,
   onActivate,
   onConfirm,
 }: {
@@ -37,7 +39,13 @@ export function MediaGrid({
   label: string;
   mode?: 'open' | 'select';
   selectedId?: number;
-  onActivate: (media: RestMedia, element: HTMLButtonElement) => void;
+  /** Multi-select: the picked IDs, in the order they were picked. */
+  selectedIds?: readonly number[];
+  onActivate: (
+    media: RestMedia,
+    element: HTMLButtonElement,
+    modifiers: { shiftKey: boolean },
+  ) => void;
   /** Double-click in select mode. */
   onConfirm?: (media: RestMedia) => void;
 }) {
@@ -88,7 +96,9 @@ export function MediaGrid({
     <ul className={styles.grid} aria-label={label} ref={listRef} onKeyDown={onKeyDown}>
       {items.map((media, index) => {
         const thumb = previewUrl(media);
-        const selected = mode === 'select' && media.id === selectedId;
+        const position = selectedIds ? selectedIds.indexOf(media.id) + 1 : 0;
+        const selected =
+          mode === 'select' && (selectedIds ? position > 0 : media.id === selectedId);
         return (
           <li key={media.id} className={styles.cell}>
             <button
@@ -97,11 +107,15 @@ export function MediaGrid({
               data-media-id={media.id}
               className={styles.tile}
               tabIndex={index === current ? 0 : -1}
-              aria-label={tileLabel(media)}
+              aria-label={
+                position
+                  ? `${tileLabel(media)}, ${position} of ${selectedIds?.length} in order`
+                  : tileLabel(media)
+              }
               aria-pressed={mode === 'select' ? selected : undefined}
               aria-haspopup={mode === 'open' ? 'dialog' : undefined}
               onFocus={() => setFocusIndex(index)}
-              onClick={(e) => onActivate(media, e.currentTarget)}
+              onClick={(e) => onActivate(media, e.currentTarget, { shiftKey: e.shiftKey })}
               onDoubleClick={() => onConfirm?.(media)}
             >
               {thumb ? (
@@ -122,7 +136,11 @@ export function MediaGrid({
               )}
               {selected && (
                 <span className={styles.check} aria-hidden="true">
-                  <Check size={14} strokeWidth={3} />
+                  {position ? (
+                    <span className={styles.checkNumber}>{position}</span>
+                  ) : (
+                    <Check size={14} strokeWidth={3} />
+                  )}
                 </span>
               )}
             </button>

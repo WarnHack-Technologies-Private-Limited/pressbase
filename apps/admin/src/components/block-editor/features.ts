@@ -6,7 +6,9 @@ import apiFetch from '@wordpress/api-fetch';
  * exists, the editor hides what depends on it instead of failing.
  *
  * A feature is "present" unless core answers `rest_no_route`: a 401/403 still
- * means the route exists (the user just can't use it).
+ * means the route exists (the user just can't use it). Routes in a namespace
+ * the REST index doesn't list (oEmbed's `oembed/1.0`) aren't requested at all,
+ * so a missing feature doesn't leave a 404 in the browser console.
  */
 
 export interface RestBlockPattern {
@@ -94,11 +96,29 @@ export async function probe<T>(path: string): Promise<Probe<T>> {
   }
 }
 
+/** The parts of the REST index (GET /wp-json/) the probes read. */
+export interface RestIndex {
+  namespaces?: string[];
+}
+
+/**
+ * Whether a route's namespace is served. Without an index (an error, an old
+ * core) every namespace counts as served, so the route itself is probed.
+ */
+export function namespaceListed(index: RestIndex | undefined, path: string): boolean {
+  if (!Array.isArray(index?.namespaces)) return true;
+  const [vendor = '', version = ''] = path.replace(/^\/+/, '').split(/[/?]/);
+  return index.namespaces.includes(`${vendor}/${version}`);
+}
+
 let cached: Promise<EditorFeatures> | undefined;
 
 /** Probes once per page load; every editor mount shares the answer. */
 export function loadEditorFeatures(): Promise<EditorFeatures> {
   cached ??= (async () => {
+    const index = apiFetch<RestIndex>({ path: '/' }).catch(() => undefined);
+    const probeListed = async (path: string): Promise<Probe<unknown>> =>
+      namespaceListed(await index, path) ? probe(path) : { exists: false };
     const [media, renderer, types, patterns, categories, synced, oembed] = await Promise.all([
       probe('/wp/v2/media?per_page=1'),
       probe('/wp/v2/block-renderer/core/archives?context=edit'),
@@ -106,7 +126,7 @@ export function loadEditorFeatures(): Promise<EditorFeatures> {
       probe<RestBlockPattern[]>('/wp/v2/block-patterns/patterns'),
       probe<RestPatternCategory[]>('/wp/v2/block-patterns/categories'),
       probe<RestSyncedPattern[]>('/wp/v2/blocks?per_page=100&context=edit'),
-      probe('/oembed/1.0/proxy'),
+      probeListed('/oembed/1.0/proxy'),
     ]);
     return {
       media: media.exists,

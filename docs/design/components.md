@@ -97,6 +97,7 @@ toast('Could not save.', { tone: 'danger' });
 | `PostEditor` | Sticky action bar: back, status badge, save state, a secondary action and one primary action whose label says exactly what will happen (Publish / Schedule / Update / Submit for review), and a Settings toggle. The canvas is the block editor (below) with a **Code** view for raw markup. A sidebar with **Post** and **Block** tabs; the Block tab opens when a block is selected. ⌘/Ctrl+S saves, from inside the canvas too. A warning before leaving with unsaved changes. A newer autosave or browser copy is offered back in a calm notice (Restore / Dismiss), never a modal. |
 | `TagInput` | ARIA combobox: type, then Enter or comma; arrow keys move through suggestions; Backspace removes the last tag. New tags are created on save. |
 | `TermsScreen` | Add form on the left, table on the right, inline editing in place. |
+| `CommentsScreen` (`components/comments/`) | Status tabs with a warning-coloured Pending count. Pending rows carry a "Pending" label and a warning edge (never colour alone). Author column with initials avatar, email and IP. Row actions change with the status (Approve / Unapprove, Reply, Quick edit, Spam, Trash; Not spam, Restore, Delete permanently). Reply and Quick edit open in place; Escape cancels, ⌘/Ctrl+Enter submits. Every status change ends in a toast with Undo; permanent deletion asks first. On phones, rows stack: author over comment, with the post and date folded in. |
 
 ## Media: `components/media/`
 
@@ -105,7 +106,17 @@ toast('Could not save.', { tone: 'danger' });
 | `MediaLibrary` | Thumbnail grid with type filter and search in the URL, "Load more", an upload button and drop-anywhere uploads. Each upload shows its own progress; errors stay until dismissed, and a finished batch ends in a toast. |
 | `MediaGrid` | One tab stop for the whole grid; arrow keys, Home and End move between tiles. Each tile is a button named by the title, type and dimensions. |
 | `MediaDetails` | `<dialog>`: preview, file facts, URL with Copy, editable alt text / title / caption / description with an explicit Save, and *Delete permanently* behind a `ConfirmDialog`. Arrow keys page between items. Closing with unsaved changes asks first. Full screen on phones. |
-| `MediaPicker` | Choose one item or upload one (it's then selected). `allowedTypes` limits the kinds; `title` and `selectLabel` name the task ("Set featured image"). Double-click chooses at once. |
+| `MediaPicker` | Choose one item or upload one (it's then selected). `allowedTypes` limits the kinds; `title` and `selectLabel` name the task ("Set featured image"). Double-click chooses at once. With `multiple`, several items are picked in order (numbered tiles, "N selected" footer with **Clear**, Shift+click for a range), and `multipleLabel(n)` names the button ("Create gallery (3)"). |
+
+## People: `components/people/`
+
+| Component | Pattern |
+|---|---|
+| `UserList` | Role tabs with counts, search, initials avatars. Row actions: Edit, Delete. Bulk: change role, delete. You can't select or delete yourself here. |
+| `DeleteUsersDialog` | `ConfirmDialog` with a choice: give the content to another user (the default, preselected) or delete it too. |
+| `UserEditor` | Profile and Edit user: role radio cards, name with a display-name chooser, contact, bio, password (hidden behind "Set a new password"), application passwords, and a separate danger card for deletion. Save bar as in Settings. |
+| `ApplicationPasswords` | Create with a name; the new password appears once in a warning-toned box with Copy, and focus moves to it. List with created / last used / last IP; Revoke asks first. |
+| `LostPasswordForm`, `ResetPasswordForm` | `AuthLayout` screens. The reset link is checked before the form appears; expired or used links say so and offer a new one. |
 
 ## Block editor: `components/block-editor/`
 

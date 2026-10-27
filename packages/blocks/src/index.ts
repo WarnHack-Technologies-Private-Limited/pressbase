@@ -35,8 +35,10 @@ export {
   stripCoreBlockNamespace,
 } from './serializer';
 export {
+  cssValue,
   getBlockDefaultClassname,
   getBlockWrapperAttributes,
+  shouldSkipSerialization,
   toKebabCase,
   type WrapperAttributes,
 } from './supports';

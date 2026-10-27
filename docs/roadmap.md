@@ -14,15 +14,15 @@ Each release has a theme and a clear finish line. The `release` values in `apps/
 - [x] REST: `/wp-json` index, `wp/v2/users/me`, `wp/v2/settings`, `pressbase/v1/dashboard`.
 - [x] Admin: design tokens and component kit, dashboard, General settings, light and dark mode, mobile layout.
 
-## v0.2: Content core (in progress)
+## v0.2: Content core ✅
 
-Shipping in three milestones. Milestone 1 (content model) and milestone 2 (media) are done; milestone 3 (people and conversation) is next.
+Shipped in three milestones: content model, media, and people and conversation.
 
 - [x] Post type, status and taxonomy registries (`register_post_type`, `register_taxonomy`).
 - [x] `ContentQuery`, the counterpart of `WP_Query`: `post_type`, `tax_query`, `meta_query`, search, pagination.
 - [x] `wp/v2` routes: posts, pages, categories, tags, types, taxonomies, statuses, users (read).
 - [x] `wp/v2/media`: uploads (multipart or raw), image sizes, `-scaled` big images, featured images.
-- [ ] `wp/v2` routes: comments, users (write).
+- [x] `wp/v2` routes: comments, users (write), application passwords, search.
 - [x] `map_meta_cap`: per-object capabilities (`edit_post` on a specific post).
 - [x] Revisions. Autosave shipped with the block editor (v0.3).
 - [x] Content sanitising for users without `unfiltered_html`.
@@ -30,14 +30,14 @@ Shipping in three milestones. Milestone 1 (content model) and milestone 2 (media
 - [ ] S3-compatible storage adapter.
 - [x] Admin: Posts and Pages lists and editor (writing view + code view), Categories, Tags.
 - [x] Admin: Media library and media picker.
-- [ ] Admin: Comments and Users screens.
+- [x] Admin: Comments (moderation, inline reply, Undo) and Users (roles, reassign on delete), Profile.
 - [x] Settings screens: Writing, Reading.
 - [x] Settings screens: Media.
-- [ ] Settings screens: Discussion.
-- [ ] Application passwords for API clients.
-- [ ] Password reset by email (Nodemailer, SMTP settings).
+- [x] Settings screens: Discussion, including comment emails.
+- [x] Application passwords for API clients (HTTPS or local hosts only).
+- [x] Password reset by email (Nodemailer SMTP, or a local outbox in development).
 
-## v0.3: Block editor
+## v0.3: Block editor ✅
 
 - [x] Gutenberg in the admin (`@wordpress/block-editor`, `@wordpress/block-library`): iframed canvas, inserter, list view, Block tab, Code view.
 - [x] Server-side block parsing and serialising (`@pressbase/blocks`, a port of `WP_Block_Parser`).
@@ -45,16 +45,24 @@ Shipping in three milestones. Milestone 1 (content model) and milestone 2 (media
 - [x] Patterns and synced patterns (`/wp/v2/block-patterns`, `/wp/v2/blocks`).
 - [x] Autosave (`/wp/v2/{type}/{id}/autosaves`) with a restore prompt and a browser safety copy.
 - [x] Media library inside the editor (image, cover, gallery… "Media Library" buttons) and featured images.
-- [ ] Inserter Media tab, `/wp/v2/search` for link suggestions, multi-select in galleries.
+- [x] Inserter Media tab, `/wp/v2/search` for link suggestions, multi-select in galleries.
 
-## v0.4: Themes and the public site
+## v0.4: Themes and the public site (in progress)
 
-- [ ] `apps/web`: the public site (Next.js, ISR and cache tags).
-- [ ] `theme.json` engine: settings and styles turned into CSS custom properties.
-- [ ] Template hierarchy, template parts, navigation.
-- [ ] Site editor and global styles.
-- [ ] Permalinks and rewrite rules.
-- [ ] **Milestone:** Twenty Twenty-Five renders unchanged.
+The foundation has shipped: Twenty Twenty-Five renders the home page, posts, pages, archives, search, comments and 404. See [ADR 0007](adr/0007-public-rendering.md).
+
+- [x] `apps/web`: the public site, served by core's renderer (one origin with the admin).
+- [x] `theme.json` engine (`@pressbase/theme-json`): presets, global styles, layout, fonts.
+- [x] Block themes: discovery, activation, templates, parts, PHP patterns (converted without running PHP).
+- [x] Template hierarchy, request routing, permalinks, Reading settings, post passwords.
+- [x] Theme template blocks (query loop, navigation, template parts, featured image…) and theme-aware block supports.
+- [x] Comments on the public site: threaded list, pagination (`/comment-page-N/`), the comment form.
+- [x] Admin: Appearance (themes list, activate), "Visit site".
+- [x] **Milestone:** Twenty Twenty-Five renders unchanged (its core templates).
+- [ ] Page caching in `apps/web` (ISR / cache tags, invalidated on content changes).
+- [ ] Theme style variations, duotone, responsive style states.
+- [ ] RSS feeds, sitemaps, `wp_head`-style hooks for plugins.
+- [ ] Site editor and global styles UI (`wp_template`, `wp_global_styles`, `wp_navigation`).
 
 ## v0.5: Plugins
 

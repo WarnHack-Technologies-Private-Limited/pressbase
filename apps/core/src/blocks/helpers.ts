@@ -17,6 +17,11 @@ export interface BlockServices {
   kernel: Kernel;
   user: CurrentUser | null;
   rest: boolean;
+  /**
+   * Query variables of the page being rendered (get_query_var()): the comment
+   * blocks read `cpage`, `replytocom`, `unapproved` and `moderation-hash`.
+   */
+  query?: Record<string, string>;
 }
 
 export type CoreBlock = WPBlock<BlockServices>;
