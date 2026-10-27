@@ -1,6 +1,7 @@
 import { connect, type DatabaseConnection } from '@pressbase/db';
 import { HookBus } from '@pressbase/hooks';
 import { BlocksService } from './blocks/service';
+import { registerCommentNotifications } from './comments/notify';
 import { CommentsService } from './comments/service';
 import type { Config } from './config';
 import { PostStatusRegistry } from './content/post-statuses';
@@ -48,6 +49,7 @@ export class Kernel {
     registerCoreSettings(this.settings);
     registerCorePostTypes(this.postTypes);
     registerCoreTaxonomies(this.taxonomies);
+    registerCommentNotifications(this);
   }
 
   get state(): SiteState {

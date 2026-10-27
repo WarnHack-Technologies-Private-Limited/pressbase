@@ -17,6 +17,8 @@ export interface DiscussionSettings extends Record<string, unknown> {
   comments_per_page: number;
   default_comments_page: 'newest' | 'oldest';
   comment_order: 'asc' | 'desc';
+  comments_notify: boolean;
+  moderation_notify: boolean;
   comment_moderation: boolean;
   comment_previously_approved: boolean;
   comment_max_links: number;
@@ -187,6 +189,24 @@ export function DiscussionSettingsForm({ initial }: { initial: DiscussionSetting
                   <option value="asc">Older comments first</option>
                   <option value="desc">Newer comments first</option>
                 </SelectField>
+              </div>
+            </Card>
+
+            <Card
+              title="Email me whenever"
+              description="Emails go to the site’s administration email and, where it fits, the post’s author."
+            >
+              <div className={styles.fields}>
+                <Checkbox
+                  label="Anyone posts a comment"
+                  checked={values.comments_notify}
+                  onChange={(e) => set('comments_notify', e.target.checked)}
+                />
+                <Checkbox
+                  label="A comment is held for moderation"
+                  checked={values.moderation_notify}
+                  onChange={(e) => set('moderation_notify', e.target.checked)}
+                />
               </div>
             </Card>
 

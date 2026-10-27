@@ -34,6 +34,9 @@ const wordList = z
   .transform((v) => v.replace(/\r\n?/g, '\n'));
 
 const DISCUSSION_SETTINGS = {
+  // "Email me whenever" (wp_notify_postauthor / wp_notify_moderator).
+  comments_notify: { schema: z.boolean(), default: true },
+  moderation_notify: { schema: z.boolean(), default: true },
   comment_registration: { schema: z.boolean(), default: false },
   require_name_email: { schema: z.boolean(), default: true },
   comment_moderation: { schema: z.boolean(), default: false },

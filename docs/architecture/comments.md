@@ -129,7 +129,11 @@ Comment hooks use WordPress's names: `preprocess_comment`, `duplicate_comment_id
 
 ## Not yet
 
-- **Notifications.** `comments_notify` and `moderation_notify` emails wait for the mailer.
+- **Notifications.** `comments/notify.ts` ports `wp_notify_moderator()` and `wp_notify_postauthor()` through `kernel.mail`.
+  - A held comment emails the admin address, plus the post's author if they can moderate (`moderation_notify`).
+  - An approved comment emails the post's author unless they wrote it (`comments_notify`).
+  - The filters `notify_moderator`, `notify_post_author`, `comment_moderation_recipients` and `comment_notification_recipients` control them.
+  - Emails are sent after the response, so visitors never wait on SMTP.
 - **Commenter cookies.** WordPress remembers a visitor's name and email (with consent) and shows their pending comments for longer; Pressbase relies on the 10-minute moderation hash. `set_comment_cookies` fires so a plugin can add them.
 - **Comments of trashed posts.** WordPress marks them `post-trashed` when the post goes to the Trash; Pressbase leaves them as they are (they're hidden with the post).
 - **Password-protected posts** never show comment blocks yet (the post-password cookie arrives with the public site).

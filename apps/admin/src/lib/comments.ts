@@ -181,6 +181,8 @@ export const DISCUSSION_KEYS: string[] = [
   'comments_per_page',
   'default_comments_page',
   'comment_order',
+  'comments_notify',
+  'moderation_notify',
   'comment_moderation',
   'comment_previously_approved',
   'comment_max_links',
