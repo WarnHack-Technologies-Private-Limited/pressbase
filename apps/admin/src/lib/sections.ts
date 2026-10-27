@@ -62,8 +62,6 @@ export const SECTION_GROUPS: SectionGroup[] = [
         label: 'Comments',
         icon: MessageSquare,
         capability: 'moderate_comments',
-        release: 'v0.2',
-        summary: 'Read, reply to and moderate the conversation on your site.',
       },
     ],
   },

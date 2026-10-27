@@ -11,6 +11,8 @@ import { applicationPasswordAuth } from './people/application-passwords';
 import { authRoutes } from './routes/auth';
 import { autosavesRoutes } from './routes/autosaves';
 import { blockRoutes } from './routes/blocks';
+import { commentCountRoutes, commentsRoutes } from './routes/comments';
+import { commentsPostRoutes } from './routes/comments-post';
 import { dashboardRoutes, postCountRoutes } from './routes/dashboard';
 import { installRoutes } from './routes/install';
 import { mediaRoutes } from './routes/media';
@@ -105,6 +107,16 @@ export function createApp(kernel: Kernel) {
     if (type.showInRest && ['post', 'page'].includes(type.name) && type.supports.has('revisions')) {
       installed.route(`/wp/v2/${type.restBase}`, autosavesRoutes(type));
     }
+  }
+
+  // Comments (v0.2): /wp/v2/comments, the admin's per-status counts, and the
+  // public form endpoint WordPress serves at /wp-comments-post.php, outside
+  // /wp-json. See docs/architecture/comments.md.
+  installed.route('/wp/v2/comments', commentsRoutes());
+  installed.route('/pressbase/v1/comment-counts', commentCountRoutes());
+  for (const path of ['/wp-comments-post', '/wp-comments-post.php']) {
+    app.use(path, requireInstalled, loadSessionUser);
+    app.route(path, commentsPostRoutes());
   }
   api.route('/', installed);
 

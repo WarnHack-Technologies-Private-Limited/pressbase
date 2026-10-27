@@ -32,6 +32,8 @@ describe('allowedBlockTypes', () => {
       'core/embed',
       'core/block',
       'core/latest-posts',
+      // Server-rendered like Latest Posts, now that core has comments.
+      'core/comments',
     ]);
   });
 

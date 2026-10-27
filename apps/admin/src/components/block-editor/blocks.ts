@@ -26,7 +26,16 @@ export const UNSUPPORTED_BLOCKS: ReadonlySet<string> = new Set([
   'core/site-logo',
   'core/site-title',
   'core/site-tagline',
-  // Comments have no REST endpoints yet.
+]);
+
+/**
+ * Core blocks rendered on the server (no saved HTML): they need the block
+ * engine (`/wp/v2/block-renderer`) to show anything on the site.
+ * From block-library: the blocks without a `save` function, plus containers
+ * that only make sense with them.
+ */
+export const DYNAMIC_BLOCKS: ReadonlySet<string> = new Set([
+  // Comments: shown once the server reports them in /wp/v2/block-types.
   'core/comments',
   'core/comment-template',
   'core/comment-author-avatar',
@@ -45,15 +54,6 @@ export const UNSUPPORTED_BLOCKS: ReadonlySet<string> = new Set([
   'core/post-comments-form',
   'core/post-comments-link',
   'core/latest-comments',
-]);
-
-/**
- * Core blocks rendered on the server (no saved HTML): they need the block
- * engine (`/wp/v2/block-renderer`) to show anything on the site.
- * From block-library: the blocks without a `save` function, plus containers
- * that only make sense with them.
- */
-export const DYNAMIC_BLOCKS: ReadonlySet<string> = new Set([
   'core/archives',
   'core/avatar',
   'core/breadcrumbs',

@@ -179,6 +179,18 @@
   animation: rise var(--duration-base) var(--ease-out);
 }
 
+/* A setting that only applies while the checkbox above it is on (Discussion). */
+.nested {
+  margin: calc(-1 * var(--space-2)) 0 0 0.5rem;
+  padding-left: var(--space-5);
+  border-left: 2px solid var(--color-border);
+}
+
+/* Numbers and short choices don't need the full card width. */
+.short {
+  max-width: 20rem;
+}
+
 @media (max-width: 860px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);

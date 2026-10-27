@@ -1,0 +1,236 @@
+.table th:nth-child(4),
+.table td:nth-child(4) {
+  width: 13rem;
+}
+
+.table th:nth-child(5),
+.table td:nth-child(5) {
+  width: 11rem;
+}
+
+/* Held comments stand out with a warning edge and a "Pending" label, never colour alone. */
+.row[data-status="hold"] td:first-child {
+  box-shadow: inset 3px 0 0 var(--color-warning);
+}
+
+.row[data-status="hold"] {
+  background: color-mix(in srgb, var(--color-warning-soft) 55%, transparent);
+}
+
+.authorCol {
+  width: 15rem;
+}
+
+.author {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.avatar {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-full);
+  background: hsl(var(--hue) 55% 90%);
+  color: hsl(var(--hue) 50% 26%);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.02em;
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme="light"])) .avatar {
+    background: hsl(var(--hue) 30% 24%);
+    color: hsl(var(--hue) 70% 86%);
+  }
+}
+
+:global(:root[data-theme="dark"]) .avatar {
+  background: hsl(var(--hue) 30% 24%);
+  color: hsl(var(--hue) 70% 86%);
+}
+
+.authorText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.authorName {
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+a.meta:hover {
+  color: var(--color-accent-text);
+  text-decoration: underline;
+}
+
+.commentCell {
+  min-width: 16rem;
+}
+
+.pendingBadge {
+  display: inline-block;
+  margin-bottom: var(--space-1);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  line-height: 1.25rem;
+}
+
+.pendingCount {
+  min-width: 1.25rem;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--color-warning);
+  color: var(--color-surface);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25rem;
+  text-align: center;
+}
+
+.replyTo {
+  margin: 0 0 var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.replyLink {
+  color: var(--color-accent-text);
+}
+
+.text {
+  max-width: 60ch;
+  overflow-wrap: anywhere;
+}
+
+.text p {
+  margin: 0;
+}
+
+.text p + p {
+  margin-top: var(--space-2);
+}
+
+.narrowMeta {
+  display: none;
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.postLink {
+  display: block;
+  color: var(--color-text);
+  font-weight: var(--weight-medium);
+  text-decoration: none;
+}
+
+.postLink:hover {
+  color: var(--color-accent-text);
+  text-decoration: underline;
+}
+
+.date {
+  white-space: nowrap;
+}
+
+.bulkbar {
+  flex-wrap: wrap;
+}
+
+.selectedCount {
+  white-space: nowrap;
+}
+
+.bulkButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 44rem;
+  margin-top: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.panel textarea {
+  height: auto;
+  padding: var(--space-2) var(--space-3);
+  resize: vertical;
+}
+
+.panelActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.editGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+@media (max-width: 860px) {
+  .authorCol {
+    width: auto;
+  }
+
+  .narrowMeta {
+    display: block;
+  }
+
+  .editGrid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Author above the comment: the row reads top to bottom. */
+  .table tbody tr {
+    display: grid;
+    grid-template-columns: 2.75rem minmax(0, 1fr);
+  }
+
+  .table tbody td:nth-child(2) {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .table tbody td:nth-child(3) {
+    grid-column: 2;
+    min-width: 0;
+  }
+
+  .table tbody td:first-child {
+    grid-row: span 2;
+  }
+
+  /* Only "Select all" stays in the header row. */
+  .table thead th:not(:first-child) {
+    display: none;
+  }
+}
