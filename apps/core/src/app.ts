@@ -10,7 +10,10 @@ import type { Kernel } from './kernel';
 import { authRoutes } from './routes/auth';
 import { dashboardRoutes } from './routes/dashboard';
 import { installRoutes } from './routes/install';
+import { postsRoutes } from './routes/posts';
 import { settingsRoutes } from './routes/settings';
+import { termsRoutes } from './routes/terms';
+import { typeRoutes } from './routes/types';
 import { userRoutes } from './routes/users';
 import { PRESSBASE_VERSION } from './version';
 
@@ -59,6 +62,17 @@ export function createApp(kernel: Kernel) {
   installed.route('/pressbase/v1/dashboard', dashboardRoutes());
   installed.route('/wp/v2/users', userRoutes());
   installed.route('/wp/v2/settings', settingsRoutes());
+  installed.route('/wp/v2', typeRoutes());
+  // One controller per registered type and taxonomy, at its rest_base. Plugins
+  // register theirs before the app is built (the plugin loader arrives in v0.5).
+  for (const type of kernel.postTypes.all()) {
+    if (type.showInRest && ['post', 'page'].includes(type.name)) {
+      installed.route(`/wp/v2/${type.restBase}`, postsRoutes(type));
+    }
+  }
+  for (const taxonomy of kernel.taxonomies.all()) {
+    if (taxonomy.showInRest) installed.route(`/wp/v2/${taxonomy.restBase}`, termsRoutes(taxonomy));
+  }
   api.route('/', installed);
 
   app.route('/wp-json', api);

@@ -1,6 +1,11 @@
 import { connect, type DatabaseConnection } from '@pressbase/db';
 import { HookBus } from '@pressbase/hooks';
 import type { Config } from './config';
+import { PostStatusRegistry } from './content/post-statuses';
+import { PostTypeRegistry, registerCorePostTypes } from './content/post-types';
+import { PostsService } from './content/posts';
+import { registerCoreTaxonomies, TaxonomyRegistry } from './content/taxonomies';
+import { TermsService } from './content/terms';
 import { registerCoreSettings, SettingsRegistry } from './options/settings';
 import { Options } from './options/store';
 import { DB_VERSION } from './version';
@@ -15,17 +20,25 @@ export type SiteState = 'needs-database' | 'needs-install' | 'ready';
  * The kernel owns the long-lived pieces of a running site — the replacement
  * for the globals WordPress sets up in wp-settings.php.
  *
- * Boot order: config → database (+ migrations) → options → `init` action.
+ * Boot order: config → registries (settings, post types, taxonomies) →
+ * database (+ migrations) → options → `init` action.
  */
 export class Kernel {
   readonly hooks = new HookBus();
   readonly settings = new SettingsRegistry();
+  readonly postTypes = new PostTypeRegistry();
+  readonly postStatuses = new PostStatusRegistry();
+  readonly taxonomies = new TaxonomyRegistry();
+  readonly posts = new PostsService(this);
+  readonly terms = new TermsService(this);
   #connection: DatabaseConnection | undefined;
   #options: Options | undefined;
   #state: SiteState = 'needs-database';
 
   constructor(readonly config: Config) {
     registerCoreSettings(this.settings);
+    registerCorePostTypes(this.postTypes);
+    registerCoreTaxonomies(this.taxonomies);
   }
 
   get state(): SiteState {

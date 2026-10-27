@@ -1,68 +1,10 @@
-import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createApp } from './app';
 import { DEFAULT_ROLES, resolveCapabilities } from './auth/capabilities';
 import { hashPassword, needsRehash, verifyPassword } from './auth/password';
-import type { Config } from './config';
-import { Kernel } from './kernel';
-
-const SITE = {
-  title: 'Test Site',
-  username: 'admin',
-  password: 'correct horse battery staple',
-  email: 'admin@example.com',
-  url: 'http://localhost:3000/',
-  timezone: 'Asia/Kolkata',
-};
-
-const kernels: Kernel[] = [];
-const dirs: string[] = [];
-
-afterEach(async () => {
-  await Promise.all(kernels.splice(0).map((k) => k.shutdown()));
-  await Promise.all(dirs.splice(0).map((d) => rm(d, { recursive: true, force: true })));
-});
-
-async function setup(overrides: Partial<Config> = {}) {
-  const dataDir = await mkdtemp(path.join(tmpdir(), 'pressbase-test-'));
-  dirs.push(dataDir);
-  const kernel = new Kernel({
-    dataDir,
-    port: 0,
-    databaseUrl: 'pglite:memory',
-    databaseFromEnv: true,
-    setupToken: undefined,
-    ...overrides,
-  });
-  kernels.push(kernel);
-  await kernel.boot();
-  const app = createApp(kernel);
-
-  let cookie = '';
-  const request = async (
-    method: string,
-    url: string,
-    body?: unknown,
-    headers: Record<string, string> = {},
-  ) => {
-    const res = await app.request(`/wp-json${url}`, {
-      method,
-      headers: {
-        'content-type': 'application/json',
-        'x-pressbase-request': '1',
-        ...(cookie ? { cookie } : {}),
-        ...headers,
-      },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    const setCookie = res.headers.get('set-cookie');
-    if (setCookie) cookie = setCookie.split(';')[0] ?? '';
-    return { status: res.status, body: (await res.json()) as Record<string, any> };
-  };
-  return { kernel, request, dataDir, clearCookie: () => (cookie = '') };
-}
+import { SITE, setup } from './test-utils';
 
 describe('installer', () => {
   it('reports needs-install when the database is configured but empty', async () => {
