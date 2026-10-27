@@ -8,6 +8,7 @@ import {
 } from './http';
 import type { Kernel } from './kernel';
 import { authRoutes } from './routes/auth';
+import { autosavesRoutes } from './routes/autosaves';
 import { dashboardRoutes, postCountRoutes } from './routes/dashboard';
 import { installRoutes } from './routes/install';
 import { postsRoutes } from './routes/posts';
@@ -73,6 +74,12 @@ export function createApp(kernel: Kernel) {
   }
   for (const taxonomy of kernel.taxonomies.all()) {
     if (taxonomy.showInRest) installed.route(`/wp/v2/${taxonomy.restBase}`, termsRoutes(taxonomy));
+  }
+  // Autosaves (WP_REST_Autosaves_Controller) for the same types, when they keep revisions.
+  for (const type of kernel.postTypes.all()) {
+    if (type.showInRest && ['post', 'page'].includes(type.name) && type.supports.has('revisions')) {
+      installed.route(`/wp/v2/${type.restBase}`, autosavesRoutes(type));
+    }
   }
   api.route('/', installed);
 

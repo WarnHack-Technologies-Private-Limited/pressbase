@@ -15,6 +15,7 @@ These docs live with the code and change in the same pull requests. If a doc is 
 - [Content](architecture/content.md): post types, statuses, taxonomies, queries, permissions, sanitising.
 - [Hooks](architecture/hooks.md): actions and filters, and the hooks core fires.
 - [REST API](architecture/rest-api.md): endpoints, errors, authentication.
+- [Block editor](architecture/block-editor.md): how Gutenberg runs in the admin, api-fetch, hidden blocks, autosave.
 - [Installer](architecture/installer.md): site states, the install flow, configuration.
 - [Security](architecture/security.md): threat model and protections.
 

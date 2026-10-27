@@ -78,5 +78,7 @@ Undeclared names still work, with `unknown` arguments.
 | `delete_term`    | action | `termId, taxonomy, term`   | after a term is deleted                            |
 | `content_query_args` | filter | `args`                 | before every `ContentQuery` runs (like `pre_get_posts`) |
 | `rest_prepare_{type}` | filter | `item, post, context`  | each post or page in a REST response               |
+| `wp_creating_autosave` | action | `autosave, isUpdate` | before an existing autosave revision is overwritten |
+| `rest_prepare_autosave` | filter | `item, revision`     | each autosave in a REST response                   |
 
 **When you add a hook to core,** use WordPress's name if WordPress has an equivalent. Add it to this table and declare its types.

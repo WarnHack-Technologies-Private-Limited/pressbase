@@ -125,15 +125,6 @@ const { posts, found, maxPages } = await queryPosts(kernel, {
 
 `content.rendered` in the REST API is the content with block delimiters removed, which is the saved HTML of static blocks. Dynamic blocks (latest posts, navigation, …) render once the block engine lands in v0.3.
 
-## The admin's writing view
+## The admin's editor
 
-The interim editor (`apps/admin/src/lib/simple-blocks.ts`) converts lightweight text into Gutenberg block markup:
-
-- paragraphs;
-- `##` headings;
-- `-` and `1.` lists;
-- `>` quotes;
-- `---` separators;
-- `**bold**`, `*italic*`, `` `code` `` and `[links](https://…)`.
-
-It's lossless: content it can't represent exactly opens in **code view** instead, so nothing is silently changed.
+Posts and pages are written in the Gutenberg block editor (`@wordpress/block-editor`), and saved as standard block markup. A **Code** view edits that markup directly. Content that isn't block markup opens as a Custom HTML block, unchanged. Autosaves are revisions with the slug `{id}-autosave-v1` (`content/autosaves.ts`). See [Block editor](block-editor.md).

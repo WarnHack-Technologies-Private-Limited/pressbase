@@ -92,7 +92,17 @@ toast('Could not save.', { tone: 'danger' });
 | Component | Pattern |
 |---|---|
 | `PostList` | Status tabs with counts. Search, plus a category filter for posts. Row actions appear on hover or focus, and always on touch. Bulk selection reveals a bulk bar. Pages show as an indented tree. Filters live in the URL, so views can be shared. |
-| `PostEditor` | Sticky action bar: back, status badge, save state, a secondary action and one primary action whose label says exactly what will happen (Publish / Schedule / Update / Submit for review). Writing canvas with Write/Code views. A sidebar of collapsible panels. ⌘/Ctrl+S saves. A warning before leaving with unsaved changes. |
+| `PostEditor` | Sticky action bar: back, status badge, save state, a secondary action and one primary action whose label says exactly what will happen (Publish / Schedule / Update / Submit for review), and a Settings toggle. The canvas is the block editor (below) with a **Code** view for raw markup. A sidebar with **Post** and **Block** tabs; the Block tab opens when a block is selected. ⌘/Ctrl+S saves, from inside the canvas too. A warning before leaving with unsaved changes. A newer autosave or browser copy is offered back in a calm notice (Restore / Dismiss), never a modal. |
 | `TagInput` | ARIA combobox: type, then Enter or comma; arrow keys move through suggestions; Backspace removes the last tag. New tags are created on save. |
 | `TermsScreen` | Add form on the left, table on the right, inline editing in place. |
 
+## Block editor: `components/block-editor/`
+
+Gutenberg inside Pressbase's chrome. Architecture and wiring: [Block editor](../architecture/block-editor.md).
+
+- **Layout.** The editor fills the viewport under the action bar; the canvas and the sidebar scroll on their own, like WordPress. The title sits inside the canvas, in the content's typeface, so the page reads like what will be published.
+- **Our toolbar, their tools.** The editor toolbar (Add block, Undo, Redo, List view, word count, Visual/Code) is built from our `Button`s and follows the admin theme. Gutenberg's own UI (block toolbar, inserter, list view, inspector, popovers) keeps its familiar look, with our accent colour and softer radii.
+- **Light islands in dark mode.** WordPress's components are light-only, and the canvas previews content in the colours readers see. So the canvas, the inserter and list view panels, the Block tab and every popover stay light in dark mode. They're framed as paper on a dark desk, not themed halfway. The `lightScope` class (exported by the block editor) re-declares the light tokens for any container of WordPress UI.
+- **Panels.** Add block and List view open a panel on the canvas's left edge: beside the canvas when there's room, over it when there isn't. Opening moves focus into the panel (search field / tree); Escape closes it and returns focus to its toggle. Choosing a block closes the inserter and focuses the new block.
+- **Narrow screens.** Below 1100px the sidebar is a drawer from the right, opened with the Settings toggle and closed with Escape or its close button. Below 480px the canvas runs edge to edge.
+- **Unavailable features are hidden, not broken.** Blocks that need server pieces that aren't there yet are left out of the inserter; uploads without a media library explain what to do instead ("Use “Insert from URL” instead").

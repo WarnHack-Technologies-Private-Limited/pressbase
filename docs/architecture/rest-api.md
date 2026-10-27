@@ -21,7 +21,9 @@ Everything is served under `/wp-json`, as in WordPress:
 | GET                      | `/pressbase/v1/post-counts/{type}`     | `edit_{type}s`   | Items per status, for the admin's status tabs (`wp_count_posts`). |
 | GET / POST               | `/wp/v2/posts`, `/wp/v2/pages`         | read: public · write: see below | List and create. Supports WordPress's collection parameters. |
 | GET / POST / PUT / PATCH / DELETE | `/wp/v2/{posts\|pages}/{id}`  | `read_post` / `edit_post` / `delete_post` | One item. `DELETE` trashes; `?force=true` deletes permanently. |
-| GET                      | `/wp/v2/{posts\|pages}/{id}/revisions` | `edit_post`     | Revision history, newest first.                                   |
+| GET                      | `/wp/v2/{posts\|pages}/{id}/revisions` | `edit_post`     | Revision history, newest first. Includes autosaves, as in WordPress. |
+| GET / POST               | `/wp/v2/{posts\|pages}/{id}/autosaves` | `edit_post`     | Autosaves (`WP_REST_Autosaves_Controller`). `POST` takes `title`, `content`, `excerpt`: the author's own draft is updated in place, without a revision; anything else gets the user's single autosave revision (`{id}-autosave-v1`), updated in place. See [Block editor](block-editor.md#autosave). |
+| GET                      | `/wp/v2/{posts\|pages}/{parent}/autosaves/{id}` | `edit_post` | The newest autosave of the post (WordPress ignores `{id}` here too). |
 | GET / POST               | `/wp/v2/categories`, `/wp/v2/tags`     | read: public · create: see below | Terms. `DELETE ?force=true` only (terms have no trash). |
 | GET / POST / PUT / PATCH / DELETE | `/wp/v2/{categories\|tags}/{id}` | `edit_term` / `delete_term` | One term.                                           |
 | GET                      | `/wp/v2/types`, `/wp/v2/taxonomies`, `/wp/v2/statuses` | public | Registered post types, taxonomies and statuses (labels, capabilities with `context=edit`). |
@@ -77,6 +79,9 @@ The shape matches WordPress:
 | `rest_post_invalid_id`             | 404       | No such post or page.                                                      |
 | `rest_cannot_publish`, `rest_cannot_edit`, `rest_cannot_delete` | 401 / 403 | See *Who may write what*.                    |
 | `rest_already_trashed`             | 410       | `DELETE` on an item already in the Trash (use `?force=true`).              |
+| `rest_post_invalid_parent`         | 404       | Revisions or autosaves of a post that doesn't exist.                       |
+| `rest_post_no_autosave`            | 404       | The post has no autosave.                                                  |
+| `rest_cannot_read`                 | 401 / 403 | Revisions or autosaves of a post you can't edit.                           |
 | `rest_post_invalid_page_number`    | 400       | `page` is past the last page.                                              |
 | `term_exists`                      | 400       | A term with that name or slug exists; `data.term_id` is the existing term. |
 | `rest_trash_not_supported`         | 501       | `DELETE` on a term without `?force=true`.                                  |
