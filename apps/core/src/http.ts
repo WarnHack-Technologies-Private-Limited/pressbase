@@ -49,7 +49,8 @@ export const requireRequestHeader: MiddlewareHandler<AppEnv> = async (c, next) =
   if (
     UNSAFE_METHODS.has(c.req.method) &&
     !c.req.header('authorization') &&
-    !c.req.header('x-pressbase-request')
+    !c.req.header('x-pressbase-request') &&
+    !isAnonymousComment(c)
   ) {
     return restError(
       c,
@@ -60,6 +61,22 @@ export const requireRequestHeader: MiddlewareHandler<AppEnv> = async (c, next) =
   }
   await next();
 };
+
+/**
+ * The one exception to the header rule: a visitor *without a session cookie*
+ * posting a new comment to /wp/v2/comments. With no cookie there are no
+ * ambient credentials to abuse, so a cross-site request can do nothing the
+ * visitor couldn't do directly; it's how a public comment form can post
+ * without the admin's JavaScript. With a cookie, the header is required as
+ * usual. See docs/architecture/security.md.
+ */
+function isAnonymousComment(c: Context): boolean {
+  return (
+    c.req.method === 'POST' &&
+    /\/wp-json\/wp\/v2\/comments\/?$/.test(c.req.path) &&
+    getCookie(c, SESSION_COOKIE) === undefined
+  );
+}
 
 /** Rejects requests until the site is installed. */
 export const requireInstalled: MiddlewareHandler<AppEnv> = async (c, next) => {

@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
         source: '/wp-content/uploads/:path*',
         destination: `${CORE_URL}/wp-content/uploads/:path*`,
       },
+      // The public comment form posts here (wp-comments-post.php), until apps/web exists.
+      { source: '/wp-comments-post', destination: `${CORE_URL}/wp-comments-post` },
     ];
   },
   poweredByHeader: false,

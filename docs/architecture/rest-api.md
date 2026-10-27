@@ -34,6 +34,10 @@ Everything is served under `/wp-json`, as in WordPress:
 | GET                      | `/wp/v2/block-types`, `/wp/v2/block-types/{namespace}`, `/wp/v2/block-types/{namespace}/{name}` | `edit_posts` (any type) | Registered block types: attributes, context, supports, `is_dynamic`. `?namespace=` filters. |
 | GET / POST               | `/wp/v2/block-renderer/{namespace}/{name}` | `edit_posts`, or `edit_post` with `post_id` | Renders a dynamic block: `{ rendered }`. Takes `attributes` (query `attributes[key]=…` or JSON body), `post_id`, `context`. |
 | GET                      | `/wp/v2/block-patterns/patterns`, `/wp/v2/block-patterns/categories` | `edit_posts` (any type) | Registered patterns and pattern categories. |
+| GET / POST               | `/wp/v2/comments`                  | read: public (approved comments on readable posts) · create: anyone, when the post is open | Comments. See *Comments* below. |
+| GET / POST / PUT / PATCH / DELETE | `/wp/v2/comments/{id}`    | read: as the post · write: `edit_comment` | One comment. `DELETE` trashes; `?force=true` deletes permanently. |
+| GET                      | `/pressbase/v1/comment-counts`     | `moderate_comments` | Comments per status (`wp_count_comments()`) plus `mine`, for the admin's tabs. |
+| POST                     | `/wp-comments-post` (outside `/wp-json`) | anyone | The classic comment form, `application/x-www-form-urlencoded`. Redirects back, or shows an error page. See [Comments](comments.md#the-form-endpoint-post-wp-comments-post). |
 | GET / POST               | `/wp/v2/blocks`                        | read: `edit_posts` · create: `publish_posts` | Synced patterns (`wp_block`). Same parameters as posts. |
 | GET / POST / PUT / PATCH / DELETE | `/wp/v2/blocks/{id}`          | `edit_post` / `delete_post` | One synced pattern: `title.raw`, `content.raw`, `wp_pattern_sync_status`; write it with `meta.wp_pattern_sync_status`. |
 
@@ -74,6 +78,16 @@ These rules are ported from `WP_REST_Posts_Controller` and `map_meta_cap()`:
 Content, titles and excerpts from users without `unfiltered_html` are sanitised (see [Content](content.md#sanitising)).
 
 `content.rendered` runs the block renderer: dynamic blocks render with the post as their context (see [Blocks](blocks.md)).
+
+### Comments
+
+`/wp/v2/comments` ports `WP_REST_Comments_Controller`. The pipeline behind it is in [Comments](comments.md).
+
+- **Collection parameters:** `context`, `page`, `per_page`, `search` (name, email, URL, IP, content), `after`, `before`, `author`, `author_exclude`, `author_email`, `include`, `exclude`, `offset`, `order`, `orderby` (`date`, `date_gmt`, `id`, `include`, `post`, `parent`, `type`), `parent` (`0` for top-level), `parent_exclude`, `post`, `status` (default `approve`; also `hold`, `spam`, `trash`, `all`), `type` (default `comment`), `password`. Without `edit_posts`, `author`, `author_exclude`, a non-default `type` or `status` are refused (`rest_forbidden_param`); `author_email` needs `moderate_comments` (WordPress: `edit_posts`).
+- **Fields:** `id`, `post`, `parent`, `author`, `author_name`, `author_url`, `date`, `date_gmt`, `content.rendered`, `link`, `status` (`approved`, `hold`, `spam`, `trash`), `type`, `author_avatar_urls` (24, 48, 96), `meta`. `context=edit` adds `author_email`, `author_ip`, `author_user_agent` and `content.raw`.
+- **Create:** `post`, `content`, `parent`, `author_name`, `author_email`, `author_url`, `date`/`date_gmt`; moderators also `author`, `author_ip`, `author_user_agent`, `status`. Logged-in users post as themselves. The response uses the edit context for moderators.
+- **Anonymous comments** work without logging in (WordPress needs the `rest_allow_anonymous_comments` filter for that; Pressbase's defaults to true), and a visitor **without a session cookie** may send this one request without `X-Pressbase-Request` (see [Security](security.md)).
+- **Update:** the same fields, plus `status`: `approved`, `hold`, `spam`, `unspam`, `trash`, `untrash` (`handle_status_param()`). The stored IP isn't overwritten with the editor's.
 
 ## Errors
 
@@ -118,12 +132,24 @@ The shape matches WordPress:
 | `block_cannot_read`                | 401 / 403 | Block renderer without `edit_posts`, or without `edit_post` on `post_id`.  |
 | `block_invalid`                    | 404       | Block renderer for an unknown or static (non-dynamic) block.               |
 | `rest_cannot_view`                 | 401 / 403 | Block patterns or pattern categories without edit rights.                  |
+| `rest_comment_invalid_id`          | 404       | No such comment.                                                           |
+| `rest_comment_login_required`      | 401       | Commenting needs a login (`comment_registration`, or anonymous comments turned off). |
+| `rest_comment_closed`              | 403       | Comments are closed on the post (its setting, or its age).                 |
+| `rest_comment_invalid_post_id`, `rest_comment_draft_post`, `rest_comment_trash_post` | 403 | No post, or a draft or trashed one.        |
+| `rest_comment_author_data_required` | 400      | `require_name_email` is on and the name or email is missing.               |
+| `rest_comment_content_invalid`     | 400       | Empty content.                                                             |
+| `comment_duplicate`                | 409       | The same comment was already posted.                                       |
+| `comment_flood`                    | 400       | Another comment from the same address or person less than 15 seconds ago.  |
+| `comment_*_column_length`          | 400       | A field is longer than WordPress allows.                                   |
+| `rest_comment_invalid_author`, `rest_comment_invalid_author_ip`, `rest_comment_invalid_status` | 401 / 403 | Setting fields only moderators may set. |
+| `rest_cannot_edit`, `rest_cannot_delete` | 401 / 403 | Changing a comment without `edit_comment`.                           |
+| `rest_forbidden_param`             | 401 / 403 | A list filter you may not use.                                             |
 | `pressbase_db_*`                   | 400       | Installer database problems. `data.hint` holds the next step for the user. |
 | `pressbase_already_installed`      | 409       | Installer called on an installed site.                                     |
 
 ## Authentication
 
-- **Browser:** a session cookie (`pressbase_session`) from `auth/login` or the installer. Every unsafe request also needs the `X-Pressbase-Request: 1` header.
+- **Browser:** a session cookie (`pressbase_session`) from `auth/login` or the installer. Every unsafe request also needs the `X-Pressbase-Request: 1` header. The one exception is `POST /wp/v2/comments` from a visitor with no session cookie (see [Security](security.md)).
 - **API clients:** application passwords over `Authorization: Basic` are planned for v0.2. Requests with an `Authorization` header are exempt from the CSRF header rule.
 
 ## Adding a route

@@ -97,6 +97,15 @@ Ported from `wp-includes/blocks/*.php`, with the same markup and class names so 
 | `core/loginout` | current user | Links to the admin's login screen; "login as form" shows the link. |
 | `core/block` | `wp_block` post | Synced pattern reference, with the recursion guard. |
 | `core/post-title`, `core/post-date`, `core/post-excerpt`, `core/post-author-name`, `core/post-terms` | `postId` from context | Render nothing without a post. |
+| `core/comments` | `postId` | Its saved wrapper with inner blocks; nothing when comments are closed and there are none. `legacy` renders a built-in classic layout. |
+| `core/comment-template` | `kernel.comments.thread()` | The threaded list; renders its inner blocks once per comment with `commentId` in context. Paging from the `cpage` query variable. |
+| `core/comment-author-name`, `core/comment-content`, `core/comment-date`, `core/comment-edit-link`, `core/comment-reply-link` | `commentId` from context | The edit link needs `edit_comment`; the reply link stops at `thread_comments_depth`. |
+| `core/comments-title` | the post's `comment_count` | "4 responses to “Title”" and variants. |
+| `core/comments-pagination`, `-previous`, `-next`, `-numbers` | comment pages | Only with `page_comments` on. |
+| `core/post-comments-form` | Discussion settings | WordPress's `#respond` form, posting to `/wp-comments-post`. |
+| `core/latest-comments` | approved comments on published posts | Avatars, dates, excerpts. |
+
+Comment block metadata lives in `apps/core/src/blocks/comment-metadata.ts`. Render calls can pass `query` (the page's query variables) for the comment blocks; see [Comments](comments.md#showing-comments-blocks).
 
 ## Patterns
 

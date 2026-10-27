@@ -4,6 +4,7 @@ import Link from 'next/link';
 import styles from '@/components/shell/page.module.css';
 import { PageHeader } from '@/components/shell/page-header';
 import { Badge, Card, Notice } from '@/components/ui/surface';
+import { commentPlainText, type RestComment } from '@/lib/comments';
 import { coreGet, type Me, type SiteIndex } from '@/lib/core';
 
 export const metadata: Metadata = { title: 'Dashboard' };
@@ -46,6 +47,12 @@ export default async function DashboardPage() {
   ]);
   const firstName = me.name.split(/\s+/)[0];
   const canManage = Boolean(me.capabilities.manage_options);
+  const canModerate = Boolean(me.capabilities.moderate_comments);
+  // Recent comments, for people who moderate them (WordPress's Activity widget).
+  const comments = canModerate
+    ? await coreGet<RestComment[]>('/wp/v2/comments?per_page=5&status=all&context=edit')
+    : undefined;
+  const recentComments = comments?.status === 200 ? comments.data : [];
 
   const steps: {
     label: string;
@@ -79,7 +86,7 @@ export default async function DashboardPage() {
   ];
   const completed = steps.filter((s) => s.done).length;
 
-  const stats = [
+  const stats: { label: string; value: number; meta?: string; href?: string }[] = [
     { label: 'Published posts', value: data.counts.posts },
     { label: 'Drafts', value: data.counts.drafts },
     { label: 'Pages', value: data.counts.pages },
@@ -89,6 +96,7 @@ export default async function DashboardPage() {
       meta: data.counts.pendingComments
         ? `${data.counts.pendingComments} awaiting moderation`
         : undefined,
+      href: canModerate ? '/admin/comments?comment_status=moderated' : undefined,
     },
   ];
 
@@ -114,7 +122,14 @@ export default async function DashboardPage() {
               <div key={stat.label} className={styles.stat}>
                 <span className={styles.statValue}>{stat.value.toLocaleString('en')}</span>
                 <span className={styles.statLabel}>{stat.label}</span>
-                {stat.meta && <span className={styles.statMeta}>{stat.meta}</span>}
+                {stat.meta &&
+                  (stat.href ? (
+                    <Link href={stat.href} className={styles.statMeta}>
+                      {stat.meta}
+                    </Link>
+                  ) : (
+                    <span className={styles.statMeta}>{stat.meta}</span>
+                  ))}
               </div>
             ))}
           </section>
@@ -197,7 +212,7 @@ export default async function DashboardPage() {
           </Card>
         </div>
 
-        <div className={styles.span12}>
+        <div className={canModerate ? styles.span8 : styles.span12}>
           <Card title="Recently edited">
             {data.recent.length === 0 ? (
               <p style={{ color: 'var(--color-text-muted)' }}>
@@ -223,6 +238,41 @@ export default async function DashboardPage() {
             )}
           </Card>
         </div>
+
+        {canModerate && (
+          <div className={styles.span4}>
+            <Card
+              title="Recent comments"
+              actions={
+                <Link href="/admin/comments" className={styles.cardLink}>
+                  View all
+                </Link>
+              }
+            >
+              {recentComments.length === 0 ? (
+                <p style={{ color: 'var(--color-text-muted)' }}>
+                  No comments yet. When readers comment, they’ll show here.
+                </p>
+              ) : (
+                <ul className={styles.list}>
+                  {recentComments.map((comment) => (
+                    <li key={comment.id} className={styles.commentItem}>
+                      <Link href={`/admin/comments?c=${comment.id}`} className={styles.listTitle}>
+                        {commentPlainText(comment.content.rendered) || '(empty)'}
+                      </Link>
+                      <span className={styles.listMeta}>
+                        {comment.author_name || 'Anonymous'}
+                        {comment.status === 'hold' ? ' · Pending' : ''}
+                        {comment.status === 'spam' ? ' · Spam' : ''} ·{' '}
+                        {relativeTime(`${comment.date_gmt}Z`)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          </div>
+        )}
       </div>
     </>
   );

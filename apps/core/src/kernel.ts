@@ -1,6 +1,7 @@
 import { connect, type DatabaseConnection } from '@pressbase/db';
 import { HookBus } from '@pressbase/hooks';
 import { BlocksService } from './blocks/service';
+import { CommentsService } from './comments/service';
 import type { Config } from './config';
 import { PostStatusRegistry } from './content/post-statuses';
 import { PostTypeRegistry, registerCorePostTypes } from './content/post-types';
@@ -34,6 +35,8 @@ export class Kernel {
   readonly terms = new TermsService(this);
   /** Block types, patterns and do_blocks() (see docs/architecture/blocks.md). */
   readonly blocks = new BlocksService(this);
+  /** Comments, moderation and the Discussion settings (see docs/architecture/comments.md). */
+  readonly comments = new CommentsService(this);
   #connection: DatabaseConnection | undefined;
   #options: Options | undefined;
   #state: SiteState = 'needs-database';

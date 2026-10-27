@@ -97,6 +97,7 @@ toast('Could not save.', { tone: 'danger' });
 | `PostEditor` | Sticky action bar: back, status badge, save state, a secondary action and one primary action whose label says exactly what will happen (Publish / Schedule / Update / Submit for review), and a Settings toggle. The canvas is the block editor (below) with a **Code** view for raw markup. A sidebar with **Post** and **Block** tabs; the Block tab opens when a block is selected. ⌘/Ctrl+S saves, from inside the canvas too. A warning before leaving with unsaved changes. A newer autosave or browser copy is offered back in a calm notice (Restore / Dismiss), never a modal. |
 | `TagInput` | ARIA combobox: type, then Enter or comma; arrow keys move through suggestions; Backspace removes the last tag. New tags are created on save. |
 | `TermsScreen` | Add form on the left, table on the right, inline editing in place. |
+| `CommentsScreen` (`components/comments/`) | Status tabs with a warning-coloured Pending count. Pending rows carry a "Pending" label and a warning edge (never colour alone). Author column with initials avatar, email and IP. Row actions change with the status (Approve / Unapprove, Reply, Quick edit, Spam, Trash; Not spam, Restore, Delete permanently). Reply and Quick edit open in place; Escape cancels, ⌘/Ctrl+Enter submits. Every status change ends in a toast with Undo; permanent deletion asks first. On phones, rows stack: author over comment, with the post and date folded in. |
 
 ## Media: `components/media/`
 

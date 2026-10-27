@@ -41,6 +41,8 @@ export interface RenderInput {
   user?: CurrentUser | null;
   /** True when rendering for a REST response (wp_is_serving_rest_request()). */
   rest?: boolean;
+  /** Query variables of the page being rendered (`cpage`, `replytocom`…), for the comment blocks. */
+  query?: Record<string, string>;
 }
 
 /** wp_pattern_sync_status: '' (synced, the default), 'partial' or 'unsynced'. */
@@ -111,7 +113,12 @@ export class BlocksService {
     return {
       registry: this.registry,
       hooks: this.kernel.hooks,
-      services: { kernel: this.kernel, user: input.user ?? null, rest: input.rest ?? false },
+      services: {
+        kernel: this.kernel,
+        user: input.user ?? null,
+        rest: input.rest ?? false,
+        query: input.query ?? {},
+      },
       context: input.context,
     };
   }

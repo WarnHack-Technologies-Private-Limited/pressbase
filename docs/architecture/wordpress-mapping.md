@@ -37,12 +37,17 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | `WP_Block_Type_Registry`, `register_block_type` | `BlockTypeRegistry`; `kernel.blocks.registerBlockType()` | Keys follow `block.json`. |
 | `WP_Block`, `render_block`, `do_blocks` | `packages/blocks/src/block.ts`; `kernel.blocks.render()` | Async render callbacks; same filters. |
 | `esc_html`, `esc_attr`, `esc_url` | `escHtml`, `escAttr`, `escUrl` in `@pressbase/blocks` | |
-| `wp-includes/blocks/*.php` (dynamic blocks) | `apps/core/src/blocks/library/` | Latest posts, categories, archives, tag cloud, page list, search, site title and tagline, login/out, synced pattern, post title/date/excerpt/author/terms. |
+| `wp-includes/blocks/*.php` (dynamic blocks) | `apps/core/src/blocks/library/` | Latest posts, categories, archives, tag cloud, page list, search, site title and tagline, login/out, synced pattern, post title/date/excerpt/author/terms, and the comment blocks. |
 | `register_block_pattern`, `register_block_pattern_category` | `kernel.blocks.registerBlockPattern()`, `registerBlockPatternCategory()` | |
 | `WP_REST_Block_Types_Controller`, `WP_REST_Block_Renderer_Controller`, `WP_REST_Block_Patterns_Controller`, `WP_REST_Block_Pattern_Categories_Controller`, `WP_REST_Blocks_Controller` | `apps/core/src/routes/blocks.ts` | See [REST API](rest-api.md). |
 | `wp_handle_upload()`, `wp_unique_filename()`, `sanitize_file_name()`, `wp_check_filetype_and_ext()`, `wp_create_image_subsizes()`, `wp_delete_attachment()` | `apps/core/src/media/` | Storage adapters instead of direct disk writes; sharp instead of GD/Imagick. See [Media](media.md). |
 | `WP_REST_Attachments_Controller` | `apps/core/src/routes/media.ts` | |
 | `upload.php`, `options-media.php`, the media modal | `/admin/media`, `/admin/settings/media`, `MediaPicker` | |
+| `wp_new_comment()`, `wp_allow_comment()`, `check_comment()`, `wp_check_comment_disallowed_list()`, `wp_insert_comment()`, `wp_update_comment()`, `wp_set_comment_status()`, `wp_trash_comment()`, `wp_spam_comment()`, `wp_delete_comment()`, `wp_update_comment_count()`, `wp_count_comments()`, `WP_Comment_Query` | `apps/core/src/comments/service.ts` (`kernel.comments`) | See [Comments](comments.md). Disallowed keys mark spam rather than trash. |
+| `get_comment_link()`, `get_page_of_comment()`, `get_avatar_url()`, `wp_rel_ugc()`, `$allowedtags` | `apps/core/src/comments/links.ts`, `format.ts` | |
+| `WP_REST_Comments_Controller` | `apps/core/src/routes/comments.ts` | Anonymous comments allowed by default. |
+| `wp-comments-post.php` | `POST /wp-comments-post`, `apps/core/src/routes/comments-post.ts` | |
+| `edit-comments.php`, `options-discussion.php` | `/admin/comments`, `/admin/settings/discussion` | |
 | `edit.php`, `post.php`, `edit-tags.php`, `options-reading.php`, `options-writing.php` | `/admin/posts`, `/admin/posts/{id}`, `/admin/posts/categories`, `/admin/settings/reading`, `/admin/settings/writing` | |
 
 ## Planned

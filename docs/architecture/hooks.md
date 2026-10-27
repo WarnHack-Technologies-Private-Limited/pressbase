@@ -86,5 +86,28 @@ Undeclared names still work, with `unknown` arguments.
 | `render_block_{name}` | filter | `content, parsedBlock, block` | after `render_block`, for one block type, e.g. `render_block_core/paragraph` |
 | `wp_creating_autosave` | action | `autosave, isUpdate` | before an existing autosave revision is overwritten |
 | `rest_prepare_autosave` | filter | `item, revision`     | each autosave in a REST response                   |
+| `preprocess_comment` | filter | `commentData` | first step of every new comment (`wp_new_comment()`) |
+| `duplicate_comment_id`, `wp_is_comment_flood` | filter | `id, data` / `isFlood, ip, email, date` | the duplicate and flood checks |
+| `comment_duplicate_trigger` | action | `data` | before a duplicate is refused |
+| `comment_max_links_url` / `wp_check_comment_disallowed_list` | filter / action | `count, url, content` / the comment's fields | inside the moderation checks |
+| `pre_comment_approved` | filter | `approved, data` | the new comment's status: `'1'`, `'0'`, `'spam'`, `'trash'` |
+| `wp_insert_comment` | action | `id, comment` | after the row is stored |
+| `comment_post` | action | `id, approved, comment` | after a new comment is saved |
+| `edit_comment` | action | `id, comment` | after `kernel.comments.update()` |
+| `wp_set_comment_status` | action | `id, status` | after any status change |
+| `transition_comment_status` | action | `new, old, comment` | when the status changes (`approved`, `unapproved`, `spam`, `trash`, `delete`); also `comment_{old}_to_{new}` and `comment_{new}_{type}` |
+| `trash_comment` / `trashed_comment`, `untrash_comment` / `untrashed_comment`, `spam_comment` / `spammed_comment`, `unspam_comment` / `unspammed_comment` | action | `id, comment` | around each move |
+| `delete_comment` / `deleted_comment` | action | `id, comment` | around permanent deletion |
+| `wp_update_comment_count` | action | `postId, new, old` | after a post's approved count is recalculated |
+| `comments_open` | filter | `open, postId` | whether a post takes comments |
+| `comment_text` | filter | `html, comment` | rendered comment content (REST and blocks) |
+| `comment_form_default_fields` / `comment_form_comments_closed` | filter / action | `fields` / `postId` | the comment form block |
+| `widget_comments_args` | filter | `args` | the latest-comments block's query |
+| `comment_post_redirect` / `set_comment_cookies` | filter / action | `location, comment` / `comment, user` | the `/wp-comments-post` endpoint |
+| `rest_allow_anonymous_comments` | filter | `allowed, body` | anonymous REST comments (true by default) |
+| `rest_comment_query`, `rest_preprocess_comment`, `rest_pre_insert_comment` | filter | `args` / `data` / `data` | the comments REST controller |
+| `rest_prepare_comment` | filter | `item, comment, context` | each comment in a REST response |
+| `rest_insert_comment`, `rest_after_insert_comment` | action | `comment, body, creating` | after a REST create or update |
+| `rest_delete_comment` | action | `comment, response` | after a REST delete |
 
 **When you add a hook to core,** use WordPress's name if WordPress has an equivalent. Add it to this table and declare its types.
