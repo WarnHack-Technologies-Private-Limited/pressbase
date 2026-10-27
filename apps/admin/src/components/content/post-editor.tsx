@@ -42,6 +42,7 @@ import { ConfirmDialog } from '../ui/dialog';
 import { Badge, EmptyState, Notice } from '../ui/surface';
 import { useToast } from '../ui/toast';
 import styles from './editor.module.css';
+import { FeaturedImage } from './featured-image';
 import { TagInput, type TagToken } from './tag-input';
 
 type Mode = 'visual' | 'code';
@@ -66,6 +67,7 @@ interface Form {
   tags: TagToken[];
   parent: number;
   menuOrder: number;
+  featuredMedia: number;
 }
 
 const EMPTY: Form = {
@@ -82,6 +84,7 @@ const EMPTY: Form = {
   tags: [],
   parent: 0,
   menuOrder: 0,
+  featuredMedia: 0,
 };
 
 function formFrom(post: RestPost, tags: TagToken[]): Form {
@@ -99,6 +102,7 @@ function formFrom(post: RestPost, tags: TagToken[]): Form {
     tags,
     parent: post.parent ?? 0,
     menuOrder: post.menu_order ?? 0,
+    featuredMedia: post.featured_media ?? 0,
   };
 }
 
@@ -216,6 +220,7 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
   const isOwn = !post || post.author === me.id;
   const canPublish = can(config.cap.publish);
   const canSticky = config.type === 'post' && can(config.cap.editOthers) && canPublish;
+  const canUpload = can('upload_files');
   const formDirty = useMemo(() => JSON.stringify(form) !== JSON.stringify(saved), [form, saved]);
   const dirty = formDirty || current !== savedContent;
   const storageKey = backupKey(config.type, post?.id ?? id);
@@ -423,6 +428,7 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
           body.categories = form.categories;
           body.tags = tagIds;
         }
+        if (canUpload) body.featured_media = form.featuredMedia;
         if (canSticky) body.sticky = form.sticky;
         if (config.hierarchical) {
           body.parent = form.parent;
@@ -1031,11 +1037,15 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
               )}
             </Panel>
 
-            {/*
-              Featured image: the Media work adds a "Featured image" panel here
-              (MediaPicker + featured_media), between Publishing and the
-              taxonomies, where WordPress puts it.
-            */}
+            {/* Between Publishing and the taxonomies, where WordPress puts it. */}
+            {canUpload && (
+              <Panel title="Featured image" defaultOpen={Boolean(form.featuredMedia)}>
+                <FeaturedImage
+                  value={form.featuredMedia}
+                  onChange={(id) => set('featuredMedia', id)}
+                />
+              </Panel>
+            )}
 
             {config.taxonomies && (
               <Panel title="Categories">

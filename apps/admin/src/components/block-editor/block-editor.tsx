@@ -53,6 +53,7 @@ import styles from './block-editor.module.css';
 import { allowedBlockTypes, countWords, readingMinutes } from './blocks';
 import { type EditorFeatures, loadEditorFeatures, NO_FEATURES, toEditorPattern } from './features';
 import { fetchLinkSuggestions } from './link-suggestions';
+import { registerMediaLibrary } from './media-library';
 import { createMediaUpload } from './media-upload';
 import { registerServerBlocks } from './server-blocks';
 
@@ -131,6 +132,7 @@ export default function BlockEditor(props: BlockEditorProps) {
     loadEditorFeatures().then((loaded) => {
       if (!live) return;
       if (loaded.blockTypes) registerServerBlocks(loaded.blockTypes);
+      if (loaded.media) registerMediaLibrary();
       setFeatures(loaded);
     });
     return () => {

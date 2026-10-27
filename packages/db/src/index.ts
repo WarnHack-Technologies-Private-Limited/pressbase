@@ -1,3 +1,5 @@
+import { mkdir } from 'node:fs/promises';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sql } from 'drizzle-orm';
 import type { PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core';
@@ -50,6 +52,8 @@ export async function connect(
       import('drizzle-orm/pglite/migrator'),
     ]);
     const target = url.slice('pglite:'.length);
+    // PGlite creates its own directory but not missing parents (a fresh data dir).
+    if (target !== 'memory') await mkdir(path.dirname(path.resolve(target)), { recursive: true });
     const client = target === 'memory' ? new PGlite() : new PGlite(target);
     const db = drizzle(client, { schema });
     return {

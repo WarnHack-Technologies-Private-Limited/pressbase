@@ -102,12 +102,16 @@ Covered by `api-fetch.test.ts`.
 - New dynamic core blocks (no `save`) go in `DYNAMIC_BLOCKS`.
 - Plugin blocks that are only registered on the server appear automatically once `/wp/v2/block-types` reports them with `is_dynamic: true`.
 
-### For the Media work
+### Media
 
-- `mediaUpload` already posts to `/wp/v2/media`; nothing changes once the route exists.
-- A **Media Library** button in image, gallery, cover and other placeholders comes from the `editor.MediaUpload` filter: `addFilter('editor.MediaUpload', 'pressbase/media-upload', () => MediaPicker)` from `@wordpress/hooks`, before the editor mounts.
-- The inserter's Media tab lists categories from the `inserterMediaCategories` setting.
-- The Featured image panel goes in the Post tab of `post-editor.tsx`, after Publishing (the spot is marked).
+- **Uploads.** `mediaUpload` posts to `/wp/v2/media`, so drag-and-drop and the Upload buttons in blocks go straight into the media library.
+- **"Media Library" buttons** (image, cover, gallery, video, audio, media & text). `media-library.tsx` registers WordPress's `editor.MediaUpload` filter once the media probe succeeds. The filter returns a component that opens Pressbase's `MediaPicker`.
+  - The picker is portalled to the admin page, because blocks render inside the canvas iframe.
+  - The block's `allowedTypes` (`['image']`, MIME types…) become the picker's filters.
+  - The chosen item is converted to the media-modal shape blocks expect (`toEditorMedia()` in `media-shape.ts`).
+  - Galleries currently add one image per pick.
+- **Featured image.** The *Featured image* panel in the Post tab (`components/content/featured-image.tsx`) sets `featured_media`. It's shown to people who can `upload_files`, and nudges when the chosen image has no alt text.
+- **Not wired yet.** The inserter's Media tab (`inserterMediaCategories`).
 
 ## Autosave
 

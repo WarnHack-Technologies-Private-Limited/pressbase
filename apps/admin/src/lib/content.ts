@@ -18,6 +18,8 @@ export interface RestPost {
   excerpt: { raw: string; rendered: string };
   author: number;
   comment_status: 'open' | 'closed';
+  /** Attachment ID of the featured image, 0 for none. */
+  featured_media?: number;
   password: string;
   sticky?: boolean;
   categories?: number[];

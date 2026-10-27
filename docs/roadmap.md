@@ -16,29 +16,36 @@ Each release has a theme and a clear finish line. The `release` values in `apps/
 
 ## v0.2: Content core (in progress)
 
-Shipping in three milestones. Milestone 1, the content model, is done.
+Shipping in three milestones. Milestone 1 (content model) and milestone 2 (media) are done; milestone 3 (people and conversation) is next.
 
 - [x] Post type, status and taxonomy registries (`register_post_type`, `register_taxonomy`).
 - [x] `ContentQuery`, the counterpart of `WP_Query`: `post_type`, `tax_query`, `meta_query`, search, pagination.
 - [x] `wp/v2` routes: posts, pages, categories, tags, types, taxonomies, statuses, users (read).
-- [ ] `wp/v2` routes: comments, media, users (write).
+- [x] `wp/v2/media`: uploads (multipart or raw), image sizes, `-scaled` big images, featured images.
+- [ ] `wp/v2` routes: comments, users (write).
 - [x] `map_meta_cap`: per-object capabilities (`edit_post` on a specific post).
-- [x] Revisions. Autosave moves to v0.3 with the block editor.
+- [x] Revisions. Autosave shipped with the block editor (v0.3).
 - [x] Content sanitising for users without `unfiltered_html`.
-- [ ] Media library: uploads, image sizes (sharp), local and S3-compatible storage.
+- [x] Media library: uploads, image sizes (sharp), local storage with an adapter interface.
+- [ ] S3-compatible storage adapter.
 - [x] Admin: Posts and Pages lists and editor (writing view + code view), Categories, Tags.
-- [ ] Admin: Media, Comments and Users screens.
+- [x] Admin: Media library and media picker.
+- [ ] Admin: Comments and Users screens.
 - [x] Settings screens: Writing, Reading.
-- [ ] Settings screens: Discussion, Media.
+- [x] Settings screens: Media.
+- [ ] Settings screens: Discussion.
 - [ ] Application passwords for API clients.
 - [ ] Password reset by email (Nodemailer, SMTP settings).
 
 ## v0.3: Block editor
 
-- [ ] Gutenberg in the admin (`@wordpress/block-editor`, `@wordpress/block-library`).
-- [ ] Server-side block parsing (`@wordpress/block-serialization-default-parser`).
-- [ ] Dynamic block rendering on the server (React SSR).
-- [ ] Patterns and synced patterns.
+- [x] Gutenberg in the admin (`@wordpress/block-editor`, `@wordpress/block-library`): iframed canvas, inserter, list view, Block tab, Code view.
+- [x] Server-side block parsing and serialising (`@pressbase/blocks`, a port of `WP_Block_Parser`).
+- [x] Dynamic block rendering on the server (`do_blocks`, `render_block` filters) with 15 core dynamic blocks.
+- [x] Patterns and synced patterns (`/wp/v2/block-patterns`, `/wp/v2/blocks`).
+- [x] Autosave (`/wp/v2/{type}/{id}/autosaves`) with a restore prompt and a browser safety copy.
+- [x] Media library inside the editor (image, cover, gallery… "Media Library" buttons) and featured images.
+- [ ] Inserter Media tab, `/wp/v2/search` for link suggestions, multi-select in galleries.
 
 ## v0.4: Themes and the public site
 
