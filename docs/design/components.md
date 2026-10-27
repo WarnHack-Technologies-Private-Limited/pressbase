@@ -28,6 +28,8 @@ The kit lives in `apps/admin/src/components/ui/`. Use these before writing new m
   hint="Never shown publicly." error={errors.email} />
 ```
 
+`TextAreaField` is the multi-line version, for captions and descriptions.
+
 - Fields are required by default. Mark the exceptions with `optional`, which shows "(optional)". Required is the norm, so we don't put asterisks everywhere.
 - The hint explains; the error corrects. Both can show at once.
 - `PasswordField isNew` adds generate, copy and a strength meter. Pass `context` (username, email) so passwords built from personal details are rated weak.
@@ -95,4 +97,13 @@ toast('Could not save.', { tone: 'danger' });
 | `PostEditor` | Sticky action bar: back, status badge, save state, a secondary action and one primary action whose label says exactly what will happen (Publish / Schedule / Update / Submit for review). Writing canvas with Write/Code views. A sidebar of collapsible panels. ⌘/Ctrl+S saves. A warning before leaving with unsaved changes. |
 | `TagInput` | ARIA combobox: type, then Enter or comma; arrow keys move through suggestions; Backspace removes the last tag. New tags are created on save. |
 | `TermsScreen` | Add form on the left, table on the right, inline editing in place. |
+
+## Media: `components/media/`
+
+| Component | Pattern |
+|---|---|
+| `MediaLibrary` | Thumbnail grid with type filter and search in the URL, "Load more", an upload button and drop-anywhere uploads. Each upload shows its own progress; errors stay until dismissed, and a finished batch ends in a toast. |
+| `MediaGrid` | One tab stop for the whole grid; arrow keys, Home and End move between tiles. Each tile is a button named by the title, type and dimensions. |
+| `MediaDetails` | `<dialog>`: preview, file facts, URL with Copy, editable alt text / title / caption / description with an explicit Save, and *Delete permanently* behind a `ConfirmDialog`. Arrow keys page between items. Closing with unsaved changes asks first. Full screen on phones. |
+| `MediaPicker` | Choose one item or upload one (it's then selected). `allowedTypes` limits the kinds; `title` and `selectLabel` name the task ("Set featured image"). Double-click chooses at once. |
 

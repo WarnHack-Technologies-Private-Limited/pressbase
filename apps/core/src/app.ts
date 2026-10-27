@@ -11,10 +11,12 @@ import { authRoutes } from './routes/auth';
 import { blockRoutes } from './routes/blocks';
 import { dashboardRoutes, postCountRoutes } from './routes/dashboard';
 import { installRoutes } from './routes/install';
+import { mediaRoutes } from './routes/media';
 import { postsRoutes } from './routes/posts';
 import { settingsRoutes } from './routes/settings';
 import { termsRoutes } from './routes/terms';
 import { typeRoutes } from './routes/types';
+import { uploadsRoutes } from './routes/uploads';
 import { userRoutes } from './routes/users';
 import { PRESSBASE_VERSION } from './version';
 
@@ -75,6 +77,10 @@ export function createApp(kernel: Kernel) {
   for (const taxonomy of kernel.taxonomies.all()) {
     if (taxonomy.showInRest) installed.route(`/wp/v2/${taxonomy.restBase}`, termsRoutes(taxonomy));
   }
+  // Media: the attachments controller, plus the uploaded files themselves, which
+  // WordPress serves from /wp-content/uploads outside the REST API.
+  installed.route('/wp/v2/media', mediaRoutes());
+  app.route('/wp-content/uploads', uploadsRoutes());
 
   // Block engine (v0.3): /wp/v2/block-types, /block-renderer, /block-patterns and
   // /blocks (synced patterns). See docs/architecture/blocks.md.

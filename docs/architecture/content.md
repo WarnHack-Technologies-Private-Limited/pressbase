@@ -10,7 +10,7 @@ Everything a site publishes is a **post** row with a `type`. WordPress works the
 |---|---|---|
 | `post` | core | Blog posts. Categories and tags. Revisions. |
 | `page` | core | Hierarchical (`parent_id`), ordered (`menu_order`). Revisions. |
-| `attachment` | core | Media library items (endpoints arrive with Media). |
+| `attachment` | core | Media library items. See [Media](media.md). |
 | `revision` | core | Snapshots of a post's title, content and excerpt. |
 | `wp_block` | core | Synced patterns (with the block editor). |
 

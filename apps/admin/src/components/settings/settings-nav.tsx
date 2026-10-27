@@ -10,7 +10,7 @@ const PAGES = [
   { slug: 'writing', label: 'Writing' },
   { slug: 'reading', label: 'Reading' },
   { slug: 'discussion', label: 'Discussion', release: 'v0.2' },
-  { slug: 'media', label: 'Media', release: 'v0.2' },
+  { slug: 'media', label: 'Media' },
   { slug: 'permalinks', label: 'Permalinks', release: 'v0.4' },
 ];
 

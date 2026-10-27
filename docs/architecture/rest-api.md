@@ -26,6 +26,9 @@ Everything is served under `/wp-json`, as in WordPress:
 | GET / POST / PUT / PATCH / DELETE | `/wp/v2/{categories\|tags}/{id}` | `edit_term` / `delete_term` | One term.                                           |
 | GET                      | `/wp/v2/types`, `/wp/v2/taxonomies`, `/wp/v2/statuses` | public | Registered post types, taxonomies and statuses (labels, capabilities with `context=edit`). |
 | GET                      | `/wp/v2/users`, `/wp/v2/users/{id}`    | public: published authors only · `list_users`: everyone | People. `context=edit` adds username, email and roles. |
+| GET / POST               | `/wp/v2/media`                     | read: public (as the parent post) · upload: `upload_files` | List or upload media. See *Media* below. |
+| GET / POST / PUT / PATCH / DELETE | `/wp/v2/media/{id}`       | `read_post` / `edit_post` / `delete_post` | One attachment. `DELETE` needs `?force=true` (no Trash). |
+| GET / HEAD               | `/wp-content/uploads/{path}`       | public           | The uploaded files themselves (outside `/wp-json`). See [Media](media.md#serving-files). |
 | GET                      | `/wp/v2/block-types`, `/wp/v2/block-types/{namespace}`, `/wp/v2/block-types/{namespace}/{name}` | `edit_posts` (any type) | Registered block types: attributes, context, supports, `is_dynamic`. `?namespace=` filters. |
 | GET / POST               | `/wp/v2/block-renderer/{namespace}/{name}` | `edit_posts`, or `edit_post` with `post_id` | Renders a dynamic block: `{ rendered }`. Takes `attributes` (query `attributes[key]=…` or JSON body), `post_id`, `context`. |
 | GET                      | `/wp/v2/block-patterns/patterns`, `/wp/v2/block-patterns/categories` | `edit_posts` (any type) | Registered patterns and pattern categories. |
@@ -39,6 +42,16 @@ Routes other than the index and installer return `503 pressbase_not_installed` u
 The same parameters as WordPress: `context`, `page`, `per_page` (max 100), `search`, `after`, `before`, `modified_after`, `modified_before`, `author`, `author_exclude`, `include`, `exclude`, `offset`, `order`, `orderby` (`date`, `modified`, `title`, `slug`, `id`, `include`, `author`, `parent`, `relevance`, plus `menu_order` for pages), `slug`, `status`, `sticky`, `parent`, `parent_exclude`, `menu_order`, and one filter per taxonomy (`categories`, `categories_exclude`, `tags`, `tags_exclude`). List parameters accept `a,b`, `a[]=x&a[]=y` or repeated keys.
 
 Responses carry `X-WP-Total`, `X-WP-TotalPages` and a `Link` header with `prev` and `next`.
+
+### Media
+
+`/wp/v2/media` ports `WP_REST_Attachments_Controller`. Details are in [Media](media.md).
+
+- **Upload** as `multipart/form-data` (field `file`, plus optional `title`, `alt_text`, `caption`, `description`, `post`), or as a raw body with `Content-Type` and `Content-Disposition: attachment; filename="photo.jpg"` (other fields in the query string). An optional `Content-MD5` header is checked. Responds `201` with a `Location` header.
+- **Fields:** WordPress's, including `alt_text`, `caption`, `description`, `media_type` (`image` or `file`), `mime_type`, `media_details` (with `sizes`, each with `source_url`, and a `full` entry), `post`, `source_url` and, in the edit context, `missing_image_sizes`.
+- **Collection parameters:** as posts, plus `media_type` (`image`, `video`, `audio`, `application`, `text`), `mime_type` and `parent` (`0` for unattached). `status` is `inherit` by default.
+- **Update:** `title`, `alt_text`, `caption`, `description`, `post`, `author`, `slug`, `comment_status`, `ping_status`.
+- **Featured images:** posts and pages accept and return `featured_media`.
 
 ### Who may write what
 
@@ -86,7 +99,15 @@ The shape matches WordPress:
 | `rest_already_trashed`             | 410       | `DELETE` on an item already in the Trash (use `?force=true`).              |
 | `rest_post_invalid_page_number`    | 400       | `page` is past the last page.                                              |
 | `term_exists`                      | 400       | A term with that name or slug exists; `data.term_id` is the existing term. |
-| `rest_trash_not_supported`         | 501       | `DELETE` on a term without `?force=true`.                                  |
+| `rest_trash_not_supported`         | 501       | `DELETE` on a term or media item without `?force=true`.                    |
+| `rest_cannot_create`               | 401 / 403 | Uploading without `upload_files`.                                          |
+| `rest_upload_no_data`              | 400       | No file, or an empty one.                                                  |
+| `rest_upload_no_content_type`, `rest_upload_no_content_disposition`, `rest_upload_invalid_disposition` | 400 | Raw-body upload without the headers it needs. |
+| `rest_upload_invalid_type`         | 400       | The file type isn't allowed, or the content doesn't match the extension.   |
+| `rest_upload_invalid_image`        | 400       | An image that can't be decoded.                                            |
+| `rest_upload_file_too_big`         | 413       | Larger than `PRESSBASE_MAX_UPLOAD_MB`.                                     |
+| `rest_upload_hash_mismatch`        | 412       | `Content-MD5` doesn't match the body.                                      |
+| `rest_invalid_featured_media`      | 400       | `featured_media` isn't an image attachment.                                |
 | `rest_block_type_cannot_view`      | 401 / 403 | Block types without edit rights.                                           |
 | `rest_block_type_invalid`          | 404       | No such block type.                                                        |
 | `block_cannot_read`                | 401 / 403 | Block renderer without `edit_posts`, or without `edit_post` on `post_id`.  |

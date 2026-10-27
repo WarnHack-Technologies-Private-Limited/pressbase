@@ -13,6 +13,7 @@ These docs live with the code and change in the same pull requests. If a doc is 
 - [WordPress → Pressbase map](architecture/wordpress-mapping.md): where each WordPress concept lives.
 - [Database](architecture/database.md): tables, how columns map from WordPress, migrations.
 - [Content](architecture/content.md): post types, statuses, taxonomies, queries, permissions, sanitising.
+- [Media](architecture/media.md): uploads, storage, image sizes, file serving and its security.
 - [Hooks](architecture/hooks.md): actions and filters, and the hooks core fires.
 - [Blocks](architecture/blocks.md): parsing, rendering, dynamic blocks and patterns.
 - [REST API](architecture/rest-api.md): endpoints, errors, authentication.

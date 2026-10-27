@@ -5,6 +5,7 @@ import {
   type InputHTMLAttributes,
   type ReactNode,
   type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
   useId,
   useState,
 } from 'react';
@@ -69,6 +70,25 @@ export function TextField({ label, hint, error, optional, ...input }: TextFieldP
         aria-describedby={describedBy(id, hint, error)}
         required={!optional}
         {...input}
+      />
+    </FieldShell>
+  );
+}
+
+type TextAreaFieldProps = ShellProps & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'id'>;
+
+export function TextAreaField({ label, hint, error, optional, ...textarea }: TextAreaFieldProps) {
+  const id = useId();
+  return (
+    <FieldShell id={id} label={label} hint={hint} error={error} optional={optional}>
+      <textarea
+        id={id}
+        className={styles.control}
+        rows={3}
+        aria-invalid={Boolean(error) || undefined}
+        aria-describedby={describedBy(id, hint, error)}
+        required={!optional}
+        {...textarea}
       />
     </FieldShell>
   );
