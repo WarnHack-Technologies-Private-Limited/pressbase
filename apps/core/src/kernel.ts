@@ -9,6 +9,8 @@ import { registerCoreTaxonomies, TaxonomyRegistry } from './content/taxonomies';
 import { TermsService } from './content/terms';
 import { registerCoreSettings, SettingsRegistry } from './options/settings';
 import { Options } from './options/store';
+import { ThemesService } from './themes/service';
+import { registerThemeSupports } from './themes/supports';
 import { DB_VERSION } from './version';
 
 /**
@@ -34,6 +36,8 @@ export class Kernel {
   readonly terms = new TermsService(this);
   /** Block types, patterns and do_blocks() (see docs/architecture/blocks.md). */
   readonly blocks = new BlocksService(this);
+  /** Installed themes, the active theme and its theme.json (see docs/architecture/themes.md). */
+  readonly themes = new ThemesService(this);
   #connection: DatabaseConnection | undefined;
   #options: Options | undefined;
   #state: SiteState = 'needs-database';
@@ -42,6 +46,7 @@ export class Kernel {
     registerCoreSettings(this.settings);
     registerCorePostTypes(this.postTypes);
     registerCoreTaxonomies(this.taxonomies);
+    registerThemeSupports(this);
   }
 
   get state(): SiteState {

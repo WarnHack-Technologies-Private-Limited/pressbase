@@ -16,6 +16,7 @@
     "@pressbase/blocks": "workspace:*",
     "@pressbase/db": "workspace:*",
     "@pressbase/hooks": "workspace:*",
+    "@pressbase/theme-json": "workspace:*",
     "drizzle-orm": "0.45.4",
     "hono": "4.13.14",
     "sanitize-html": "2.18.1",

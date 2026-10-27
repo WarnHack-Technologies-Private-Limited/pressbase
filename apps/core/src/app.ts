@@ -16,6 +16,7 @@ import { mediaRoutes } from './routes/media';
 import { postsRoutes } from './routes/posts';
 import { settingsRoutes } from './routes/settings';
 import { termsRoutes } from './routes/terms';
+import { publicFileRoutes, themeRoutes } from './routes/themes';
 import { typeRoutes } from './routes/types';
 import { uploadsRoutes } from './routes/uploads';
 import { userRoutes } from './routes/users';
@@ -93,6 +94,12 @@ export function createApp(kernel: Kernel) {
       installed.route(`/wp/v2/${type.restBase}`, autosavesRoutes(type));
     }
   }
+  // Themes and the public site (v0.4): /pressbase/v1/render, /wp/v2/themes and
+  // theme activation, plus theme files, WordPress's front-end CSS and the post
+  // password form outside /wp-json. See docs/architecture/themes.md, ADR 0007.
+  installed.route('/', themeRoutes(kernel));
+  app.route('/', publicFileRoutes(kernel));
+
   api.route('/', installed);
 
   app.route('/wp-json', api);

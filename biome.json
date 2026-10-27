@@ -8,7 +8,9 @@
       "!**/.turbo",
       "!**/next-env.d.ts",
       "!**/*.md",
-      "!**/.claude"
+      "!**/.claude",
+      "!themes",
+      "!apps/core/static"
     ]
   },
   "formatter": {
