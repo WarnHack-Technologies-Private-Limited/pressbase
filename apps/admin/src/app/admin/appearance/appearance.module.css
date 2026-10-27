@@ -1,0 +1,7 @@
+.visit {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-weight: var(--weight-medium);
+  color: var(--color-accent-text);
+}

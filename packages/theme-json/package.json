@@ -1,0 +1,20 @@
+{
+  "name": "@pressbase/theme-json",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The theme.json engine: merges WordPress's defaults, a block theme's theme.json and user global styles, and generates the global stylesheet, ported from WP_Theme_JSON.",
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p ."
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  }
+}

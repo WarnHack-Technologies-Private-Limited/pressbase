@@ -73,8 +73,6 @@ export const SECTION_GROUPS: SectionGroup[] = [
         label: 'Appearance',
         icon: Paintbrush,
         capability: 'switch_themes',
-        release: 'v0.4',
-        summary: 'Choose a theme and edit templates, styles and navigation in the site editor.',
       },
     ],
   },

@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, LogOut, Menu, UserRound } from 'lucide-react';
+import { ChevronDown, ExternalLink, LogOut, Menu, UserRound } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
@@ -32,11 +32,14 @@ function useIsNarrow(query = '(max-width: 860px)') {
 export function AdminShell({
   user,
   siteName,
+  siteUrl,
   version,
   children,
 }: {
   user: Me;
   siteName: string;
+  /** The public site's address (the `home` option). */
+  siteUrl: string;
   version: string;
   children: ReactNode;
 }) {
@@ -168,6 +171,11 @@ export function AdminShell({
             icon={<Menu size={18} aria-hidden="true" />}
           />
           <div className={styles.spacer} />
+          <a href={siteUrl || '/'} className={styles.visitSite} target="_blank" rel="noreferrer">
+            Visit site
+            <ExternalLink size={14} aria-hidden="true" />
+            <span className="visually-hidden">(opens in a new tab)</span>
+          </a>
           <div ref={menuRef}>
             <button
               ref={menuButtonRef}

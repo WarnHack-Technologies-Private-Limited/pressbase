@@ -38,8 +38,9 @@ describe('content.rendered', () => {
 
     const html = await rendered(ctx, post.id);
     expect(html).not.toContain('<!-- wp:');
+    // The layout block support adds WordPress's layout classes, as in content.rendered on WordPress.
     expect(html).toContain(
-      '<div class="wp-block-group"><p>Intro</p><ul class="wp-block-latest-posts__list has-dates wp-block-latest-posts"><li><a class="wp-block-latest-posts__post-title" href="http://localhost:3000/',
+      '<div class="wp-block-group is-layout-flow wp-block-group-is-layout-flow"><p>Intro</p><ul class="wp-block-latest-posts__list has-dates wp-block-latest-posts is-layout-flow wp-block-latest-posts-is-layout-flow"><li><a class="wp-block-latest-posts__post-title" href="http://localhost:3000/',
     );
     // Ordered by title, two posts: Alpha, Beta.
     const titles = [...html.matchAll(/post-title" href="[^"]+">([^<]+)<\/a>/g)].map((m) => m[1]);
@@ -514,6 +515,8 @@ describe('/wp/v2/blocks (synced patterns)', () => {
       content: `<!-- wp:block {"ref":${a.id}} /--><!-- wp:block {"ref":${draft.id}} /--><!-- wp:block {"ref":999999} /-->`,
     });
     const html = await rendered(ctx, post.id);
-    expect(html).toBe('<div class="wp-block-group"><p>A here</p><p>B says hi</p></div>');
+    expect(html).toBe(
+      '<div class="wp-block-group is-layout-flow wp-block-group-is-layout-flow"><p>A here</p><p>B says hi</p></div>',
+    );
   });
 });

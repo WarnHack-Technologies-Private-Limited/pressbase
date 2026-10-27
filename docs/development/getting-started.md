@@ -15,14 +15,15 @@ pnpm install
 pnpm dev
 ```
 
-`pnpm dev` starts both apps through Turborepo:
+`pnpm dev` starts the three apps through Turborepo:
 
 | App      | URL                             | Logs prefix        |
 | -------- | ------------------------------- | ------------------ |
 | Core API | <http://localhost:4000/wp-json> | `@pressbase/core:dev`  |
 | Admin    | <http://localhost:3000>         | `@pressbase/admin:dev` |
+| Public site | <http://localhost:3001>      | `@pressbase/web:dev`   |
 
-Open <http://localhost:3000> and follow the installer.
+Open <http://localhost:3000> and follow the installer. Afterwards <http://localhost:3000> shows the public site (the admin forwards every path it doesn't own to the public app, so the site and `/admin` share the address you installed with, as in WordPress), and <http://localhost:3001> shows the same site directly. The site uses the bundled Twenty Twenty-Five theme; switch themes in **Appearance**.
 
 ## Using PostgreSQL
 
@@ -67,7 +68,9 @@ See `.env.example`. Core reads the repo-root `.env` in development.
 | `PRESSBASE_MAX_UPLOAD_MB` | `64`                        | Largest file the media library accepts           |
 | `PRESSBASE_SETUP_TOKEN` | —                             | Require this code in the installer               |
 | `PORT`              | `4000`                        | Core's port                                      |
-| `CORE_URL`          | `http://localhost:4000`       | Where the admin app reaches core                 |
+| `CORE_URL`          | `http://localhost:4000`       | Where the admin and public apps reach core       |
+| `WEB_URL`           | `http://localhost:3001`       | Where the admin forwards public pages            |
+| `ADMIN_URL`         | `http://localhost:3000`       | Where the public app sends visitors to install   |
 | `PRESSBASE_SMTP_URL` | —                            | SMTP server as a URL, e.g. `smtps://user:pass@smtp.example.com:465`. Wins over the fields below. |
 | `PRESSBASE_SMTP_HOST`, `PRESSBASE_SMTP_PORT`, `PRESSBASE_SMTP_USER`, `PRESSBASE_SMTP_PASS`, `PRESSBASE_SMTP_SECURE` | — · `587` (`465` when secure) | SMTP server as separate settings. `SECURE=true` uses TLS from the start. |
 | `PRESSBASE_MAIL_FROM` | site title + `pressbase@<site host>` | Sender, e.g. `"The Morning Paper <hello@example.com>"` |
@@ -85,5 +88,7 @@ That's enough to finish password resets and welcome emails locally: open the new
 ## Troubleshooting
 
 - **"Something went wrong" page in the admin.** Core isn't running or isn't reachable at `CORE_URL`. Check the `@pressbase/core:dev` logs.
-- **Port in use.** Set `PORT` for core (and `CORE_URL` to match), or run `next dev --port` for the admin.
+- **Port in use.** Set `PORT` for core (and `CORE_URL` to match), or run `next dev --port` for the admin or the public site (and set `WEB_URL` / `ADMIN_URL` to match).
+- **"The site can't be reached right now" from the public site.** Core isn't reachable at `CORE_URL`.
+- **Theme files changed but the site didn't.** The active theme is cached; restart core (or call `kernel.themes.reload()`).
 - **`Unable to find package manager binary`** from Turborepo. Run `corepack enable` so `pnpm` is on your `PATH`.

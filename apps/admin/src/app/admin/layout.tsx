@@ -9,7 +9,12 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   if (me.status !== 200) redirect('/login');
 
   return (
-    <AdminShell user={me.data} siteName={site.data.name} version={site.data.pressbase.version}>
+    <AdminShell
+      user={me.data}
+      siteName={site.data.name}
+      siteUrl={site.data.url}
+      version={site.data.pressbase.version}
+    >
       {children}
     </AdminShell>
   );

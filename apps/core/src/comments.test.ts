@@ -696,8 +696,9 @@ describe('comment blocks', () => {
     const first = await kernel.blocks.render(markup, {
       context: { postId: hello.id, postType: 'post' },
     });
-    expect(first).toContain(
-      '<nav class="wp-block-comments-pagination" aria-label="Comments pagination">',
+    // With themes merged, layout support adds WordPress's flex classes too.
+    expect(first).toMatch(
+      /<nav class="wp-block-comments-pagination[^"]*" aria-label="Comments pagination">/,
     );
     expect(first).toContain('<span aria-current="page" class="page-numbers current">1</span>');
     expect(first).toContain('/hello-world/comment-page-2/#comments');

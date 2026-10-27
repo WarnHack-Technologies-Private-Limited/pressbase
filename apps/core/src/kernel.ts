@@ -12,6 +12,8 @@ import { TermsService } from './content/terms';
 import { Mailer } from './mail/mailer';
 import { registerCoreSettings, SettingsRegistry } from './options/settings';
 import { Options } from './options/store';
+import { ThemesService } from './themes/service';
+import { registerThemeSupports } from './themes/supports';
 import { DB_VERSION } from './version';
 
 /**
@@ -41,6 +43,8 @@ export class Kernel {
   readonly mail = new Mailer(this);
   /** Comments, moderation and the Discussion settings (see docs/architecture/comments.md). */
   readonly comments = new CommentsService(this);
+  /** Installed themes, the active theme and its theme.json (see docs/architecture/themes.md). */
+  readonly themes = new ThemesService(this);
   #connection: DatabaseConnection | undefined;
   #options: Options | undefined;
   #state: SiteState = 'needs-database';
@@ -50,6 +54,7 @@ export class Kernel {
     registerCorePostTypes(this.postTypes);
     registerCoreTaxonomies(this.taxonomies);
     registerCommentNotifications(this);
+    registerThemeSupports(this);
   }
 
   get state(): SiteState {

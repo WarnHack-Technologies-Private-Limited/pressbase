@@ -220,12 +220,20 @@ export class WPBlock<S = unknown> {
    * render_block_core_block() does for a synced pattern's content. The render
    * callback and this block's own filters don't run.
    */
-  async renderInnerBlocks(blocks: ParsedBlock[]): Promise<string> {
+  async renderInnerBlocks(blocks: ParsedBlock[], context?: BlockContext): Promise<string> {
     this.parsedBlock = {
       ...this.parsedBlock,
       innerBlocks: blocks,
       innerContent: blocks.map(() => null),
     };
+    // Extra context for the inner blocks, as core/post-template gives each
+    // post's blocks { postId, postType } (its render_block_context filter).
+    if (context) {
+      this.availableContext = { ...this.availableContext, ...context };
+      for (const key of Object.keys(context)) {
+        if (key in this.context) this.context[key] = context[key];
+      }
+    }
     this.refreshContextDependents();
     return this.#renderInner();
   }

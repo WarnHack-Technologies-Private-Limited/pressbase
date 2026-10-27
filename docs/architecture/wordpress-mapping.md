@@ -42,6 +42,15 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | `WP_REST_Block_Types_Controller`, `WP_REST_Block_Renderer_Controller`, `WP_REST_Block_Patterns_Controller`, `WP_REST_Block_Pattern_Categories_Controller`, `WP_REST_Blocks_Controller` | `apps/core/src/routes/blocks.ts` | See [REST API](rest-api.md). |
 | `wp_handle_upload()`, `wp_unique_filename()`, `sanitize_file_name()`, `wp_check_filetype_and_ext()`, `wp_create_image_subsizes()`, `wp_delete_attachment()` | `apps/core/src/media/` | Storage adapters instead of direct disk writes; sharp instead of GD/Imagick. See [Media](media.md). |
 | `WP_REST_Attachments_Controller` | `apps/core/src/routes/media.ts` | |
+| `WP_Theme_JSON`, `WP_Theme_JSON_Resolver`, `wp_get_global_stylesheet()`, `wp_get_typography_font_size_value()`, `wp_get_layout_style()`, `WP_Font_Face` | `packages/theme-json` | See [Themes](themes.md). |
+| `WP_Theme`, `wp_get_themes()`, `switch_theme()`, `_register_theme_block_patterns()` | `apps/core/src/themes/` (`kernel.themes`) | Pattern PHP is interpreted, never run. |
+| `block-supports/layout.php`, `elements.php`, `position.php`, `block-style-variations.php` | `apps/core/src/themes/supports.ts` | Render filters. |
+| `WP::parse_request()`, `WP_Rewrite` rules, the main `WP_Query`, `redirect_canonical()` | `apps/core/src/frontend/query.ts` | |
+| `template-loader.php`, `get_*_template()` | `apps/core/src/frontend/hierarchy.ts` | |
+| `template-canvas.php`, `get_the_block_template_html()`, `wp_get_document_title()`, `get_body_class()` | `apps/core/src/frontend/render.ts` | |
+| `WP_REST_Themes_Controller` | `apps/core/src/routes/themes.ts` | Plus theme activation. |
+| `themes.php` | `/admin/appearance` | |
+| `wp-content/themes/twentytwentyfive` | `themes/twentytwentyfive` | Bundled, unchanged. |
 | `upload.php`, `options-media.php`, the media modal | `/admin/media`, `/admin/settings/media`, `MediaPicker` | |
 | `wp_insert_user`, `wp_update_user`, `wp_delete_user` (with reassign), `validate_username`, `is_email`, `count_users`, `count_many_users_posts` | `apps/core/src/people/users.ts`, `validation.ts` | See [People](people.md). |
 | `WP_Application_Passwords`, `wp_authenticate_application_password`, `WP_REST_Application_Passwords_Controller` | `apps/core/src/people/application-passwords.ts`, `routes/application-passwords.ts` | `Authorization: Basic` middleware; SHA-256 digests like WordPress 6.8's `wp_fast_hash`. |
@@ -61,7 +70,7 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | WordPress                                      | Pressbase (planned)                             | Release |
 | ---------------------------------------------- | ------------------------------------------- | ------- |
 | Autosave | Autosaves endpoint, with the block editor | v0.3 |
-| `WP_Theme_JSON`, template loader, `WP_Rewrite` | `packages/theme-json`, router in `apps/web` | v0.4    |
+| Site editor (`wp_template`, `wp_global_styles`, `wp_navigation`) | Admin site editor | later |
 | Plugins API, `activate_plugin`                 | Plugin loader + `plugin.json`               | v0.5    |
 | `wp-cron.php`                                  | pg-boss job queue                           | v0.5    |
 | Importer, wp-cli                               | Migration tool, `pressbase` CLI                 | v0.6    |
