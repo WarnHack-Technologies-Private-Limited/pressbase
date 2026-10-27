@@ -265,6 +265,9 @@ importers:
       hono:
         specifier: 4.13.14
         version: 4.13.14
+      sanitize-html:
+        specifier: 2.18.1
+        version: 2.18.1
       tsx:
         specifier: 4.23.15
         version: 4.23.15
@@ -275,6 +278,9 @@ importers:
       "@types/node":
         specifier: 26.6.5
         version: 26.6.5
+      "@types/sanitize-html":
+        specifier: 2.16.2
+        version: 2.16.2
       typescript:
         specifier: 5.9.3
         version: 5.9.3
@@ -1715,6 +1721,12 @@ packages:
         integrity: sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg==,
       }
 
+  "@types/sanitize-html@2.16.2":
+    resolution:
+      {
+        integrity: sha512-kuAbgDCFv418flrp3z4o/4ufLA/5ovmXRH0L419iZCPGO7w00znjeDI5Wy/KZWNIBpDQc7hucCK+J5almB6FyA==,
+      }
+
   "@vitest/mocker@5.0.5":
     resolution:
       {
@@ -1781,12 +1793,46 @@ packages:
         integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==,
       }
 
+  dayjs@1.11.23:
+    resolution:
+      {
+        integrity: sha512-QDTCU0M0MxR3hQfnlDJfwekQiaanm1ubOD231u73WBckQ/fsamwRLiE2GBz6D3a/xF1NgfiDLJjXBa1hYOYTtQ==,
+      }
+
   detect-libc@2.1.2:
     resolution:
       {
         integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==,
       }
     engines: { node: ">=8" }
+
+  dom-serializer@3.1.1:
+    resolution:
+      {
+        integrity: sha512-4MEa38/QexBob6gFNwu+EGdWvhJ1OKuNwdYY3Y3NyeWDQfnGeDYQUDfIRzWu5B5gsv03so2Uxd28YC6zrsx3Lw==,
+      }
+    engines: { node: ">=20.19.0" }
+
+  domelementtype@3.0.0:
+    resolution:
+      {
+        integrity: sha512-umCQid3jKbDmVjx8jGaW7uUykm4DEUeyV21hPxNMo2nV955DhUThwqyOIDtreepP31hl84X7G5U9ZfsWvIB3Pg==,
+      }
+    engines: { node: ">=20.19.0" }
+
+  domhandler@6.0.1:
+    resolution:
+      {
+        integrity: sha512-gYzvtM72ZtxQO0T048kd6HWSbbGCNOUwcnfQ01cqIJ4X2IYKFFHZ5mKvrQETcFXxsRObZulDaKmy//R7TPtsBg==,
+      }
+    engines: { node: ">=20.19.0" }
+
+  domutils@4.0.2:
+    resolution:
+      {
+        integrity: sha512-qI4JLRKnSzqFqr7hAlS5xQDusBCjKSEG4t4+7aNrIQMHBcsC2TGEhuyABJdYkgSewL57PNLYEiibY2iPKhKpaA==,
+      }
+    engines: { node: ">=20.19.0" }
 
   drizzle-kit@0.31.11:
     resolution:
@@ -1893,6 +1939,13 @@ packages:
       sqlite3:
         optional: true
 
+  entities@8.1.0:
+    resolution:
+      {
+        integrity: sha512-kxL7msIffSuh9aaFAMD7rxAIuTRMAHMeBtgHW2yUdWw732ZNh4MehkF2gdjvtdmikkaIP9bFDDJOPlsvm7avrA==,
+      }
+    engines: { node: ">=20.19.0" }
+
   es-module-lexer@2.3.2:
     resolution:
       {
@@ -1922,6 +1975,13 @@ packages:
       }
     engines: { node: ">=18" }
     hasBin: true
+
+  escape-string-regexp@4.0.0:
+    resolution:
+      {
+        integrity: sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA==,
+      }
+    engines: { node: ">=10" }
 
   estree-walker@3.0.3:
     resolution:
@@ -1968,6 +2028,26 @@ packages:
         integrity: sha512-yhRLQ21U6qa9Hsu2N7Qcbh8tE+WKEcoErjIo56LeSGiGXGp9sA7UpE86Ui9uexb61KakiGwuHMn2QdV7w6i6kQ==,
       }
     engines: { node: ">=16.9.0" }
+
+  htmlparser2@12.0.0:
+    resolution:
+      {
+        integrity: sha512-Tz7u1i95/g2x2jz81+x0FBVhBhY5aRTvD3tXXdFaljuNdzDLJ8UGNRrTcj2cgQvAg3iW/h77Fz15nLW0L0CrZw==,
+      }
+    engines: { node: ">=20.19.0" }
+
+  is-plain-object@5.1.0:
+    resolution:
+      {
+        integrity: sha512-bUi/yjmtKYcRVUtWRGr0UA6xEFh2I6zWUwMrUXB3s7bmYCaZ8a+0ZsTRkrawh/mzlSD1Y0Ph8bp/U+TvBpWDNw==,
+      }
+    engines: { node: ">=0.10.0" }
+
+  launder@1.7.2:
+    resolution:
+      {
+        integrity: sha512-DLg3HPnHUfBi5/MxMLmJD12dmlMpFEC2HgMW6vkZ/9JR0RU00kXoRGvDxAvFmdO0o610OA77i4FgNTLucmhDVg==,
+      }
 
   lightningcss-android-arm64@1.33.0:
     resolution:
@@ -2136,6 +2216,12 @@ packages:
       }
     engines: { node: ">=12.20.0" }
 
+  parse-srcset@1.0.2:
+    resolution:
+      {
+        integrity: sha512-/2qh0lav6CmI15FzA3i/2Bzk2zCgQhGMkvhOhKNcBVQ1ldgpbfiNTVslmooUmWJcADi1f1kIeynbDRVzNlfR6Q==,
+      }
+
   picocolors@1.1.1:
     resolution:
       {
@@ -2198,6 +2284,13 @@ packages:
       }
     engines: { node: ^20.19.0 || >=22.12.0 }
     hasBin: true
+
+  sanitize-html@2.18.1:
+    resolution:
+      {
+        integrity: sha512-2X5lC8fYla8YaT8g73Nj+HcLWXan5dLyCWLgVvaOmfw7JI78IRsyNtIDytTHdn7hBQbIkCah7Zbmd5jabzeDig==,
+      }
+    engines: { node: ">=22.12.0" }
 
   scheduler@0.28.0:
     resolution:
@@ -2950,6 +3043,10 @@ snapshots:
     dependencies:
       csstype: 3.2.3
 
+  "@types/sanitize-html@2.16.2":
+    dependencies:
+      htmlparser2: 12.0.0
+
   "@vitest/mocker@5.0.5(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))":
     dependencies:
       "@jridgewell/trace-mapping": 0.3.31
@@ -2975,7 +3072,27 @@ snapshots:
 
   csstype@3.2.3: {}
 
+  dayjs@1.11.23: {}
+
   detect-libc@2.1.2: {}
+
+  dom-serializer@3.1.1:
+    dependencies:
+      domelementtype: 3.0.0
+      domhandler: 6.0.1
+      entities: 8.1.0
+
+  domelementtype@3.0.0: {}
+
+  domhandler@6.0.1:
+    dependencies:
+      domelementtype: 3.0.0
+
+  domutils@4.0.2:
+    dependencies:
+      dom-serializer: 3.1.1
+      domelementtype: 3.0.0
+      domhandler: 6.0.1
 
   drizzle-kit@0.31.11:
     dependencies:
@@ -2988,6 +3105,8 @@ snapshots:
     optionalDependencies:
       "@electric-sql/pglite": 0.5.12
       postgres: 3.4.9
+
+  entities@8.1.0: {}
 
   es-module-lexer@2.3.2: {}
 
@@ -3074,6 +3193,8 @@ snapshots:
       "@esbuild/win32-ia32": 0.28.2
       "@esbuild/win32-x64": 0.28.2
 
+  escape-string-regexp@4.0.0: {}
+
   estree-walker@3.0.3:
     dependencies:
       "@types/estree": 1.0.9
@@ -3092,6 +3213,19 @@ snapshots:
       resolve-pkg-maps: 1.0.0
 
   hono@4.13.14: {}
+
+  htmlparser2@12.0.0:
+    dependencies:
+      domelementtype: 3.0.0
+      domhandler: 6.0.1
+      domutils: 4.0.2
+      entities: 8.1.0
+
+  is-plain-object@5.1.0: {}
+
+  launder@1.7.2:
+    dependencies:
+      dayjs: 1.11.23
 
   lightningcss-android-arm64@1.33.0:
     optional: true
@@ -3181,6 +3315,8 @@ snapshots:
 
   obug@3.0.0: {}
 
+  parse-srcset@1.0.2: {}
+
   picocolors@1.1.1: {}
 
   picomatch@4.0.7: {}
@@ -3228,6 +3364,15 @@ snapshots:
       "@rolldown/binding-openharmony-arm64": 1.2.15
       "@rolldown/binding-win32-arm64-msvc": 1.2.15
       "@rolldown/binding-win32-x64-msvc": 1.2.15
+
+  sanitize-html@2.18.1:
+    dependencies:
+      escape-string-regexp: 4.0.0
+      htmlparser2: 12.0.0
+      is-plain-object: 5.1.0
+      launder: 1.7.2
+      parse-srcset: 1.0.2
+      postcss: 8.5.31
 
   scheduler@0.28.0: {}
 

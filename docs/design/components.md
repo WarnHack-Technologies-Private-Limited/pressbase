@@ -65,3 +65,34 @@ The kit lives in `apps/admin/src/components/ui/`. Use these before writing new m
 | Save bar          | Settings                  | Appears only when the form is dirty. Discard and Save. Warns before unloading the page.             |
 | Toast             | Settings                  | Confirms a background action. Polite live region, gone after 3s, never the only record of an error. |
 | Format picker     | Settings, date and time   | Each preset shows a live example plus its format code. "Custom" takes free text.                    |
+
+## Dialog: `ui/dialog.tsx`
+
+`ConfirmDialog` asks before anything destructive or hard to undo: "Delete permanently?", "Switch to draft?", "Leave without saving?".
+
+- It's built on `<dialog>`, so focus trapping, Escape and the backdrop come from the browser.
+- **Focus starts on Cancel**, so a stray Enter never destroys anything.
+- The title asks the question. The body says what will happen, in one sentence.
+
+## Toast: `ui/toast.tsx`
+
+`useToast()` is available on every admin screen (the provider lives in `AdminShell`).
+
+```tsx
+toast('1 post moved to the Trash.', { action: { label: 'Undo', onClick: restore } });
+toast('Could not save.', { tone: 'danger' });
+```
+
+- Use it for **outcomes of actions**, not for errors on forms; those go next to their fields.
+- Offer **Undo** instead of a confirmation whenever the action is reversible (trashing is; permanent deletion isn't).
+- Toasts with an action stay for 8s, others for 4s.
+
+## Content screens: `components/content/`
+
+| Component | Pattern |
+|---|---|
+| `PostList` | Status tabs with counts. Search, plus a category filter for posts. Row actions appear on hover or focus, and always on touch. Bulk selection reveals a bulk bar. Pages show as an indented tree. Filters live in the URL, so views can be shared. |
+| `PostEditor` | Sticky action bar: back, status badge, save state, a secondary action and one primary action whose label says exactly what will happen (Publish / Schedule / Update / Submit for review). Writing canvas with Write/Code views. A sidebar of collapsible panels. ⌘/Ctrl+S saves. A warning before leaving with unsaved changes. |
+| `TagInput` | ARIA combobox: type, then Enter or comma; arrow keys move through suggestions; Backspace removes the last tag. New tags are created on save. |
+| `TermsScreen` | Add form on the left, table on the right, inline editing in place. |
+

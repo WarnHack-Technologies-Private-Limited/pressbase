@@ -23,15 +23,23 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | `X-WP-Nonce` (REST CSRF)                                            | `X-Pressbase-Request` header                                                             | See [Security](security.md).                                       |
 | `wp-admin/` menu                                                    | `apps/admin/src/lib/sections.ts`                                                     | Same order, grouped.                                               |
 | `date_i18n()` formats                                               | `apps/admin/src/lib/php-date.ts`                                                     | PHP date format characters.                                        |
+| `register_post_type`, `create_initial_post_types` | `apps/core/src/content/post-types.ts` | `kernel.postTypes.register(name, args)`. |
+| `register_post_status` | `apps/core/src/content/post-statuses.ts` | Same core statuses and flags. |
+| `register_taxonomy`, `create_initial_taxonomies` | `apps/core/src/content/taxonomies.ts` | `category` and `post_tag`. |
+| `map_meta_cap`, `current_user_can( $cap, $id )` | `apps/core/src/auth/meta-caps.ts` | `currentUserCan(kernel, user, 'edit_post', id)`. |
+| `wp_insert_post`, `wp_update_post`, `wp_trash_post`, `wp_untrash_post`, `wp_delete_post`, `wp_unique_post_slug`, `wp_save_post_revision` | `apps/core/src/content/posts.ts` (`kernel.posts`) | Same hooks and slug rules. Untrash restores to draft (WordPress 5.6+). |
+| `wp_insert_term`, `wp_update_term`, `wp_delete_term`, `wp_set_object_terms`, `_update_post_term_count` | `apps/core/src/content/terms.ts` (`kernel.terms`) | |
+| `WP_Query` | `apps/core/src/content/query.ts` (`queryPosts`) | Same argument names. |
+| `get_permalink` | `apps/core/src/content/permalinks.ts` | Uses `permalink_structure`. |
+| `wp_kses_post`, `sanitize_title` | `apps/core/src/content/sanitize.ts` | Keeps block delimiters intact. |
+| `WP_REST_Posts_Controller`, `WP_REST_Terms_Controller`, `WP_REST_Users_Controller` (read), types / taxonomies / statuses controllers | `apps/core/src/routes/posts.ts`, `terms.ts`, `users.ts`, `types.ts` | See [REST API](rest-api.md). |
+| `edit.php`, `post.php`, `edit-tags.php`, `options-reading.php`, `options-writing.php` | `/admin/posts`, `/admin/posts/{id}`, `/admin/posts/categories`, `/admin/settings/reading`, `/admin/settings/writing` | |
 
 ## Planned
 
 | WordPress                                      | Pressbase (planned)                             | Release |
 | ---------------------------------------------- | ------------------------------------------- | ------- |
-| `register_post_type`, `register_taxonomy`      | Content registries in core                  | v0.2    |
-| `WP_Query`                                     | `ContentQuery` with the same arguments      | v0.2    |
-| `map_meta_cap`                                 | Port into `auth/capabilities.ts`            | v0.2    |
-| `wp_insert_post`, revisions, autosave          | Content service                             | v0.2    |
+| Autosave | Autosaves endpoint, with the block editor | v0.3 |
 | `wp_handle_upload`, image sizes                | Media service (sharp, storage adapters)     | v0.2    |
 | Application passwords                          | `Authorization: Basic` in core              | v0.2    |
 | `parse_blocks`, `render_block`                 | `packages/blocks`                           | v0.3    |

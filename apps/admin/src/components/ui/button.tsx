@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { ButtonHTMLAttributes, ComponentProps, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, ComponentProps, ReactNode, Ref } from 'react';
 import styles from './button.module.css';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -30,6 +30,7 @@ export function Spinner() {
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>, StyleProps {
   /** Shows a spinner and blocks clicks while keeping the label readable. */
   loading?: boolean;
+  ref?: Ref<HTMLButtonElement>;
 }
 
 export function Button({

@@ -1,0 +1,92 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react';
+import { ApiError, api } from '@/lib/api';
+import { Button } from '../ui/button';
+import { Notice } from '../ui/surface';
+import { useToast } from '../ui/toast';
+import styles from './settings.module.css';
+
+export interface FieldApi<T> {
+  values: T;
+  set: <K extends keyof T>(key: K, value: T[K]) => void;
+  errors: Record<string, string>;
+}
+
+/**
+ * A settings screen backed by /wp/v2/settings: tracks unsaved changes, shows
+ * the save bar, warns before leaving, and maps server errors onto fields.
+ */
+export function SettingsForm<T extends Record<string, unknown>>({
+  initial,
+  children,
+}: {
+  initial: T;
+  children: (api: FieldApi<T>) => ReactNode;
+}) {
+  const router = useRouter();
+  const toast = useToast();
+  const [saved, setSaved] = useState(initial);
+  const [values, setValues] = useState(initial);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [problem, setProblem] = useState<string>();
+  const [busy, setBusy] = useState(false);
+  const dirty = useMemo(() => JSON.stringify(values) !== JSON.stringify(saved), [values, saved]);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty]);
+
+  const set: FieldApi<T>['set'] = (key, value) => {
+    setValues((v) => ({ ...v, [key]: value }));
+    setErrors(({ [key as string]: _, ...rest }) => rest);
+  };
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setProblem(undefined);
+    try {
+      const result = await api<Record<string, unknown>>('/wp/v2/settings', {
+        method: 'POST',
+        body: values,
+      });
+      const next = Object.fromEntries(
+        Object.keys(values).map((k) => [k, result[k] ?? values[k]]),
+      ) as T;
+      setSaved(next);
+      setValues(next);
+      toast('Settings saved.');
+      router.refresh();
+    } catch (error) {
+      if (error instanceof ApiError && error.data.params) setErrors(error.data.params);
+      else setProblem(error instanceof ApiError ? error.message : 'Could not save your changes.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form className={styles.form} onSubmit={submit} noValidate>
+      {problem && <Notice tone="danger" title={problem} />}
+      {children({ values, set, errors })}
+      {dirty && (
+        <section className={styles.savebar} aria-label="Unsaved changes">
+          <span>You have unsaved changes</span>
+          <div className={styles.savebarActions}>
+            <Button variant="ghost" onClick={() => setValues(saved)} disabled={busy}>
+              Discard
+            </Button>
+            <Button type="submit" variant="primary" loading={busy}>
+              {busy ? 'Saving…' : 'Save changes'}
+            </Button>
+          </div>
+        </section>
+      )}
+    </form>
+  );
+}

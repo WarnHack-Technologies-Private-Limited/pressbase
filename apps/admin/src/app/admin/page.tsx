@@ -47,11 +47,33 @@ export default async function DashboardPage() {
   const firstName = me.name.split(/\s+/)[0];
   const canManage = Boolean(me.capabilities.manage_options);
 
-  const steps = [
+  const steps: {
+    label: string;
+    done: boolean;
+    href?: string;
+    capability?: string;
+    release?: string;
+  }[] = [
     { label: 'Install Pressbase', done: true },
-    { label: 'Give your site a name', done: Boolean(site.name), href: '/admin/settings/general' },
-    { label: 'Add a tagline', done: Boolean(site.description), href: '/admin/settings/general' },
-    { label: 'Write your first post', done: false, release: 'v0.2' },
+    {
+      label: 'Give your site a name',
+      done: Boolean(site.name),
+      href: '/admin/settings/general',
+      capability: 'manage_options',
+    },
+    {
+      label: 'Add a tagline',
+      done: Boolean(site.description),
+      href: '/admin/settings/general',
+      capability: 'manage_options',
+    },
+    {
+      // The installer's "Hello world!" doesn't count.
+      label: 'Write your first post',
+      done: data.counts.posts + data.counts.drafts > 1,
+      href: '/admin/posts/new',
+      capability: 'edit_posts',
+    },
     { label: 'Invite your team', done: false, release: 'v0.2' },
     { label: 'Choose a theme', done: false, release: 'v0.4' },
   ];
@@ -117,7 +139,10 @@ export default async function DashboardPage() {
                     <Circle size={20} className={styles.checkTodo} aria-label="To do" />
                   )}
                   <span className={styles.checkLabel} data-done={step.done}>
-                    {!step.done && step.href && canManage ? (
+                    {!step.done &&
+                    step.href &&
+                    step.capability &&
+                    me.capabilities[step.capability] ? (
                       <Link href={step.href}>{step.label}</Link>
                     ) : (
                       step.label
@@ -182,7 +207,12 @@ export default async function DashboardPage() {
               <ul className={styles.list}>
                 {data.recent.map((item) => (
                   <li key={item.id}>
-                    <span className={styles.listTitle}>{item.title || '(no title)'}</span>
+                    <Link
+                      href={`/admin/${item.type === 'page' ? 'pages' : 'posts'}/${item.id}`}
+                      className={styles.listTitle}
+                    >
+                      {item.title || '(no title)'}
+                    </Link>
                     <span className={styles.listMeta}>
                       {item.type === 'page' ? 'Page' : 'Post'}
                       {item.status === 'draft' ? ' · Draft' : ''} · {relativeTime(item.modified)}

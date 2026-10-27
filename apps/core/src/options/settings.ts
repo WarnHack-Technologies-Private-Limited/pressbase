@@ -114,6 +114,12 @@ export function registerCoreSettings(registry: SettingsRegistry): void {
   });
   registry.register('page_on_front', { option: 'page_on_front', schema: postId, default: 0 });
   registry.register('page_for_posts', { option: 'page_for_posts', schema: postId, default: 0 });
+  // Not in WordPress's /wp/v2/settings, but on its Reading screen; exposed for the admin.
+  registry.register('blog_public', {
+    option: 'blog_public',
+    schema: z.boolean(),
+    default: true,
+  });
   registry.register('default_category', {
     option: 'default_category',
     schema: postId,

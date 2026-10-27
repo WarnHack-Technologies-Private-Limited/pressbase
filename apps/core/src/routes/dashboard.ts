@@ -1,7 +1,8 @@
 import { schema } from '@pressbase/db';
 import { and, count, desc, eq, inArray } from 'drizzle-orm';
 import { Hono } from 'hono';
-import { type AppEnv, requireCapability } from '../http';
+import { userCan } from '../auth/users';
+import { type AppEnv, requireCapability, restError } from '../http';
 import { PRESSBASE_VERSION } from '../version';
 
 /** Everything the dashboard home screen shows, in one request. */
@@ -69,6 +70,37 @@ export function dashboardRoutes() {
         node: process.versions.node,
       },
     });
+  });
+
+  return app;
+}
+
+/**
+ * Counts per status for one post type — wp_count_posts(), which powers the
+ * status tabs above admin lists ("All (12) | Published (9) | Drafts (3)").
+ */
+export function postCountRoutes() {
+  const app = new Hono<AppEnv>({ strict: false });
+
+  app.get('/:type', async (c) => {
+    const kernel = c.get('kernel');
+    const type = kernel.postTypes.get(c.req.param('type'));
+    if (!type?.showInRest) return restError(c, 404, 'rest_type_invalid', 'Invalid post type.');
+    if (!userCan(c.get('user'), type.cap.edit_posts)) {
+      return restError(
+        c,
+        c.get('user') ? 403 : 401,
+        'rest_forbidden',
+        'Sorry, you are not allowed to do that.',
+      );
+    }
+    await kernel.posts.publishDue();
+    const rows = await kernel.db
+      .select({ status: schema.posts.status, n: count() })
+      .from(schema.posts)
+      .where(eq(schema.posts.type, type.name))
+      .groupBy(schema.posts.status);
+    return c.json(Object.fromEntries(rows.map((r) => [r.status, r.n])));
   });
 
   return app;
