@@ -27,7 +27,7 @@ import {
 } from '@wordpress/blocks';
 import { Popover } from '@wordpress/components';
 import { useStateWithHistory } from '@wordpress/compose';
-import { useDispatch, useSelect } from '@wordpress/data';
+import { useDispatch, useRegistry, useSelect } from '@wordpress/data';
 import '@wordpress/format-library';
 import {
   store as keyboardShortcutsStore,
@@ -53,6 +53,12 @@ import styles from './block-editor.module.css';
 import { allowedBlockTypes, countWords, readingMinutes } from './blocks';
 import { type EditorFeatures, loadEditorFeatures, NO_FEATURES, toEditorPattern } from './features';
 import { fetchLinkSuggestions } from './link-suggestions';
+import {
+  ALLOWED_MIME_TYPES,
+  categoriesWithMedia,
+  createInserterMediaCategories,
+  type InserterMediaCategory,
+} from './media-categories';
 import { registerMediaLibrary } from './media-library';
 import { createMediaUpload } from './media-upload';
 import { registerServerBlocks } from './server-blocks';
@@ -75,6 +81,9 @@ const RESOLVED_ASSETS = {
   ),
   scripts: '',
 };
+
+/** The inserter's Media tab (Images, Videos, Audio), once the media library exists. */
+const MEDIA_CATEGORIES = createInserterMediaCategories();
 
 /* -------------------------------------------------------------------- types */
 
@@ -170,6 +179,9 @@ export default function BlockEditor(props: BlockEditorProps) {
       __unstableResolvedAssets: RESOLVED_ASSETS,
       mediaUpload: createMediaUpload({ available: features.media, postId }),
       imageEditing: features.media,
+      // The Media tab only lists categories whose type is allowed here; the
+      // categories themselves are registered by <MediaCategories>.
+      ...(features.media ? { allowedMimeTypes: ALLOWED_MIME_TYPES } : {}),
       enableOpenverseMediaCategory: false,
       canLockBlocks: true,
       codeEditingEnabled: true,
@@ -195,6 +207,7 @@ export default function BlockEditor(props: BlockEditorProps) {
       >
         <UndoShortcuts undo={history.undo} redo={history.redo} />
         <NoticesBridge onNotice={props.onNotice} />
+        <MediaCategories enabled={features.media} />
         <SelectionReporter onSelectionChange={props.onSelectionChange} />
 
         <div className={styles.toolbar} role="toolbar" aria-label="Editor tools">
@@ -436,6 +449,28 @@ function UndoShortcuts({ undo, redo }: { undo: () => void; redo: () => void }) {
     event.preventDefault();
     redo();
   });
+  return null;
+}
+
+/**
+ * Fills the inserter's Media tab. BlockEditorProvider strips the private
+ * `inserterMediaCategories` setting, so the categories are added with the
+ * public registerInserterMediaCategory() action instead, once per editor
+ * store, and only those that have media (as WordPress's own check does).
+ */
+const registeredStores = new WeakSet<object>();
+function MediaCategories({ enabled }: { enabled: boolean }) {
+  const registry = useRegistry();
+  const { registerInserterMediaCategory } = useDispatch(blockEditorStore) as unknown as {
+    registerInserterMediaCategory: (category: InserterMediaCategory) => void;
+  };
+  useEffect(() => {
+    if (!enabled || registeredStores.has(registry)) return;
+    registeredStores.add(registry);
+    categoriesWithMedia(MEDIA_CATEGORIES).then((categories) => {
+      for (const category of categories) registerInserterMediaCategory(category);
+    });
+  }, [enabled, registry, registerInserterMediaCategory]);
   return null;
 }
 

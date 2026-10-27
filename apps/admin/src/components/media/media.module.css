@@ -668,6 +668,41 @@
   color: var(--color-text-muted);
 }
 
+/* Multi-select: the order badge on tiles, and the picked strip in the footer. */
+
+.checkNumber {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.picked {
+  display: flex;
+  flex: none;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.picked li + li {
+  margin-left: calc(-1 * var(--space-3));
+}
+
+.picked .chosenThumb {
+  box-shadow: 0 0 0 2px var(--color-surface);
+}
+
+.pickedMore {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+
+.hint {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
 /* ---------------------------------------------------------------- narrow */
 
 @media (max-width: 860px) {

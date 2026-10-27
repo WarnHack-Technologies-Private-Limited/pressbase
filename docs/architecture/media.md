@@ -107,6 +107,16 @@ If processing fails after the file is stored, the attachment is kept at full siz
 
 Posts and pages accept `featured_media` (an attachment ID, or 0 to remove it), stored as `_thumbnail_id`. The ID must be an image attachment, else `400 rest_invalid_featured_media`. WordPress checks this only on update; Pressbase checks it on create too, before anything is written.
 
+## Choosing media in the admin
+
+`MediaPicker` (`apps/admin/src/components/media/media-picker.tsx`) is WordPress's media modal: browse, search, filter by type or upload, then choose.
+
+- **One item** (featured image, image, cover, video, audio, media & text): clicking selects, double-click chooses at once.
+- **Several items** (`multiple`; galleries): click or Space toggles an item, Shift+click selects the range from the last item toggled. Items keep the order they were picked in, shown as a number on each tile and as a strip of thumbnails in the footer ("3 selected", **Clear**). Uploads made in the picker are added to the selection. Ctrl/⌘+Enter confirms. `selectedIds` preselects items (a gallery's images), loaded by ID if they aren't on the first page; `onSelectMultiple` gets the items in order, and `multipleLabel(count)` names the button ("Create gallery (3)").
+- The selection logic is in `selection.ts` (pure functions, tested in `selection.test.ts`).
+
+The block editor's bridge is described in [Block editor](block-editor.md#media).
+
 ## Hooks
 
 | Hook | Type | Arguments | When |

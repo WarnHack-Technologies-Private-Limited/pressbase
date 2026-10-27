@@ -105,7 +105,7 @@ toast('Could not save.', { tone: 'danger' });
 | `MediaLibrary` | Thumbnail grid with type filter and search in the URL, "Load more", an upload button and drop-anywhere uploads. Each upload shows its own progress; errors stay until dismissed, and a finished batch ends in a toast. |
 | `MediaGrid` | One tab stop for the whole grid; arrow keys, Home and End move between tiles. Each tile is a button named by the title, type and dimensions. |
 | `MediaDetails` | `<dialog>`: preview, file facts, URL with Copy, editable alt text / title / caption / description with an explicit Save, and *Delete permanently* behind a `ConfirmDialog`. Arrow keys page between items. Closing with unsaved changes asks first. Full screen on phones. |
-| `MediaPicker` | Choose one item or upload one (it's then selected). `allowedTypes` limits the kinds; `title` and `selectLabel` name the task ("Set featured image"). Double-click chooses at once. |
+| `MediaPicker` | Choose one item or upload one (it's then selected). `allowedTypes` limits the kinds; `title` and `selectLabel` name the task ("Set featured image"). Double-click chooses at once. With `multiple`, several items are picked in order (numbered tiles, "N selected" footer with **Clear**, Shift+click for a range), and `multipleLabel(n)` names the button ("Create gallery (3)"). |
 
 ## Block editor: `components/block-editor/`
 

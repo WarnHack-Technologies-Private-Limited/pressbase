@@ -76,22 +76,30 @@ Covered by `api-fetch.test.ts`.
 | `__experimentalReusableBlocks` | Synced patterns from `/wp/v2/blocks` |
 | `mediaUpload` | `media-upload.ts`: `uploadMedia()` to `/wp/v2/media`, with `post` set to the current post |
 | `imageEditing` | Only when `/wp/v2/media` exists |
-| `__experimentalFetchLinkSuggestions` | `link-suggestions.ts`: searches posts and pages (WordPress uses `/wp/v2/search`) |
+| `allowedMimeTypes` | Only when `/wp/v2/media` exists: the types core accepts (`ALLOWED_MIME_TYPES` in `media-categories.ts`, mirroring `apps/core/src/media/mime.ts`). The Media tab needs it. |
+| `__experimentalFetchLinkSuggestions` | `link-suggestions.ts`: `/wp/v2/search` for posts, pages and terms (see below) |
 | `__experimentalCanUserUseUnfilteredHTML` | The user's `unfiltered_html` capability |
 | `alignWide`, `bodyPlaceholder` | `true`, "Type / to choose a block" |
 
+### Link suggestions
+
+`link-suggestions.ts` ports core-data's `fetchLinkSuggestions()`: two `/wp/v2/search` requests in parallel (`type=post` and `type=term`, 20 results each, 3 for the initial suggestions), mapped to `{ id, url, title, type, kind }` (`kind` is `post-type` or `taxonomy`, `type` the post type or taxonomy) and ranked as WordPress ranks them: titles holding every word first, then the whole phrase, then posts before terms, then titles starting with the search. Post formats and attachments aren't searched. If core answers `rest_no_route` (an older core), it falls back to `/wp/v2/posts` and `/wp/v2/pages` for the rest of the session. Tested in `link-suggestions.test.ts`.
+
 ## Features that arrive separately
 
-`features.ts` probes once per page load, in parallel. A route counts as present unless core answers `rest_no_route`. (A 401 or 403 means it exists.) The 404s of absent routes show in the browser console; they're expected.
+`features.ts` probes once per page load, in parallel. A route counts as present unless core answers `rest_no_route`. (A 401 or 403 means it exists.) The REST index (`GET /wp-json/`) is read first, alongside the probes: routes in a namespace it doesn't list (`oembed/1.0`) aren't requested, so a missing feature leaves no 404 in the console.
 
 | Probe | When it's missing |
 |---|---|
 | `/wp/v2/media` | Upload says "Uploading needs the media library, which isn’t available yet. Use “Insert from URL” instead." Image editing is off. |
 | `/wp/v2/block-renderer/…` | Dynamic blocks (`DYNAMIC_BLOCKS` in `blocks.ts`: latest posts, archives, query loop, search…) are left out of the inserter. Existing ones still show, with ServerSideRender's error message. |
-| `/wp/v2/block-types` | No server-only blocks. When present, dynamic blocks the browser doesn't know (plugins' blocks) are registered with a ServerSideRender preview (`server-blocks.tsx`). |
+| `/wp/v2/block-types` | No server-only blocks. When present, dynamic blocks the browser doesn't know (plugins' blocks) are registered with a ServerSideRender preview (`server-blocks.tsx`), and dynamic core blocks the server doesn't report are left out (today the server renders archives, categories, latest posts, login/out, search, tag cloud and the post title, date, excerpt, author name and terms; query loop, calendar, RSS, social links and the rest wait for their server port). |
+| `/wp-json/` namespaces | `oembed/1.0` isn't listed, so embeds are left out without probing. |
 | `/wp/v2/block-patterns/*` | The Patterns tab says "No results found." |
 | `/wp/v2/blocks` | Synced patterns (`core/block`) are left out of the inserter. |
 | `/oembed/1.0/proxy` | Embeds (`core/embed`) are left out of the inserter. |
+
+Static blocks (paragraph, image, gallery, cover, media & text, file, audio, video…) are always offered; without the media library they still take URLs. `blocks.test.ts` checks this.
 
 `UNSUPPORTED_BLOCKS` are never offered in v0.3. They are the Classic block (TinyMCE), footnotes (post meta through core-data), navigation and site-editing blocks (v0.4), and comment blocks (no endpoints yet).
 
@@ -109,9 +117,9 @@ Covered by `api-fetch.test.ts`.
   - The picker is portalled to the admin page, because blocks render inside the canvas iframe.
   - The block's `allowedTypes` (`['image']`, MIME types…) become the picker's filters.
   - The chosen item is converted to the media-modal shape blocks expect (`toEditorMedia()` in `media-shape.ts`).
-  - Galleries currently add one image per pick.
+  - **Galleries** (`multiple`): the picker opens in multi-select mode (see [Media](media.md#choosing-media-in-the-admin)). A new gallery's picker is "Create gallery" with a "Create gallery (3)" button. The gallery's **Add** button opens "Edit gallery" with its images preselected and numbered; the result is the whole list in order, as WordPress's gallery-edit frame returns it, so deselecting an image removes it. Headings and labels come from `pickerCopy()` in `media-shape.ts`.
 - **Featured image.** The *Featured image* panel in the Post tab (`components/content/featured-image.tsx`) sets `featured_media`. It's shown to people who can `upload_files`, and nudges when the chosen image has no alt text.
-- **Not wired yet.** The inserter's Media tab (`inserterMediaCategories`).
+- **Inserter Media tab.** `media-categories.ts` provides Images, Videos and Audio from `/wp/v2/media` (`media_type`, `search`, `per_page`, `page`; ordered by relevance when searching), mapped to `{ id, url, previewUrl (medium size), alt, caption, title }`, with `totalItems`/`totalPages` from the headers so the tab paginates. Clicking or dragging an item inserts an Image, Video or Audio block. `BlockEditorProvider` strips the private `inserterMediaCategories` setting, so `<MediaCategories>` in `block-editor.tsx` adds them with the public `registerInserterMediaCategory()` action once per editor store, and only the ones that have media (WordPress checks its own categories the same way; a type uploaded later appears after a reload). Only when the media probe succeeds. Tested in `media-categories.test.ts`.
 
 ## Autosave
 

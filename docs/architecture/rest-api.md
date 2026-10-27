@@ -28,6 +28,7 @@ Everything is served under `/wp-json`, as in WordPress:
 | GET / POST / PUT / PATCH / DELETE | `/wp/v2/{categories\|tags}/{id}` | `edit_term` / `delete_term` | One term.                                           |
 | GET                      | `/wp/v2/types`, `/wp/v2/taxonomies`, `/wp/v2/statuses` | public | Registered post types, taxonomies and statuses (labels, capabilities with `context=edit`). |
 | GET                      | `/wp/v2/users`, `/wp/v2/users/{id}`    | public: published authors only · `list_users`: everyone | People. `context=edit` adds username, email and roles. |
+| GET                      | `/wp/v2/search`                    | public           | One search across published posts and pages, terms, and post formats (`WP_REST_Search_Controller`). See *Search* below. |
 | GET / POST               | `/wp/v2/media`                     | read: public (as the parent post) · upload: `upload_files` | List or upload media. See *Media* below. |
 | GET / POST / PUT / PATCH / DELETE | `/wp/v2/media/{id}`       | `read_post` / `edit_post` / `delete_post` | One attachment. `DELETE` needs `?force=true` (no Trash). |
 | GET / HEAD               | `/wp-content/uploads/{path}`       | public           | The uploaded files themselves (outside `/wp-json`). See [Media](media.md#serving-files). |
@@ -54,6 +55,16 @@ Responses carry `X-WP-Total`, `X-WP-TotalPages` and a `Link` header with `prev` 
 - **Collection parameters:** as posts, plus `media_type` (`image`, `video`, `audio`, `application`, `text`), `mime_type` and `parent` (`0` for unattached). `status` is `inherit` by default.
 - **Update:** `title`, `alt_text`, `caption`, `description`, `post`, `author`, `slug`, `comment_status`, `ping_status`.
 - **Featured images:** posts and pages accept and return `featured_media`.
+
+### Search
+
+`/wp/v2/search` ports `WP_REST_Search_Controller` and its post, term and post-format handlers (`wp-includes/rest-api/search/`). The block editor's link popover uses it.
+
+- **Parameters:** `search`, `type` (`post` (default), `term`, `post-format`), `subtype` (post types or taxonomies, or `any` (default), which wins over the others; subtypes of another handler are ignored), `page`, `per_page` (max 100), `include`, `exclude`, `context` (`view` or `embed`).
+- **Items:** `{ id, title, url, type, subtype, _links }`. Posts have `type: "post"` and the post type as `subtype`. Terms have the taxonomy as `type` and no `subtype`, as in WordPress. `_links` has `self` (embeddable), `about` and `collection`.
+- **What's searched:** published posts of every public post type in the REST API except attachments (drafts and private posts never appear, even to their authors, as in WordPress), and terms of every public taxonomy, matched on name or slug and ordered by name. Pressbase has no post formats yet, so `type=post-format` finds nothing.
+- **Pagination:** `X-WP-Total`, `X-WP-TotalPages` and `Link`; a page past the end is `400 rest_search_invalid_page_number`. An unknown `type` or `subtype` is `400 rest_invalid_param`.
+- **Filters:** `rest_post_search_query`, `rest_term_search_query`, `rest_post_format_search_query` (`args, request`).
 
 ### Who may write what
 
@@ -103,6 +114,7 @@ The shape matches WordPress:
 | `rest_post_no_autosave`            | 404       | The post has no autosave.                                                  |
 | `rest_cannot_read`                 | 401 / 403 | Revisions or autosaves of a post you can't edit.                           |
 | `rest_post_invalid_page_number`    | 400       | `page` is past the last page.                                              |
+| `rest_search_invalid_page_number`  | 400       | `page` is past the last page of a search.                                  |
 | `term_exists`                      | 400       | A term with that name or slug exists; `data.term_id` is the existing term. |
 | `rest_trash_not_supported`         | 501       | `DELETE` on a term or media item without `?force=true`.                    |
 | `rest_cannot_create`               | 401 / 403 | Uploading without `upload_files`.                                          |

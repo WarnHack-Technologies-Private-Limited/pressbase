@@ -14,6 +14,7 @@ import { dashboardRoutes, postCountRoutes } from './routes/dashboard';
 import { installRoutes } from './routes/install';
 import { mediaRoutes } from './routes/media';
 import { postsRoutes } from './routes/posts';
+import { searchRoutes } from './routes/search';
 import { settingsRoutes } from './routes/settings';
 import { termsRoutes } from './routes/terms';
 import { typeRoutes } from './routes/types';
@@ -86,6 +87,10 @@ export function createApp(kernel: Kernel) {
   // Block engine (v0.3): /wp/v2/block-types, /block-renderer, /block-patterns and
   // /blocks (synced patterns). See docs/architecture/blocks.md.
   installed.route('/wp/v2', blockRoutes(kernel));
+
+  // Search (WP_REST_Search_Controller): posts, terms and post formats in one
+  // query, for the editor's link suggestions. See routes/search.ts.
+  installed.route('/wp/v2/search', searchRoutes());
 
   // Autosaves (WP_REST_Autosaves_Controller) for the same types, when they keep revisions.
   for (const type of kernel.postTypes.all()) {

@@ -1,7 +1,7 @@
 'use client';
 
 import { ImageIcon, Search, Upload, X } from 'lucide-react';
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { plainTitle } from '@/lib/content';
 import {
   ACCEPT,
@@ -18,6 +18,13 @@ import { EmptyState, Notice } from '../ui/surface';
 import { DropOverlay, useFileDrop } from './drop-zone';
 import styles from './media.module.css';
 import { FileIcon, GridSkeleton, MediaGrid, UploadList } from './media-grid';
+import {
+  initialSelection,
+  orderedSelection,
+  selectedCount,
+  selectRange,
+  toggleSelection,
+} from './selection';
 import { useMediaList, useUploads } from './use-media';
 
 export type MediaKind = Exclude<MediaFilter, 'all'>;
@@ -26,7 +33,19 @@ export interface MediaPickerProps {
   open: boolean;
   onClose: () => void;
   /** Called with the chosen item; the picker closes itself afterwards. */
-  onSelect: (media: RestMedia) => void;
+  onSelect?: (media: RestMedia) => void;
+  /**
+   * Pick several items (a gallery): click or Space toggles an item, Shift+click
+   * selects a range, and the order of picking is kept. Confirming calls
+   * `onSelectMultiple` instead of `onSelect`.
+   */
+  multiple?: boolean;
+  /** Multi-select: called with the picked items, in the order they were picked. */
+  onSelectMultiple?: (media: RestMedia[]) => void;
+  /** Multi-select: IDs picked when the picker opens (a gallery's images), in order. */
+  selectedIds?: readonly number[];
+  /** Multi-select: the primary button's label for a count, e.g. n => `Insert ${n} images`. */
+  multipleLabel?: (count: number) => string;
   /** Limit to these kinds, e.g. ['image'] for a featured image. Default: everything. */
   allowedTypes?: MediaKind[];
   /** Dialog heading, e.g. "Choose a featured image". */
@@ -38,8 +57,9 @@ export interface MediaPickerProps {
 }
 
 /**
- * Choose one item from the media library or upload a new one — WordPress's
- * media modal, for the editor's featured image and image blocks.
+ * Choose one item (or, with `multiple`, several) from the media library or
+ * upload new ones — WordPress's media modal, for the editor's featured image,
+ * media blocks and galleries.
  *
  * ```tsx
  * <MediaPicker open={picking} allowedTypes={['image']} title="Choose a featured image"
@@ -55,6 +75,10 @@ export function MediaPicker(props: MediaPickerProps) {
 function PickerDialog({
   onClose,
   onSelect,
+  multiple = false,
+  onSelectMultiple,
+  selectedIds,
+  multipleLabel,
   allowedTypes,
   title = 'Choose media',
   selectLabel = 'Select',
@@ -78,6 +102,40 @@ function PickerDialog({
   const [rejected, setRejected] = useState<string>();
   const list = useMediaList({ filter, search, allowed: kinds });
 
+  // Multi-select: picked IDs in order, every item seen so far (across filters,
+  // searches and pages), and the last item toggled (the Shift+click anchor).
+  const [picked, setPicked] = useState<number[]>(() => initialSelection(selectedIds));
+  const [known, setKnown] = useState<ReadonlyMap<number, RestMedia>>(() => new Map());
+  const anchor = useRef<number | undefined>(undefined);
+  const remember = useCallback((items: RestMedia[]) => {
+    if (!items.length) return;
+    setKnown((current) => {
+      const next = new Map(current);
+      for (const item of items) next.set(item.id, item);
+      return next;
+    });
+  }, []);
+  useEffect(() => {
+    if (multiple && list.items) remember(list.items);
+  }, [multiple, list.items, remember]);
+
+  // Preselected items may not be on the first page: load them by ID.
+  const preselected = useRef(initialSelection(selectedIds));
+  useEffect(() => {
+    const ids = preselected.current;
+    if (!multiple || !ids.length) return;
+    const q = new URLSearchParams({
+      context: 'edit',
+      include: ids.join(','),
+      per_page: String(Math.min(ids.length, 100)),
+    });
+    fetch(`/wp-json/wp/v2/media?${q}`, { credentials: 'same-origin' })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((items: RestMedia[]) => remember(Array.isArray(items) ? items : []))
+      .catch(() => {});
+  }, [multiple, remember]);
+  const pickedItems = useMemo(() => orderedSelection(picked, known), [picked, known]);
+
   useEffect(() => {
     const dialog = ref.current;
     if (dialog && !dialog.open) dialog.showModal();
@@ -97,9 +155,14 @@ function PickerDialog({
       (media: RestMedia) => {
         prepend(media);
         // A fresh upload is almost always the one wanted.
-        setChosen(media);
+        if (multiple) {
+          remember([media]);
+          setPicked((current) => (current.includes(media.id) ? current : [...current, media.id]));
+        } else {
+          setChosen(media);
+        }
       },
-      [prepend],
+      [prepend, multiple, remember],
     ),
   );
 
@@ -118,10 +181,34 @@ function PickerDialog({
   const dragging = useFileDrop(addFiles, { enabled: canUpload, target: bodyRef });
 
   const confirm = (media: RestMedia | undefined = chosen) => {
+    if (multiple) {
+      if (!pickedItems.length) return;
+      onSelectMultiple?.(pickedItems);
+      onClose();
+      return;
+    }
     if (!media) return;
-    onSelect(media);
+    onSelect?.(media);
     onClose();
   };
+
+  const activate = (media: RestMedia, shiftKey: boolean) => {
+    if (!multiple) {
+      setChosen(chosen?.id === media.id ? undefined : media);
+      return;
+    }
+    const grid = (list.items ?? []).map((m) => m.id);
+    setPicked((current) =>
+      shiftKey
+        ? selectRange(current, grid, anchor.current, media.id)
+        : toggleSelection(current, media.id),
+    );
+    anchor.current = media.id;
+  };
+  const count = pickedItems.length;
+  const primaryLabel = multiple
+    ? (multipleLabel?.(count) ?? (count ? `Select ${count}` : 'Select'))
+    : selectLabel;
 
   const accept = kinds ? kinds.map((k) => ACCEPT[k]).join(',') : ACCEPT.all;
   const items = list.items ?? [];
@@ -134,6 +221,13 @@ function PickerDialog({
       onCancel={(e) => {
         e.preventDefault();
         onClose();
+      }}
+      onKeyDown={(e) => {
+        // Ctrl/⌘+Enter confirms from anywhere, as Enter alone toggles a tile.
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          confirm();
+        }
       }}
     >
       <header className={styles.detailsHeader}>
@@ -245,8 +339,9 @@ function PickerDialog({
               label="Media items"
               mode="select"
               selectedId={chosen?.id}
-              onActivate={(media) => setChosen(chosen?.id === media.id ? undefined : media)}
-              onConfirm={(media) => confirm(media)}
+              selectedIds={multiple ? picked.filter((id) => known.has(id)) : undefined}
+              onActivate={(media, _element, { shiftKey }) => activate(media, shiftKey)}
+              onConfirm={multiple ? undefined : (media) => confirm(media)}
             />
             {list.hasMore && (
               <div className={styles.more}>
@@ -263,7 +358,9 @@ function PickerDialog({
 
       <footer className={styles.detailsFooter}>
         <div className={styles.chosen} aria-live="polite">
-          {chosen ? (
+          {multiple ? (
+            <PickedSummary items={pickedItems} onClear={() => setPicked([])} />
+          ) : chosen ? (
             <>
               {previewUrl(chosen, 64) ? (
                 <img src={previewUrl(chosen, 64)} alt="" className={styles.chosenThumb} />
@@ -289,10 +386,57 @@ function PickerDialog({
         <Button variant="ghost" onClick={onClose}>
           Cancel
         </Button>
-        <Button variant="primary" disabled={!chosen} onClick={() => confirm()}>
-          {selectLabel}
+        <Button
+          variant="primary"
+          disabled={multiple ? count === 0 : !chosen}
+          onClick={() => confirm()}
+        >
+          {primaryLabel}
         </Button>
       </footer>
     </dialog>
+  );
+}
+
+/** The footer in multi-select mode: the first few picks, the count, and Clear. */
+function PickedSummary({ items, onClear }: { items: RestMedia[]; onClear: () => void }) {
+  if (!items.length) {
+    return (
+      <span className={styles.hint}>Click items to select them. Shift-click selects a range.</span>
+    );
+  }
+  const shown = items.slice(0, 4);
+  const more = items.length - shown.length;
+  return (
+    <>
+      <ul className={styles.picked} aria-hidden="true">
+        {shown.map((media) => {
+          const thumb = previewUrl(media, 64);
+          return (
+            <li key={media.id}>
+              {thumb ? (
+                <img src={thumb} alt="" className={styles.chosenThumb} />
+              ) : (
+                <span className={styles.chosenThumb}>
+                  <FileIcon mime={media.mime_type} size={20} />
+                </span>
+              )}
+            </li>
+          );
+        })}
+        {more > 0 && (
+          <li>
+            <span className={`${styles.chosenThumb} ${styles.pickedMore}`}>+{more}</span>
+          </li>
+        )}
+      </ul>
+      <span className={styles.chosenText}>
+        <strong>{selectedCount(items.length)}</strong>
+        <span>Numbered in the order they’ll appear</span>
+      </span>
+      <button type="button" className={styles.linkButton} onClick={onClear}>
+        Clear
+      </button>
+    </>
   );
 }
