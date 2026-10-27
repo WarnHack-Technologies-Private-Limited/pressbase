@@ -307,6 +307,9 @@ importers:
       "@pressbase/theme-json":
         specifier: workspace:*
         version: link:../../packages/theme-json
+      bcryptjs:
+        specifier: 3.0.3
+        version: 3.0.3
       drizzle-orm:
         specifier: 0.45.4
         version: 0.45.4(@electric-sql/pglite@0.5.12)(postgres@3.4.9)
@@ -3101,6 +3104,13 @@ packages:
         integrity: sha512-yiVKDX+qCMRKBE084lXvq9EcwFUhKZ2nU8TK1EQQuOgPNR/lmbGxXOeDdlGUqC2Zz11Cs9rk1d/8NfgBmlkt0w==,
       }
     engines: { node: ">=6.0.0" }
+    hasBin: true
+
+  bcryptjs@3.0.3:
+    resolution:
+      {
+        integrity: sha512-GlF5wPWnSa/X5LKM1o0wz0suXIINz1iHRLvTS+sLyi7XPbe5ycmYI3DlZqVGZZtDgl4DmasFg7gOB3JYbphV5g==,
+      }
     hasBin: true
 
   buffer-from@1.1.2:
@@ -6363,6 +6373,8 @@ snapshots:
   assertion-error@2.0.1: {}
 
   baseline-browser-mapping@2.11.33: {}
+
+  bcryptjs@3.0.3: {}
 
   buffer-from@1.1.2: {}
 

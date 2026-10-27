@@ -28,7 +28,7 @@ A user is a row in `users` plus `usermeta` entries under WordPress's keys:
 - **Usernames** follow `validate_username()`: letters, numbers, spaces and `. - _ @`, at most 60 characters. Plugins can forbid names with the `illegal_user_logins` filter.
 - **Emails** follow `is_email()`, WordPress's deliberately simple check.
 - **Uniqueness:** usernames and emails are unique regardless of case (enforced by the database too).
-- **Passwords** can't be empty or contain `\`, as in WordPress. They're hashed with scrypt ([ADR 0005](../adr/0005-password-hashing.md)).
+- **Passwords** can't be empty or contain `\`, as in WordPress. They're hashed with scrypt ([ADR 0005](../adr/0005-password-hashing.md)) Accounts imported from WordPress keep their WordPress hash (`$wp$2y$…`, `$2y$…`, `$P$…` or MD5) until the person's next login, which checks it as `wp_check_password()` does and replaces it with scrypt.
 - **Websites** keep only `http` and `https` addresses.
 - **Bios** are stored as plain text; HTML is kept as typed but never rendered by the admin.
 

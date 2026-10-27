@@ -17,6 +17,7 @@
     "@pressbase/db": "workspace:*",
     "@pressbase/hooks": "workspace:*",
     "@pressbase/theme-json": "workspace:*",
+    "bcryptjs": "3.0.3",
     "drizzle-orm": "0.45.4",
     "hono": "4.13.14",
     "nodemailer": "10.0.15",
