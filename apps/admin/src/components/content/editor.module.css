@@ -40,23 +40,87 @@
   flex: 1;
 }
 
+.bar .sidebarToggle {
+  width: var(--control-height-sm);
+  padding: 0;
+  justify-content: center;
+}
+
+.bar .sidebarToggle[data-active] {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+}
+
+.notice {
+  margin-bottom: var(--space-4);
+}
+
+.noticeActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+/* ------------------------------------------------------------- layout */
+
+/*
+ * The editor fills the viewport below the action bar. The canvas and the
+ * sidebar scroll on their own, as in WordPress's editor. The negative bottom
+ * margin cancels the shell's page padding, so the page itself doesn't scroll.
+ */
 .layout {
+  --editor-height: max(30rem, calc(100dvh - 10rem));
   display: grid;
   grid-template-columns: minmax(0, 1fr) 19rem;
-  gap: var(--space-8);
-  align-items: start;
+  gap: var(--space-6);
+  height: var(--editor-height);
+  margin-bottom: calc(var(--space-6) - var(--space-16));
+}
+
+.layout[data-sidebar="closed"] {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .canvas {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
-  min-height: 60vh;
-  padding: var(--space-10) var(--space-10) var(--space-12);
+  min-width: 0;
+  min-height: 0;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xs);
+}
+
+/* Code view: the escape hatch for raw block markup. */
+.code {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.codeBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 3rem;
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-subtle);
+  font-size: var(--text-sm);
+}
+
+.codeBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-8) var(--space-10) var(--space-12);
 }
 
 .title {
@@ -83,15 +147,17 @@
   box-shadow: none;
 }
 
-.modeRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--color-border);
-  color: var(--color-text-subtle);
+.body {
+  width: 100%;
+  min-height: 24rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-mono);
   font-size: var(--text-sm);
+  line-height: 1.6;
+  resize: none;
+  overflow: hidden;
 }
 
 .modes {
@@ -123,47 +189,92 @@
   box-shadow: var(--shadow-sm);
 }
 
-.body {
-  width: 100%;
-  min-height: 24rem;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  font-family: Georgia, "Iowan Old Style", "Times New Roman", serif;
-  font-size: 1.1875rem;
-  line-height: 1.75;
-  resize: none;
-  overflow: hidden;
-}
-
-.body[data-mode="code"] {
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  line-height: 1.6;
-}
-
 .hint {
   color: var(--color-text-subtle);
   font-size: var(--text-sm);
 }
 
-.hint code {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  padding: 1px 4px;
-  border-radius: 4px;
+/* ------------------------------------------------------------ sidebar */
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: var(--space-4);
+}
+
+.sidebar[hidden] {
+  display: none;
+}
+
+.tabsRow {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+  background: var(--color-canvas);
+}
+
+.tabs {
+  display: flex;
+  flex: 1;
+  padding: 2px;
+  gap: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   background: var(--color-surface-sunken);
 }
 
-.sidebar {
-  position: sticky;
-  top: 8.5rem;
+.tab {
+  flex: 1;
+  height: 2rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+}
+
+.tab[aria-selected="true"] {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+}
+
+.sidebarClose {
+  display: none;
+}
+
+.tabPanel {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  max-height: calc(100dvh - 10rem);
-  overflow-y: auto;
-  padding-bottom: var(--space-4);
+}
+
+.tabPanel[hidden] {
+  display: none;
+}
+
+/* The Block tab hosts WordPress's BlockInspector: a light card in both themes. */
+.inspector {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.inspector :global(.block-editor-block-inspector__no-blocks),
+.inspectorEmpty {
+  padding: var(--space-6) var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  text-align: center;
 }
 
 .panel {
@@ -430,14 +541,41 @@ textarea.small {
   padding: var(--space-10);
 }
 
+/* --------------------------------------------------------- responsive */
+
 @media (max-width: 1100px) {
-  .layout {
+  .layout,
+  .layout[data-sidebar="closed"] {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* The sidebar becomes a drawer over the canvas, opened from the action bar. */
   .sidebar {
-    position: static;
-    max-height: none;
+    position: fixed;
+    top: 3.5rem;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    width: min(22rem, 100vw);
+    padding: var(--space-4);
+    background: var(--color-canvas);
+    border-left: 1px solid var(--color-border);
+    box-shadow: var(--shadow-lg);
+    animation: drawer-in var(--duration-base) var(--ease-out);
+  }
+
+  .tabsRow .sidebarClose {
+    display: inline-flex;
+    width: var(--control-height-sm);
+    padding: 0;
+    justify-content: center;
+  }
+}
+
+@keyframes drawer-in {
+  from {
+    opacity: 0;
+    transform: translateX(1rem);
   }
 }
 
@@ -448,21 +586,22 @@ textarea.small {
     padding: var(--space-2) var(--space-4);
   }
 
+  .layout {
+    --editor-height: max(26rem, calc(100dvh - 8.5rem));
+    margin-bottom: calc(var(--space-4) - var(--space-12));
+  }
+
   .saveState {
     display: none;
   }
 
-  .canvas {
+  .codeBody {
     padding: var(--space-6) var(--space-5) var(--space-8);
   }
 
   .title {
     font-size: 1.75rem;
   }
-}
-
-.hint code {
-  white-space: nowrap;
 }
 
 @media (max-width: 480px) {
@@ -472,5 +611,20 @@ textarea.small {
 
   .hideTiny {
     display: none;
+  }
+
+  .layout {
+    margin-inline: calc(-1 * var(--space-4));
+  }
+
+  .canvas {
+    border-inline: 0;
+    border-radius: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar {
+    animation: none;
   }
 }

@@ -33,6 +33,8 @@ export interface PostInput {
   terms?: Record<string, number[]>;
   /** Run content through kses (for users without unfiltered_html). */
   filterHtml?: boolean;
+  /** Set to false while autosaving, so no revision is stored (WordPress's DOING_AUTOSAVE). */
+  saveRevision?: boolean;
 }
 
 export class PostError extends Error {
@@ -202,7 +204,12 @@ export class PostsService {
       post.title !== current.title ||
       post.content !== current.content ||
       post.excerpt !== current.excerpt;
-    await this.#afterSave(post, current.status, true, contentChanged);
+    await this.#afterSave(
+      post,
+      current.status,
+      true,
+      contentChanged && input.saveRevision !== false,
+    );
     return post;
   }
 

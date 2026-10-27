@@ -251,11 +251,12 @@
     width: min(var(--sidebar-width), 85vw);
     transform: translateX(-100%);
     transition: transform var(--duration-base) var(--ease-out);
-    box-shadow: var(--shadow-lg);
   }
 
+  /* Shadow only while open: closed, it would bleed onto the page's left edge. */
   .sidebar[data-open="true"] {
     transform: none;
+    box-shadow: var(--shadow-lg);
   }
 
   .scrim[data-open="true"] {

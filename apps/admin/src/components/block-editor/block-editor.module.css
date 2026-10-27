@@ -1,0 +1,290 @@
+/*
+ * The block editor inside Pressbase's chrome. Our own toolbar follows the
+ * admin theme; WordPress's UI (popovers, inserter, list view, inspector) is
+ * light-only, so it sits in a light scope in both themes (see .light).
+ */
+
+.root {
+  /* WordPress components read the admin colour scheme from these. */
+  --wp-admin-theme-color: #3b4cca;
+  --wp-admin-theme-color--rgb: 59, 76, 202;
+  --wp-admin-theme-color-darker-10: #3343c0;
+  --wp-admin-theme-color-darker-10--rgb: 51, 67, 192;
+  --wp-admin-theme-color-darker-20: #2f3db0;
+  --wp-admin-theme-color-darker-20--rgb: 47, 61, 176;
+  --wp-admin-border-width-focus: 2px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+/*
+ * A light island: the admin's light tokens, re-declared, so our components
+ * inside it (and WordPress's) stay legible when the admin is dark.
+ */
+.light {
+  --wp-admin-theme-color: #3b4cca;
+  --wp-admin-theme-color--rgb: 59, 76, 202;
+  --wp-admin-theme-color-darker-10: #3343c0;
+  --wp-admin-theme-color-darker-10--rgb: 51, 67, 192;
+  --wp-admin-theme-color-darker-20: #2f3db0;
+  --wp-admin-theme-color-darker-20--rgb: 47, 61, 176;
+  --wp-admin-border-width-focus: 2px;
+  color-scheme: light;
+  --color-surface: #ffffff;
+  --color-surface-sunken: #f0f0ec;
+  --color-surface-hover: #f3f3ef;
+  --color-border: #e2e2dc;
+  --color-border-strong: #c7c7c0;
+  --color-text: #1b1b19;
+  --color-text-muted: #5c5c57;
+  --color-text-subtle: #73736d;
+  --color-accent: #3b4cca;
+  --color-accent-hover: #2f3db0;
+  --color-accent-soft: #eef0fd;
+  --color-accent-text: #3343c0;
+  color: #1e1e1e;
+}
+
+/* ------------------------------------------------------------ toolbar */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 3rem;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.toolbar > :first-child {
+  margin-right: var(--space-2);
+}
+
+.root .iconButton,
+.light .iconButton {
+  width: var(--control-height-sm);
+  padding: 0;
+  justify-content: center;
+}
+
+.root .iconButton[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.root .iconButton[data-active] {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.meta {
+  margin-right: var(--space-2);
+  color: var(--color-text-subtle);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------- canvas + panel */
+
+.body {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  container-type: inline-size;
+}
+
+.canvas {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  background: #ffffff;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+.canvas :global(.block-editor-iframe__container),
+.canvas :global(.block-editor-iframe__scale-container) {
+  height: 100%;
+}
+
+.canvas iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.panel {
+  composes: light;
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  width: min(22rem, 100%);
+  background: #ffffff;
+  border-right: 1px solid #e2e2dc;
+  box-shadow: var(--shadow-md);
+  border-bottom-left-radius: var(--radius-lg);
+  animation: panel-in var(--duration-base) var(--ease-out);
+}
+
+/*
+ * With room to spare the panel sits beside the canvas, as in WordPress, so
+ * block toolbars never cover it. On narrow canvases it slides over the text.
+ */
+@container (min-width: 40rem) {
+  .panel[data-kind="list"] {
+    position: relative;
+    inset: auto;
+    flex: none;
+    width: 18rem;
+    box-shadow: none;
+  }
+}
+
+/* WordPress's inserter needs its full 350px. */
+.panel[data-kind="inserter"] {
+  width: min(350px, 100%);
+}
+
+@container (min-width: 50rem) {
+  .panel[data-kind="inserter"] {
+    position: relative;
+    inset: auto;
+    flex: none;
+    box-shadow: none;
+  }
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(-0.5rem);
+  }
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  border-bottom: 1px solid #e2e2dc;
+}
+
+.panelHeader h2 {
+  font-size: var(--text-md);
+}
+
+.panelBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.panelBody[data-kind="list"] {
+  padding: var(--space-2);
+}
+
+/* The inserter fills its panel instead of WordPress's fixed 350px. */
+.panelBody :global(.block-editor-inserter__menu),
+.panelBody :global(.block-editor-inserter__main-area) {
+  width: 100%;
+}
+
+.panelBody :global(.block-editor-inserter__menu) {
+  height: 100%;
+}
+
+/* ----------------------------------------------- WordPress UI, softened */
+
+.root :global(.components-popover__content),
+.light :global(.components-popover__content) {
+  border-radius: var(--radius-md);
+}
+
+.root :global(.block-editor-block-contextual-toolbar.is-fixed) {
+  border-radius: 0;
+}
+
+.root :global(.block-editor-block-toolbar),
+.root :global(.block-editor-block-contextual-toolbar:not(.is-fixed)) {
+  border-radius: var(--radius-md);
+}
+
+/* --------------------------------------------------------------- loading */
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.loadingToolbar {
+  height: 3rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.loadingCanvas {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-10);
+  background: #ffffff;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+.loadingTitle,
+.loadingLine {
+  width: min(100%, 680px);
+  margin-inline: auto;
+  border-radius: var(--radius-sm);
+  background: #f0f0ec;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.loadingTitle {
+  height: 2.5rem;
+  margin-bottom: var(--space-4);
+}
+
+.loadingLine {
+  height: 1rem;
+}
+
+.loadingLine[data-short] {
+  width: min(60%, 400px);
+  margin-left: max(0px, calc((100% - 680px) / 2));
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loadingTitle,
+  .loadingLine,
+  .panel {
+    animation: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .meta {
+    display: none;
+  }
+
+  .toolbar {
+    padding: var(--space-2);
+  }
+}

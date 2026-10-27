@@ -84,5 +84,7 @@ Undeclared names still work, with `unknown` arguments.
 | `render_block_context` | filter | `context, parsedBlock, parentBlock` | the context a block receives |
 | `render_block`   | filter | `content, parsedBlock, block` | each block's rendered HTML                         |
 | `render_block_{name}` | filter | `content, parsedBlock, block` | after `render_block`, for one block type, e.g. `render_block_core/paragraph` |
+| `wp_creating_autosave` | action | `autosave, isUpdate` | before an existing autosave revision is overwritten |
+| `rest_prepare_autosave` | filter | `item, revision`     | each autosave in a REST response                   |
 
 **When you add a hook to core,** use WordPress's name if WordPress has an equivalent. Add it to this table and declare its types.

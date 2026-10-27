@@ -16,6 +16,13 @@ const nextConfig: NextConfig = {
     ];
   },
   poweredByHeader: false,
+  turbopack: {
+    resolveAlias: {
+      // The block editor's optional in-browser image processor (~22 MB of
+      // WebAssembly). Pressbase processes uploads on the server; see the stub.
+      '@wordpress/vips/worker': './src/components/block-editor/vips-stub.ts',
+    },
+  },
 };
 
 export default nextConfig;
