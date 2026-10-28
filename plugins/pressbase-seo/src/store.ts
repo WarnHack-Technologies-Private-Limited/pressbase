@@ -35,11 +35,17 @@ export const getTitles = (api: PluginApi) => merged<WpseoTitles>(api, 'wpseo_tit
 export const getSocial = (api: PluginApi) => merged<WpseoSocial>(api, 'wpseo_social', SOCIAL_DEFAULTS);
 export const getWpseo = (api: PluginApi) => merged<Wpseo>(api, 'wpseo', WPSEO_DEFAULTS);
 
+/** `pressbase_seo_settings`: one object, so the settings page has no generic fields. */
+export const OWN_OPTION = 'pressbase_seo_settings';
+export const OWN_DEFAULTS: OwnSettings = { robots_txt: '', indexnow: null, setup_done: false };
+
 export async function getOwn(api: PluginApi): Promise<OwnSettings> {
+  const stored = await api.options.get<unknown>('settings', {});
+  const own = { ...OWN_DEFAULTS, ...(stored && typeof stored === 'object' ? stored : {}) };
   return {
-    robots_txt: await api.options.get<string>('robots_txt', ''),
-    indexnow: await api.options.get<boolean | null>('indexnow', null),
-    setup_done: await api.options.get<boolean>('setup_done', false),
+    robots_txt: typeof own.robots_txt === 'string' ? own.robots_txt : '',
+    indexnow: typeof own.indexnow === 'boolean' ? own.indexnow : null,
+    setup_done: own.setup_done === true,
   };
 }
 
