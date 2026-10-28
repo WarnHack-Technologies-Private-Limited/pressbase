@@ -43,10 +43,41 @@ export async function mapMetaCap(
   cap: string,
   user: CurrentUser | null,
   objectId?: number,
+  metaKey?: string,
 ): Promise<string[]> {
   const userId = user?.id ?? 0;
 
   switch (cap) {
+    // Registered meta (content/meta.ts): edit the object, then the key's auth
+    // callback, or is_protected_meta() without one (capabilities.php).
+    case 'edit_post_meta':
+    case 'delete_post_meta':
+    case 'add_post_meta':
+    case 'edit_term_meta':
+    case 'delete_term_meta':
+    case 'add_term_meta':
+    case 'edit_user_meta':
+    case 'delete_user_meta':
+    case 'add_user_meta': {
+      const objectType = cap.split('_')[1] ?? '';
+      if (objectId === undefined) return [DO_NOT_ALLOW];
+      const subtype = await kernel.meta.subtypeOf(objectType, objectId);
+      if (!subtype) return [DO_NOT_ALLOW];
+      const caps = await mapMetaCap(kernel, `edit_${objectType}`, user, objectId);
+      if (metaKey) {
+        let allowed = !(await kernel.meta.isProtected(metaKey, objectType));
+        const specific = `auth_${objectType}_meta_${metaKey}_for_${subtype}`;
+        const hook = kernel.hooks.hasFilter(specific)
+          ? specific
+          : `auth_${objectType}_meta_${metaKey}`;
+        allowed = Boolean(
+          await kernel.hooks.applyFilters(hook, allowed, metaKey, objectId, userId, cap, caps),
+        );
+        if (!allowed) caps.push(cap);
+      }
+      return caps;
+    }
+
     case 'edit_post':
     case 'edit_page':
     case 'delete_post':
@@ -153,8 +184,9 @@ export async function currentUserCan(
   user: CurrentUser | null,
   cap: string,
   objectId?: number,
+  metaKey?: string,
 ): Promise<boolean> {
-  const caps = await mapMetaCap(kernel, cap, user, objectId);
+  const caps = await mapMetaCap(kernel, cap, user, objectId, metaKey);
   if (caps.includes(DO_NOT_ALLOW)) return false;
   return caps.every((c) => Boolean(user?.capabilities[c]));
 }

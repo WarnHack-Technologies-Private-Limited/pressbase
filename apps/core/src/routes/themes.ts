@@ -89,6 +89,7 @@ export function themeRoutes(kernel: Kernel) {
       user: c.get('user'),
       cookies,
       ifNoneMatch: c.req.header('if-none-match'),
+      referrer: c.req.header('referer') ?? '',
     });
     return c.json(page);
   });

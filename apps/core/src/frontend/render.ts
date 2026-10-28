@@ -12,9 +12,11 @@ import { parseFeedRequest, renderFeed } from './feeds';
 import { HtmlOutput } from './head';
 import { templateHierarchy } from './hierarchy';
 import { PageRender, withPage } from './page';
+import type { PublicFile } from './public-files';
 import { type MainQuery, resolveMainQuery } from './query';
 import { renderRobots } from './robots';
 import { parseSitemapRequest, renderSitemap } from './sitemaps';
+import { type NotFoundRequest, TemplateRedirect } from './template-redirect';
 
 export { BLOCK_LIBRARY_CSS } from './head';
 
@@ -56,6 +58,8 @@ export interface RenderRequest {
   ifNoneMatch?: string;
   /** Render with this theme instead of the active one (the global styles preview). */
   theme?: ActiveTheme;
+  /** The Referer header, for `template_redirect` and `pressbase_404`. */
+  referrer?: string;
 }
 
 /** get_body_class() */
@@ -183,7 +187,13 @@ export async function renderPublicPage(
     headers.etag = `W/"${createHash('sha1').update(result.html).digest('base64url').slice(0, 27)}"`;
   }
   headers['cache-control'] ??= request.user ? 'private, no-cache' : PUBLIC_CACHE;
-  const allTags = [CacheTag.site, ...tags.filter((t) => t !== CacheTag.site)];
+  // path:{path} lets a purge reach every cached answer for this path (ADR 0017).
+  const pathTag = CacheTag.path(new URL(request.url, 'http://pressbase.invalid').pathname);
+  const allTags = [
+    CacheTag.site,
+    pathTag,
+    ...tags.filter((t) => t !== CacheTag.site && t !== pathTag),
+  ];
   const etag = headers.etag;
   if (
     result.status === 200 &&
@@ -195,10 +205,43 @@ export async function renderPublicPage(
   return { ...result, headers, tags: allTags };
 }
 
+/** The URL a page renders, without WordPress's comment-page suffix, and the comment query variables. */
+function pageUrl(requestUrl: string): { url: URL; commentQuery: Record<string, string> } {
+  const url = new URL(requestUrl, 'http://pressbase.invalid');
+  const commentQuery: Record<string, string> = {};
+  for (const name of COMMENT_QUERY_VARS) {
+    const value = url.searchParams.get(name);
+    if (value !== null) commentQuery[name] = value;
+  }
+  const commentPage = COMMENT_PAGE.exec(url.pathname);
+  if (commentPage?.[1]) {
+    commentQuery.cpage = commentPage[1];
+    url.pathname = url.pathname.replace(COMMENT_PAGE, '/');
+  }
+  return { url, commentQuery };
+}
+
 async function route(kernel: Kernel, request: RenderRequest): Promise<Rendered> {
   const url = new URL(request.url, 'http://pressbase.invalid');
   const pretty = (await kernel.options.get<string>('permalink_structure', '')) !== '';
   const cacheControl = request.user ? 'private, no-cache' : PUBLIC_CACHE;
+
+  // template_redirect (template-loader.php): before anything is served.
+  const early = new TemplateRedirect(url, request.referrer ?? '', request.user, () =>
+    resolveMainQuery(kernel, pageUrl(request.url).url, { user: request.user }),
+  );
+  await kernel.hooks.doAction('template_redirect', early);
+  const answer = early.answer;
+  if (answer?.kind === 'redirect') {
+    return {
+      status: answer.status,
+      headers: { location: answer.location, 'cache-control': 'no-cache' },
+      html: '',
+    };
+  }
+  if (answer?.kind === 'not-found') {
+    return renderPage(kernel, request, { notFound: true, status: answer.status });
+  }
 
   // do_robots(): /robots.txt, whatever the permalink structure.
   if (url.pathname === '/robots.txt') {
@@ -238,29 +281,77 @@ async function route(kernel: Kernel, request: RenderRequest): Promise<Rendered> 
     };
   }
 
-  return renderPage(kernel, request);
+  // Files plugins serve at fixed paths (/llms.txt), after core's own.
+  const file = kernel.publicFiles.get(url.pathname);
+  if (file) {
+    const served = await servePublicFile(kernel, file, request, url, cacheControl);
+    return served ?? renderPage(kernel, request, { notFound: true });
+  }
+
+  return renderPage(kernel, request, { main: early.resolvedMain });
+}
+
+/** A plugin file's answer; undefined when the handler has nothing to serve (a 404). */
+async function servePublicFile(
+  kernel: Kernel,
+  file: PublicFile,
+  request: RenderRequest,
+  url: URL,
+  cacheControl: string,
+): Promise<Rendered | undefined> {
+  const result = await file.handler({
+    path: url.pathname,
+    query: new URLSearchParams(url.search),
+    user: request.user,
+  });
+  if (result === null || result === undefined) return undefined;
+  const headers: Record<string, string> = {};
+  let status = 200;
+  let body: string;
+  if (result instanceof Response) {
+    status = result.status;
+    result.headers.forEach((value, name) => {
+      headers[name] = value;
+    });
+    body = await result.text();
+  } else if (typeof result === 'string') {
+    body = result;
+  } else {
+    status = result.status ?? 200;
+    for (const [name, value] of Object.entries(result.headers ?? {})) {
+      headers[name.toLowerCase()] = value;
+    }
+    if (result.contentType) headers['content-type'] = result.contentType;
+    body = String(result.body ?? '');
+  }
+  headers['content-type'] ??= file.contentType;
+  headers['x-content-type-options'] = 'nosniff';
+  headers['cache-control'] = file.cache ? cacheControl : 'private, no-store';
+  return { status, headers, html: body };
 }
 
 /** Renders a page of the theme to a complete HTML document. */
 async function renderPage(
   kernel: Kernel,
   request: RenderRequest,
-  { notFound = false }: { notFound?: boolean } = {},
+  {
+    notFound = false,
+    status,
+    main: resolved,
+  }: {
+    notFound?: boolean;
+    /** The status of a forced not-found answer (410 from `template_redirect`). */
+    status?: number;
+    /** The main query `template_redirect` already resolved. */
+    main?: Promise<MainQuery>;
+  } = {},
 ): Promise<Rendered> {
-  const url = new URL(request.url, 'http://pressbase.invalid');
-  const requestedPath = `${url.pathname}${url.search}`;
-  const commentQuery: Record<string, string> = {};
-  for (const name of COMMENT_QUERY_VARS) {
-    const value = url.searchParams.get(name);
-    if (value !== null) commentQuery[name] = value;
-  }
-  const commentPage = COMMENT_PAGE.exec(url.pathname);
-  if (commentPage?.[1]) {
-    commentQuery.cpage = commentPage[1];
-    url.pathname = url.pathname.replace(COMMENT_PAGE, '/');
-  }
+  const requested = new URL(request.url, 'http://pressbase.invalid');
+  const requestedPath = `${requested.pathname}${requested.search}`;
+  const { url, commentQuery } = pageUrl(request.url);
   const user = request.user;
-  const main = await resolveMainQuery(kernel, url, { user, notFound });
+  const main =
+    !notFound && resolved ? await resolved : await resolveMainQuery(kernel, url, { user, notFound });
   // What the page is about (the rest is recorded as it renders).
   const queried = main.queriedObject;
   addCacheTags(
@@ -350,5 +441,18 @@ ${footer}
     headers['cache-control'] = 'private, no-cache';
   if (commentQuery.unapproved !== undefined) headers['cache-control'] = 'private, no-store';
   if (!blogPublic) headers['x-robots-tag'] = 'noindex, nofollow';
-  return { status: main.is404 ? 404 : 200, headers, html };
+  const code = main.is404 ? (status ?? 404) : 200;
+  if (code === 404 && kernel.hooks.hasAction('pressbase_404')) {
+    // Every 404 reaches the listeners: the page cache must not answer repeats (ADR 0017).
+    headers['cache-control'] = 'no-store';
+    const info: NotFoundRequest = {
+      path: requested.pathname,
+      query: requested.search.replace(/^\?/, ''),
+      referrer: request.referrer ?? '',
+      user,
+      main,
+    };
+    await kernel.hooks.doAction('pressbase_404', info);
+  }
+  return { status: code, headers, html };
 }

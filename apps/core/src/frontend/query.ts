@@ -409,6 +409,14 @@ export async function resolveMainQuery(
   options: ResolveOptions,
 ): Promise<MainQuery> {
   const main = await mainQuery(kernel, url, options);
+  // WP::handle_404(): `pre_handle_404` can keep a URL that matched nothing from being a 404.
+  if (main.is404 && !options.notFound) {
+    const preempt = await kernel.hooks.applyFilters('pre_handle_404', false, main, url);
+    if (preempt !== false) {
+      main.is404 = false;
+      return main;
+    }
+  }
   if (!main.is404 || options.feed || options.notFound) return main;
   const location = await oldPermalinkRedirect(kernel, url);
   if (location) main.redirect = { location, status: 301 };
