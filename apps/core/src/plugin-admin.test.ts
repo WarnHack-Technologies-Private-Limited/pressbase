@@ -259,6 +259,18 @@ describe('the Settings API', () => {
     ).toBe(404);
   });
 
+  it('activates again after a deactivation, with its settings, pages and routes', async () => {
+    const ctx = await site();
+    expect((await activate(ctx, 'daily-tips')).status).toBe(200);
+    await ctx.request('PUT', '/wp/v2/plugins/daily-tips', { status: 'inactive' });
+    const again = await activate(ctx, 'daily-tips');
+    expect(again.status, JSON.stringify(again.body)).toBe(200);
+    expect((await ctx.request('GET', '/daily-tips/v1/tip')).status).toBe(200);
+    expect(
+      (await ctx.request('GET', '/pressbase/v1/plugin-pages/daily-tips/daily-tips')).status,
+    ).toBe(200);
+  });
+
   it('fires register_setting, and api.settings.get / set apply the default and the rules', async () => {
     const ctx = await site();
     const registered: string[] = [];

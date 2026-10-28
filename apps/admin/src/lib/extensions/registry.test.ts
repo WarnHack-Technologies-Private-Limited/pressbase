@@ -71,6 +71,22 @@ describe('ExtensionStore', () => {
     expect(listener).toHaveBeenCalledTimes(5);
   });
 
+  it('keeps plugins() and other slots stable when a fill changes', () => {
+    // A new plugins() array re-renders <PluginArea> and its <Fill>s, whose
+    // effect updates the fill again: React's "Maximum update depth exceeded".
+    const store = new ExtensionStore();
+    store.registerPlugin('tips', { render: () => null });
+    const fill = store.addFill('dashboard', null, {}, 'a');
+    store.addFill('editor.document-settings', null, {}, 'b');
+    const plugins = store.plugins();
+    const editor = store.fills('editor.document-settings');
+    store.updateFill(fill, {}, 'a again');
+    store.removeFill(store.addFill('dashboard', null, {}, 'c'));
+    expect(store.plugins()).toBe(plugins);
+    expect(store.fills('editor.document-settings')).toBe(editor);
+    expect(store.fills('dashboard')[0]?.children).toBe('a again');
+  });
+
   it('validates registerPlugin like @wordpress/plugins', () => {
     const store = new ExtensionStore();
     expect(() => store.registerPlugin('Bad Name', { render })).toThrow(/lowercase/);

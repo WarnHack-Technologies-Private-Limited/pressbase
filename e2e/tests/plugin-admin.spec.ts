@@ -9,6 +9,7 @@ test('a plugin’s settings page and dashboard widget appear on activation, with
   const tips = page.getByRole('listitem').filter({ hasText: 'Daily Tips' });
   await tips.getByRole('button', { name: 'Activate Daily Tips' }).click();
   await expect(tips.getByText('Active', { exact: true })).toBeVisible();
+  await expect(page.getByText('Daily Tips is active.')).toBeVisible();
 
   // Its settings page joins the Settings navigation.
   await page.goto('/admin/settings/general');
@@ -20,12 +21,12 @@ test('a plugin’s settings page and dashboard widget appear on activation, with
   // Fields drawn from the schema; save with the shared save bar.
   const own = unique('Lead with the verdict');
   await page.getByRole('radio', { name: 'Only your tips' }).check();
-  await page.getByLabel('Your tips').fill(own);
+  await page.getByRole('textbox', { name: /^Your tips/ }).fill(own);
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByText('Settings saved.')).toBeVisible();
 
   // Validation errors show on the field.
-  await page.getByLabel('Widget colour', { exact: true }).fill('blue');
+  await page.getByRole('textbox', { name: /^Widget colour(?!:)/ }).fill('blue');
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByText('Enter a colour like #3858e9.')).toBeVisible();
   await page.getByRole('button', { name: 'Discard' }).click();
@@ -41,6 +42,8 @@ test('a plugin’s settings page and dashboard widget appear on activation, with
   await page.goto('/admin/plugins');
   await tips.getByRole('button', { name: 'Deactivate Daily Tips' }).click();
   await expect(tips.getByRole('button', { name: 'Activate Daily Tips' })).toBeVisible();
+  // The toast follows the request; the list can re-render a moment earlier.
+  await expect(page.getByText('Daily Tips is deactivated.')).toBeVisible();
   await page.goto('/admin');
   await expect(page.getByRole('heading', { name: 'Writing tip' })).toHaveCount(0);
   expect((await page.request.get('/wp-content/plugins/daily-tips/admin/index.js')).status()).toBe(

@@ -72,8 +72,14 @@ export class ExtensionStore {
     };
   };
 
-  #emit() {
-    this.#cache.clear();
+  /**
+   * Notifies subscribers. `keys` limits which cached snapshots are dropped: a
+   * fill change must keep plugins() stable, or <PluginArea> re-renders its
+   * <Fill>s, whose effect updates the fill again, without end.
+   */
+  #emit(keys?: string[]) {
+    if (keys) for (const key of keys) this.#cache.delete(key);
+    else this.#cache.clear();
     for (const listener of [...this.#listeners]) listener();
   }
 
@@ -142,7 +148,7 @@ export class ExtensionStore {
   addFill(slot: string, owner: string | null, props: Record<string, unknown>, children: unknown) {
     const id = this.#nextId++;
     this.#fills.set(id, { id, slot, owner, props, children });
-    this.#emit();
+    this.#emit([`fills:${slot}`]);
     return id;
   }
 
@@ -150,11 +156,12 @@ export class ExtensionStore {
     const fill = this.#fills.get(id);
     if (!fill) return;
     this.#fills.set(id, { ...fill, props, children });
-    this.#emit();
+    this.#emit([`fills:${fill.slot}`]);
   }
 
   removeFill(id: number) {
-    if (this.#fills.delete(id)) this.#emit();
+    const fill = this.#fills.get(id);
+    if (fill && this.#fills.delete(id)) this.#emit([`fills:${fill.slot}`]);
   }
 
   /** A slot's fills from active owners, by their `order` prop (default 10), then age. */
