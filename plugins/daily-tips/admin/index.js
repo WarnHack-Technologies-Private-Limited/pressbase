@@ -118,7 +118,6 @@ function WritingSidebar() {
   );
 }
 
-
 /** Loads a tip (and the widget colour) from the plugin's REST route. */
 function useTip() {
   const [state, setState] = useState({ status: 'loading' });

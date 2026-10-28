@@ -110,7 +110,10 @@ export function PostList({ config }: { config: ContentType }) {
       filters,
       (key) => params.get(key),
       (filter, error) =>
-        console.error(`[plugin:${filters.find((f) => f.id === filter.id)?.owner}] filter failed:`, error),
+        console.error(
+          `[plugin:${filters.find((f) => f.id === filter.id)?.owner}] filter failed:`,
+          error,
+        ),
     ),
   );
   const pluginFiltered = filters.some((filter) => params.get(filter.id));

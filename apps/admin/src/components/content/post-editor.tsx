@@ -198,9 +198,9 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
   const [newCategory, setNewCategory] = useState<string | null>(null);
   const [pages, setPages] = useState<RestPost[]>([]);
   const [revisions, setRevisions] = useState<Revision[]>([]);
-  const [confirm, setConfirm] = useState<
-    'unpublish' | 'trash' | 'leave' | 'prepublish' | null
-  >(null);
+  const [confirm, setConfirm] = useState<'unpublish' | 'trash' | 'leave' | 'prepublish' | null>(
+    null,
+  );
 
   // Content. In the visual editor the blocks live inside BlockEditor; `content`
   // is what it was mounted with (or the code view's text), `current` the
@@ -727,7 +727,11 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
       typeof fill.props.sidebar === 'string' &&
       sidebarFills.findIndex((f) => f.props.sidebar === fill.props.sidebar) === i,
   );
-  const tabs: SidebarTab[] = ['post', 'block', ...pluginSidebars.map((f) => String(f.props.sidebar))];
+  const tabs: SidebarTab[] = [
+    'post',
+    'block',
+    ...pluginSidebars.map((f) => String(f.props.sidebar)),
+  ];
   const activeTab = tabs.includes(tab) ? tab : 'post';
   const moreMenuFills = useFills(SLOTS.editorSidebarMoreMenu).filter((f) =>
     tabs.includes(String(f.props.target)),

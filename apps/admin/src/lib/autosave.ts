@@ -131,12 +131,7 @@ export function usefulBackup(
 ): LocalBackup | null {
   if (!backup) return null;
   if (savedModifiedGmt && backup.savedAt <= gmtTime(savedModifiedGmt)) return null;
-  if (
-    !backup.title.trim() &&
-    !backup.content.trim() &&
-    !backup.excerpt.trim() &&
-    !hasMeta(backup)
-  )
+  if (!backup.title.trim() && !backup.content.trim() && !backup.excerpt.trim() && !hasMeta(backup))
     return null;
   return differs(backup, saved) || hasMeta(backup) ? backup : null;
 }

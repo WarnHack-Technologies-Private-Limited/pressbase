@@ -54,9 +54,9 @@ describe('EditorStore', () => {
     const handler = vi.fn();
     const disconnect = store.connect(handler);
     store.publish(editorSnapshot(fields, () => null));
-    expect(store.editPost({ meta: { _yoast_wpseo_metadesc: 'How to start.' }, slug: 'spring' })).toBe(
-      true,
-    );
+    expect(
+      store.editPost({ meta: { _yoast_wpseo_metadesc: 'How to start.' }, slug: 'spring' }),
+    ).toBe(true);
     expect(handler).toHaveBeenCalledWith({
       meta: { _yoast_wpseo_metadesc: 'How to start.' },
       slug: 'spring',
