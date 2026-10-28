@@ -98,6 +98,7 @@ export type {
   Strategy,
   Version,
 } from './assets';
+export type { PluginBlockArgs, PluginBlockRender, PluginBlocks } from './blocks';
 export type { PluginCron, PluginJobContext, PluginJobHandler, PluginJobs } from './background';
 export type {
   PluginCliAssocArgs,
