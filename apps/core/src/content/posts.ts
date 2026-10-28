@@ -35,7 +35,7 @@ export interface PostInput {
   terms?: Record<string, number[]>;
   /** Run content through kses (for users without unfiltered_html). */
   filterHtml?: boolean;
-  /** Set to false while autosaving, so no revision is stored (WordPress's DOING_AUTOSAVE). */
+  /** Set to false while autosaving (WordPress's DOING_AUTOSAVE) or importing, so no revision is stored. */
   saveRevision?: boolean;
 }
 
@@ -153,7 +153,7 @@ export class PostsService {
     await this.#setTerms(created.id, terms);
 
     const post = (await this.get(created.id)) as Post;
-    await this.#afterSave(post, 'new', false);
+    await this.#afterSave(post, 'new', false, input.saveRevision !== false);
     return post;
   }
 

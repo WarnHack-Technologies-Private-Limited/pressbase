@@ -65,7 +65,7 @@ export function typeRoutes() {
           prepareType(
             t,
             edit && userCan(c.get('user'), t.cap.edit_posts),
-            kernel.taxonomies.forObjectType(t.name).map((x) => x.name),
+            kernel.taxonomies.forObjectType(t.name).filter((x) => x.showInRest).map((x) => x.name),
           ),
         ]),
       ),
@@ -81,7 +81,7 @@ export function typeRoutes() {
       prepareType(
         type,
         edit,
-        kernel.taxonomies.forObjectType(type.name).map((x) => x.name),
+        kernel.taxonomies.forObjectType(type.name).filter((x) => x.showInRest).map((x) => x.name),
       ),
     );
   });

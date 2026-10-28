@@ -112,4 +112,13 @@ export function registerCoreTaxonomies(registry: TaxonomyRegistry): void {
     { label: 'Tags', singularLabel: 'Tag', showInRest: true, restBase: 'tags' },
     true,
   );
+  // Post formats (v0.6): terms named `post-format-{format}`, as
+  // create_initial_taxonomies() registers them, so imports and exports keep a
+  // post's format. Not in the REST API, as in WordPress.
+  registry.register(
+    'post_format',
+    ['post'],
+    { label: 'Formats', singularLabel: 'Format', public: false },
+    true,
+  );
 }
