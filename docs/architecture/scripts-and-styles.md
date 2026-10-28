@@ -52,6 +52,8 @@ Blocks render before the hooks run, so a block's render callback can enqueue a s
 
 WordPress prints the generator and canonical link at priority 10; Pressbase prints them at 1 so the head keeps the order it had before these hooks existed. A plugin's callback at the default priority 10 lands after the stylesheets and head scripts, as in WordPress.
 
+The `wp_head` callbacks above carry WordPress's function names, so a plugin can remove one by name: `api.hooks.removeAction('wp_head', 'rel_canonical')` (it comes back when the plugin is deactivated). See [Plugins](plugins.md#head-output-and-canonical-urls).
+
 ## Cache safety
 
 Everything printed through these hooks is part of the page `apps/web` caches and serves to every anonymous visitor ([ADR 0008](../adr/0008-public-page-caching.md)). So:

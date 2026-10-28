@@ -6,6 +6,7 @@ import { type SiteInfo, siteInfo, termLink } from '../blocks/helpers';
 import type { Taxonomy } from '../content/taxonomies';
 import type { Term } from '../content/terms';
 import { type AppEnv, invalidParams, readJson, restError } from '../http';
+import { authorizeRestMeta, parseRestMeta, readRestMeta, writeRestMeta } from './meta-fields';
 import {
   authStatus,
   boolParam,
@@ -24,7 +25,13 @@ import {
  * (wordpress/wp-includes/rest-api/endpoints/class-wp-rest-terms-controller.php).
  */
 
-function prepare(term: Term, taxonomy: Taxonomy, site: SiteInfo, context: string) {
+function prepare(
+  term: Term,
+  taxonomy: Taxonomy,
+  site: SiteInfo,
+  context: string,
+  meta?: Map<number, Record<string, unknown>>,
+) {
   const item: Record<string, unknown> = {
     id: term.id,
     count: term.count,
@@ -35,7 +42,8 @@ function prepare(term: Term, taxonomy: Taxonomy, site: SiteInfo, context: string
     taxonomy: taxonomy.name,
   };
   if (taxonomy.hierarchical) item.parent = term.parent;
-  item.meta = [];
+  // Registered meta (routes/meta-fields.ts); WordPress prints an empty list as [].
+  item.meta = meta?.get(term.id) ?? [];
   item._links = {
     self: [{ href: `/wp-json/wp/v2/${taxonomy.restBase}/${term.id}` }],
     collection: [{ href: `/wp-json/wp/v2/${taxonomy.restBase}` }],
@@ -75,6 +83,8 @@ const writeBody = z.object({
 export function termsRoutes(taxonomy: Taxonomy) {
   const app = new Hono<AppEnv>({ strict: false });
   const home = (c: Context<AppEnv>) => siteInfo(c.get('kernel'));
+  const termMeta = (c: Context<AppEnv>, ids: number[]) =>
+    readRestMeta(c.get('kernel'), 'term', taxonomy.name, ids);
 
   app.get('/', async (c) => {
     const kernel = c.get('kernel');
@@ -113,13 +123,18 @@ export function termsRoutes(taxonomy: Taxonomy) {
     }
     setPaginationHeaders(c, total, totalPages, q.page);
     const base = await home(c);
-    return c.json(terms.map((t) => prepare(t, taxonomy, base, q.context)));
+    const meta = await termMeta(
+      c,
+      terms.map((t) => t.id),
+    );
+    return c.json(terms.map((t) => prepare(t, taxonomy, base, q.context, meta)));
   });
 
   app.get('/:id{[0-9]+}', async (c) => {
     const term = await c.get('kernel').terms.get(taxonomy.name, Number(c.req.param('id')));
     if (!term) return restError(c, 404, 'rest_term_invalid', 'Term does not exist.');
-    return c.json(prepare(term, taxonomy, await home(c), c.req.query('context') ?? 'view'));
+    const meta = await termMeta(c, [term.id]);
+    return c.json(prepare(term, taxonomy, await home(c), c.req.query('context') ?? 'view', meta));
   });
 
   app.post('/', async (c) => {
@@ -135,8 +150,11 @@ export function termsRoutes(taxonomy: Taxonomy) {
         'Sorry, you are not allowed to create terms in this taxonomy.',
       );
     }
-    const parsed = writeBody.safeParse(await readJson(c));
+    const json = await readJson(c);
+    const parsed = writeBody.safeParse(json);
     if (!parsed.success) return invalidParams(c, parsed.error);
+    const metaWrites = parseRestMeta(c, 'term', taxonomy.name, (json as { meta?: unknown })?.meta);
+    if (metaWrites instanceof Response) return metaWrites;
     if (!parsed.data.name) {
       return restError(c, 400, 'rest_missing_callback_param', 'Missing parameter(s): name', {
         params: { name: 'A name is required for this term.' },
@@ -147,8 +165,12 @@ export function termsRoutes(taxonomy: Taxonomy) {
         ...parsed.data,
         name: parsed.data.name,
       });
+      const denied = await authorizeRestMeta(c, 'term', term.id, metaWrites);
+      if (denied) return denied;
+      await writeRestMeta(kernel, 'term', term.id, metaWrites);
       c.header('Location', `/wp-json/wp/v2/${taxonomy.restBase}/${term.id}`);
-      return c.json(prepare(term, taxonomy, await home(c), 'edit'), 201);
+      const meta = await termMeta(c, [term.id]);
+      return c.json(prepare(term, taxonomy, await home(c), 'edit', meta), 201);
     } catch (error) {
       return serviceError(c, error);
     }
@@ -167,11 +189,18 @@ export function termsRoutes(taxonomy: Taxonomy) {
         'Sorry, you are not allowed to edit this term.',
       );
     }
-    const parsed = writeBody.safeParse(await readJson(c));
+    const json = await readJson(c);
+    const parsed = writeBody.safeParse(json);
     if (!parsed.success) return invalidParams(c, parsed.error);
+    const metaWrites = parseRestMeta(c, 'term', taxonomy.name, (json as { meta?: unknown })?.meta);
+    if (metaWrites instanceof Response) return metaWrites;
+    const denied = await authorizeRestMeta(c, 'term', id, metaWrites);
+    if (denied) return denied;
     try {
       const term = await kernel.terms.update(taxonomy.name, id, parsed.data);
-      return c.json(prepare(term, taxonomy, await home(c), 'edit'));
+      await writeRestMeta(kernel, 'term', id, metaWrites);
+      const meta = await termMeta(c, [term.id]);
+      return c.json(prepare(term, taxonomy, await home(c), 'edit', meta));
     } catch (error) {
       return serviceError(c, error);
     }

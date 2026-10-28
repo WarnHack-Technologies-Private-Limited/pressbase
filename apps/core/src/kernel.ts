@@ -5,12 +5,15 @@ import { registerCacheInvalidation } from './cache/invalidation';
 import { registerCommentNotifications } from './comments/notify';
 import { CommentsService } from './comments/service';
 import type { Config } from './config';
+import { MetaService } from './content/meta';
 import { PostStatusRegistry } from './content/post-statuses';
 import { PostTypeRegistry, registerCorePostTypes } from './content/post-types';
 import { PostsService } from './content/posts';
 import { registerCoreTaxonomies, TaxonomyRegistry } from './content/taxonomies';
 import { TermsService } from './content/terms';
+import { CoreCallbacks } from './core-callbacks';
 import { registerPublicPageHooks, ScriptsApi, StylesApi } from './frontend/head';
+import { PublicFiles } from './frontend/public-files';
 import { I18n } from './i18n/l10n';
 import { registerImportJobs } from './import-export/service';
 import { registerCoreEvents } from './jobs/core-events';
@@ -43,6 +46,12 @@ export type SiteState = 'needs-database' | 'needs-install' | 'ready';
  */
 export class Kernel {
   readonly hooks = new HookBus();
+  /** Core's named hook callbacks (rel_canonical…), removable by name (v0.7). */
+  readonly coreCallbacks = new CoreCallbacks();
+  /** register_meta() and the metadata API (v0.7, see content/meta.ts). */
+  readonly meta = new MetaService(this);
+  /** Files plugins serve at site-root paths, e.g. /llms.txt (v0.7, see frontend/public-files.ts). */
+  readonly publicFiles = new PublicFiles();
   readonly settings = new SettingsRegistry();
   readonly postTypes = new PostTypeRegistry();
   readonly postStatuses = new PostStatusRegistry();

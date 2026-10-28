@@ -22,6 +22,13 @@ export type {
 } from '@pressbase/hooks';
 export type { CurrentUser } from '../auth/users';
 export type {} from '../cache/invalidation';
+export type {
+  MetaObjectType,
+  MetaRestArgs,
+  MetaValueType,
+  RegisterMetaArgs,
+  RestMetaField,
+} from '../content/meta';
 export type { PostType, PostTypeArgs } from '../content/post-types';
 export type { Post, PostInput } from '../content/posts';
 export type { QueryArgs, QueryResult } from '../content/query';
@@ -29,7 +36,20 @@ export type { Taxonomy, TaxonomyArgs } from '../content/taxonomies';
 export type {} from '../frontend/dependencies';
 export type { HtmlOutput } from '../frontend/head';
 export type { PageRender } from '../frontend/page';
+export type {
+  PublicFileBody,
+  PublicFileHandler,
+  PublicFileOptions,
+  PublicFileRequest,
+  PublicFileResult,
+} from '../frontend/public-files';
+export type { MainQuery } from '../frontend/query';
 export type {} from '../frontend/render';
+export type {
+  NotFoundRequest,
+  TemplateRedirectAnswer,
+  TemplateRedirectRequest,
+} from '../frontend/template-redirect';
 export type {} from '../frontend/title';
 export type {} from '../i18n/l10n';
 export type {} from '../i18n/language-packs';

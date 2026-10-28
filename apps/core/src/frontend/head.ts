@@ -1,7 +1,9 @@
 import { escAttr, escUrl } from '@pressbase/blocks';
 import type { HookBus } from '@pressbase/hooks';
 import { NAVIGATION_NOSCRIPT } from '../blocks/library/navigation';
+import { commentsPageUrl } from '../comments/links';
 import { permalink, permalinkContext } from '../content/permalinks';
+import type { Post } from '../content/posts';
 import type { Kernel } from '../kernel';
 import { siteIconTags } from '../themes/site-identity';
 import { PRESSBASE_VERSION } from '../version';
@@ -64,6 +66,7 @@ declare module '@pressbase/hooks' {
   interface FilterRegistry {
     wp_robots: [robots: Record<string, string | boolean>];
     the_generator: [html: string, type: string];
+    get_canonical_url: [canonicalUrl: string, post: Post];
   }
 }
 
@@ -251,6 +254,34 @@ function enqueueThemeStyles(kernel: Kernel, page: PageRender): void {
 }
 
 /**
+ * wp_get_canonical_url() (wordpress/wp-includes/link-template.php): a
+ * published post's permalink, with the comment page when it's the page
+ * being rendered, through the `get_canonical_url` filter. False for
+ * anything not published.
+ */
+export async function wpGetCanonicalUrl(
+  kernel: Kernel,
+  postOrId: Post | number,
+): Promise<string | false> {
+  const post = typeof postOrId === 'number' ? await kernel.posts.get(postOrId) : postOrId;
+  if (post?.status !== 'publish') return false;
+  const links = await permalinkContext(kernel);
+  let url = await permalink(kernel, post, links);
+  const page = currentPage();
+  const queried = page?.main.queriedObject;
+  if (page && queried?.kind === 'post' && queried.post.id === post.id) {
+    const requested = new URL(page.path, 'http://pressbase.invalid');
+    const cpage = Number(
+      /\/comment-page-(\d+)\/?$/.exec(requested.pathname)?.[1] ??
+        requested.searchParams.get('cpage') ??
+        0,
+    );
+    if (cpage > 0) url = commentsPageUrl(url, cpage, links.structure !== '');
+  }
+  return kernel.hooks.applyFilters('get_canonical_url', url, post);
+}
+
+/**
  * Core's own `wp_enqueue_scripts`, `wp_head` and `wp_footer` callbacks, at
  * WordPress's priorities (default-filters.php) where the page's order allows:
  * viewport 0; robots, title, generator and canonical 1 (WordPress prints the
@@ -260,18 +291,23 @@ function enqueueThemeStyles(kernel: Kernel, page: PageRender): void {
  */
 export function registerPublicPageHooks(kernel: Kernel): void {
   const { hooks } = kernel;
+  /** A head callback with WordPress's function name, which plugins can remove by name. */
+  const head = (
+    name: string,
+    callback: (out: HtmlOutput, page: PageRender) => unknown,
+    priority: number,
+  ) => kernel.coreCallbacks.addAction(hooks, 'wp_head', name, callback, priority);
 
   hooks.addAction('wp_enqueue_scripts', (page) => enqueueThemeStyles(kernel, page));
 
-  // _block_template_viewport_meta_tag()
-  hooks.addAction(
-    'wp_head',
+  head(
+    '_block_template_viewport_meta_tag',
     (out) => out.print('<meta name="viewport" content="width=device-width, initial-scale=1" />'),
     0,
   );
   // wp_robots(), with wp_robots_noindex() and wp_robots_max_image_preview_large() as defaults.
-  hooks.addAction(
-    'wp_head',
+  head(
+    'wp_robots',
     async (out) => {
       const blogPublic = await kernel.options.get<boolean>('blog_public', true);
       const defaults: Record<string, string | boolean> = blogPublic
@@ -287,36 +323,33 @@ export function registerPublicPageHooks(kernel: Kernel): void {
     },
     1,
   );
-  // _wp_render_title_tag()
-  hooks.addAction(
-    'wp_head',
+  head(
+    '_wp_render_title_tag',
     async (out, page) => out.print(`<title>${await documentTitle(kernel, page.main)}</title>`),
     1,
   );
-  // wp_generator()
-  hooks.addAction(
-    'wp_head',
+  head(
+    'wp_generator',
     async (out) => {
       const tag = `<meta name="generator" content="Pressbase ${escAttr(PRESSBASE_VERSION)}" />`;
       out.print(await hooks.applyFilters('the_generator', tag, 'html'));
     },
     1,
   );
-  // rel_canonical()
-  hooks.addAction(
-    'wp_head',
+  // rel_canonical(): plugins that print their own canonical remove it by name.
+  head(
+    'rel_canonical',
     async (out, page) => {
       const object = page.main.queriedObject;
-      if (!page.main.isSingular || object?.kind !== 'post' || object.post.status !== 'publish')
-        return;
-      const link = await permalink(kernel, object.post, await permalinkContext(kernel));
-      out.print(`<link rel="canonical" href="${escUrl(link)}" />`);
+      if (!page.main.isSingular || object?.kind !== 'post') return;
+      const link = await wpGetCanonicalUrl(kernel, object.post);
+      if (link) out.print(`<link rel="canonical" href="${escUrl(link)}" />`);
     },
     1,
   );
-  // feed_links() and feed_links_extra(): block themes support automatic-feed-links.
-  hooks.addAction(
-    'wp_head',
+  // feed_links() and feed_links_extra() (one callback here): block themes support automatic-feed-links.
+  head(
+    'feed_links',
     async (out, page) => {
       if (!page.main.is404) out.print(...(await feedLinkTags(kernel, page.main)));
     },
@@ -342,8 +375,7 @@ export function registerPublicPageHooks(kernel: Kernel): void {
     },
     50,
   );
-  // wp_site_icon()
-  hooks.addAction('wp_head', async (out) => out.print(await siteIconTags(kernel)), 99);
+  head('wp_site_icon', async (out) => out.print(await siteIconTags(kernel)), 99);
 
   // The navigation block's toggle script (WordPress prints its view script module in the footer).
   hooks.addAction('wp_footer', (out, page) => {

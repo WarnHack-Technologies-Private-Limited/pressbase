@@ -144,6 +144,22 @@ export function registerCacheInvalidation(kernel: Kernel): void {
     await purge(siteWide(p.type) ? [CacheTag.site] : listingTags(p), 'deleted_post');
   });
 
+  // Meta written through the metadata API (content/meta.ts): what a page prints
+  // from it (an SEO title, a description) belongs to the post or term.
+  for (const action of ['added_post_meta', 'updated_post_meta', 'deleted_post_meta'] as const) {
+    hooks.addAction(action, async (...args: unknown[]) => {
+      const postId = args[1];
+      const post = await kernel.posts.get(Number(postId));
+      if (!post || !isPublic(post.status)) return;
+      await purge([siteWide(post.type) ? CacheTag.site : CacheTag.post(post.id)], action);
+    });
+  }
+  for (const action of ['added_term_meta', 'updated_term_meta', 'deleted_term_meta'] as const) {
+    hooks.addAction(action, async (...args: unknown[]) =>
+      purge([CacheTag.term(Number(args[1]))], action),
+    );
+  }
+
   // Media: alt text, captions and files of an attachment shown on pages.
   for (const action of ['edit_attachment', 'delete_attachment'] as const) {
     hooks.addAction(action, async (id) => purge([CacheTag.post(Number(id))], action));

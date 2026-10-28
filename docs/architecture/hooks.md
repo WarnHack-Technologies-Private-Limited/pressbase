@@ -167,6 +167,14 @@ Plugins see the same declarations through `@pressbase/plugin-sdk`, whose types a
 | `wp_robots` | filter | `robots` | the robots meta directives |
 | `pre_get_document_title`, `document_title_separator`, `document_title_parts`, `document_title` | filter | `title` / `separator` / `parts` / `title` | the `<title>` |
 | `the_generator` | filter | `html, type` | the generator meta tag |
+| `get_canonical_url` | filter | `url, post` | `wp_get_canonical_url()`: the canonical URL `rel_canonical` prints (v0.7) |
+| `template_redirect` | action | `request` | before a public URL is served (robots.txt, sitemaps, feeds, plugin files, pages); `request.redirect(location, status)` or `request.notFound(404 \| 410)` answers instead. See [Plugins](plugins.md#early-request-hooks-template_redirect-and-404s), [ADR 0017](../adr/0017-early-request-hooks-and-the-page-cache.md) |
+| `pre_handle_404` | filter | `false, main, url` | a URL matched nothing; return anything but `false` to render it with status 200 (`WP::handle_404()`) |
+| `pressbase_404` | action | `{ path, query, referrer, user, main }` | a 404 is being served; while anything listens, 404s aren't cached |
+| `is_protected_meta` | filter | `protected, key, objectType` | whether a meta key is protected (default: it starts with `_`) |
+| `sanitize_{type}_meta_{key}[_for_{subtype}]` | filter | `value, key, type[, subtype]` | a meta value being written (`sanitize_meta()`); a registered key's `sanitizeCallback` |
+| `auth_{type}_meta_{key}[_for_{subtype}]` | filter | `allowed, key, objectId, userId, cap, caps` | may the user add, edit or delete this meta key (`map_meta_cap()` for `edit_post_meta` & co.); a registered key's `authCallback` |
+| `added_{type}_meta`, `updated_{type}_meta` / `deleted_{type}_meta` | action | `metaId, objectId, key, value` / `metaIds, objectId, key, value` | after `kernel.meta` (`api.meta`, REST `meta`) wrote a value; `type` is `post`, `term`, `user` or `comment` |
 | `body_class` | filter | `classes, extra` | the public page's `<body>` classes |
 | `language_attributes` | filter | `output, doctype` | the `<html>` attributes |
 | `activate_plugin` / `activated_plugin` | action | `slug` | before a plugin's migrations and code run / after it's active. See [Plugins](plugins.md#lifecycle) |
