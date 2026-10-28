@@ -17,10 +17,12 @@ How the public site stays fast (a page cache with precise invalidation) and find
 
 Core's render endpoint (`GET /wp-json/pressbase/v1/render?url=…`) handles every public URL, in this order:
 
+0. The `template_redirect` action, where a plugin can answer with a redirect, a 404 or a 410 ([ADR 0017](../adr/0017-early-request-hooks-and-the-page-cache.md)).
 1. `/robots.txt` → `text/plain; charset=utf-8`.
 2. Sitemaps (`/wp-sitemap.xml`, `/wp-sitemap-*.xml`, `/wp-sitemap.xsl`, `/wp-sitemap-index.xsl`, or `?sitemap=` / `?sitemap-stylesheet=` with plain permalinks) → `application/xml; charset=UTF-8`.
 3. Feeds (`…/feed/`, `…/feed/atom/`, `?feed=`) → `application/rss+xml` or `application/atom+xml`.
-4. Anything else is a page of the theme.
+4. Files active plugins serve at fixed paths (`/llms.txt`), which can't take any of the paths above ([Plugins](plugins.md#plugin-files-at-the-site-root)).
+5. Anything else is a page of the theme.
 
 `apps/web`'s catch-all route forwards all of these, so they work on the public origin and, through the admin's fallback rewrite to `apps/web`, on the admin origin too. The response keeps core's `content-type`.
 
@@ -52,6 +54,7 @@ Browser ──▶ apps/web ──(HIT)──────────────
 | `author:{id}` | an author's archive, bylines |
 | `comments` | site-wide comment lists (latest comments, the comments feed) |
 | `search`, `404` | search results and not-found answers, which new content can change |
+| `path:{path}` | every answer, for its path without trailing slash or query string (`path:/old-post`); plugins purge it when a redirect or file at that path changes ([ADR 0017](../adr/0017-early-request-hooks-and-the-page-cache.md)) |
 
 Content services record tags as they read (`kernel.posts.get`, `queryPosts`, `kernel.terms`, `kernel.comments.query`, author lookups); outside a render, recording does nothing. A block that reads the database directly should call `addCacheTags()`.
 
@@ -78,6 +81,7 @@ Drafts, pending and private posts purge nothing: anonymous visitors never saw th
 - `?preview`, `?unapproved`, `?moderation-hash`, `?replytocom`.
 - Answers core marks `private` or `no-store`: logged-in renders, unlocked password-protected posts, held-comment previews.
 - Statuses other than 200, 301 and 404. 301s and 404s are kept one minute; 200s an hour, then served stale for up to a day while a refresh runs.
+- 404s while a plugin listens to `pressbase_404` (a 404 log): they're sent `no-store`, so every hit reaches it.
 
 `x-pressbase-cache` on every public response says what happened: `HIT`, `STALE`, `MISS`, `BYPASS` or `OFF`.
 

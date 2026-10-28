@@ -85,3 +85,27 @@ export const uninstall = defineLifecycle(async (api) => {
   await api.cron.unscheduleHook('cleanup');
   await api.options.delete('greeting');
 });
+
+// v0.7: registered meta, early request hooks, head output, the cache, files, tables.
+export const seo = definePlugin((api) => {
+  api.meta.registerPostMeta('', '_yoast_wpseo_title', {
+    type: 'string',
+    single: true,
+    showInRest: true,
+    authCallback: (allowed, _key, postId) => allowed || postId > 0,
+  });
+  // @ts-expect-error: not a meta type.
+  api.meta.register('post', 'x', { type: 'date' });
+  api.hooks.addAction('template_redirect', async (request) => {
+    if (request.path === '/old/') request.redirect('/new/', 301);
+    if ((await request.main()).is404) request.notFound(410);
+  });
+  api.hooks.addAction('pressbase_404', ({ path, referrer }) => api.logger.info(path, referrer));
+  api.hooks.addFilter('pre_handle_404', (preempt, _main, url) => preempt || url.pathname === '/v/');
+  api.hooks.addFilter('get_canonical_url', (url, post) => `${url}#${post.id}`);
+  api.hooks.removeAction('wp_head', 'rel_canonical');
+  api.public.addFile('/llms.txt', () => ({ body: '# Site', contentType: 'text/markdown' }));
+  api.cache.addTags(api.cache.pathTag('/llms.txt'));
+  void api.cache.purgePaths(['/old/']);
+  void api.db?.query<{ id: number }>(api.db.sql`select 1 as id`);
+});

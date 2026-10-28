@@ -27,8 +27,12 @@ export const PASSTHROUGH_HEADERS = [
   'vary',
 ] as const;
 
-/** Request headers forwarded to core: the session cookie (previews) and the ETag validator. */
-export const FORWARDED_REQUEST_HEADERS = ['cookie', 'if-none-match'] as const;
+/**
+ * Request headers forwarded to core: the session cookie (previews), the ETag
+ * validator, and the referrer (for `template_redirect` and `pressbase_404`,
+ * e.g. a 404 log).
+ */
+export const FORWARDED_REQUEST_HEADERS = ['cookie', 'if-none-match', 'referer'] as const;
 
 /** The core render endpoint for a public URL, keeping its path and query string. */
 export function renderEndpoint(coreUrl: string, requestUrl: string): string {

@@ -85,7 +85,7 @@ export async function servePublicRequest(
   const key = cacheKey(request.url);
   const hit = cache.lookup(key);
   if (hit) {
-    if (hit.state === 'stale') void fill(cache, key, request.url, options).catch(() => undefined);
+    if (hit.state === 'stale') void fill(cache, key, request, options).catch(() => undefined);
     return withCacheHeaders(
       fromCache(hit.page, request),
       hit.state === 'fresh' ? 'HIT' : 'STALE',
@@ -95,7 +95,7 @@ export async function servePublicRequest(
 
   let filled: Filled;
   try {
-    filled = await fill(cache, key, request.url, options);
+    filled = await fill(cache, key, request, options);
   } catch {
     return unreachable(coreUrl);
   }
@@ -117,14 +117,17 @@ interface Filled {
 
 /**
  * Renders a URL anonymously and stores it when allowed. Concurrent calls for
- * the same key share one request to core.
+ * the same key share one request to core. Only the referrer is passed on
+ * (core's 404 action logs it; ADR 0017); what core renders never depends on it.
  */
 function fill(
   cache: PageCache,
   key: string,
-  requestUrl: string,
+  request: Request,
   { coreUrl, fetch: send = fetch }: ServeOptions,
 ): Promise<Filled> {
+  const requestUrl = request.url;
+  const referrer = request.headers.get('referer');
   const running = cache.inflight.get(key) as Promise<Filled> | undefined;
   if (running) return running;
 
@@ -132,7 +135,7 @@ function fill(
     const generation = cache.generation();
     // Anonymous render: no cookie, no validator; the cache answers conditionals itself.
     const reply = await send(renderEndpoint(coreUrl, requestUrl), {
-      headers: { accept: 'application/json' },
+      headers: { accept: 'application/json', ...(referrer ? { referer: referrer } : {}) },
       cache: 'no-store',
       redirect: 'manual',
     });
