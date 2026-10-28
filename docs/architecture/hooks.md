@@ -59,6 +59,8 @@ declare module '@pressbase/hooks' {
 
 Undeclared names still work, with `unknown` arguments.
 
+Plugins see the same declarations through `@pressbase/plugin-sdk`, whose types are generated from core ([ADR 0012](../adr/0012-plugin-sdk-types.md)): `api.hooks.addFilter('wp_robots', …)` autocompletes and types its callback. A module in core that declares hooks must be listed in `apps/core/src/plugins/sdk-types.ts` (the SDK's build fails otherwise). A plugin declares its own hooks with `declare module '@pressbase/plugin-sdk' { interface FilterRegistry { … } }`.
+
 ## Hooks core fires today
 
 | Hook             | Type   | Arguments                  | Fired by                                           |
@@ -166,5 +168,8 @@ Undeclared names still work, with `unknown` arguments.
 | `pre_uninstall_plugin` | action | `slug, manifest` | before an inactive plugin's `uninstall` runs and its folder is deleted |
 | `deleted_plugin` | action | `slug, deleted` | after a plugin was deleted (`deleted` is false if its files couldn't be removed) |
 | `pressbase_plugin_error` | action | `slug, error` | a plugin failed to load or activate, or one of its hooks or routes threw; `error` is `{ message, during, time }` |
+| `register_setting` / `unregister_setting` | action | `optionGroup, optionName[, args]` | a plugin registered a setting (the group is the plugin's slug) / it was removed on deactivation. See [Plugins](plugins.md#settings) |
+| `sanitize_option_{option}` | filter | `value, option, originalValue` | a setting's value after its validation and `sanitize` callback, before it's stored (settings pages, `/wp/v2/settings`, `api.settings.set`) |
+| `pre_update_option_{option}`, `pre_update_option` | filter | `value, oldValue, option` / `value, option, oldValue` | the value a settings save is about to store, as `update_option()` filters it |
 
 **When you add a hook to core,** use WordPress's name if WordPress has an equivalent. Add it to this table and declare its types.

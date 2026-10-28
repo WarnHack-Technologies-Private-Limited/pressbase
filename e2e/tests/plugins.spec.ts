@@ -10,11 +10,14 @@ test('activating and deactivating a plugin takes effect without a restart', asyn
 
   await tips.getByRole('button', { name: 'Activate Daily Tips' }).click();
   await expect(tips.getByText('Active', { exact: true })).toBeVisible();
+  // The toast follows the request; the list can re-render a moment earlier.
+  await expect(page.getByText('Daily Tips is active.')).toBeVisible();
   const on = await page.request.get('/wp-json/daily-tips/v1/tip');
   expect(on.status()).toBe(200);
   expect(typeof (await on.json()).tip).toBe('string');
 
   await tips.getByRole('button', { name: 'Deactivate Daily Tips' }).click();
   await expect(tips.getByRole('button', { name: 'Activate Daily Tips' })).toBeVisible();
+  await expect(page.getByText('Daily Tips is deactivated.')).toBeVisible();
   expect((await page.request.get('/wp-json/daily-tips/v1/tip')).status()).toBe(404);
 });

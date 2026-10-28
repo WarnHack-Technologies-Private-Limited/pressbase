@@ -75,6 +75,8 @@ Everything printed through these hooks is part of the page `apps/web` caches and
 | `kernel.styles.dequeue` / `deregister` / `is` | `wp_dequeue_style()`, `wp_deregister_style()`, `wp_style_is()` |
 | `kernel.styles.addInline(handle, css)` | `wp_add_inline_style()` |
 
+Plugins use `api.scripts` and `api.styles`: the same calls, with relative sources resolved to the plugin's own `public/` files, its version as the default `ver`, and site-wide registrations removed on deactivation ([Plugins](plugins.md#scripts-styles-and-static-files)).
+
 **Scope.** Called while a page renders (in `wp_enqueue_scripts`, a block's render callback, `wp_head`), these change that page only: each render starts from its own copy of the registrations. Called outside a render (when a plugin loads, on `init`), they change the site-wide registrations every page starts from; a handle enqueued there is on every public page.
 
 **Semantics,** as `WP_Dependencies`:

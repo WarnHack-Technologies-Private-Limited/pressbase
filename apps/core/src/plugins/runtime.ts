@@ -1,5 +1,10 @@
 import type { Database } from '@pressbase/db';
-import type { ActionCallback, FilterCallback } from '@pressbase/hooks';
+import type {
+  ActionCallback,
+  ActionRegistry,
+  FilterCallback,
+  FilterRegistry,
+} from '@pressbase/hooks';
 import { sql } from 'drizzle-orm';
 import type { Context, Hono } from 'hono';
 import { type CurrentUser, userCan } from '../auth/users';
@@ -11,6 +16,14 @@ import type { TermsService } from '../content/terms';
 import { type AppEnv, restError } from '../http';
 import type { Kernel } from '../kernel';
 import { PRESSBASE_VERSION } from '../version';
+import {
+  PluginAdmin,
+  type PluginPageArgs,
+  type PluginSectionArgs,
+  type PluginSettingArgs,
+} from './admin';
+import { createAssets, type PluginAssets, type PluginScripts, type PluginStyles } from './assets';
+import { type Background, createBackground, type PluginCron, type PluginJobs } from './background';
 import type { InstalledPlugin } from './discovery';
 import { createSubApp } from './dispatch';
 import type { PluginPermission } from './manifest';
@@ -61,12 +74,13 @@ export interface PluginApi {
   };
   readonly pressbase: { version: string };
   readonly hooks: {
-    addFilter<K extends string>(
+    /** Hook names core declares autocomplete; any other name works too. */
+    addFilter<K extends keyof FilterRegistry | (string & {})>(
       name: K,
       callback: FilterCallback<K>,
       priority?: number,
     ): () => void;
-    addAction<K extends string>(
+    addAction<K extends keyof ActionRegistry | (string & {})>(
       name: K,
       callback: ActionCallback<K>,
       priority?: number,
@@ -130,6 +144,36 @@ export interface PluginApi {
     userCan(c: PluginRequestContext, capability: string): boolean;
   };
   readonly logger: PluginLogger;
+  /**
+   * WP-Cron for the plugin: hook names get the plugin's prefix (`rotate` →
+   * `daily_tips_rotate`). A deactivated plugin's events wait until it is active again.
+   */
+  readonly cron: PluginCron;
+  /** The job queue, with job names namespaced by the plugin's slug (`sync` → `daily-tips/sync`). */
+  readonly jobs: PluginJobs;
+  /** wp_enqueue_script() & co. for public pages; relative sources are files in `public/`. */
+  readonly scripts: PluginScripts;
+  /** wp_enqueue_style() & co. for public pages; relative sources are files in `public/`. */
+  readonly styles: PluginStyles;
+  /** URLs of the plugin's static files (its `public/` folder). */
+  readonly assets: PluginAssets;
+  /**
+   * The Settings API: register_setting() with its field, and
+   * add_settings_section(). The admin draws the plugin's settings page from
+   * them; no admin JavaScript needed. See plugins/admin.ts.
+   */
+  readonly settings: {
+    register(name: string, args?: PluginSettingArgs): void;
+    addSection(id: string, args?: PluginSectionArgs): void;
+    /** The stored value, or the registered default. */
+    get<T = unknown>(name: string): Promise<T>;
+    /** Validates and sanitises like a save from the admin; throws with the field's message. */
+    set(name: string, value: unknown): Promise<void>;
+  };
+  /** Admin menu pages: add_menu_page(), add_options_page(), add_management_page(). */
+  readonly admin: {
+    addPage(args: PluginPageArgs): void;
+  };
 }
 
 /** What a plugin's main module exports. */
@@ -206,6 +250,7 @@ export class PluginRuntime {
   /** Wrapped hook callbacks by original callback, so removeFilter() can find them. */
   #wrapped = new Map<AnyCallback, { name: string; wrapped: AnyCallback; off: () => void }[]>();
   #disposed = false;
+  #background: Background | undefined;
 
   constructor(
     readonly kernel: Kernel,
@@ -222,8 +267,14 @@ export class PluginRuntime {
       warn: (...args) => console.warn(tag, ...args),
       error: (...args) => console.error(tag, ...args),
     };
+    this.adminRegistrations = new PluginAdmin(kernel, plugin, permissions, (dispose) =>
+      this.#track(dispose),
+    );
     this.api = this.#createApi();
   }
+
+  /** The plugin's settings, sections and admin pages (plugins/admin.ts). */
+  readonly adminRegistrations: PluginAdmin;
 
   get slug(): string {
     return this.plugin.slug;
@@ -238,6 +289,14 @@ export class PluginRuntime {
   restApp(): Hono<AppEnv> {
     if (!this.#app) this.#app = this.#buildApp();
     return this.#app;
+  }
+
+  /**
+   * Starts the plugin's background work (its cron runner), once `register`
+   * has added its callbacks, so no event runs before its action exists.
+   */
+  startBackground(): void {
+    this.#background?.start();
   }
 
   /** Takes back everything the plugin registered, newest first. */
@@ -329,6 +388,22 @@ export class PluginRuntime {
       return name.startsWith(prefix) ? name : `${prefix}${name}`;
     };
     const has = (permission: PluginPermission) => this.permissions.includes(permission);
+    const track = (dispose: () => void) => this.#track(dispose);
+    const background = createBackground({
+      kernel,
+      slug,
+      prefix,
+      track,
+      addAction: (name, callback, priority) => this.#addHook(name, callback, priority, false),
+      reportError: (during, error) => this.host.reportError(slug, during, error),
+    });
+    this.#background = background;
+    const { scripts, styles, assets } = createAssets({
+      kernel,
+      slug,
+      version: manifest.version,
+      track,
+    });
 
     const api: PluginApi = {
       plugin: Object.freeze({
@@ -432,6 +507,25 @@ export class PluginRuntime {
           userCan(c.get('user') ?? null, capability),
       }),
       logger: this.logger,
+      cron: background.cron,
+      jobs: background.jobs,
+      scripts,
+      styles,
+      assets,
+      settings: Object.freeze({
+        register: (name: string, args?: PluginSettingArgs) => {
+          this.adminRegistrations.registerSetting(name, args);
+        },
+        addSection: (id: string, args?: PluginSectionArgs) =>
+          this.adminRegistrations.addSection(id, args),
+        get: <T>(name: string) => this.adminRegistrations.get<T>(name),
+        set: async (name: string, value: unknown) => {
+          await this.adminRegistrations.set(name, value);
+        },
+      }),
+      admin: Object.freeze({
+        addPage: (args: PluginPageArgs) => this.adminRegistrations.addPage(args),
+      }),
     };
     return Object.freeze(api);
   }

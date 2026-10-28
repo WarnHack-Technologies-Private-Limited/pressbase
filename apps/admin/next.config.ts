@@ -22,6 +22,12 @@ const nextConfig: NextConfig = {
           destination: `${CORE_URL}/wp-content/themes/:path*`,
         },
         { source: '/wp-includes/:path*', destination: `${CORE_URL}/wp-includes/:path*` },
+        // Active plugins' browser modules, imported by the admin at runtime. Same
+        // origin, so a `script-src 'self'` policy allows them. See ADR 0011.
+        {
+          source: '/wp-content/plugins/:path*',
+          destination: `${CORE_URL}/wp-content/plugins/:path*`,
+        },
         // The post password form (wp-login.php?action=postpass).
         { source: '/wp-login.php', destination: `${CORE_URL}/wp-login.php` },
         // The public comment form posts here, as to WordPress's wp-comments-post.php.

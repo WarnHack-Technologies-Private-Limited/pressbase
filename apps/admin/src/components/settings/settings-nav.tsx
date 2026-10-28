@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { isPageCurrent, pageHref, pagesUnder } from '@/lib/extensions/pages';
+import { useAdminExtensions } from '../extensions/host';
 import styles from './settings.module.css';
 
 /** WordPress's settings screens, in the same order. Unbuilt ones show their release. */
@@ -19,6 +21,8 @@ PAGES.push({ slug: 'scheduled-tasks', label: 'Scheduled tasks' });
 
 export function SettingsNav() {
   const pathname = usePathname();
+  // Plugins' settings pages (add_options_page), after core's, as in WordPress's Settings menu.
+  const pluginPages = pagesUnder(useAdminExtensions(), 'settings');
   return (
     <nav aria-label="Settings">
       <ul className={styles.subnav}>
@@ -40,6 +44,16 @@ export function SettingsNav() {
                 {page.label}
               </Link>
             )}
+          </li>
+        ))}
+        {pluginPages.map((page) => (
+          <li key={`${page.plugin}/${page.slug}`} className={styles.pluginPage}>
+            <Link
+              href={pageHref(page)}
+              aria-current={isPageCurrent(page, pathname) ? 'page' : undefined}
+            >
+              {page.title}
+            </Link>
           </li>
         ))}
       </ul>

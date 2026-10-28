@@ -4,6 +4,8 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { Kernel } from '../kernel';
 import { PRESSBASE_VERSION } from '../version';
+import type { PluginAdmin } from './admin';
+import { clearPluginJobs } from './background';
 import {
   BUNDLED_PLUGINS_DIR,
   type DiscoveredPlugins,
@@ -154,6 +156,11 @@ export class PluginManager {
     return this.#runtimes.get(slug);
   }
 
+  /** Settings, sections and admin pages of the loaded plugins, in load order (plugins/admin.ts). */
+  adminRegistrations(): PluginAdmin[] {
+    return [...this.#runtimes.values()].map((r) => r.adminRegistrations);
+  }
+
   /** The plugin that registered a post type or taxonomy, if one did. */
   ownerOf(kind: 'postType' | 'taxonomy', name: string): string | undefined {
     return this.#owners.get(`${kind}:${name}`);
@@ -249,6 +256,8 @@ export class PluginManager {
       if (typeof register !== 'function') {
         throw new Error('The plugin’s main module has no default export or `register` function.');
       }
+      // plugin.json's admin pages, sections and settings, before the code's own.
+      runtime.adminRegistrations.registerManifest(plugin.manifest.admin);
       await register(runtime.api);
     } catch (error) {
       runtime.dispose();
@@ -256,6 +265,7 @@ export class PluginManager {
     }
     this.#runtimeErrors.delete(plugin.slug);
     this.#runtimes.set(plugin.slug, runtime);
+    runtime.startBackground();
     return runtime;
   }
 
@@ -448,6 +458,9 @@ export class PluginManager {
           console.error(`[plugin:${slug}] uninstall failed:`, error);
         }
       }
+
+      // Its jobs and cron events would otherwise wait forever for a handler.
+      await clearPluginJobs(this.kernel, slug);
 
       let deleted = true;
       try {

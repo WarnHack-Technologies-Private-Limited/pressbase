@@ -194,6 +194,11 @@ export function registerCacheInvalidation(kernel: Kernel): void {
   );
   hooks.addAction('deleted_user', async () => purge([CacheTag.site], 'deleted_user'));
 
+  // Plugins: their head output, scripts and styles can be on every page.
+  for (const action of ['activated_plugin', 'deactivated_plugin'] as const) {
+    hooks.addAction(action, async () => purge([CacheTag.site], action));
+  }
+
   // Settings and the theme: every page.
   hooks.addAction('updated_option', async (name) => {
     const option = String(name);

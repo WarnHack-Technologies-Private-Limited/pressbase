@@ -70,13 +70,13 @@ Twenty Twenty-Five renders the home page, posts, pages, archives, search, commen
 - [ ] Site editor: templates and template parts (`wp_template`, `wp_template_part`). → later
 - [x] Settings → Permalinks screen (the routing already follows `permalink_structure`). → done in v0.5
 
-## v0.5: Plugins
+## v0.5: Plugins ✅
 
 - [x] `plugin.json` manifest and runtime loader (no rebuild). See [Plugins](architecture/plugins.md).
 - [x] Lifecycle: activate, deactivate, uninstall, plugin migrations; installing from a .zip; `/wp/v2/plugins` and the Plugins screen.
-- [ ] Admin extension points (SlotFill), admin pages, Settings API for plugins.
+- [x] Admin extension points (SlotFill), admin pages, Settings API for plugins. See [Plugins](architecture/plugins.md#admin-pages-and-settings), [ADR 0011](adr/0011-plugin-admin-extensions.md).
 - [x] Job queue and cron: a table-backed queue instead of pg-boss ([ADR 0010](adr/0010-job-queue.md)).
-- [ ] `create-pressbase-plugin` scaffolding and the plugin SDK.
+- [x] `create-pressbase-plugin` scaffolding and the plugin SDK. See [Writing plugins](development/writing-plugins.md).
 - [x] Plugin permissions (network, filesystem, database scopes): declared, confirmed on activation, recorded; `database` and `options` enforced.
 - [x] `wp_head` / `wp_footer`-style hooks so plugins can add to public pages.
 - [x] Settings → Permalinks.

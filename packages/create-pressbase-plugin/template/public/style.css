@@ -1,0 +1,4 @@
+/* Files in public/ are served at /wp-content/plugins/__PLUGIN_SLUG__/… while the plugin is active. */
+.__PLUGIN_SLUG__-greeting {
+  font-style: italic;
+}
