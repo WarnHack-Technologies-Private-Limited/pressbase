@@ -159,11 +159,17 @@ export interface UploadInput {
    * given the post's date). Default: now, or the parent post's month.
    */
   date?: Date;
+  /**
+   * A `YYYY/MM` folder to use instead of the date's: a migration keeps each
+   * file in the folder it had on the old site (its `_wp_attached_file`).
+   */
+  folder?: string;
 }
 
 /** Year and month folders follow the site's time zone, as current_time() does. */
-async function uploadFolder(kernel: Kernel, date: Date): Promise<string> {
+async function uploadFolder(kernel: Kernel, date: Date, wanted?: string): Promise<string> {
   if (!(await kernel.options.get<boolean>('uploads_use_yearmonth_folders', true))) return '';
+  if (wanted && /^\d{4}\/(0[1-9]|1[0-2])$/.test(wanted)) return wanted;
   const timeZone = await kernel.options.get<string>('timezone_string', 'UTC');
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone,
@@ -258,7 +264,7 @@ export async function uploadAttachment(kernel: Kernel, input: UploadInput): Prom
     }
   }
   const folderDate = input.date ?? (parent && parent.type !== 'page' ? parent.date : new Date());
-  const folder = await uploadFolder(kernel, folderDate);
+  const folder = await uploadFolder(kernel, folderDate, input.folder);
   const storage = mediaStorage(kernel);
 
   const key = await exclusive(kernel, async () => {

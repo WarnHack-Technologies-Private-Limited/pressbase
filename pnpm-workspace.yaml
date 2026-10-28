@@ -9,3 +9,9 @@ minimumReleaseAgeExclude:
 # Dependencies allowed to run install scripts (pnpm blocks all others).
 allowBuilds:
   esbuild: true
+
+# drizzle-orm lists every SQL driver as an optional peer. Core uses mysql2 only to
+# read WordPress databases (ADR 0016), so drizzle must not pair with it: that would
+# give core a second copy of drizzle-orm whose types do not match @pressbase/db.
+overrides:
+  "drizzle-orm>mysql2": "-"

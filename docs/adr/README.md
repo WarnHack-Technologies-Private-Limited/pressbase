@@ -23,3 +23,4 @@ To write one, copy [template.md](template.md) to `NNNN-short-title.md` and open 
 | [0013](0013-wxr-import-export.md)         | WXR import as a streaming, source-agnostic pipeline run as a job | Accepted |
 | [0014](0014-pressbase-cli.md)             | The pressbase CLI: in-process kernel, node:util parseArgs, a lock for the built-in database | Accepted |
 | [0015](0015-internationalisation.md) | Internationalisation with WordPress's translation files and @wordpress/i18n | Accepted |
+| [0016](0016-wordpress-database-migration.md) | Migrating from a WordPress database with mysql2, behind a query interface | Accepted |

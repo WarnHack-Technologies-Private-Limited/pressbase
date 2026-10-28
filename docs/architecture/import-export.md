@@ -15,6 +15,8 @@ Tools → Import and Tools → Export move content between Pressbase and WordPre
 | Upload sessions and the job | `import-export/service.ts` | `wp_import_handle_upload()`, `wp_import_cleanup()` |
 | REST | `routes/import-export.ts` | `wp-admin/import.php`, `wp-admin/export.php` |
 | Admin screens | `apps/admin/src/components/tools/`, `lib/import-export.ts` | the importer's screens, `export.php` |
+| WordPress database source | `import-export/wordpress-db-reader.ts`, `wordpress-db.ts` | the tables of `wp-admin/includes/schema.php` |
+| WordPress database migration | `import-export/wordpress-migrate.ts` | — (see [below](#migrating-from-a-wordpress-database)) |
 
 ## The pipeline: sources and the writer
 
@@ -143,6 +145,58 @@ The importer fires the WordPress Importer's per-item hooks. Its whole-array filt
 | `the_title_export`, `the_content_export`, `the_excerpt_export` | filter | the value |
 | `wxr_export_skip_postmeta`, `wxr_export_skip_commentmeta`, `wxr_export_skip_termmeta` | filter | `false`, `key`, `meta` |
 
+## Migrating from a WordPress database
+
+`pressbase migrate wordpress` ([CLI](../development/cli.md#migrate-wordpress)) and `migrateFromWordPressDatabase(kernel, options)` read a WordPress site straight from its MySQL or MariaDB database, so more comes over than WXR carries: passwords, roles and profiles, settings, and every post type. Why it's built this way: [ADR 0016](../adr/0016-wordpress-database-migration.md).
+
+```ts
+import { migrateFromWordPressDatabase } from './import-export';
+const result = await migrateFromWordPressDatabase(kernel, {
+  database: 'mysql://reader:secret@db.internal/wordpress?ssl-mode=VERIFY_IDENTITY',
+  prefix: 'wp_',
+  uploads: '/backups/wp-content/uploads', // leave out to download files from the old site
+  userId: 1,
+  // dryRun: true, skip: ['attachment', 'comments', 'options'], uploadsUrl: 'https://cdn.example/uploads'
+});
+// result.counts: what the source holds; result.report: the ImportReport;
+// result.options: the settings carried and refused.
+```
+
+`WordPressDatabaseSource` is an `ImportSource` like the WXR reader, so the writer above does all the writing: re-runs skip what's there, classic menus become block menus, and content is rewritten to the new IDs and address.
+
+**What's read.** Single sites only: a database with a `{prefix}blogs` table is a multisite network and is refused. Tables are read in pages by ID (keyset pagination: 500 users or terms at a time, 100 posts with their meta, terms and comments), never whole. Table and column names are WordPress 7.1's (`wp-admin/includes/schema.php`).
+
+| WordPress | Becomes |
+| --------- | ------- |
+| `wp_users`, `wp_usermeta` | Users. The password hash (`user_pass`: `$wp$` bcrypt, bcrypt, phpass or old MD5) is kept, so people log in with their old password, which is then re-hashed with scrypt ([ADR 0005](../adr/0005-password-hashing.md)). Roles from `{prefix}capabilities` (roles this site has, when the person migrating has `promote_users`; otherwise the default role), `display_name`, `user_nicename`, `user_url`, `user_registered`, and the meta `first_name`, `last_name`, `nickname`, `description` and `locale` (a language not installed here falls back to the site's). Other user meta (sessions, screen options, plugin data) isn't carried. A user already here with the same username or email address is matched, not duplicated, and keeps their own password. |
+| `wp_terms`, `wp_term_taxonomy`, `wp_termmeta` | Terms of every registered taxonomy, with parents and meta. `nav_menu` terms become block menus; `link_category` is ignored. |
+| `wp_posts`, `wp_postmeta`, `wp_term_relationships` | Posts of every type (pages, attachments, `nav_menu_item`, `wp_navigation`, synced patterns…), with meta and terms. Revisions and auto-drafts are left out, as `export_wp()` does; types this site doesn't have are reported. Sticky posts come from the `sticky_posts` option. |
+| `wp_comments`, `wp_commentmeta` | Comments, threaded, linked to their commenters' accounts. Spam is left out, as `export_wp()` does. |
+| `wp_options` | The settings below. |
+
+**Settings carried** (`CARRIED_OPTIONS`; `skip: ['options']` keeps this site's). Before the content, so dates, folders and image sizes follow them: `blogname`, `blogdescription`, `timezone_string` (or `gmt_offset`, as `Etc/GMT±N`, when it's a whole hour), `WPLANG` (as `locale`, if that language is installed), `date_format`, `time_format`, `start_of_week`, `posts_per_page`, `posts_per_rss`, `rss_use_excerpt`, `show_on_front`, `default_comment_status`, `default_ping_status`, `comment_moderation`, `comment_registration`, `thread_comments`, `thread_comments_depth`, `comments_per_page`, `blog_public`, `uploads_use_yearmonth_folders`, the thumbnail, medium, medium_large and large sizes, `thumbnail_crop`, and `permalink_structure`, `category_base` and `tag_base` (through Settings → Permalinks' checks). After the content, with the new IDs: `page_on_front`, `page_for_posts` and `default_category`. Values pass the same validation as the settings screens; refused ones are reported. Not carried: `siteurl` and `home` (the new site keeps its address), `admin_email`, plugins, themes, widgets, role definitions (`wp_user_roles`), cron and transients.
+
+**Media.** Attachments keep their parents, featured images (`_thumbnail_id`), galleries (block `ids` and classic `[gallery ids="…"]`), alt text and captions. A file's old address is the old uploads URL (`upload_url_path`, else `siteurl` plus `upload_path` or `/wp-content/uploads`; `uploadsUrl` overrides it) plus its `_wp_attached_file`.
+
+- With `uploads` (a local copy of `wp-content/uploads`; preferred, as it needs no network), files are read from that folder. Paths can't leave it (symlinks included), and a missing file is reported as an error rather than downloaded.
+- Without it, and for URLs outside the old uploads address (files offloaded to a CDN), files are downloaded through the guarded downloader above.
+
+Files keep their `YYYY/MM` folder from `_wp_attached_file` (WordPress files an upload in its parent post's month, so it can differ from the attachment's own date), and image sub-sizes are regenerated with this site's sizes.
+
+**SEO meta.** Yoast SEO (`_yoast_wpseo_*`) and Rank Math (`rank_math_*`) post meta and term meta are kept exactly as they were. Yoast keeps term fields in the `wpseo_taxonomy_meta` option rather than in term meta; they're attached to their terms as term meta under Yoast's keys (`wpseo_title`, `wpseo_desc`, `wpseo_focuskw`…). The primary-category meta (`_yoast_wpseo_primary_{taxonomy}`, `rank_math_primary_{taxonomy}`) holds a term ID, so it's remapped. No Pressbase-neutral SEO fields (such as `_pressbase_seo_title`) are written: both plugins store templates with their own variables (`%%sitename%%`, `%sep%`), so a neutral copy would either be wrong or need their template engines. An SEO plugin for Pressbase can read these keys.
+
+**Security.**
+
+- Every query is a `SELECT`, run inside `START TRANSACTION READ ONLY, WITH CONSISTENT SNAPSHOT`. A MySQL user with only `SELECT` is enough, and recommended: `CREATE USER 'pressbase_reader'@'%' IDENTIFIED BY '…'; GRANT SELECT ON wordpress.* TO 'pressbase_reader'@'%';`
+- The connection password is never printed: URLs are shown as `mysql://reader:***@host/db`, and driver errors are filtered.
+- TLS is used when the URL asks for it. `ssl-mode=VERIFY_IDENTITY` or `VERIFY_CA` (also `ssl=true`, `sslmode=verify-full`) verify the server's certificate; `ssl-mode=REQUIRED` (`sslmode=require`) encrypts without verifying, as MySQL's client does; `ssl-ca=/path/ca.pem` trusts a CA. With `ssl-mode=DISABLED`, or no parameter, there's no TLS.
+- The table prefix must match `[A-Za-z0-9_]+`; every value is a bound parameter.
+- Password hashes are written to `users.pass` only: never to the report, the progress or the logs.
+
+**No admin screen.** Taking database credentials in a web form (and letting the server connect wherever a browser says) is a security decision for later. For now the migration is the CLI and the core function.
+
+**Tests without MySQL.** The reader talks to a small query interface (`WordPressDatabase`, one method per query). `memoryWordPressDatabase()` answers it from hand-written rows modelled on a WordPress 7.1 database (`wordpress-db-fixture.ts`, with an image in `fixtures/wp-uploads`), and `wordpress-migrate.test.ts` migrates them into PGlite. The `wordpress-mysql` CI job loads the same rows into MySQL 8 with WordPress's schema, checks that the SQL returns what the fake does, record for record, and migrates as a SELECT-only user (`wordpress-db.mysql.test.ts`, skipped unless `PRESSBASE_TEST_MYSQL_URL` is set).
+
 ## Not yet
 
 - Slugs: Pressbase's `sanitize_title()` keeps ASCII only, so non-Latin slugs (`%d0%bf…`) are re-made from the title.
@@ -150,3 +204,4 @@ The importer fires the WordPress Importer's per-item hooks. Its whole-array filt
 - Comments' `wp_filter_comment()` hooks (`pre_comment_content`…) don't run during an import.
 - A theme's menu locations aren't in WXR; choose the header menu in Appearance → Menus.
 - Uploads through the admin pass the Next.js proxy; for very large files, `importWxr()` (the CLI) avoids it.
+- WordPress database migration: multisite networks; links (`wp_links`); widgets, theme mods and menu locations; plugin tables other than meta.

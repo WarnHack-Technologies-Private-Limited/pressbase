@@ -11,7 +11,7 @@ import { permalink, permalinkContext } from '../content/permalinks';
 import type { Post } from '../content/posts';
 import type { Kernel } from '../kernel';
 import { fileUrl, MediaError, maxUploadBytes, setMeta, uploadAttachment } from '../media/service';
-import { insertUser, UserError } from '../people/users';
+import { insertUser, siteRoles, UserError } from '../people/users';
 import {
   type ClassicMenuItem,
   convertClassicMenu,
@@ -229,6 +229,17 @@ const REPORT_LIMIT = 200;
 const SKIPPED_META = new Set(['_edit_lock']);
 const ATTACHMENT_FILE_META = new Set(['_wp_attached_file', '_wp_attachment_metadata']);
 const STATUSES = new Set(['publish', 'future', 'draft', 'pending', 'private', 'trash']);
+/**
+ * Password hashes a WordPress site stores that verifyPassword() can check
+ * (wp_check_password(): `$wp$` bcrypt, plain bcrypt, phpass, old MD5).
+ */
+const WORDPRESS_HASH = /^(?:\$wp\$2[aby]\$|\$2[aby]\$|\$[PH]\$|[0-9a-f]{32}$)/;
+/**
+ * SEO plugins' primary-term meta holds a term ID, which changes on import:
+ * Yoast SEO's `_yoast_wpseo_primary_{taxonomy}` and Rank Math's
+ * `rank_math_primary_{taxonomy}`.
+ */
+const PRIMARY_TERM_META = /^(?:_yoast_wpseo_primary_|rank_math_primary_)[a-z0-9_-]+$/;
 
 export class ImportError extends Error {
   constructor(
@@ -511,6 +522,10 @@ export class ImportWriter {
       return undefined;
     }
     try {
+      const meta = new Map((record?.author_meta ?? []).map((m) => [m.key, m.value]));
+      // A language that isn't installed here falls back to the site's (as an empty locale does).
+      const locale = meta.get('locale') ?? '';
+      const languages = this.kernel.i18n.getAvailableLanguages();
       const user = await insertUser(this.kernel, {
         username: login,
         email,
@@ -518,7 +533,24 @@ export class ImportWriter {
         name: record?.author_display_name || login,
         first_name: record?.author_first_name ?? '',
         last_name: record?.author_last_name ?? '',
+        slug: record?.author_nicename || undefined,
+        url: record?.author_url || undefined,
+        nickname: meta.get('nickname'),
+        description: meta.get('description'),
+        locale: locale === 'en_US' || languages.includes(locale) ? locale : '',
+        roles: await this.#roles(login, record?.author_roles),
       });
+      // A database source carries the password hash and registration date.
+      const set: Partial<typeof schema.users.$inferInsert> = {};
+      const hash = record?.author_pass ?? '';
+      if (WORDPRESS_HASH.test(hash) && hash.length <= 255) set.pass = hash;
+      const registered = record?.author_registered
+        ? this.#date('', record.author_registered)
+        : undefined;
+      if (registered) set.registeredAt = registered;
+      if (Object.keys(set).length) {
+        await this.kernel.db.update(schema.users).set(set).where(eq(schema.users.id, user.id));
+      }
       this.report.imported.users += 1;
       return user.id;
     } catch (error) {
@@ -530,6 +562,36 @@ export class ImportWriter {
       });
       return undefined;
     }
+  }
+
+  /**
+   * The roles a new user gets: the source's roles that exist here, when the
+   * person importing may give roles (`promote_users`); otherwise the default role.
+   */
+  async #roles(login: string, wanted: string[] | undefined): Promise<string[] | undefined> {
+    if (!wanted?.length || !userCan(this.options.user, 'promote_users')) return undefined;
+    const known = await siteRoles(this.kernel);
+    const roles = wanted.filter((role) => known[role]);
+    const missing = wanted.filter((role) => !known[role]);
+    if (missing.length) {
+      this.#skip({
+        kind: 'author',
+        title: login,
+        code: 'invalid_role',
+        reason: `This site has no ${missing.map((r) => `“${r}”`).join(', ')} role, so it wasn’t given.`,
+      });
+    }
+    return roles.length ? roles : undefined;
+  }
+
+  /** The ID a source post or attachment has on this site, once imported. */
+  postId(sourceId: number): number | undefined {
+    return this.#posts.get(sourceId);
+  }
+
+  /** The ID a source term has on this site, once imported. */
+  termId(sourceId: number): number | undefined {
+    return this.#terms.get(sourceId);
   }
 
   /* ---------------------------------------------------------------- terms */
@@ -989,6 +1051,11 @@ export class ImportWriter {
         continue;
       }
       let value: unknown = maybeUnserialize(meta.value);
+      if (PRIMARY_TERM_META.test(key)) {
+        const mapped = this.#terms.get(Number(meta.value));
+        if (!mapped) continue;
+        value = String(mapped);
+      }
       if (key === '_edit_last') {
         const mapped = this.#authorsById.get(Number(meta.value));
         if (!mapped) continue;
@@ -1062,9 +1129,13 @@ export class ImportWriter {
     } catch {
       // Keep the downloaded name.
     }
+    // Keep the old site's year/month folder (wp-content/uploads/2019/05/…).
+    const attached = post.postmeta.find((m) => m.key === '_wp_attached_file')?.value ?? '';
+    const folder = /^(\d{4}\/\d{2})\/[^/]+$/.exec(attached)?.[1];
     let created: Post;
     try {
       created = await uploadAttachment(this.kernel, {
+        folder,
         data: file.data,
         filename,
         user: this.options.user,

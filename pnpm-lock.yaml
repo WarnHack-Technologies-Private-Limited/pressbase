@@ -204,6 +204,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  drizzle-orm>mysql2: "-"
+
 importers:
   .:
     devDependencies:
@@ -322,6 +325,9 @@ importers:
       htmlparser2:
         specifier: 12.0.0
         version: 12.0.0
+      mysql2:
+        specifier: 3.24.5
+        version: 3.24.5(@types/node@26.6.5)
       nodemailer:
         specifier: 10.0.15
         version: 10.0.15
@@ -3354,6 +3360,13 @@ packages:
       }
     engines: { node: ">=12" }
 
+  aws-ssl-profiles@1.1.2:
+    resolution:
+      {
+        integrity: sha512-NZKeq9AfyQvEeNlN0zSYAaWrmBffJh3IELMZfRpJVWgrpEbtEpnjvzqBPf+mxoI287JohRDoa+/nsfqqiZmF6g==,
+      }
+    engines: { node: ">= 6.0.0" }
+
   baseline-browser-mapping@2.11.33:
     resolution:
       {
@@ -3808,6 +3821,12 @@ packages:
     engines: { node: ^8.16.0 || ^10.6.0 || >=11.0.0 }
     os: [darwin]
 
+  generate-function@2.3.1:
+    resolution:
+      {
+        integrity: sha512-eeB5GfMNeevm/GRYq20ShmsaGcmI81kIX2K9XQx5miC8KdHaC6Jm0qQ8ZNeGOi7wYB8OsdxKs+Y2oVuTFuVwKQ==,
+      }
+
   get-nonce@1.0.1:
     resolution:
       {
@@ -3914,6 +3933,12 @@ packages:
     resolution:
       {
         integrity: sha512-hvpoI6korhJMnej285dSg6nu1+e6uxs7zG3BYAm5byqDsgJNWwxzM6z6iZiAgQR4TJ30JmBTOwqZUw3WlyH3AQ==,
+      }
+
+  is-property@1.0.2:
+    resolution:
+      {
+        integrity: sha512-Ks/IoX00TtClbGQr4TWXemAnktAQvYB7HzcCxDGqEZU6oCmb2INHuOoKxbtR+HFkmYWBKv/dOZtGRiAjDhj92g==,
       }
 
   isomorphic.js@0.2.5:
@@ -4052,11 +4077,24 @@ packages:
       }
     engines: { node: ">= 12.0.0" }
 
+  long@5.3.2:
+    resolution:
+      {
+        integrity: sha512-mNAgZ1GmyNhD7AuqnTG3/VQ26o760+ZYBPKjPvugO8+nLbYfX6TVpJPseBvopbdY+qpZ/lKUnmEc1LeZYS3QAA==,
+      }
+
   lower-case@2.0.2:
     resolution:
       {
         integrity: sha512-7fm3l3NAF9WfN6W3JOmf5drwpVqX78JtoGJ3A6W0a6ZnldM41w2fV5D490psKFTpMds8TJse/eHLFFsNHHjHgg==,
       }
+
+  lru.min@1.1.5:
+    resolution:
+      {
+        integrity: sha512-5J9ysMYUpYIg9RF2vJpy9SinEmSviFSe0GyPpCQ4L5QSkLAgeLXlTAOu2ZwWUU5m+0SBl6gUU1R1ZQB3aKypfA==,
+      }
+    engines: { bun: ">=1.0.0", deno: ">=1.30.0", node: ">=8.0.0" }
 
   lucide-react@1.62.0:
     resolution:
@@ -4131,6 +4169,22 @@ packages:
       {
         integrity: sha512-QNo4kEepaIBwiT8CDhP98umTetp+JNfQYBWvC1pc6/OAibuXtRcxZ58Qz8skvEHYvURne/7R8T5VoOI7rDsEUA==,
       }
+
+  mysql2@3.24.5:
+    resolution:
+      {
+        integrity: sha512-X6Ujsr2QSkkLpkQGjxzpKRAPn9nu4axpR63ntBzquFVEvPOArgbUQ1sJjFKI7hnaYtiVZxa17Z7q18KSubW0IQ==,
+      }
+    engines: { node: ">= 8.0" }
+    peerDependencies:
+      "@types/node": ">= 8"
+
+  named-placeholders@1.1.6:
+    resolution:
+      {
+        integrity: sha512-Tz09sEL2EEuv5fFowm419c1+a/jSMiBjI9gHxVLrVdbUkkNUUfjsVYs9pVZu5oCon/kmRh9TfLEObFtkVxmY0w==,
+      }
+    engines: { node: ">=8.0.0" }
 
   nanoid@3.3.20:
     resolution:
@@ -4565,6 +4619,13 @@ packages:
         integrity: sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==,
       }
     engines: { node: ">=0.10.0" }
+
+  sql-escaper@1.5.2:
+    resolution:
+      {
+        integrity: sha512-6CKD38c31SENivxOADeMNLdukOnUxUcflKtzVWzace7Riv1v7cAEym5Cx9Q7gYZ3ezIJI7ZpqecQq8cqNeSSFg==,
+      }
+    engines: { bun: ">=1.0.0", deno: ">=2.0.0", node: ">=12.0.0" }
 
   std-env@4.3.0:
     resolution:
@@ -6729,6 +6790,8 @@ snapshots:
 
   assertion-error@2.0.1: {}
 
+  aws-ssl-profiles@1.1.2: {}
+
   baseline-browser-mapping@2.11.33: {}
 
   bcryptjs@3.0.3: {}
@@ -6989,6 +7052,10 @@ snapshots:
   fsevents@2.3.3:
     optional: true
 
+  generate-function@2.3.1:
+    dependencies:
+      is-property: 1.0.2
+
   get-nonce@1.0.1: {}
 
   get-tsconfig@4.14.3:
@@ -7052,6 +7119,8 @@ snapshots:
 
   is-promise@4.0.0: {}
 
+  is-property@1.0.2: {}
+
   isomorphic.js@0.2.5: {}
 
   js-tokens@4.0.0:
@@ -7114,9 +7183,13 @@ snapshots:
       lightningcss-win32-arm64-msvc: 1.33.0
       lightningcss-win32-x64-msvc: 1.33.0
 
+  long@5.3.2: {}
+
   lower-case@2.0.2:
     dependencies:
       tslib: 2.8.1
+
+  lru.min@1.1.5: {}
 
   lucide-react@1.62.0(@types/react@19.3.0)(react@19.3.1):
     dependencies:
@@ -7154,6 +7227,21 @@ snapshots:
   motion-utils@11.18.1: {}
 
   mousetrap@1.6.5: {}
+
+  mysql2@3.24.5(@types/node@26.6.5):
+    dependencies:
+      "@types/node": 26.6.5
+      aws-ssl-profiles: 1.1.2
+      generate-function: 2.3.1
+      iconv-lite: 0.7.3
+      long: 5.3.2
+      lru.min: 1.1.5
+      named-placeholders: 1.1.6
+      sql-escaper: 1.5.2
+
+  named-placeholders@1.1.6:
+    dependencies:
+      lru.min: 1.1.5
 
   nanoid@3.3.20: {}
 
@@ -7451,6 +7539,8 @@ snapshots:
       source-map: 0.6.1
 
   source-map@0.6.1: {}
+
+  sql-escaper@1.5.2: {}
 
   std-env@4.3.0: {}
 
