@@ -108,7 +108,7 @@ export function requireCapability(capability: string): MiddlewareHandler<AppEnv>
         c,
         user ? 403 : 401,
         'rest_forbidden',
-        'Sorry, you are not allowed to do that.',
+        c.get('kernel').i18n.__('Sorry, you are not allowed to do that.', 'pressbase'),
       );
     }
     await next();

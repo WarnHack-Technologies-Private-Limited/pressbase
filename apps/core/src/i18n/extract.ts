@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
@@ -240,6 +240,7 @@ function main(argv: string[]) {
       stale = true;
       console.error(`${target.pot} is out of date. Run \`pnpm i18n:extract\`.`);
     } else {
+      mkdirSync(path.dirname(file), { recursive: true });
       writeFileSync(file, next);
       console.log(`${target.pot}: written (${count} strings).`);
     }

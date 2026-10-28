@@ -178,7 +178,9 @@ export class I18n {
       sanitize: (value) => {
         const locale = typeof value === 'string' && value ? value : 'en_US';
         if (locale !== 'en_US' && !this.getAvailableLanguages().includes(locale)) {
-          throw new Error('That language isn’t installed. Install it first.');
+          throw new Error(
+            this.__('That language isn’t installed. Install it first.', 'pressbase'),
+          );
         }
         return locale;
       },

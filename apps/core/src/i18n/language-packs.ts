@@ -128,7 +128,10 @@ export class LanguagePacks {
       } catch (error) {
         throw new LanguagePackError(
           'translations_api_failed',
-          `WordPress.org couldn’t be reached: ${error instanceof Error ? error.message : String(error)}`,
+          /* translators: %s: the network error. */
+          this.kernel.i18n
+            .__('WordPress.org couldn’t be reached: %s', 'pressbase')
+            .replace('%s', error instanceof Error ? error.message : String(error)),
           502,
         );
       }
@@ -136,7 +139,7 @@ export class LanguagePacks {
       if (!response.ok || !body || !Array.isArray(body.translations)) {
         throw new LanguagePackError(
           'translations_api_failed',
-          'WordPress.org sent an unexpected answer. Try again later.',
+          this.kernel.i18n.__('WordPress.org sent an unexpected answer. Try again later.', 'pressbase'),
           502,
         );
       }
@@ -179,12 +182,12 @@ export class LanguagePacks {
     try {
       url = new URL(packageUrl);
     } catch {
-      throw new LanguagePackError('download_failed', 'The language pack’s address is invalid.');
+      throw new LanguagePackError('download_failed', this.kernel.i18n.__('The language pack’s address is invalid.', 'pressbase'));
     }
     if (url.protocol !== 'https:' || !PACKAGE_HOSTS.has(url.hostname)) {
       throw new LanguagePackError(
         'download_failed',
-        'Language packs are only downloaded from downloads.wordpress.org.',
+        this.kernel.i18n.__('Language packs are only downloaded from downloads.wordpress.org.', 'pressbase'),
       );
     }
     let response: Response;
@@ -193,24 +196,30 @@ export class LanguagePacks {
     } catch (error) {
       throw new LanguagePackError(
         'download_failed',
-        `The language pack couldn’t be downloaded: ${error instanceof Error ? error.message : String(error)}`,
+        /* translators: %s: the network error. */
+        this.kernel.i18n
+          .__('The language pack couldn’t be downloaded: %s', 'pressbase')
+          .replace('%s', error instanceof Error ? error.message : String(error)),
         502,
       );
     }
     if (!response.ok) {
       throw new LanguagePackError(
         'download_failed',
-        `The language pack couldn’t be downloaded (HTTP ${response.status}).`,
+        /* translators: %d: an HTTP status code. */
+        this.kernel.i18n
+          .__('The language pack couldn’t be downloaded (HTTP %d).', 'pressbase')
+          .replace('%d', String(response.status)),
         502,
       );
     }
     const length = Number(response.headers.get('content-length') ?? 0);
     if (length > MAX_PACKAGE_BYTES) {
-      throw new LanguagePackError('download_failed', 'The language pack is too large.');
+      throw new LanguagePackError('download_failed', this.kernel.i18n.__('The language pack is too large.', 'pressbase'));
     }
     const bytes = new Uint8Array(await response.arrayBuffer());
     if (bytes.byteLength > MAX_PACKAGE_BYTES) {
-      throw new LanguagePackError('download_failed', 'The language pack is too large.');
+      throw new LanguagePackError('download_failed', this.kernel.i18n.__('The language pack is too large.', 'pressbase'));
     }
     let entries: ReturnType<typeof readZip>;
     try {
@@ -218,7 +227,7 @@ export class LanguagePacks {
     } catch (error) {
       throw new LanguagePackError(
         'incompatible_archive',
-        error instanceof ZipError ? error.message : 'The language pack isn’t a valid .zip file.',
+        error instanceof ZipError ? error.message : this.kernel.i18n.__('The language pack isn’t a valid .zip file.', 'pressbase'),
       );
     }
     await mkdir(dir, { recursive: true });
@@ -235,7 +244,7 @@ export class LanguagePacks {
     if (!written.some((name) => name.endsWith('.mo') || name.endsWith('.json'))) {
       throw new LanguagePackError(
         'incompatible_archive',
-        'The language pack holds no translation files.',
+        this.kernel.i18n.__('The language pack holds no translation files.', 'pressbase'),
       );
     }
     return written;
@@ -247,7 +256,7 @@ export class LanguagePacks {
    */
   async install(language: string): Promise<InstallResult> {
     if (!isLocale(language) || language === 'en_US') {
-      throw new LanguagePackError('invalid_language', 'Choose a language from the list.');
+      throw new LanguagePackError('invalid_language', this.kernel.i18n.__('Choose a language from the list.', 'pressbase'));
     }
     const i18n = this.kernel.i18n;
     const result: InstallResult = { language, core: false, themes: [], skipped: [] };
@@ -256,7 +265,7 @@ export class LanguagePacks {
       if (!translation) {
         throw new LanguagePackError(
           'language_not_available',
-          'WordPress.org has no translation for that language.',
+          this.kernel.i18n.__('WordPress.org has no translation for that language.', 'pressbase'),
           404,
         );
       }
@@ -275,7 +284,7 @@ export class LanguagePacks {
         if (!pack) {
           result.skipped.push({
             slug: theme.stylesheet,
-            reason: 'No translation for this language.',
+            reason: this.kernel.i18n.__('No translation for this language.', 'pressbase'),
           });
           continue;
         }

@@ -349,7 +349,7 @@ function cleanLocale(kernel: Kernel, locale: string): string {
   if (locale === '' || locale === 'en_US' || kernel.i18n.getAvailableLanguages().includes(locale))
     return locale;
   throw new UserError('rest_invalid_param', 'Invalid parameter(s): locale', 400, {
-    locale: 'Choose a language from the list.',
+    locale: kernel.i18n.__('Choose a language from the list.', 'pressbase'),
   });
 }
 
