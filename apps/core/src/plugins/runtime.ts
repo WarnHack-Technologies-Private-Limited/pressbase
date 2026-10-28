@@ -28,6 +28,7 @@ import {
   type PluginSectionArgs,
   type PluginSettingArgs,
 } from './admin';
+import { createPluginAbilities, createPluginAi, type PluginAbilities, type PluginAi } from './ai';
 import { createAssets, type PluginAssets, type PluginScripts, type PluginStyles } from './assets';
 import { type Background, createBackground, type PluginCron, type PluginJobs } from './background';
 import type { PluginCliCommandArgs, PluginCliHandler } from './cli';
@@ -268,6 +269,13 @@ export interface PluginApi {
    * `languages/` folder: `api.i18n.__('Daily tip')`. See plugins/i18n.ts.
    */
   readonly i18n: PluginI18n;
+  /**
+   * The AI client (v0.7): `kernel.ai.prompt()` attributed to the plugin for
+   * the usage log and daily limits. See docs/architecture/ai.md#plugins.
+   */
+  readonly ai: PluginAi;
+  /** The Abilities API (v0.7), namespaced by the plugin's slug. See plugins/ai.ts. */
+  readonly abilities: PluginAbilities;
 }
 
 /** What a plugin's main module exports. */
@@ -705,6 +713,8 @@ export class PluginRuntime {
         },
       }),
       i18n: createPluginI18n({ kernel, slug, dir: plugin.dir, track }),
+      ai: createPluginAi(kernel, slug, () => !this.#disposed, track),
+      abilities: createPluginAbilities(kernel, slug, track),
     };
     return Object.freeze(api);
   }
