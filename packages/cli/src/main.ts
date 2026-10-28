@@ -161,21 +161,21 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
     });
     return session.config;
   };
+  let notifying = false;
   const boot = async () => {
-    if (!session.kernel) {
-      session.kernel = await bootKernel(await loadConfig());
-      const revalidate = session.kernel.config.revalidate;
-      // Changes made here purge the public site's page cache, as the server's do.
-      if (revalidate) {
-        session.stopNotifier = startRevalidationNotifier(session.kernel, {
-          ...revalidate,
-          log: (message) => {
-            const text = message.replace(/^\[cache\] /, '');
-            session.purgeWarnings.push(text);
-            io.stderr.write(`Warning: ${text}\n`);
-          },
-        });
-      }
+    session.kernel ??= await bootKernel(await loadConfig());
+    const revalidate = session.kernel.config.revalidate;
+    // Changes made here purge the public site's page cache, as the server's do.
+    if (revalidate && !notifying) {
+      notifying = true;
+      session.stopNotifier = startRevalidationNotifier(session.kernel, {
+        ...revalidate,
+        log: (message) => {
+          const text = message.replace(/^\[cache\] /, '');
+          session.purgeWarnings.push(text);
+          io.stderr.write(`Warning: ${text}\n`);
+        },
+      });
     }
     return session.kernel;
   };

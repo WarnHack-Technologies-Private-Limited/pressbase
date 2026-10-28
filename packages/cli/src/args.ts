@@ -62,7 +62,7 @@ export function parseSynopsis(synopsis: string): SynopsisToken[] {
       token = token.slice(1, -1);
     } else if (/^\[--[^=[]+\[=<[^>]+>\]\]$/.test(token)) {
       // [--name[=<value>]]
-      const name = token.slice(3, token.indexOf('['));
+      const name = token.slice(3, token.indexOf('[', 1));
       const value = token.slice(token.indexOf('<') + 1, token.indexOf('>'));
       out.push({ type: 'assoc', name, value, optional: true, valueOptional: true });
       continue;
