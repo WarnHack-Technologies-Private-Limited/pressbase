@@ -18,7 +18,7 @@ const {
   PluginSidebarMoreMenuItem,
   PostsListColumn,
   editor,
-  components: { Button, Spinner },
+  components: { Button, Spinner, TextField },
 } = window.pressbase;
 
 /** Words in block markup: tags and block comments aren't words. */
@@ -71,6 +71,11 @@ function WritingSidebar() {
   const title = editor.usePost((post) => post.title) ?? '';
   const content = editor.usePost((post) => post.content) ?? '';
   const excerpt = editor.usePost((post) => post.excerpt) ?? '';
+  // Registered post meta (index.js), for posts only. A new post has no meta until
+  // its first save, so a missing key reads as its default.
+  const focus = editor.usePost((post) =>
+    post.type === 'post' ? (post.meta.daily_tips_focus ?? '') : undefined,
+  );
   const words = countWords(content);
   const minutes = Math.max(1, Math.round(words / 200));
   const advice = !title.trim()
@@ -103,6 +108,16 @@ function WritingSidebar() {
       h('dd', { style: { margin: 0 } }, words ? `About ${minutes} min` : '—'),
     ),
     h('p', { style: { margin: 0 }, 'aria-live': 'polite', 'data-daily-tips-advice': '' }, advice),
+    // Meta edits through editor.editPost() are unsaved changes and save with the post.
+    typeof focus === 'string'
+      ? h(TextField, {
+          label: 'Focus',
+          hint: 'What the post should leave the reader with, in one line.',
+          value: focus,
+          maxLength: 200,
+          onChange: (event) => editor.editPost({ meta: { daily_tips_focus: event.target.value } }),
+        })
+      : null,
     // A write through editor.editPost(): it marks the post as changed and saves with it.
     !excerpt.trim() && sentence
       ? h(
@@ -189,6 +204,11 @@ registerPlugin('daily-tips', {
       h(PluginSidebarMoreMenuItem, { target: 'writing', icon: LightbulbIcon }, 'Writing'),
       h(PostsListColumn, { title: 'Words', postTypes: ['post', 'page'] }, ({ post }) =>
         String(countWords(post.content?.raw ?? '')),
+      ),
+      h(
+        PostsListColumn,
+        { title: 'Focus', postTypes: 'post' },
+        ({ post }) => post.meta?.daily_tips_focus || '—',
       ),
     ),
 });

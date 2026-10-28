@@ -680,7 +680,7 @@ The post has REST field names, with the edits not yet saved:
 | `blocks` | the parsed blocks (`name`, `attributes`, `innerBlocks`), parsed from `content` when first read |
 | `featured_media` | attachment ID, 0 for none |
 | `categories`, `tags`, `terms` | term IDs, and `terms.categories` / `terms.tags` as `{ id, name }` (a tag typed but not yet created has `id` 0) |
-| `meta` | registered post meta (`show_in_rest`), with edits |
+| `meta` | registered post meta (`show_in_rest`), with edits. A new post has only the keys plugins have edited until its first save, so read a missing key as its default |
 | `link`, `permalink` | the saved permalink, and the one the edited slug gives (where pretty permalinks make that knowable) |
 | `isDirty`, `isSaving` | unsaved changes; a save in progress |
 

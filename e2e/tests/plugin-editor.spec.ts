@@ -59,8 +59,9 @@ test('a plugin’s editor sidebar follows the post as it’s written, and its co
   // Selecting a block doesn't leave a plugin's tab.
   await expect(sidebar.locator('[data-daily-tips-words]')).toHaveText('8');
 
-  // Its edit (editPost) is an unsaved change and saves with the post.
+  // Its edits (editPost: the excerpt, and registered meta) are unsaved changes and save with the post.
   await sidebar.getByRole('button', { name: 'Use the first sentence as the excerpt' }).click();
+  await sidebar.getByLabel('Focus').fill('Early watering saves water');
   await expect(page.getByText('Unsaved changes', { exact: true })).toBeVisible();
   await page.getByRole('tab', { name: 'Post' }).click();
   await expect(page.getByLabel('Excerpt', { exact: true })).toHaveValue('Water the beans early.');
@@ -76,6 +77,7 @@ test('a plugin’s editor sidebar follows the post as it’s written, and its co
   await page.getByRole('button', { name: 'Writing', exact: true }).click();
   await expect(page.getByRole('tab', { name: 'Writing' })).toHaveAttribute('aria-selected', 'true');
   await expect(sidebar.locator('[data-daily-tips-words]')).toHaveText('8');
+  await expect(sidebar.getByLabel('Focus')).toHaveValue('Early watering saves water');
 
   // A pre-publish panel shows before publishing, and never blocks it.
   await registerFills(page, [
@@ -91,7 +93,10 @@ test('a plugin’s editor sidebar follows the post as it’s written, and its co
   await page.goto('/admin/posts');
   await expect(page.getByRole('columnheader', { name: 'Words' })).toBeVisible();
   const row = page.getByRole('row').filter({ hasText: title });
-  await expect(row.getByRole('cell').last()).toHaveText('8');
+  await expect(row.getByRole('cell', { name: '8', exact: true })).toBeVisible();
+  // The Focus column reads the row's registered meta.
+  await expect(page.getByRole('columnheader', { name: 'Focus' })).toBeVisible();
+  await expect(row.getByRole('cell').last()).toHaveText('Early watering saves water');
 
   // Row actions and filters registered at runtime.
   await registerFills(page, [

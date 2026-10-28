@@ -42,6 +42,21 @@ export default function register(api) {
   });
 
   // plugin.json declares the simple settings; this one needs a sanitize callback.
+  // The post's one-line focus, edited in the editor's Writing sidebar
+  // (window.pressbase.editor.editPost({ meta })) and shown in the posts list.
+  api.meta.registerPostMeta('post', 'daily_tips_focus', {
+    type: 'string',
+    single: true,
+    default: '',
+    label: 'Focus',
+    description: 'What the post should leave the reader with, in one line.',
+    showInRest: true,
+    sanitizeCallback: (value) =>
+      String(value ?? '')
+        .trim()
+        .slice(0, 200),
+  });
+
   api.settings.register('own_tips', {
     control: 'textarea',
     label: 'Your tips',
