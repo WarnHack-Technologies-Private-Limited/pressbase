@@ -18,7 +18,15 @@ const FIELDS = [
   'count',
   'taxonomy',
 ];
-const LIST_FIELDS = ['term_id', 'term_taxonomy_id', 'name', 'slug', 'description', 'parent', 'count'];
+const LIST_FIELDS = [
+  'term_id',
+  'term_taxonomy_id',
+  'name',
+  'slug',
+  'description',
+  'parent',
+  'count',
+];
 
 function toRow(term: Term) {
   return {
@@ -92,7 +100,8 @@ export const termCommands: CommandSpec[] = [
   {
     name: 'term create',
     shortdesc: 'Creates a term.',
-    synopsis: '<taxonomy> <term> [--slug=<slug>] [--description=<description>] [--parent=<term-id>] [--porcelain]',
+    synopsis:
+      '<taxonomy> <term> [--slug=<slug>] [--description=<description>] [--parent=<term-id>] [--porcelain]',
     options: {
       taxonomy: 'The taxonomy.',
       term: 'The term’s name.',
@@ -100,7 +109,10 @@ export const termCommands: CommandSpec[] = [
       porcelain: 'Print only the new term’s ID.',
     },
     examples: [
-      ['pressbase term create category Travel --description="Trips and places"', 'Create a category'],
+      [
+        'pressbase term create category Travel --description="Trips and places"',
+        'Create a category',
+      ],
     ],
     needs: 'installed',
     async run(ctx) {
@@ -108,7 +120,11 @@ export const termCommands: CommandSpec[] = [
       const tax = taxonomy(ctx, name);
       // As the REST API: hierarchical taxonomies need edit_terms, flat ones assign_terms.
       const cap = tax.hierarchical ? tax.cap.edit_terms : tax.cap.assign_terms;
-      await ctx.require(cap, undefined, `${ctx.user?.login} isn’t allowed to create ${tax.name} terms.`);
+      await ctx.require(
+        cap,
+        undefined,
+        `${ctx.user?.login} isn’t allowed to create ${tax.name} terms.`,
+      );
       const term = await service(() =>
         ctx.kernel.terms.insert(tax.name, {
           name: termName,
@@ -134,7 +150,10 @@ export const termCommands: CommandSpec[] = [
     defaults: { by: 'id' },
     examples: [
       ['pressbase term delete post_tag 14 15', 'Delete two tags'],
-      ['pressbase term delete category travel --by=slug --yes', 'Delete a category by slug, without asking'],
+      [
+        'pressbase term delete category travel --by=slug --yes',
+        'Delete a category by slug, without asking',
+      ],
     ],
     needs: 'installed',
     async run(ctx) {
@@ -143,7 +162,11 @@ export const termCommands: CommandSpec[] = [
       const terms: Term[] = [];
       for (const value of values) {
         const term = await findTerm(ctx, tax, value, ctx.string('by') ?? 'id');
-        await ctx.require('delete_term', term.id, `${ctx.user?.login} isn’t allowed to delete “${term.name}”.`);
+        await ctx.require(
+          'delete_term',
+          term.id,
+          `${ctx.user?.login} isn’t allowed to delete “${term.name}”.`,
+        );
         terms.push(term);
       }
       if (!terms.length) ctx.error('Give the terms to delete.');

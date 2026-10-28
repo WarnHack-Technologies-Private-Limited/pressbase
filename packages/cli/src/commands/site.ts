@@ -22,7 +22,11 @@ export const themeCommands: CommandSpec[] = [
     examples: [['pressbase theme list', 'List themes']],
     needs: 'installed',
     async run(ctx) {
-      await ctx.require('switch_themes', undefined, `${ctx.user?.login} isn’t allowed to manage themes.`);
+      await ctx.require(
+        'switch_themes',
+        undefined,
+        `${ctx.user?.login} isn’t allowed to manage themes.`,
+      );
       const active = await ctx.kernel.themes.active();
       const stylesheet = active.info.stylesheet;
       const template = active.info.template;
@@ -31,7 +35,12 @@ export const themeCommands: CommandSpec[] = [
         .map((t) => ({
           name: t.stylesheet,
           title: t.name,
-          status: t.stylesheet === stylesheet ? 'active' : t.stylesheet === template ? 'parent' : 'inactive',
+          status:
+            t.stylesheet === stylesheet
+              ? 'active'
+              : t.stylesheet === template
+                ? 'parent'
+                : 'inactive',
           version: t.version,
           author: t.author,
           block_theme: t.isBlockTheme,
@@ -51,12 +60,21 @@ export const themeCommands: CommandSpec[] = [
     examples: [['pressbase theme activate twentytwentyfive', 'Switch theme']],
     needs: 'installed',
     async run(ctx) {
-      await ctx.require('switch_themes', undefined, `${ctx.user?.login} isn’t allowed to switch themes.`);
+      await ctx.require(
+        'switch_themes',
+        undefined,
+        `${ctx.user?.login} isn’t allowed to switch themes.`,
+      );
       const [name = ''] = ctx.args;
       const theme = await ctx.kernel.themes.get(name);
-      if (!theme) return ctx.error(`There’s no theme “${name}”. “pressbase theme list” shows the installed ones.`);
+      if (!theme)
+        return ctx.error(
+          `There’s no theme “${name}”. “pressbase theme list” shows the installed ones.`,
+        );
       if (!theme.isBlockTheme) {
-        ctx.error(`${theme.name} isn’t a block theme (it has no templates/index.html), and Pressbase only runs block themes.`);
+        ctx.error(
+          `${theme.name} isn’t a block theme (it has no templates/index.html), and Pressbase only runs block themes.`,
+        );
       }
       if ((await ctx.kernel.themes.activeStylesheet()) === theme.stylesheet) {
         ctx.warning(`The '${theme.name}' theme is already active.`);
@@ -78,7 +96,11 @@ export const cacheCommands: CommandSpec[] = [
     examples: [['pressbase cache flush', 'Empty the page cache']],
     needs: 'installed',
     async run(ctx) {
-      await ctx.require('manage_options', undefined, `${ctx.user?.login} isn’t allowed to flush the cache.`);
+      await ctx.require(
+        'manage_options',
+        undefined,
+        `${ctx.user?.login} isn’t allowed to flush the cache.`,
+      );
       const revalidate = ctx.kernel.config.revalidate;
       if (!revalidate) {
         ctx.warning(
@@ -104,7 +126,8 @@ export const rewriteCommands: CommandSpec[] = [
     shortdesc: 'Sets the permalink structure, as Settings → Permalinks does.',
     synopsis: '<permastruct> [--category-base=<base>] [--tag-base=<base>]',
     options: {
-      permastruct: 'The structure, with tags like %year%, %monthnum%, %postname% and %post_id%. An empty string uses plain ?p=123 addresses.',
+      permastruct:
+        'The structure, with tags like %year%, %monthnum%, %postname% and %post_id%. An empty string uses plain ?p=123 addresses.',
       'category-base': 'The prefix of category archives (default: category).',
       'tag-base': 'The prefix of tag archives (default: tag).',
     },
@@ -112,17 +135,25 @@ export const rewriteCommands: CommandSpec[] = [
       'Old addresses keep working: Pressbase remembers the previous structure and redirects to the new one.',
     examples: [
       ['pressbase rewrite structure "/%postname%/"', 'Use post names'],
-      ['pressbase rewrite structure "/%year%/%postname%/" --category-base=topics', 'Change the structure and the category base'],
+      [
+        'pressbase rewrite structure "/%year%/%postname%/" --category-base=topics',
+        'Change the structure and the category base',
+      ],
     ],
     needs: 'installed',
     async run(ctx) {
-      await ctx.require('manage_options', undefined, `${ctx.user?.login} isn’t allowed to change permalinks.`);
+      await ctx.require(
+        'manage_options',
+        undefined,
+        `${ctx.user?.login} isn’t allowed to change permalinks.`,
+      );
       const parsed = permalinkSettingsInput.safeParse({
         permalink_structure: ctx.args[0],
         category_base: ctx.string('category-base'),
         tag_base: ctx.string('tag-base'),
       });
-      if (!parsed.success) return ctx.error(parsed.error.issues[0]?.message ?? 'That structure isn’t valid.');
+      if (!parsed.success)
+        return ctx.error(parsed.error.issues[0]?.message ?? 'That structure isn’t valid.');
       const before = await permalinkSettings(ctx.kernel);
       const result = await savePermalinkSettings(ctx.kernel, parsed.data);
       if (!result.ok) {

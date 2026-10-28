@@ -143,7 +143,10 @@ export const userCommands: CommandSpec[] = [
       search: 'Only users whose login, email or display name contains this text.',
     },
     examples: [
-      ['pressbase user list --role=administrator --field=user_login', 'List administrators’ logins'],
+      [
+        'pressbase user list --role=administrator --field=user_login',
+        'List administrators’ logins',
+      ],
       ['pressbase user list --format=csv', 'Export users as CSV'],
     ],
     needs: 'installed',
@@ -159,7 +162,11 @@ export const userCommands: CommandSpec[] = [
         .where(
           and(
             like
-              ? or(ilike(users.login, like), ilike(users.email, like), ilike(users.displayName, like))
+              ? or(
+                  ilike(users.login, like),
+                  ilike(users.email, like),
+                  ilike(users.displayName, like),
+                )
               : undefined,
             include ? inArray(users.id, include) : undefined,
           ),
@@ -199,18 +206,30 @@ export const userCommands: CommandSpec[] = [
     },
     examples: [
       ['pressbase user create sam sam@example.com --role=author', 'Create an author'],
-      ['pressbase user create sam sam@example.com --porcelain', 'Create a user and print only the ID'],
+      [
+        'pressbase user create sam sam@example.com --porcelain',
+        'Create a user and print only the ID',
+      ],
     ],
     needs: 'installed',
     async run(ctx) {
-      await ctx.require('create_users', undefined, `${ctx.user?.login} isn’t allowed to create users.`);
+      await ctx.require(
+        'create_users',
+        undefined,
+        `${ctx.user?.login} isn’t allowed to create users.`,
+      );
       const [login = '', email = ''] = ctx.args;
       const input = writeInput(ctx);
       const role = ctx.string('role');
       if (role) {
-        await ctx.require('promote_users', undefined, `${ctx.user?.login} isn’t allowed to give users a role.`);
+        await ctx.require(
+          'promote_users',
+          undefined,
+          `${ctx.user?.login} isn’t allowed to give users a role.`,
+        );
         const known = await siteRoles(ctx.kernel);
-        if (!known[role]) ctx.error(`There’s no role “${role}”. Roles: ${Object.keys(known).join(', ')}.`);
+        if (!known[role])
+          ctx.error(`There’s no role “${role}”. Roles: ${Object.keys(known).join(', ')}.`);
       }
       const generated = input.password === undefined;
       const password = input.password ?? generatePassword();
@@ -253,7 +272,11 @@ export const userCommands: CommandSpec[] = [
       for (const value of ctx.args) {
         const user = await findUserRow(ctx.kernel, value);
         if (Object.keys(input).length) {
-          await ctx.require('edit_user', user.id, `${ctx.user?.login} isn’t allowed to edit ${user.login}.`);
+          await ctx.require(
+            'edit_user',
+            user.id,
+            `${ctx.user?.login} isn’t allowed to edit ${user.login}.`,
+          );
         }
         if (role) await checkRoles(ctx, user.id, [role]);
         const result = await service(() =>
@@ -285,7 +308,11 @@ export const userCommands: CommandSpec[] = [
     ],
     needs: 'installed',
     async run(ctx) {
-      await ctx.require('delete_users', undefined, `${ctx.user?.login} isn’t allowed to delete users.`);
+      await ctx.require(
+        'delete_users',
+        undefined,
+        `${ctx.user?.login} isn’t allowed to delete users.`,
+      );
       const reassignFlag = ctx.string('reassign');
       const reassign = reassignFlag ? (await findUserRow(ctx.kernel, reassignFlag)).id : null;
       const users = [];
@@ -301,7 +328,9 @@ export const userCommands: CommandSpec[] = [
           await deleteUser(ctx.kernel, user.id, reassign);
         });
         ctx.success(
-          reassign ? `Deleted user ${user.id}; their content now belongs to user ${reassign}.` : `Deleted user ${user.id}.`,
+          reassign
+            ? `Deleted user ${user.id}; their content now belongs to user ${reassign}.`
+            : `Deleted user ${user.id}.`,
         );
       }
     },
@@ -332,12 +361,21 @@ export const userCommands: CommandSpec[] = [
       'show-password': 'Print the new password.',
       porcelain: 'Print only the new password.',
     },
-    examples: [['pressbase user reset-password sam --skip-email --show-password', 'Reset and show a password']],
+    examples: [
+      [
+        'pressbase user reset-password sam --skip-email --show-password',
+        'Reset and show a password',
+      ],
+    ],
     needs: 'installed',
     async run(ctx) {
       for (const value of ctx.args) {
         const user = await findUserRow(ctx.kernel, value);
-        await ctx.require('edit_user', user.id, `${ctx.user?.login} isn’t allowed to edit ${user.login}.`);
+        await ctx.require(
+          'edit_user',
+          user.id,
+          `${ctx.user?.login} isn’t allowed to edit ${user.login}.`,
+        );
         const password = generatePassword();
         const result = await service(() => updateUser(ctx.kernel, user.id, { password }));
         await destroyUserSessions(ctx.kernel, user.id);
@@ -361,11 +399,20 @@ export const userCommands: CommandSpec[] = [
       'app-id': 'An optional UUID identifying the application.',
       porcelain: 'Print only the password.',
     },
-    examples: [['pressbase user application-password create admin "Deploy script" --porcelain', 'Create one for a script']],
+    examples: [
+      [
+        'pressbase user application-password create admin "Deploy script" --porcelain',
+        'Create one for a script',
+      ],
+    ],
     needs: 'installed',
     async run(ctx) {
       const user = await findUserRow(ctx.kernel, ctx.args[0] ?? '');
-      await ctx.require('edit_user', user.id, `${ctx.user?.login} isn’t allowed to edit ${user.login}.`);
+      await ctx.require(
+        'edit_user',
+        user.id,
+        `${ctx.user?.login} isn’t allowed to edit ${user.login}.`,
+      );
       if (!(await applicationPasswordsAvailable(ctx.kernel, user.id))) {
         ctx.error(`Application passwords are turned off for ${user.login} on this site.`);
       }
@@ -392,7 +439,11 @@ export const userCommands: CommandSpec[] = [
     needs: 'installed',
     async run(ctx) {
       const user = await findUserRow(ctx.kernel, ctx.args[0] ?? '');
-      await ctx.require('edit_user', user.id, `${ctx.user?.login} isn’t allowed to edit ${user.login}.`);
+      await ctx.require(
+        'edit_user',
+        user.id,
+        `${ctx.user?.login} isn’t allowed to edit ${user.login}.`,
+      );
       const name = ctx.string('name');
       const items = (await listApplicationPasswords(ctx.kernel, user.id))
         .filter((p) => name === undefined || p.name === name)
@@ -418,7 +469,9 @@ export const userCommands: CommandSpec[] = [
       uuid: 'The passwords’ UUIDs (see “pressbase user application-password list”).',
       all: 'Delete all of the user’s application passwords.',
     },
-    examples: [['pressbase user application-password delete admin --all --yes', 'Delete all of them']],
+    examples: [
+      ['pressbase user application-password delete admin --all --yes', 'Delete all of them'],
+    ],
     needs: 'installed',
     async run(ctx) {
       const [value = '', ...uuids] = ctx.args;

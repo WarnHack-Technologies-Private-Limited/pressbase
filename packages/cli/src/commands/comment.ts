@@ -78,12 +78,19 @@ export const commentCommands: CommandSpec[] = [
     choices: { status: ['all', 'approve', 'hold', 'spam', 'trash', 'any'] },
     defaults: { status: 'all' },
     examples: [
-      ['pressbase comment list --status=hold --fields=comment_ID,comment_author', 'List comments waiting for moderation'],
+      [
+        'pressbase comment list --status=hold --fields=comment_ID,comment_author',
+        'List comments waiting for moderation',
+      ],
       ['pressbase comment list --status=spam --format=ids', 'IDs of spam comments'],
     ],
     needs: 'installed',
     async run(ctx) {
-      await ctx.require('moderate_comments', undefined, `${ctx.user?.login} isn’t allowed to moderate comments.`);
+      await ctx.require(
+        'moderate_comments',
+        undefined,
+        `${ctx.user?.login} isn’t allowed to moderate comments.`,
+      );
       const postId = ctx.int('post_id');
       const { comments } = await ctx.kernel.comments.query({
         status: ctx.string('status') ?? 'all',
@@ -140,7 +147,10 @@ export const commentCommands: CommandSpec[] = [
     },
     examples: [
       ['pressbase comment delete 9', 'Move a comment to the Trash'],
-      ['pressbase comment delete $(pressbase comment list --status=spam --format=ids) --force --yes', 'Delete all spam'],
+      [
+        'pressbase comment delete $(pressbase comment list --status=spam --format=ids) --force --yes',
+        'Delete all spam',
+      ],
     ],
     needs: 'installed',
     async run(ctx) {
@@ -157,7 +167,9 @@ export const commentCommands: CommandSpec[] = [
           await service(() => ctx.kernel.comments.delete(comment.id));
           ctx.success(`Deleted comment ${comment.id}.`);
         } else if (comment.approved === 'trash') {
-          ctx.warning(`Comment ${comment.id} is already in the Trash. Add --force to delete it permanently.`);
+          ctx.warning(
+            `Comment ${comment.id} is already in the Trash. Add --force to delete it permanently.`,
+          );
           failed += 1;
         } else {
           await service(() => ctx.kernel.comments.trash(comment.id));

@@ -27,10 +27,12 @@ const INSTALL = [
 describe('configuration', () => {
   it('resolves the data folder as core does, with --data-dir winning', async () => {
     const cwd = await tempDir();
-    expect((await resolveConfig({}, { cwd, dataDir: 'site' })).dataDir).toBe(path.join(cwd, 'site'));
-    expect(
-      (await resolveConfig({ PRESSBASE_DATA_DIR: 'other' }, { cwd })).dataDir,
-    ).toBe(path.join(cwd, 'other'));
+    expect((await resolveConfig({}, { cwd, dataDir: 'site' })).dataDir).toBe(
+      path.join(cwd, 'site'),
+    );
+    expect((await resolveConfig({ PRESSBASE_DATA_DIR: 'other' }, { cwd })).dataDir).toBe(
+      path.join(cwd, 'other'),
+    );
     // Without either: core's own default, .pressbase in apps/core.
     expect((await resolveConfig({}, { cwd })).dataDir).toMatch(/apps[\\/]core[\\/]\.pressbase$/);
   });
@@ -40,7 +42,9 @@ describe('configuration', () => {
     await writeFile(path.join(dir, 'config.json'), JSON.stringify({ databaseUrl: 'pglite:/x' }));
     expect((await resolveConfig({}, { cwd: dir, dataDir: dir })).databaseUrl).toBe('pglite:/x');
     const env = { DATABASE_URL: 'postgres://u:p@db/site' };
-    expect((await resolveConfig(env, { cwd: dir, dataDir: dir })).databaseUrl).toBe(env.DATABASE_URL);
+    expect((await resolveConfig(env, { cwd: dir, dataDir: dir })).databaseUrl).toBe(
+      env.DATABASE_URL,
+    );
   });
 });
 
@@ -58,11 +62,24 @@ describe('core and db commands', () => {
     expect(check.code).toBe(1);
     expect(check.stderr).toMatch(/No database is set up/);
 
-    const missing = await run(['core', 'install', '--url=http://localhost:4510', '--title=T', '--admin_user=admin', '--admin_email=admin@example.com'], { env });
+    const missing = await run(
+      [
+        'core',
+        'install',
+        '--url=http://localhost:4510',
+        '--title=T',
+        '--admin_user=admin',
+        '--admin_email=admin@example.com',
+      ],
+      { env },
+    );
     expect(missing.code).toBe(1);
     expect(missing.stderr).toMatch(/--database-url=postgres:\/\/… or --builtin-database/);
 
-    const invalid = await run([...INSTALL.slice(0, -2), '--admin_email=nope', '--admin_password=a long passphrase'], { env });
+    const invalid = await run(
+      [...INSTALL.slice(0, -2), '--admin_email=nope', '--admin_password=a long passphrase'],
+      { env },
+    );
     expect(invalid.code).toBe(1);
     expect(invalid.stderr).toBe('Error: --admin_email: Enter a valid email address.\n');
 
@@ -108,7 +125,9 @@ describe('core and db commands', () => {
     const dir = await tempDir();
     const result = await run(['post', 'list'], { env: { PRESSBASE_DATA_DIR: dir } });
     expect(result.code).toBe(1);
-    expect(result.stderr).toMatch(/^Error: No database is set up for the site in .+ Run “pressbase core install”/);
+    expect(result.stderr).toMatch(
+      /^Error: No database is set up for the site in .+ Run “pressbase core install”/,
+    );
   });
 });
 
@@ -124,9 +143,18 @@ describe('the built-in database lock', () => {
       const lock = path.join(dir, 'db.lock');
       await writeFile(
         lock,
-        JSON.stringify({ pid: server.pid, hostname: hostname(), process: 'the Pressbase server', since: new Date().toISOString() }),
+        JSON.stringify({
+          pid: server.pid,
+          hostname: hostname(),
+          process: 'the Pressbase server',
+          since: new Date().toISOString(),
+        }),
       );
-      for (const argv of [['post', 'list'], ['db', 'check'], ['db', 'migrate']]) {
+      for (const argv of [
+        ['post', 'list'],
+        ['db', 'check'],
+        ['db', 'migrate'],
+      ]) {
         const result = await run(argv, { env });
         expect(result.code).toBe(1);
         expect(result.stderr).toBe(
@@ -153,7 +181,10 @@ describe('help and errors', () => {
     const group = await run(['post']);
     expect(group.stdout).toMatch(/pressbase post <command>[\s\S]+list\s+Lists posts\./);
 
-    for (const argv of [['post', 'list', '--help'], ['help', 'post', 'list']]) {
+    for (const argv of [
+      ['post', 'list', '--help'],
+      ['help', 'post', 'list'],
+    ]) {
       const help = await run(argv);
       expect(help.code).toBe(0);
       expect(help.stdout).toMatch(/^NAME\n\n {2}pressbase post list\n/);
@@ -163,17 +194,25 @@ describe('help and errors', () => {
   });
 
   it('exits with 1 and says what to do next', async () => {
-    expect(await run(['nonsense'], { env: { PRESSBASE_DATA_DIR: await tempDir() } })).toMatchObject({
-      code: 1,
-      stderr: expect.stringMatching(/“nonsense” isn’t a pressbase command\. See “pressbase help”/),
-    });
+    expect(await run(['nonsense'], { env: { PRESSBASE_DATA_DIR: await tempDir() } })).toMatchObject(
+      {
+        code: 1,
+        stderr: expect.stringMatching(
+          /“nonsense” isn’t a pressbase command\. See “pressbase help”/,
+        ),
+      },
+    );
     expect(await run(['post', 'frobnicate'])).toMatchObject({
       code: 1,
       stderr: expect.stringMatching(/“pressbase post” has no command “frobnicate”/),
     });
     expect(await run(['core', 'version', '--colour'])).toMatchObject({
       code: 1,
-      stderr: '--colour isn’t an option of “pressbase core version”. See “pressbase help core version”.\n'.replace(/^/, 'Error: '),
+      stderr:
+        '--colour isn’t an option of “pressbase core version”. See “pressbase help core version”.\n'.replace(
+          /^/,
+          'Error: ',
+        ),
     });
   });
 });

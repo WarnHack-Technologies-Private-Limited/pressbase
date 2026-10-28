@@ -18,7 +18,7 @@ import { z } from 'zod';
 import { resolveCapabilities } from '../auth/capabilities';
 import { currentUserCan } from '../auth/meta-caps';
 import { SESSION_COOKIE } from '../auth/sessions';
-import { type CurrentUser, userCan } from '../auth/users';
+import { userCan } from '../auth/users';
 import { type AppEnv, invalidParams, readJson, restError } from '../http';
 import type { Kernel } from '../kernel';
 import {
@@ -28,7 +28,6 @@ import {
 } from '../people/password-reset';
 import { parseUserMetaUpdate, registeredUserMetaKeys, restUserMeta } from '../people/user-meta';
 import {
-  administratorIds,
   checkRoleChange,
   checkUserDeletion,
   countPostsByUsers,

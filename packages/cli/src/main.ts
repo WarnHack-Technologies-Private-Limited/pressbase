@@ -221,7 +221,9 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
       const kernel = await boot();
       if (kernel.state === 'ready') spec = pluginSpec(kernel, words.join(' '));
       if (!spec) {
-        throw new CliError(`“${top}” isn’t a pressbase command. See “pressbase help” for the list.`);
+        throw new CliError(
+          `“${top}” isn’t a pressbase command. See “pressbase help” for the list.`,
+        );
       }
     }
 
@@ -238,7 +240,8 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
       const kernel = await boot();
       if (spec.needs === 'installed') requireInstalled(kernel);
       if (typeof assoc.user === 'string') session.user = await resolveUser(kernel, assoc.user);
-      else if (assoc.user !== undefined) throw new CliError('--user needs a value: --user=<login>.');
+      else if (assoc.user !== undefined)
+        throw new CliError('--user needs a value: --user=<login>.');
     }
 
     await spec.run(new Context(spec, args, assoc, session));

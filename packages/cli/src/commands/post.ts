@@ -112,7 +112,17 @@ const QUERY_ARGS: Record<string, (ctx: Context, key: string, args: QueryArgs) =>
   },
   orderby: (ctx, key, a) => {
     const value = (ctx.string(key) ?? 'date').replace(/^ID$/, 'id');
-    const allowed = ['date', 'modified', 'title', 'name', 'id', 'author', 'parent', 'menu_order', 'comment_count'];
+    const allowed = [
+      'date',
+      'modified',
+      'title',
+      'name',
+      'id',
+      'author',
+      'parent',
+      'menu_order',
+      'comment_count',
+    ];
     if (!allowed.includes(value)) ctx.error(`--orderby can be ${allowed.join(', ')}.`);
     a.orderby = value as OrderBy;
   },
@@ -186,11 +196,20 @@ async function toInput(
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     const field = String(issue?.path[0] ?? '');
-    const flag = field === 'content' || field === 'title' || field === 'excerpt' || field === 'status' || field === 'password' || field === 'author' || field === 'parent' || field === 'date' || field === 'date_gmt'
-      ? `post_${field}`
-      : field === 'slug'
-        ? 'post_name'
-        : field;
+    const flag =
+      field === 'content' ||
+      field === 'title' ||
+      field === 'excerpt' ||
+      field === 'status' ||
+      field === 'password' ||
+      field === 'author' ||
+      field === 'parent' ||
+      field === 'date' ||
+      field === 'date_gmt'
+        ? `post_${field}`
+        : field === 'slug'
+          ? 'post_name'
+          : field;
     ctx.error(`--${flag}: ${issue?.message ?? 'This value isn’t valid.'}`);
   }
   const data = parsed.data;
@@ -199,11 +218,25 @@ async function toInput(
   const user = ctx.user;
   if (user) {
     if (data.author !== undefined && data.author !== (existing?.authorId ?? user.id)) {
-      await ctx.require(postType.cap.edit_others_posts, undefined, `${user.login} isn’t allowed to post as someone else.`);
+      await ctx.require(
+        postType.cap.edit_others_posts,
+        undefined,
+        `${user.login} isn’t allowed to post as someone else.`,
+      );
     }
     if (data.status && ['publish', 'future', 'private'].includes(data.status)) {
-      if (existing) await ctx.require('publish_post', existing.id, `${user.login} isn’t allowed to publish this.`);
-      else await ctx.require(postType.cap.publish_posts, undefined, `${user.login} isn’t allowed to publish ${postType.label.toLowerCase()}.`);
+      if (existing)
+        await ctx.require(
+          'publish_post',
+          existing.id,
+          `${user.login} isn’t allowed to publish this.`,
+        );
+      else
+        await ctx.require(
+          postType.cap.publish_posts,
+          undefined,
+          `${user.login} isn’t allowed to publish ${postType.label.toLowerCase()}.`,
+        );
     }
   }
   if (data.author !== undefined) {
@@ -231,7 +264,8 @@ async function toInput(
         ? await kernel.terms.get('category', Number(value))
         : (await kernel.terms.list('category', { slug: [value], perPage: 1 })).terms[0];
       if (!term) ctx.error(`There’s no category “${value}”.`);
-      if (!(await ctx.can('assign_term', term.id))) ctx.error(`${user?.login} isn’t allowed to assign “${term.name}”.`);
+      if (!(await ctx.can('assign_term', term.id)))
+        ctx.error(`${user?.login} isn’t allowed to assign “${term.name}”.`);
       ids.push(term.id);
     }
     terms.category = ids;
@@ -277,18 +311,24 @@ async function toInput(
 async function setTags(ctx: Context, postId: number, names: string[]) {
   const ids: number[] = [];
   for (const name of names) {
-    const found = (await ctx.kernel.terms.list('post_tag', { search: name, perPage: 100 })).terms.find(
-      (t) => t.name.toLowerCase() === name.toLowerCase(),
-    );
+    const found = (
+      await ctx.kernel.terms.list('post_tag', { search: name, perPage: 100 })
+    ).terms.find((t) => t.name.toLowerCase() === name.toLowerCase());
     const term = found ?? (await service(() => ctx.kernel.terms.insert('post_tag', { name })));
     ids.push(term.id);
   }
   await ctx.kernel.terms.setObjectTerms(postId, 'post_tag', ids);
 }
 
-async function afterWrite(ctx: Context, post: Post, meta?: Record<string, unknown>, tags?: string[]) {
+async function afterWrite(
+  ctx: Context,
+  post: Post,
+  meta?: Record<string, unknown>,
+  tags?: string[],
+) {
   if (tags) await setTags(ctx, post.id, tags);
-  for (const [key, value] of Object.entries(meta ?? {})) await setMeta(ctx.kernel, post.id, key, value);
+  for (const [key, value] of Object.entries(meta ?? {}))
+    await setMeta(ctx.kernel, post.id, key, value);
 }
 
 /** `<file>` or `-` for the content, as wp-cli reads it. */
@@ -307,7 +347,8 @@ export const postCommands: CommandSpec[] = [
       '<field>':
         'WP_Query arguments: posts_per_page, paged, offset, s, author, author__in, author__not_in, post__in, post__not_in, name, post_parent, post_mime_type, menu_order, has_password, orderby, order.',
       post_type: 'One or more post types, comma-separated, or any.',
-      post_status: 'One or more statuses, comma-separated, or any (everything but trash and auto-drafts).',
+      post_status:
+        'One or more statuses, comma-separated, or any (everything but trash and auto-drafts).',
     },
     defaults: { post_type: 'post', post_status: 'any' },
     examples: [
@@ -320,20 +361,48 @@ export const postCommands: CommandSpec[] = [
       const kernel = ctx.kernel;
       const types = ctx.list('post_type') ?? ['post'];
       for (const type of types) {
-        if (type !== 'any' && !kernel.postTypes.get(type)) ctx.error(`There’s no post type “${type}”.`);
+        if (type !== 'any' && !kernel.postTypes.get(type))
+          ctx.error(`There’s no post type “${type}”.`);
       }
       const statuses = ctx.list('post_status') ?? ['any'];
-      const args: QueryArgs = { post_type: types, post_status: statuses, posts_per_page: -1, orderby: 'date', order: 'DESC' };
+      const args: QueryArgs = {
+        post_type: types,
+        post_status: statuses,
+        posts_per_page: -1,
+        orderby: 'date',
+        order: 'DESC',
+      };
       for (const key of Object.keys(ctx.assoc)) {
-        if (['post_type', 'post_status', 'format', 'fields', 'field', 'user', 'quiet', 'yes', 'data-dir', 'debug'].includes(key)) continue;
+        if (
+          [
+            'post_type',
+            'post_status',
+            'format',
+            'fields',
+            'field',
+            'user',
+            'quiet',
+            'yes',
+            'data-dir',
+            'debug',
+          ].includes(key)
+        )
+          continue;
         const apply = QUERY_ARGS[key];
-        if (!apply) return ctx.error(`--${key} isn’t a query argument “pressbase post list” understands. See “pressbase help post list”.`);
+        if (!apply)
+          return ctx.error(
+            `--${key} isn’t a query argument “pressbase post list” understands. See “pressbase help post list”.`,
+          );
         apply(ctx, key, args);
       }
       if (ctx.user && statuses.some((s) => s !== 'publish')) {
         for (const type of types.filter((t) => t !== 'any')) {
           const cap = kernel.postTypes.get(type)?.cap.edit_posts ?? 'edit_posts';
-          await ctx.require(cap, undefined, `${ctx.user.login} can only list published posts. Add --post_status=publish.`);
+          await ctx.require(
+            cap,
+            undefined,
+            `${ctx.user.login} can only list published posts. Add --post_status=publish.`,
+          );
         }
       }
       const result = await queryPosts(kernel, args);
@@ -362,7 +431,12 @@ export const postCommands: CommandSpec[] = [
     async run(ctx) {
       const [id] = ctx.positionalIds();
       const post = await loadPost(ctx, id as number);
-      if (post.status !== 'publish') await ctx.require('read_post', post.id, `${ctx.user?.login} isn’t allowed to read this post.`);
+      if (post.status !== 'publish')
+        await ctx.require(
+          'read_post',
+          post.id,
+          `${ctx.user?.login} isn’t allowed to read this post.`,
+        );
       ctx.formatItem(toRow(post, await siteTimeZone(ctx.kernel)), FIELDS, { all: FIELDS });
     },
   },
@@ -378,22 +452,38 @@ export const postCommands: CommandSpec[] = [
       post_category: 'Category IDs or slugs, comma-separated.',
       tags_input: 'Tag names, comma-separated; missing tags are created.',
       meta_input: 'Post meta as a JSON object.',
-      post_date: 'In the site’s time zone: 2026-10-28 13:45:00. A future date with publish schedules the post.',
+      post_date:
+        'In the site’s time zone: 2026-10-28 13:45:00. A future date with publish schedules the post.',
       porcelain: 'Print only the new post’s ID.',
     },
     defaults: { post_type: 'post' },
     examples: [
       ['pressbase post create --post_title="Launch notes" --post_status=publish', 'Publish a post'],
-      ['pressbase post create ./draft.html --post_title="From a file"', 'Create a draft from a file'],
-      ['cat body.html | pressbase post create - --post_type=page --post_title=About --porcelain', 'Create a page from standard input'],
+      [
+        'pressbase post create ./draft.html --post_title="From a file"',
+        'Create a draft from a file',
+      ],
+      [
+        'cat body.html | pressbase post create - --post_type=page --post_title=About --porcelain',
+        'Create a page from standard input',
+      ],
     ],
     needs: 'installed',
     async run(ctx) {
       const type = ctx.string('post_type') ?? 'post';
       const postType = ctx.kernel.postTypes.get(type);
       if (!postType) return ctx.error(`There’s no post type “${type}”.`);
-      await ctx.require(postType.cap.create_posts, undefined, `${ctx.user?.login} isn’t allowed to create ${postType.label.toLowerCase()}.`);
-      const { input, meta, tags } = await toInput(ctx, type, await contentFrom(ctx, ctx.args[0]), undefined);
+      await ctx.require(
+        postType.cap.create_posts,
+        undefined,
+        `${ctx.user?.login} isn’t allowed to create ${postType.label.toLowerCase()}.`,
+      );
+      const { input, meta, tags } = await toInput(
+        ctx,
+        type,
+        await contentFrom(ctx, ctx.args[0]),
+        undefined,
+      );
       const post = await service(() => ctx.kernel.posts.insert(type, input));
       await afterWrite(ctx, post, meta, tags);
       if (ctx.flag('porcelain')) ctx.line(String(post.id));
@@ -431,7 +521,8 @@ export const postCommands: CommandSpec[] = [
         const existing = await loadPost(ctx, id);
         await ctx.require('edit_post', id, `${ctx.user?.login} isn’t allowed to edit post ${id}.`);
         const { input, meta, tags } = await toInput(ctx, existing.type, content, existing);
-        if (existing.status === 'trash' && input.status) await service(() => ctx.kernel.posts.untrash(id));
+        if (existing.status === 'trash' && input.status)
+          await service(() => ctx.kernel.posts.untrash(id));
         const post = await service(() => ctx.kernel.posts.update(id, input));
         await afterWrite(ctx, post, meta, tags);
         ctx.success(`Updated post ${id}.`);
@@ -448,7 +539,10 @@ export const postCommands: CommandSpec[] = [
     },
     examples: [
       ['pressbase post delete 12', 'Move a post to the Trash'],
-      ['pressbase post delete $(pressbase post list --post_status=trash --format=ids) --force --yes', 'Empty the Trash'],
+      [
+        'pressbase post delete $(pressbase post list --post_status=trash --format=ids) --force --yes',
+        'Empty the Trash',
+      ],
     ],
     needs: 'installed',
     async run(ctx) {
@@ -457,14 +551,23 @@ export const postCommands: CommandSpec[] = [
       const posts: Post[] = [];
       for (const id of ids) {
         posts.push(await loadPost(ctx, id));
-        await ctx.require('delete_post', id, `${ctx.user?.login} isn’t allowed to delete post ${id}.`);
+        await ctx.require(
+          'delete_post',
+          id,
+          `${ctx.user?.login} isn’t allowed to delete post ${id}.`,
+        );
       }
-      if (force) await ctx.confirm(`Permanently delete ${posts.length === 1 ? `post ${ids[0]}` : `${posts.length} posts`}? This can’t be undone.`);
+      if (force)
+        await ctx.confirm(
+          `Permanently delete ${posts.length === 1 ? `post ${ids[0]}` : `${posts.length} posts`}? This can’t be undone.`,
+        );
       let failed = 0;
       for (const post of posts) {
         if (!force && post.type !== 'attachment') {
           if (post.status === 'trash') {
-            ctx.warning(`Post ${post.id} is already in the Trash. Add --force to delete it permanently.`);
+            ctx.warning(
+              `Post ${post.id} is already in the Trash. Add --force to delete it permanently.`,
+            );
             failed += 1;
             continue;
           }
@@ -473,7 +576,9 @@ export const postCommands: CommandSpec[] = [
           continue;
         }
         if (!force) {
-          ctx.warning(`Post ${post.id} is an attachment, which has no Trash. Add --force to delete it.`);
+          ctx.warning(
+            `Post ${post.id} is an attachment, which has no Trash. Add --force to delete it.`,
+          );
           failed += 1;
           continue;
         }
@@ -481,7 +586,10 @@ export const postCommands: CommandSpec[] = [
         else await service(() => ctx.kernel.posts.delete(post.id));
         const sticky = await ctx.kernel.options.get<number[]>('sticky_posts', []);
         if (sticky.includes(post.id)) {
-          await ctx.kernel.options.set('sticky_posts', sticky.filter((id) => id !== post.id));
+          await ctx.kernel.options.set(
+            'sticky_posts',
+            sticky.filter((id) => id !== post.id),
+          );
         }
         ctx.success(`Deleted post ${post.id}.`);
       }

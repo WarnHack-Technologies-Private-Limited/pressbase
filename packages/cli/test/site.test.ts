@@ -1,5 +1,5 @@
-import { createServer } from 'node:http';
 import { mkdir, writeFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
 import path from 'node:path';
 import { PURGE_ACTION } from '@pressbase/core/src/cache/invalidation';
 import { createZip } from '@pressbase/core/src/plugins/zip';
@@ -9,7 +9,13 @@ import { site } from './helpers';
 /** plugin, theme, cache, rewrite and cron commands, and plugins' own commands. */
 
 const PLUGIN = (slug: string, extra: Record<string, unknown> = {}) =>
-  JSON.stringify({ name: slug, title: 'Reading Time', version: '0.1.0', main: 'index.js', ...extra });
+  JSON.stringify({
+    name: slug,
+    title: 'Reading Time',
+    version: '0.1.0',
+    main: 'index.js',
+    ...extra,
+  });
 
 const INDEX = `
 export default function register(api) {
@@ -30,7 +36,10 @@ describe('plugin', () => {
   it('installs, activates, deactivates and deletes through the plugin manager', async () => {
     const s = await site();
     const zip = createZip([
-      { name: 'reading-time/plugin.json', data: PLUGIN('reading-time', { permissions: ['options'] }) },
+      {
+        name: 'reading-time/plugin.json',
+        data: PLUGIN('reading-time', { permissions: ['options'] }),
+      },
       { name: 'reading-time/index.js', data: INDEX },
     ]);
     await writeFile(path.join(s.dataDir, 'reading-time.zip'), zip);
@@ -38,7 +47,9 @@ describe('plugin', () => {
     expect(await s.ok(['plugin', 'install', 'reading-time.zip'])).toBe(
       'Installed Reading Time 0.1.0 (reading-time).\nSuccess: Installed 1 of 1 plugins.\n',
     );
-    expect((await s.cli(['plugin', 'install', 'reading-time.zip'])).stderr).toMatch(/already installed/);
+    expect((await s.cli(['plugin', 'install', 'reading-time.zip'])).stderr).toMatch(
+      /already installed/,
+    );
     expect(await s.ok(['plugin', 'list', '--fields=name,status,source', '--format=csv'])).toBe(
       'name,status,source\ndaily-tips,inactive,bundled\nreading-time,inactive,site\n',
     );
@@ -51,52 +62,82 @@ describe('plugin', () => {
     );
     expect(await s.kernel.options.get('reading_time_activated')).toBe(true);
     expect((await s.kernel.plugins.grants())['reading-time']?.permissions).toEqual(['options']);
-    expect(await s.ok(['plugin', 'status'])).toMatch(/ {2}I daily-tips\s+1\.1\.0\n {2}A reading-time\s+0\.1\.0/);
-    expect(await s.ok(['plugin', 'status', 'reading-time'])).toMatch(/Status: Active\n {4}Version: 0\.1\.0/);
+    expect(await s.ok(['plugin', 'status'])).toMatch(
+      / {2}I daily-tips\s+1\.1\.0\n {2}A reading-time\s+0\.1\.0/,
+    );
+    expect(await s.ok(['plugin', 'status', 'reading-time'])).toMatch(
+      /Status: Active\n {4}Version: 0\.1\.0/,
+    );
 
     // Its command is there while it's active.
-    const post = (await s.ok(['post', 'create', '--post_content=one two three four', '--porcelain'])).trim();
+    const post = (
+      await s.ok(['post', 'create', '--post_content=one two three four', '--porcelain'])
+    ).trim();
     expect(await s.ok(['reading-time', 'estimate', post, '--wpm=2', '--user=admin'])).toBe(
       'Success: 2 minute read (as admin).\n',
     );
-    expect(await s.ok(['reading-time', 'estimate', post, '--format=json'])).toBe(`[{"ID":${post},"minutes":1}]\n`);
+    expect(await s.ok(['reading-time', 'estimate', post, '--format=json'])).toBe(
+      `[{"ID":${post},"minutes":1}]\n`,
+    );
     expect((await s.cli(['reading-time', 'estimate'])).stderr).toMatch(/Give <id>/);
-    expect(await s.ok(['help', 'reading-time', 'estimate'])).toMatch(/Estimates a post’s reading time\./);
-    expect(await s.ok([])).toMatch(/PLUGIN COMMANDS\n\n {2}reading-time estimate\s+Estimates a post’s reading time\. \(reading-time\)/);
+    expect(await s.ok(['help', 'reading-time', 'estimate'])).toMatch(
+      /Estimates a post’s reading time\./,
+    );
+    expect(await s.ok([])).toMatch(
+      /PLUGIN COMMANDS\n\n {2}reading-time estimate\s+Estimates a post’s reading time\. \(reading-time\)/,
+    );
 
     const active = await s.cli(['plugin', 'delete', 'reading-time', '--yes']);
-    expect(active).toMatchObject({ code: 1, stderr: expect.stringMatching(/deactivate it first/i) });
+    expect(active).toMatchObject({
+      code: 1,
+      stderr: expect.stringMatching(/deactivate it first/i),
+    });
     expect(await s.ok(['plugin', 'deactivate', 'reading-time'])).toBe(
       "Plugin 'reading-time' deactivated.\nSuccess: Deactivated 1 of 1 plugins.\n",
     );
-    expect((await s.cli(['reading-time', 'estimate', post])).stderr).toMatch(/isn’t a pressbase command/);
+    expect((await s.cli(['reading-time', 'estimate', post])).stderr).toMatch(
+      /isn’t a pressbase command/,
+    );
     expect(await s.ok(['plugin', 'delete', 'reading-time', '--yes'])).toBe(
       "Deleted 'reading-time' plugin.\nSuccess: Deleted 1 of 1 plugins.\n",
     );
     expect(await s.kernel.options.get('reading_time_activated')).toBeUndefined();
-    expect((await s.cli(['plugin', 'delete', 'daily-tips', '--yes'])).stderr).toMatch(/ships with Pressbase/);
+    expect((await s.cli(['plugin', 'delete', 'daily-tips', '--yes'])).stderr).toMatch(
+      /ships with Pressbase/,
+    );
   });
 
   it('checks capabilities and reports failures with a non-zero exit', async () => {
     const s = await site();
     await s.loginAs('ed', 'editor');
-    expect((await s.cli(['plugin', 'list', '--user=ed'])).stderr).toBe('Error: ed isn’t allowed to manage plugins.\n');
-    expect((await s.cli(['plugin', 'activate', 'nope'])).stderr).toMatch(/There’s no plugin “nope”/);
+    expect((await s.cli(['plugin', 'list', '--user=ed'])).stderr).toBe(
+      'Error: ed isn’t allowed to manage plugins.\n',
+    );
+    expect((await s.cli(['plugin', 'activate', 'nope'])).stderr).toMatch(
+      /There’s no plugin “nope”/,
+    );
 
     const dir = path.join(s.dataDir, 'plugins', 'broken');
     await mkdir(dir, { recursive: true });
     await writeFile(path.join(dir, 'plugin.json'), PLUGIN('broken', { title: 'Broken' }));
-    await writeFile(path.join(dir, 'index.js'), 'export default () => { throw new Error("Boom."); };');
+    await writeFile(
+      path.join(dir, 'index.js'),
+      'export default () => { throw new Error("Boom."); };',
+    );
     const failed = await s.cli(['plugin', 'activate', 'broken']);
     expect(failed.code).toBe(1);
-    expect(failed.stderr).toMatch(/Warning: Broken could not be activated: Boom\.\nError: Activated 0 of 1 plugins\./);
+    expect(failed.stderr).toMatch(
+      /Warning: Broken could not be activated: Boom\.\nError: Activated 0 of 1 plugins\./,
+    );
   });
 });
 
 describe('theme and rewrite', () => {
   it('lists and activates themes, and sets the permalink structure', async () => {
     const s = await site();
-    expect(await s.ok(['theme', 'list', '--format=json'])).toMatch(/"name":"twentytwentyfive","status":"active"/);
+    expect(await s.ok(['theme', 'list', '--format=json'])).toMatch(
+      /"name":"twentytwentyfive","status":"active"/,
+    );
     expect(await s.ok(['theme', 'activate', 'twentytwentyfive'])).toBe('');
     expect((await s.cli(['theme', 'activate', 'nope'])).stderr).toMatch(/There’s no theme “nope”/);
 
@@ -106,7 +147,9 @@ describe('theme and rewrite', () => {
     expect(await s.kernel.options.get('permalink_structure')).toBe('/%postname%/');
     expect(await s.kernel.options.get('category_base')).toBe('/topics');
     const clash = await s.cli(['rewrite', 'structure', '/%postname%/', '--tag-base=topics']);
-    expect(clash.stderr).toMatch(/--tag-base: The category base and the tag base must be different\./);
+    expect(clash.stderr).toMatch(
+      /--tag-base: The category base and the tag base must be different\./,
+    );
     const bad = await s.cli(['rewrite', 'structure', '/%nonsense%/']);
     expect(bad.code).toBe(1);
   });
@@ -126,7 +169,9 @@ describe('cache flush', () => {
     await new Promise<void>((resolve) => server.listen(4510, '127.0.0.1', resolve));
     try {
       const s = await site({ revalidate: { urls: ['http://127.0.0.1:4510'], secret: 's3cret' } });
-      expect(await s.ok(['cache', 'flush'])).toBe('Success: Flushed the public site’s page cache.\n');
+      expect(await s.ok(['cache', 'flush'])).toBe(
+        'Success: Flushed the public site’s page cache.\n',
+      );
       expect(received).toEqual([{ auth: 'Bearer s3cret', body: '{"tags":["site"]}' }]);
 
       // Content changes made from the command line purge too, as the server's do.
@@ -144,29 +189,41 @@ describe('cache flush', () => {
     const down = await site({ revalidate: { urls: ['http://127.0.0.1:9'], secret: 'x' } });
     const failed = await down.cli(['cache', 'flush']);
     expect(failed.code).toBe(1);
-    expect(failed.stderr).toMatch(/Error: The page cache couldn’t be flushed\. Check that the public site is running/);
+    expect(failed.stderr).toMatch(
+      /Error: The page cache couldn’t be flushed\. Check that the public site is running/,
+    );
   });
 });
 
 describe('cron', () => {
   it('lists, runs and deletes events', async () => {
     const s = await site();
-    const events = JSON.parse(await s.ok(['cron', 'event', 'list', '--fields=hook,recurrence', '--format=json']));
+    const events = JSON.parse(
+      await s.ok(['cron', 'event', 'list', '--fields=hook,recurrence', '--format=json']),
+    );
     expect(events).toEqual(
       expect.arrayContaining([
         { hook: 'pressbase_delete_expired_sessions', recurrence: '1 day' },
         { hook: 'pressbase_prune_jobs', recurrence: '1 day' },
       ]),
     );
-    expect(await s.ok(['cron', 'schedule', 'list', '--field=name'])).toBe('hourly\ntwicedaily\ndaily\nweekly\n');
+    expect(await s.ok(['cron', 'schedule', 'list', '--field=name'])).toBe(
+      'hourly\ntwicedaily\ndaily\nweekly\n',
+    );
 
     const ran: unknown[][] = [];
     s.kernel.hooks.addAction('cli_test_event', (...args: unknown[]) => {
       ran.push(args);
     });
-    await s.kernel.cron.scheduleSingleEvent(Math.floor(Date.now() / 1000) + 3600, 'cli_test_event', ['x']);
+    await s.kernel.cron.scheduleSingleEvent(
+      Math.floor(Date.now() / 1000) + 3600,
+      'cli_test_event',
+      ['x'],
+    );
     const run = await s.ok(['cron', 'event', 'run', 'cli_test_event']);
-    expect(run).toMatch(/^Executed the cron event 'cli_test_event' in \d+\.\d{3}s\.\nSuccess: Executed a total of 1 cron event\.\n$/);
+    expect(run).toMatch(
+      /^Executed the cron event 'cli_test_event' in \d+\.\d{3}s\.\nSuccess: Executed a total of 1 cron event\.\n$/,
+    );
     expect(ran).toEqual([['x']]);
     expect(await s.kernel.cron.nextScheduled('cli_test_event', ['x'])).toBe(false);
 
@@ -178,9 +235,14 @@ describe('cron', () => {
     expect(after).not.toBe(before);
 
     const none = await s.cli(['cron', 'event', 'run', 'cli_test_event']);
-    expect(none).toMatchObject({ code: 1, stderr: expect.stringMatching(/No event of 'cli_test_event' is scheduled/) });
+    expect(none).toMatchObject({
+      code: 1,
+      stderr: expect.stringMatching(/No event of 'cli_test_event' is scheduled/),
+    });
 
-    expect(await s.ok(['cron', 'event', 'run', '--due-now'])).toMatch(/Success: Executed a total of \d+ cron events?\./);
+    expect(await s.ok(['cron', 'event', 'run', '--due-now'])).toMatch(
+      /Success: Executed a total of \d+ cron events?\./,
+    );
     expect(await s.ok(['cron', 'event', 'delete', 'pressbase_prune_jobs'])).toBe(
       'Success: Deleted a total of 1 cron event.\n',
     );
@@ -195,7 +257,9 @@ describe('cron', () => {
     await s.kernel.cron.scheduleSingleEvent(Math.floor(Date.now() / 1000) - 3600, 'cli_late_event');
     const late = await s.cli(['cron', 'test']);
     expect(late.code).toBe(1);
-    expect(late.stderr).toMatch(/1 scheduled event is more than ten minutes late\. Check that a Pressbase server is running/);
+    expect(late.stderr).toMatch(
+      /1 scheduled event is more than ten minutes late\. Check that a Pressbase server is running/,
+    );
   });
 });
 

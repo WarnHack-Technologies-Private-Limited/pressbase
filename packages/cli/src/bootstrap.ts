@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseEnv } from 'node:util';
-import { loadUser } from '@pressbase/core/src/auth/users';
 import type { CurrentUser } from '@pressbase/core/src/auth/users';
+import { loadUser } from '@pressbase/core/src/auth/users';
 import { type Config, loadConfig } from '@pressbase/core/src/config';
 import { describeDatabaseError } from '@pressbase/core/src/install/database';
 import { Kernel } from '@pressbase/core/src/kernel';
@@ -48,7 +48,8 @@ export async function resolveConfig(
   let dataDir: string;
   if (options.dataDir) dataDir = path.resolve(options.cwd, options.dataDir);
   else if (env.PRESSBASE_DATA_DIR) dataDir = path.resolve(options.cwd, env.PRESSBASE_DATA_DIR);
-  else if (fromFile.PRESSBASE_DATA_DIR) dataDir = path.resolve(CORE_DIR, fromFile.PRESSBASE_DATA_DIR);
+  else if (fromFile.PRESSBASE_DATA_DIR)
+    dataDir = path.resolve(CORE_DIR, fromFile.PRESSBASE_DATA_DIR);
   else dataDir = path.join(CORE_DIR, '.pressbase');
   try {
     return await loadConfig({ ...merged, PRESSBASE_DATA_DIR: dataDir });

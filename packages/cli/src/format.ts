@@ -33,9 +33,10 @@ function asciiTable(fields: string[], rows: Row[]): string {
 
 function tabular(fields: string[], rows: Row[]): string {
   const clean = (v: unknown) => cell(v).replace(/[\t\r\n]+/g, ' ');
-  return [fields.join('\t'), ...rows.map((row) => fields.map((f) => clean(row[f])).join('\t'))].join(
-    '\n',
-  );
+  return [
+    fields.join('\t'),
+    ...rows.map((row) => fields.map((f) => clean(row[f])).join('\t')),
+  ].join('\n');
 }
 
 function csvValue(value: unknown): string {
@@ -44,9 +45,10 @@ function csvValue(value: unknown): string {
 }
 
 function csv(fields: string[], rows: Row[]): string {
-  return [fields.map(csvValue).join(','), ...rows.map((r) => fields.map((f) => csvValue(r[f])).join(','))].join(
-    '\n',
-  );
+  return [
+    fields.map(csvValue).join(','),
+    ...rows.map((r) => fields.map((f) => csvValue(r[f])).join(',')),
+  ].join('\n');
 }
 
 /* ------------------------------------------------------------------ yaml */
@@ -78,7 +80,9 @@ function yamlBlock(value: unknown, indent: string): string {
   if (value && typeof value === 'object' && !(value instanceof Date)) {
     const entries = Object.entries(value);
     if (!entries.length) return ' {}';
-    return entries.map(([k, v]) => `\n${indent}${yamlScalar(k)}:${yamlBlock(v, `${indent}  `)}`).join('');
+    return entries
+      .map(([k, v]) => `\n${indent}${yamlScalar(k)}:${yamlBlock(v, `${indent}  `)}`)
+      .join('');
   }
   return ` ${yamlScalar(value)}`;
 }

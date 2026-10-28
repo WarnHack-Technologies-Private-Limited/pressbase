@@ -13,7 +13,17 @@ import { service } from './shared';
  * cache is purged, and archives go through the same strict ZIP checks.
  */
 
-const FIELDS = ['name', 'title', 'status', 'version', 'source', 'permissions', 'author', 'description', 'error'];
+const FIELDS = [
+  'name',
+  'title',
+  'status',
+  'version',
+  'source',
+  'permissions',
+  'author',
+  'description',
+  'error',
+];
 const LIST_FIELDS = ['name', 'title', 'status', 'version', 'source'];
 
 async function rows(ctx: Context) {
@@ -30,7 +40,9 @@ async function rows(ctx: Context) {
       permissions: plugin.manifest.permissions.join(','),
       author: authorName(plugin.manifest),
       description: plugin.manifest.description,
-      error: status.error?.message ?? (status.compatible ? '' : `Needs Pressbase ${plugin.manifest.requires}`),
+      error:
+        status.error?.message ??
+        (status.compatible ? '' : `Needs Pressbase ${plugin.manifest.requires}`),
     });
   }
   for (const broken of invalid) {
@@ -103,7 +115,11 @@ export const pluginCommands: CommandSpec[] = [
     examples: [['pressbase plugin list --status=active --field=name', 'Names of active plugins']],
     needs: 'installed',
     async run(ctx) {
-      await ctx.require('activate_plugins', undefined, `${ctx.user?.login} isn’t allowed to manage plugins.`);
+      await ctx.require(
+        'activate_plugins',
+        undefined,
+        `${ctx.user?.login} isn’t allowed to manage plugins.`,
+      );
       const status = ctx.string('status');
       const items = (await rows(ctx)).filter((r) => !status || r.status === status);
       ctx.formatItems(items, LIST_FIELDS, { all: FIELDS, idField: 'name' });
@@ -120,7 +136,11 @@ export const pluginCommands: CommandSpec[] = [
     ],
     needs: 'installed',
     async run(ctx) {
-      await ctx.require('activate_plugins', undefined, `${ctx.user?.login} isn’t allowed to manage plugins.`);
+      await ctx.require(
+        'activate_plugins',
+        undefined,
+        `${ctx.user?.login} isn’t allowed to manage plugins.`,
+      );
       const all = await rows(ctx);
       const [slug] = ctx.args;
       if (slug) {
@@ -129,7 +149,10 @@ export const pluginCommands: CommandSpec[] = [
         ctx.line(`Plugin ${row.name} details:`);
         for (const [label, value] of [
           ['Name', row.title],
-          ['Status', row.status === 'active' ? 'Active' : row.status === 'invalid' ? 'Invalid' : 'Inactive'],
+          [
+            'Status',
+            row.status === 'active' ? 'Active' : row.status === 'invalid' ? 'Invalid' : 'Inactive',
+          ],
           ['Version', row.version],
           ['Author', row.author],
           ['Description', row.description],
@@ -165,11 +188,18 @@ export const pluginCommands: CommandSpec[] = [
       'A plugin that asks for permissions (database, options, network, filesystem) lists them and asks before it’s activated; --yes agrees for you.',
     examples: [
       ['pressbase plugin activate daily-tips', 'Activate a plugin'],
-      ['pressbase plugin activate reading-time --yes', 'Activate and agree to its permissions in a script'],
+      [
+        'pressbase plugin activate reading-time --yes',
+        'Activate and agree to its permissions in a script',
+      ],
     ],
     needs: 'installed',
     async run(ctx) {
-      await ctx.require('activate_plugins', undefined, `${ctx.user?.login} isn’t allowed to activate plugins.`);
+      await ctx.require(
+        'activate_plugins',
+        undefined,
+        `${ctx.user?.login} isn’t allowed to activate plugins.`,
+      );
       const slugs = ctx.flag('all')
         ? (await ctx.kernel.plugins.discover()).plugins.map((p) => p.slug)
         : ctx.args;
@@ -191,13 +221,26 @@ export const pluginCommands: CommandSpec[] = [
     examples: [['pressbase plugin deactivate daily-tips', 'Deactivate a plugin']],
     needs: 'installed',
     async run(ctx) {
-      await ctx.require('activate_plugins', undefined, `${ctx.user?.login} isn’t allowed to deactivate plugins.`);
+      await ctx.require(
+        'activate_plugins',
+        undefined,
+        `${ctx.user?.login} isn’t allowed to deactivate plugins.`,
+      );
       const active = await ctx.kernel.plugins.activeSlugs();
       const slugs = ctx.flag('all') ? active : ctx.args;
-      if (!slugs.length) ctx.error(ctx.flag('all') ? 'No plugins are active.' : 'Give the plugins to deactivate, or --all.');
+      if (!slugs.length)
+        ctx.error(
+          ctx.flag('all') ? 'No plugins are active.' : 'Give the plugins to deactivate, or --all.',
+        );
       if (ctx.flag('uninstall')) {
-        await ctx.require('delete_plugins', undefined, `${ctx.user?.login} isn’t allowed to delete plugins.`);
-        await ctx.confirm(`Deactivate and delete ${slugs.join(', ')}? Their data may be removed too.`);
+        await ctx.require(
+          'delete_plugins',
+          undefined,
+          `${ctx.user?.login} isn’t allowed to delete plugins.`,
+        );
+        await ctx.confirm(
+          `Deactivate and delete ${slugs.join(', ')}? Their data may be removed too.`,
+        );
       }
       let done = 0;
       for (const slug of slugs) {
@@ -228,10 +271,16 @@ export const pluginCommands: CommandSpec[] = [
     },
     longdesc:
       'There is no plugin directory to download from yet, so give a file. To replace an installed plugin, delete it first.',
-    examples: [['pressbase plugin install ./reading-time-0.1.0.zip --activate', 'Install and activate']],
+    examples: [
+      ['pressbase plugin install ./reading-time-0.1.0.zip --activate', 'Install and activate'],
+    ],
     needs: 'installed',
     async run(ctx) {
-      await ctx.require('install_plugins', undefined, `${ctx.user?.login} isn’t allowed to install plugins.`);
+      await ctx.require(
+        'install_plugins',
+        undefined,
+        `${ctx.user?.login} isn’t allowed to install plugins.`,
+      );
       const [file = ''] = ctx.args;
       if (/^https?:\/\//.test(file)) {
         ctx.error('Installing from a URL isn’t supported. Download the .zip and give its path.');
@@ -247,8 +296,13 @@ export const pluginCommands: CommandSpec[] = [
       );
       ctx.log(`Installed ${plugin.manifest.title} ${plugin.manifest.version} (${plugin.slug}).`);
       if (ctx.flag('activate')) {
-        await ctx.require('activate_plugins', undefined, `${ctx.user?.login} isn’t allowed to activate plugins.`);
-        if (!(await activate(ctx, plugin))) ctx.error(`Installed ${plugin.slug}, but it couldn’t be activated.`);
+        await ctx.require(
+          'activate_plugins',
+          undefined,
+          `${ctx.user?.login} isn’t allowed to activate plugins.`,
+        );
+        if (!(await activate(ctx, plugin)))
+          ctx.error(`Installed ${plugin.slug}, but it couldn’t be activated.`);
       }
       ctx.success(`Installed 1 of 1 plugins.`);
     },
@@ -263,9 +317,19 @@ export const pluginCommands: CommandSpec[] = [
     examples: [['pressbase plugin delete reading-time --yes', 'Delete a plugin']],
     needs: 'installed',
     async run(ctx) {
-      await ctx.require('activate_plugins', undefined, `${ctx.user?.login} isn’t allowed to manage plugins.`);
-      await ctx.require('delete_plugins', undefined, `${ctx.user?.login} isn’t allowed to delete plugins.`);
-      await ctx.confirm(`Delete ${ctx.args.join(', ')}? Their uninstall runs and their files are removed.`);
+      await ctx.require(
+        'activate_plugins',
+        undefined,
+        `${ctx.user?.login} isn’t allowed to manage plugins.`,
+      );
+      await ctx.require(
+        'delete_plugins',
+        undefined,
+        `${ctx.user?.login} isn’t allowed to delete plugins.`,
+      );
+      await ctx.confirm(
+        `Delete ${ctx.args.join(', ')}? Their uninstall runs and their files are removed.`,
+      );
       let done = 0;
       for (const slug of ctx.args) {
         try {

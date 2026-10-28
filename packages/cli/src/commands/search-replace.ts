@@ -21,7 +21,11 @@ export const searchReplaceCommands: CommandSpec[] = [
       new: 'What to put in its place.',
       table: `Only these tables: ${[...new Set(SEARCH_REPLACE_COLUMNS.map((c) => c.table))].join(', ')}.`,
       'dry-run': 'Report what would change, and change nothing.',
-      'include-columns': `Only these columns, comma-separated: ${SEARCH_REPLACE_COLUMNS.map((c) => c.column).filter((c, i, a) => a.indexOf(c) === i).join(', ')}.`,
+      'include-columns': `Only these columns, comma-separated: ${SEARCH_REPLACE_COLUMNS.map(
+        (c) => c.column,
+      )
+        .filter((c, i, a) => a.indexOf(c) === i)
+        .join(', ')}.`,
       'skip-columns': 'Leave these columns alone, comma-separated (guid, for example).',
       regex: '<old> is a JavaScript regular expression; <new> can use $1, $2…',
       'regex-flags': 'Flags for --regex: i (ignore case), m, s, u.',
@@ -32,13 +36,26 @@ export const searchReplaceCommands: CommandSpec[] = [
     longdesc:
       'Values stored as JSON stay valid: option and meta values, JSON documents in text, and block attributes in post content are replaced inside the JSON. Every cached public page is purged afterwards. Asks before changing anything, unless --yes or --dry-run.',
     examples: [
-      ['pressbase search-replace http://old.example https://new.example --dry-run', 'See what moving the site would change'],
-      ['pressbase search-replace http://old.example https://new.example --skip-columns=guid --yes', 'Move the site to a new address'],
-      ['pressbase search-replace "colou?r" shade --regex --include-columns=post_content', 'Replace with a regular expression'],
+      [
+        'pressbase search-replace http://old.example https://new.example --dry-run',
+        'See what moving the site would change',
+      ],
+      [
+        'pressbase search-replace http://old.example https://new.example --skip-columns=guid --yes',
+        'Move the site to a new address',
+      ],
+      [
+        'pressbase search-replace "colou?r" shade --regex --include-columns=post_content',
+        'Replace with a regular expression',
+      ],
     ],
     needs: 'installed',
     async run(ctx) {
-      await ctx.require('manage_options', undefined, `${ctx.user?.login} isn’t allowed to run search and replace.`);
+      await ctx.require(
+        'manage_options',
+        undefined,
+        `${ctx.user?.login} isn’t allowed to run search and replace.`,
+      );
       const [search = '', replace = '', ...tables] = ctx.args;
       const dryRun = ctx.flag('dry-run');
       if (search === replace && !ctx.flag('regex')) {

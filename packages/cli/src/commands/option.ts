@@ -40,7 +40,9 @@ async function parseValue(ctx: Context, name: string, text: string, current: unk
     try {
       return JSON.parse(text) as unknown;
     } catch {
-      ctx.error('That value isn’t valid JSON. With --format=json, give a JSON value like 5, true or {"a":1}.');
+      ctx.error(
+        'That value isn’t valid JSON. With --format=json, give a JSON value like 5, true or {"a":1}.',
+      );
     }
   }
   const typed = (() => {
@@ -111,7 +113,13 @@ export const optionCommands: CommandSpec[] = [
       if (!(await exists(ctx, name))) ctx.error(`There’s no option “${name}”.`);
       const value = await ctx.kernel.options.get(name);
       const format = ctx.string('format');
-      ctx.line(format === 'json' ? JSON.stringify(value) : format === 'yaml' ? yaml(value) : display(value));
+      ctx.line(
+        format === 'json'
+          ? JSON.stringify(value)
+          : format === 'yaml'
+            ? yaml(value)
+            : display(value),
+      );
     },
   },
   {
@@ -131,7 +139,9 @@ export const optionCommands: CommandSpec[] = [
       await ctx.require(CAP);
       const [name = '', raw] = ctx.args;
       if (await exists(ctx, name)) {
-        ctx.error(`The option “${name}” already exists. Use “pressbase option update” to change it.`);
+        ctx.error(
+          `The option “${name}” already exists. Use “pressbase option update” to change it.`,
+        );
       }
       const value = await parseValue(ctx, name, await readValue(ctx, raw), undefined);
       await save(ctx, name, value, autoloadFlag(ctx));
@@ -152,7 +162,10 @@ export const optionCommands: CommandSpec[] = [
     examples: [
       ['pressbase option update blogname "Field notes"', 'Change the site title'],
       ['pressbase option update posts_per_page 5', 'Store a number'],
-      ['echo \'{"a":1}\' | pressbase option update my_option --format=json', 'Store JSON from standard input'],
+      [
+        'echo \'{"a":1}\' | pressbase option update my_option --format=json',
+        'Store JSON from standard input',
+      ],
     ],
     needs: 'installed',
     async run(ctx) {
@@ -195,7 +208,8 @@ export const optionCommands: CommandSpec[] = [
   {
     name: 'option list',
     shortdesc: 'Lists options and their values.',
-    synopsis: '[--search=<pattern>] [--autoload=<autoload>] [--fields=<fields>] [--field=<field>] [--format=<format>]',
+    synopsis:
+      '[--search=<pattern>] [--autoload=<autoload>] [--fields=<fields>] [--field=<field>] [--format=<format>]',
     options: {
       search: 'Only options whose names match. * matches anything: --search="pressbase_*".',
       autoload: 'Only options that are (on) or aren’t (off) loaded on every request.',

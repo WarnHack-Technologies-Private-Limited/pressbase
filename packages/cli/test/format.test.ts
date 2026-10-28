@@ -5,7 +5,15 @@ import { formatItem, formatItems, yaml } from '../src/format';
 describe('parseArgv', () => {
   it('reads wp-cli’s grammar', () => {
     expect(
-      parseArgv(['post', 'list', '--post_type=page', '--porcelain', '--no-color', '--title=a=b', '-h']),
+      parseArgv([
+        'post',
+        'list',
+        '--post_type=page',
+        '--porcelain',
+        '--no-color',
+        '--title=a=b',
+        '-h',
+      ]),
     ).toEqual({
       positionals: ['post', 'list'],
       assoc: { post_type: 'page', porcelain: true, color: false, title: 'a=b', help: true },
@@ -23,7 +31,9 @@ describe('parseArgv', () => {
 describe('parseSynopsis', () => {
   it('reads every kind of token', () => {
     expect(
-      parseSynopsis('<id>... [<file>] --title=<title> [--status=<status>] [--force] [--<field>=<value>] [--porcelain[=<v>]]'),
+      parseSynopsis(
+        '<id>... [<file>] --title=<title> [--status=<status>] [--force] [--<field>=<value>] [--porcelain[=<v>]]',
+      ),
     ).toEqual([
       { type: 'positional', name: 'id', optional: false, repeating: true },
       { type: 'positional', name: 'file', optional: true, repeating: false },

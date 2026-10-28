@@ -1,4 +1,10 @@
-import { connect, type DatabaseConnection, driverFor, migrationStatus, schema } from '@pressbase/db';
+import {
+  connect,
+  type DatabaseConnection,
+  driverFor,
+  migrationStatus,
+  schema,
+} from '@pressbase/db';
 import { eq, sql } from 'drizzle-orm';
 import { databaseError } from '../bootstrap';
 import type { CommandSpec, Context } from '../command';
@@ -81,7 +87,9 @@ export const dbCommands: CommandSpec[] = [
           ctx.formatItem(report, Object.keys(report));
         } else {
           ctx.log(`Database: ${report.database} (${report.driver})`);
-          ctx.log(`Migrations: ${status.migrations.length - status.pending.length} of ${status.migrations.length} applied`);
+          ctx.log(
+            `Migrations: ${status.migrations.length - status.pending.length} of ${status.migrations.length} applied`,
+          );
           ctx.log(`Site installed: ${report.installed ? 'yes' : 'no'}`);
         }
         if (status.pending.length) {

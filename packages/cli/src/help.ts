@@ -32,7 +32,12 @@ export function commandHelp(spec: CommandSpec): string {
   const out: string[] = [];
   out.push('NAME', '', `  pressbase ${spec.name}`, '');
   out.push('DESCRIPTION', '', `  ${spec.shortdesc}`, '');
-  out.push('SYNOPSIS', '', `  pressbase ${spec.name}${spec.synopsis ? ` ${spec.synopsis}` : ''}`, '');
+  out.push(
+    'SYNOPSIS',
+    '',
+    `  pressbase ${spec.name}${spec.synopsis ? ` ${spec.synopsis}` : ''}`,
+    '',
+  );
   if (spec.longdesc) out.push(indent(spec.longdesc.trim(), 2), '');
 
   let tokens: ReturnType<typeof parseSynopsis> = [];

@@ -110,7 +110,9 @@ export const coreCommands: CommandSpec[] = [
           );
         }
       } else if (ctx.has('database-url') || ctx.flag('builtin-database')) {
-        ctx.warning('A database is already configured, so --database-url and --builtin-database are ignored.');
+        ctx.warning(
+          'A database is already configured, so --database-url and --builtin-database are ignored.',
+        );
       }
 
       try {

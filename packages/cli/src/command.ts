@@ -246,7 +246,10 @@ export class Context {
   #fields(defaults: string[], all: string[] | undefined): string[] {
     const fields = this.list('fields') ?? defaults;
     const known = all ?? defaults;
-    for (const field of [...fields, ...(this.string('field') ? [this.string('field') as string] : [])]) {
+    for (const field of [
+      ...fields,
+      ...(this.string('field') ? [this.string('field') as string] : []),
+    ]) {
       if (all && !known.includes(field)) {
         this.error(`There’s no field “${field}”. Available fields: ${known.join(', ')}.`);
       }

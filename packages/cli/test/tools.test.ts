@@ -2,7 +2,12 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { PURGE_ACTION } from '@pressbase/core/src/cache/invalidation';
 import type { AttachmentMetadata } from '@pressbase/core/src/media/images';
-import { META_FILE, META_METADATA, setMeta, uploadAttachment } from '@pressbase/core/src/media/service';
+import {
+  META_FILE,
+  META_METADATA,
+  setMeta,
+  uploadAttachment,
+} from '@pressbase/core/src/media/service';
 import { schema } from '@pressbase/db';
 import { eq } from 'drizzle-orm';
 import sharp from 'sharp';
@@ -27,8 +32,9 @@ describe('media regenerate', () => {
     });
     const uploads = path.join(s.dataDir, 'uploads');
     const meta = async () =>
-      (await s.kernel.db.select().from(schema.postmeta).where(eq(schema.postmeta.postId, image.id)))
-        .find((m) => m.key === META_METADATA)?.value as AttachmentMetadata;
+      (
+        await s.kernel.db.select().from(schema.postmeta).where(eq(schema.postmeta.postId, image.id))
+      ).find((m) => m.key === META_METADATA)?.value as AttachmentMetadata;
     const before = await meta();
     const folder = path.dirname(before.file ?? '');
     expect(before.sizes?.thumbnail).toMatchObject({ width: 150, height: 150 });
@@ -44,18 +50,26 @@ describe('media regenerate', () => {
       /^1\/1 Regenerated thumbnails for "harbour" \(ID \d+\)\.\nSuccess: Regenerated 1 of 1 images\.\n$/,
     );
     const after = await meta();
-    expect(after.sizes?.thumbnail).toMatchObject({ width: 100, height: 100, file: 'harbour-100x100.png' });
+    expect(after.sizes?.thumbnail).toMatchObject({
+      width: 100,
+      height: 100,
+      file: 'harbour-100x100.png',
+    });
     expect(existsSync(path.join(uploads, folder, 'harbour-100x100.png'))).toBe(true);
     expect(existsSync(path.join(uploads, folder, 'harbour-150x150.png'))).toBe(false);
     expect(existsSync(path.join(uploads, folder, 'harbour.png'))).toBe(true);
 
     // Every image needs a confirmation; a missing original is reported, not fatal to the rest.
-    expect((await s.cli(['media', 'regenerate'])).stderr).toMatch(/Regenerate the sizes of all 1 images\? Add --yes/);
+    expect((await s.cli(['media', 'regenerate'])).stderr).toMatch(
+      /Regenerate the sizes of all 1 images\? Add --yes/,
+    );
     await setMeta(s.kernel, image.id, META_FILE, `${folder}/gone.png`);
     const missing = await s.cli(['media', 'regenerate', '--yes']);
     expect(missing.code).toBe(1);
     expect(missing.stderr).toMatch(/Warning: 1\/1 The original file of attachment \d+ is missing/);
-    expect((await s.cli(['media', 'regenerate', '1'])).stderr).toMatch(/There’s no attachment with the ID 1\./);
+    expect((await s.cli(['media', 'regenerate', '1'])).stderr).toMatch(
+      /There’s no attachment with the ID 1\./,
+    );
   });
 });
 
@@ -64,8 +78,14 @@ describe('search-replace', () => {
     const s = await site();
     const old = 'http://old.example';
     const content = `<!-- wp:image {"url":"${old}/a.png","caption":"x"} -->\n<figure><img src="${old}/a.png"/></figure>\n<!-- /wp:image -->`;
-    const id = (await s.ok(['post', 'create', '-', '--post_title=Moving', '--porcelain'], { stdin: content })).trim();
-    await setMeta(s.kernel, Number(id), 'links', { home: old, list: [`${old}/b`, 3], nested: JSON.stringify({ u: old }) });
+    const id = (
+      await s.ok(['post', 'create', '-', '--post_title=Moving', '--porcelain'], { stdin: content })
+    ).trim();
+    await setMeta(s.kernel, Number(id), 'links', {
+      home: old,
+      list: [`${old}/b`, 3],
+      nested: JSON.stringify({ u: old }),
+    });
     await s.kernel.options.set('cli_site', { url: old });
     await s.kernel.options.set('home', old);
 
@@ -104,17 +124,62 @@ describe('search-replace', () => {
 
   it('limits itself to tables and columns, and supports regular expressions', async () => {
     const s = await site();
-    const id = (await s.ok(['post', 'create', '--post_title=Colour notes', '--post_content=colour and color', '--porcelain'])).trim();
-    const only = await s.ok(['search-replace', 'colou?r', 'hue', '--regex', '--include-columns=post_content', '--report-changed-only', '--yes']);
-    expect(only).toBe('Table\tColumn\tReplacements\tType\nposts\tpost_content\t4\ttext\nSuccess: Made 4 replacements.\n');
-    expect(await s.ok(['post', 'get', id, '--fields=post_title,post_content', '--format=json'])).toBe(
-      '{"post_title":"Colour notes","post_content":"hue and hue"}\n',
+    const id = (
+      await s.ok([
+        'post',
+        'create',
+        '--post_title=Colour notes',
+        '--post_content=colour and color',
+        '--porcelain',
+      ])
+    ).trim();
+    const only = await s.ok([
+      'search-replace',
+      'colou?r',
+      'hue',
+      '--regex',
+      '--include-columns=post_content',
+      '--report-changed-only',
+      '--yes',
+    ]);
+    expect(only).toBe(
+      'Table\tColumn\tReplacements\tType\nposts\tpost_content\t4\ttext\nSuccess: Made 4 replacements.\n',
     );
-    expect(await s.ok(['search-replace', 'COLOUR', 'Shade', '--regex', '--regex-flags=i', 'wp_posts', '--yes', '--format=count'])).toBe('2\n');
-    expect(await s.ok(['search-replace', 'Test Site', 'Field notes', 'posts', '--yes', '--format=count'])).toBe('0\n');
-    expect((await s.cli(['search-replace', 'a', 'b', 'users', '--dry-run'])).stderr).toMatch(/There’s no table called "users"/);
-    expect((await s.cli(['search-replace', 'a', 'b', '--include-columns=user_pass', '--dry-run'])).stderr).toMatch(/no column called "user_pass"/);
-    expect((await s.cli(['search-replace', '(', 'b', '--regex', '--dry-run'])).stderr).toMatch(/That regular expression isn’t valid/);
+    expect(
+      await s.ok(['post', 'get', id, '--fields=post_title,post_content', '--format=json']),
+    ).toBe('{"post_title":"Colour notes","post_content":"hue and hue"}\n');
+    expect(
+      await s.ok([
+        'search-replace',
+        'COLOUR',
+        'Shade',
+        '--regex',
+        '--regex-flags=i',
+        'wp_posts',
+        '--yes',
+        '--format=count',
+      ]),
+    ).toBe('2\n');
+    expect(
+      await s.ok([
+        'search-replace',
+        'Test Site',
+        'Field notes',
+        'posts',
+        '--yes',
+        '--format=count',
+      ]),
+    ).toBe('0\n');
+    expect((await s.cli(['search-replace', 'a', 'b', 'users', '--dry-run'])).stderr).toMatch(
+      /There’s no table called "users"/,
+    );
+    expect(
+      (await s.cli(['search-replace', 'a', 'b', '--include-columns=user_pass', '--dry-run']))
+        .stderr,
+    ).toMatch(/no column called "user_pass"/);
+    expect((await s.cli(['search-replace', '(', 'b', '--regex', '--dry-run'])).stderr).toMatch(
+      /That regular expression isn’t valid/,
+    );
     expect((await s.cli(['search-replace', 'same', 'same'])).stderr).toMatch(/nothing to replace/);
   });
 });

@@ -1,5 +1,5 @@
-import { regenerateImageSizes } from '@pressbase/core/src/media/service';
 import { RESIZABLE_IMAGE_TYPES } from '@pressbase/core/src/media/mime';
+import { regenerateImageSizes } from '@pressbase/core/src/media/service';
 import { schema } from '@pressbase/db';
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import type { CommandSpec } from '../command';
@@ -48,7 +48,9 @@ export const mediaCommands: CommandSpec[] = [
       for (const [i, image] of images.entries()) {
         const position = `${i + 1}/${images.length}`;
         if (!(await ctx.can('edit_post', image.id))) {
-          ctx.warning(`${position} ${ctx.user?.login} isn’t allowed to edit attachment ${image.id}.`);
+          ctx.warning(
+            `${position} ${ctx.user?.login} isn’t allowed to edit attachment ${image.id}.`,
+          );
           continue;
         }
         try {

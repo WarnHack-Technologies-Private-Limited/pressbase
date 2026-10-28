@@ -38,10 +38,16 @@ export const cronCommands: CommandSpec[] = [
     shortdesc: 'Lists scheduled cron events.',
     synopsis: '[--hook=<hook>] [--fields=<fields>] [--field=<field>] [--format=<format>]',
     options: { hook: 'Only events of this hook.' },
-    examples: [['pressbase cron event list --fields=hook,next_run_relative', 'When each event runs next']],
+    examples: [
+      ['pressbase cron event list --fields=hook,next_run_relative', 'When each event runs next'],
+    ],
     needs: 'installed',
     async run(ctx) {
-      await ctx.require(CAP, undefined, `${ctx.user?.login} isn’t allowed to manage scheduled tasks.`);
+      await ctx.require(
+        CAP,
+        undefined,
+        `${ctx.user?.login} isn’t allowed to manage scheduled tasks.`,
+      );
       const hook = ctx.string('hook');
       const now = Math.floor(Date.now() / 1000);
       const events = (await ctx.kernel.cron.events(10_000)).filter((e) => !hook || e.hook === hook);
@@ -58,7 +64,16 @@ export const cronCommands: CommandSpec[] = [
         })),
         ['hook', 'next_run_gmt', 'next_run_relative', 'recurrence'],
         {
-          all: ['hook', 'next_run_gmt', 'next_run_relative', 'recurrence', 'schedule', 'interval', 'timestamp', 'args'],
+          all: [
+            'hook',
+            'next_run_gmt',
+            'next_run_relative',
+            'recurrence',
+            'schedule',
+            'interval',
+            'timestamp',
+            'args',
+          ],
           idField: 'hook',
         },
       );
@@ -104,7 +119,9 @@ export const cronCommands: CommandSpec[] = [
           continue;
         }
         ran += 1;
-        ctx.log(`Executed the cron event '${event.hook}' in ${((performance.now() - started) / 1000).toFixed(3)}s.`);
+        ctx.log(
+          `Executed the cron event '${event.hook}' in ${((performance.now() - started) / 1000).toFixed(3)}s.`,
+        );
       }
       if (missing && !ran) ctx.error(`No events ran.`);
       ctx.success(`Executed a total of ${plural(ran, 'cron event')}.`);
@@ -118,7 +135,11 @@ export const cronCommands: CommandSpec[] = [
     examples: [['pressbase cron event delete reading_time_cleanup', 'Unschedule a plugin’s event']],
     needs: 'installed',
     async run(ctx) {
-      await ctx.require(CAP, undefined, `${ctx.user?.login} isn’t allowed to manage scheduled tasks.`);
+      await ctx.require(
+        CAP,
+        undefined,
+        `${ctx.user?.login} isn’t allowed to manage scheduled tasks.`,
+      );
       let total = 0;
       for (const hook of ctx.args) {
         const n = await ctx.kernel.cron.unscheduleHook(hook);
@@ -136,7 +157,11 @@ export const cronCommands: CommandSpec[] = [
     examples: [['pressbase cron schedule list', 'List the schedules']],
     needs: 'installed',
     async run(ctx) {
-      await ctx.require(CAP, undefined, `${ctx.user?.login} isn’t allowed to manage scheduled tasks.`);
+      await ctx.require(
+        CAP,
+        undefined,
+        `${ctx.user?.login} isn’t allowed to manage scheduled tasks.`,
+      );
       const schedules = await ctx.kernel.cron.getSchedules();
       ctx.formatItems(
         Object.entries(schedules)
@@ -155,14 +180,22 @@ export const cronCommands: CommandSpec[] = [
     examples: [['pressbase cron test', 'Check the worker']],
     needs: 'installed',
     async run(ctx) {
-      await ctx.require(CAP, undefined, `${ctx.user?.login} isn’t allowed to manage scheduled tasks.`);
+      await ctx.require(
+        CAP,
+        undefined,
+        `${ctx.user?.login} isn’t allowed to manage scheduled tasks.`,
+      );
       const { jobs } = schema;
       const cronJobs = or(eq(jobs.name, CRON_JOB), sql`left(${jobs.name}, 5) = 'cron:'`);
       const [overdue] = await ctx.kernel.db
         .select({ n: sql<number>`count(*)`.mapWith(Number) })
         .from(jobs)
         .where(
-          and(cronJobs, eq(jobs.status, 'pending'), lt(jobs.runAt, new Date(Date.now() - 10 * 60_000))),
+          and(
+            cronJobs,
+            eq(jobs.status, 'pending'),
+            lt(jobs.runAt, new Date(Date.now() - 10 * 60_000)),
+          ),
         );
       const failed = await ctx.kernel.jobs.list({ status: 'failed', limit: 5 });
       for (const job of failed) {
