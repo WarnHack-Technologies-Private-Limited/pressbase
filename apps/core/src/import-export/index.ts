@@ -7,8 +7,11 @@
  *   await importWxr(kernel, { path: 'site.xml' }, { userId: 1, fetchAttachments: true });
  *   await exportWxr(kernel, { content: 'post' }, fs.createWriteStream('site.xml'));
  *
- * For other sources (a WordPress database, say): implement ImportSource and
- * call runImport(kernel, source, options).
+ * For other sources: implement ImportSource and call runImport(kernel, source, options).
+ *
+ * Straight from a WordPress database (ADR 0016):
+ *
+ *   await migrateFromWordPressDatabase(kernel, { database: 'mysql://…', userId: 1 });
  */
 
 export {
@@ -56,3 +59,20 @@ export {
   runImport,
 } from './writer';
 export { scanWxr, type WxrInput, WxrReader, type WxrSummary } from './wxr-reader';
+export {
+  checkPrefix,
+  connectWordPressDatabase,
+  parseDatabaseUrl,
+  redactDatabaseUrl,
+  type WordPressCounts,
+  type WordPressDatabase,
+  WordPressDatabaseError,
+} from './wordpress-db';
+export { WordPressDatabaseSource, type WordPressSourceOptions } from './wordpress-db-reader';
+export {
+  CARRIED_OPTIONS,
+  localUploadsFetcher,
+  migrateFromWordPressDatabase,
+  type WordPressMigrationOptions,
+  type WordPressMigrationResult,
+} from './wordpress-migrate';

@@ -523,6 +523,9 @@ export class ImportWriter {
     }
     try {
       const meta = new Map((record?.author_meta ?? []).map((m) => [m.key, m.value]));
+      // A language that isn't installed here falls back to the site's (as an empty locale does).
+      const locale = meta.get('locale') ?? '';
+      const languages = this.kernel.i18n.getAvailableLanguages();
       const user = await insertUser(this.kernel, {
         username: login,
         email,
@@ -534,7 +537,7 @@ export class ImportWriter {
         url: record?.author_url || undefined,
         nickname: meta.get('nickname'),
         description: meta.get('description'),
-        locale: meta.get('locale'),
+        locale: locale === 'en_US' || languages.includes(locale) ? locale : '',
         roles: await this.#roles(login, record?.author_roles),
       });
       // A database source carries the password hash and registration date.
