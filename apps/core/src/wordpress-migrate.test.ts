@@ -17,7 +17,10 @@ import {
   FIXTURE_UPLOADS,
   memoryWordPressDatabase,
 } from './import-export/wordpress-db-fixture';
-import { localUploadsFetcher, migrateFromWordPressDatabase } from './import-export/wordpress-migrate';
+import {
+  localUploadsFetcher,
+  migrateFromWordPressDatabase,
+} from './import-export/wordpress-migrate';
 import { SITE, setup } from './test-utils';
 
 /** Migrating a WordPress site from its database (ADR 0016), against the in-memory fake. */
@@ -79,7 +82,9 @@ describe('database URLs', () => {
       (error: Error) => error,
     );
     expect(refused).toBeInstanceOf(WordPressDatabaseError);
-    expect((refused as Error).message).toMatch(/^Couldn’t connect to mysql:\/\/reader:\*\*\*@127\.0\.0\.1:1\/wp/);
+    expect((refused as Error).message).toMatch(
+      /^Couldn’t connect to mysql:\/\/reader:\*\*\*@127\.0\.0\.1:1\/wp/,
+    );
     expect((refused as Error).message).not.toContain('hunter2');
     expect(() => checkPrefix('wp_; DROP TABLE x')).toThrow(/letters, numbers and underscores/);
     expect(checkPrefix('blog2_')).toBe('blog2_');
@@ -179,7 +184,9 @@ describe('migrating from a WordPress database', () => {
     const [theoCaps] = await kernel.db
       .select({ value: schema.usermeta.value })
       .from(schema.usermeta)
-      .where(and(eq(schema.usermeta.userId, theo?.id ?? 0), eq(schema.usermeta.key, 'capabilities')));
+      .where(
+        and(eq(schema.usermeta.userId, theo?.id ?? 0), eq(schema.usermeta.key, 'capabilities')),
+      );
     expect(theoCaps?.value).toEqual({ editor: true });
 
     /* Terms. */
@@ -224,7 +231,9 @@ describe('migrating from a WordPress database', () => {
       hauling.id,
     );
     expect(categoryIds).toEqual([repairs?.id]);
-    expect((await kernel.terms.objectTermIds([hauling.id], 'post_tag')).get(hauling.id)).toHaveLength(2);
+    expect(
+      (await kernel.terms.objectTermIds([hauling.id], 'post_tag')).get(hauling.id),
+    ).toHaveLength(2);
 
     // Featured image, SEO meta kept as it was, primary category remapped.
     expect(Number(await kernel.posts.getMeta(hauling.id, '_thumbnail_id'))).toBe(hull.id);
@@ -255,7 +264,9 @@ describe('migrating from a WordPress database', () => {
     };
     expect(Object.keys(metadata.sizes)).toEqual(expect.arrayContaining(['thumbnail', 'medium']));
     const stored = await readFile(path.join(ctx.dataDir, 'uploads', '2026/02/hull-on-stands.png'));
-    expect(stored.equals(await readFile(path.join(FIXTURE_UPLOADS, '2026/02/hull-on-stands.png')))).toBe(true);
+    expect(
+      stored.equals(await readFile(path.join(FIXTURE_UPLOADS, '2026/02/hull-on-stands.png'))),
+    ).toBe(true);
 
     // Content now points at the new IDs and this site.
     expect(hauling.content).toContain(`"id":${hull.id}`);
@@ -334,7 +345,12 @@ describe('migrating from a WordPress database', () => {
       skip: ['comments', 'options'],
       fetchFile: async (url) => {
         asked.push(url);
-        return { data: new Uint8Array(png), filename: 'hull-on-stands.png', contentType: 'image/png', url };
+        return {
+          data: new Uint8Array(png),
+          filename: 'hull-on-stands.png',
+          contentType: 'image/png',
+          url,
+        };
       },
     });
     expect(asked).toEqual([`${FIXTURE_SITE}/wp-content/uploads/2026/02/hull-on-stands.png`]);
@@ -358,13 +374,17 @@ describe('migrating from a WordPress database', () => {
     const base = `${FIXTURE_SITE}/wp-content/uploads`;
     const file = await fetch(`${base}/2026/02/hull-on-stands.png`, { maxBytes: 1_000_000 });
     expect(file.filename).toBe('hull-on-stands.png');
-    await expect(fetch(`${base}/../../../../../../../etc/hostname`, { maxBytes: 1e6 })).rejects.toMatchObject({
+    await expect(
+      fetch(`${base}/../../../../../../../etc/hostname`, { maxBytes: 1e6 }),
+    ).rejects.toMatchObject({
       code: expect.stringMatching(/import_file_(outside_uploads|missing)/),
     });
     await expect(fetch(`${base}/2026/02/missing.png`, { maxBytes: 1e6 })).rejects.toMatchObject({
       code: 'import_file_missing',
     });
-    await expect(fetch(`${base}/2026/02/hull-on-stands.png`, { maxBytes: 10 })).rejects.toMatchObject({
+    await expect(
+      fetch(`${base}/2026/02/hull-on-stands.png`, { maxBytes: 10 }),
+    ).rejects.toMatchObject({
       code: 'import_file_too_big',
     });
   });

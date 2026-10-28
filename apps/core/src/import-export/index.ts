@@ -48,18 +48,6 @@ export {
   registerImportJobs,
 } from './service';
 export {
-  type AuthorChoice,
-  ImportError,
-  type ImportOptions,
-  type ImportPostData,
-  type ImportProgress,
-  type ImportReport,
-  ImportWriter,
-  type ReportItem,
-  runImport,
-} from './writer';
-export { scanWxr, type WxrInput, WxrReader, type WxrSummary } from './wxr-reader';
-export {
   checkPrefix,
   connectWordPressDatabase,
   parseDatabaseUrl,
@@ -76,3 +64,15 @@ export {
   type WordPressMigrationOptions,
   type WordPressMigrationResult,
 } from './wordpress-migrate';
+export {
+  type AuthorChoice,
+  ImportError,
+  type ImportOptions,
+  type ImportPostData,
+  type ImportProgress,
+  type ImportReport,
+  ImportWriter,
+  type ReportItem,
+  runImport,
+} from './writer';
+export { scanWxr, type WxrInput, WxrReader, type WxrSummary } from './wxr-reader';

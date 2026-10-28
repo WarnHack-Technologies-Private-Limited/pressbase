@@ -299,7 +299,8 @@ export function wordpressFixture(): Record<string, Row[]> {
         post_title: 'About the yard',
         post_name: 'about-the-yard',
         post_type: 'page',
-        post_content: '<!-- wp:paragraph -->\n<p>We look after wooden boats.</p>\n<!-- /wp:paragraph -->',
+        post_content:
+          '<!-- wp:paragraph -->\n<p>We look after wooden boats.</p>\n<!-- /wp:paragraph -->',
         post_date: '2026-01-05 10:00:00',
         post_date_gmt: '2026-01-05 10:00:00',
         guid: `${FIXTURE_SITE}/?page_id=2`,
@@ -312,7 +313,8 @@ export function wordpressFixture(): Record<string, Row[]> {
         post_type: 'page',
         post_parent: 2,
         menu_order: 1,
-        post_content: '<!-- wp:paragraph -->\n<p>Five people and a dog.</p>\n<!-- /wp:paragraph -->',
+        post_content:
+          '<!-- wp:paragraph -->\n<p>Five people and a dog.</p>\n<!-- /wp:paragraph -->',
         post_date: '2026-01-06 10:00:00',
         post_date_gmt: '2026-01-06 10:00:00',
         guid: `${FIXTURE_SITE}/?page_id=3`,
@@ -382,7 +384,8 @@ export function wordpressFixture(): Record<string, Row[]> {
         post_title: 'Notes for spring',
         post_name: '',
         post_status: 'draft',
-        post_content: '<!-- wp:paragraph -->\n<p>Masts go back up in April.</p>\n<!-- /wp:paragraph -->',
+        post_content:
+          '<!-- wp:paragraph -->\n<p>Masts go back up in April.</p>\n<!-- /wp:paragraph -->',
         post_date: '2026-03-10 18:00:00',
         post_date_gmt: ZERO,
       }),
@@ -707,7 +710,11 @@ export function memoryWordPressDatabase(
 export function wordpressSchemaSql(prefix = 'wp_'): string[] {
   const idx = 191; // $max_index_length
   const charset = 'DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci';
-  const metaTable = (name: string, owner: string, id = 'meta_id') => `CREATE TABLE ${prefix}${name} (
+  const metaTable = (
+    name: string,
+    owner: string,
+    id = 'meta_id',
+  ) => `CREATE TABLE ${prefix}${name} (
   ${id} bigint(20) unsigned NOT NULL auto_increment,
   ${owner} bigint(20) unsigned NOT NULL default '0',
   meta_key varchar(255) default NULL,

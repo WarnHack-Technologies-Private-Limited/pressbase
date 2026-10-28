@@ -237,7 +237,10 @@ export class WordPressDatabaseSource implements ImportSource {
       for (const [termId, fields] of Object.entries(terms as Record<string, unknown>)) {
         if (!fields || typeof fields !== 'object') continue;
         const list = Object.entries(fields as Record<string, unknown>)
-          .filter(([key, v]) => key.startsWith('wpseo_') && (typeof v === 'string' || typeof v === 'number'))
+          .filter(
+            ([key, v]) =>
+              key.startsWith('wpseo_') && (typeof v === 'string' || typeof v === 'number'),
+          )
           .map(([key, v]) => ({ key, value: String(v) }));
         if (list.length) out.set(`${taxonomy}:${termId}`, list);
       }

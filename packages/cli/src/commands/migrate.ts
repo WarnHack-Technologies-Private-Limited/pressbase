@@ -104,7 +104,8 @@ export const migrateCommands: CommandSpec[] = [
             skip: ctx.list('skip'),
             dryRun,
             onProgress: (p) => {
-              if (p.phase === 'importing' && p.current) ctx.log(`${p.done}/${p.total} ${p.current}`);
+              if (p.phase === 'importing' && p.current)
+                ctx.log(`${p.done}/${p.total} ${p.current}`);
               if (p.phase === 'finishing') ctx.log('Linking parents, featured images and menus…');
             },
           }),
@@ -112,7 +113,9 @@ export const migrateCommands: CommandSpec[] = [
       } finally {
         await db.close();
       }
-      ctx.log(`${result.site.title || 'The site'} (${result.site.base_blog_url}): ${describeCounts(result.counts)}.`);
+      ctx.log(
+        `${result.site.title || 'The site'} (${result.site.base_blog_url}): ${describeCounts(result.counts)}.`,
+      );
       if (dryRun) {
         ctx.success('Dry run: nothing was changed.');
         return;

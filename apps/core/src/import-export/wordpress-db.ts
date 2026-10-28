@@ -314,7 +314,12 @@ export async function connectWordPressDatabase(
       bigNumberStrings: false,
       connectTimeout: 15_000,
       ...(config.tls
-        ? { ssl: { rejectUnauthorized: config.tls.verify, ...(config.tls.ca ? { ca: config.tls.ca } : {}) } }
+        ? {
+            ssl: {
+              rejectUnauthorized: config.tls.verify,
+              ...(config.tls.ca ? { ca: config.tls.ca } : {}),
+            },
+          }
         : {}),
     })) as unknown as MysqlConnection;
   } catch (error) {

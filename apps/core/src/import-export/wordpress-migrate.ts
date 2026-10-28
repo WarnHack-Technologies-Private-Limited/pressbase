@@ -5,7 +5,12 @@ import { savePermalinkSettings } from '../content/permalinks';
 import type { Kernel } from '../kernel';
 import { type SettingDefinition, sanitizeSettingValue } from '../options/settings';
 import type { ImportSite } from './records';
-import { type FetchOptions, fetchRemoteFile, type RemoteFile, RemoteFileError } from './remote-file';
+import {
+  type FetchOptions,
+  fetchRemoteFile,
+  type RemoteFile,
+  RemoteFileError,
+} from './remote-file';
 import {
   connectWordPressDatabase,
   redactDatabaseUrl,
@@ -233,7 +238,9 @@ export async function migrateFromWordPressDatabase(
     }
     const fetchFile =
       options.fetchFile ??
-      (options.uploads ? localUploadsFetcher(options.uploads, await source.uploadsUrl()) : undefined);
+      (options.uploads
+        ? localUploadsFetcher(options.uploads, await source.uploadsUrl())
+        : undefined);
     const writer = new ImportWriter(kernel, {
       user,
       fetchAttachments: !skip.has('attachment'),

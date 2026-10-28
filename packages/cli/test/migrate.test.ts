@@ -52,7 +52,9 @@ describe('migrate wordpress', () => {
     ]);
     expect(run.stderr).not.toMatch(/Error/);
     expect(run.code).toBe(0);
-    expect(run.stdout).toMatch(/Migrated 10 posts \(attachment 1, page 5, post 3, wp_navigation 1\)/);
+    expect(run.stdout).toMatch(
+      /Migrated 10 posts \(attachment 1, page 5, post 3, wp_navigation 1\)/,
+    );
     expect(run.stdout).toContain('2 new users');
     expect(run.stderr).toContain('1 “product” post left out');
     expect(run.stdout).toContain('Success: Migrated the WordPress site.');
@@ -74,7 +76,13 @@ describe('migrate wordpress', () => {
     expect(multi.stderr).toMatch(/multisite network/);
     const none = await to.cli(['migrate', 'wordpress', '--user=admin'], { env: {} });
     expect(none.stderr).toMatch(/--db-url=mysql:/);
-    const bad = await to.cli(['migrate', 'wordpress', DB, '--user=admin', '--uploads=/no/such/dir']);
+    const bad = await to.cli([
+      'migrate',
+      'wordpress',
+      DB,
+      '--user=admin',
+      '--uploads=/no/such/dir',
+    ]);
     expect(bad.stderr).toContain('There’s no folder at /no/such/dir.');
   });
 });
