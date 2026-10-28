@@ -12,7 +12,14 @@ import {
 } from '../content/sanitize';
 import type { Kernel } from '../kernel';
 import { sanitizeFileName, uniqueFileName } from './filenames';
-import { type AttachmentMetadata, createImageSubsizes, imageSize } from './images';
+import {
+  type AttachmentMetadata,
+  createImageSubsizes,
+  type ImageSize,
+  imageSize,
+  registeredImageSizes,
+  resizeDimensions,
+} from './images';
 import { ALLOWED_MIME_TYPES, checkFileType, RESIZABLE_IMAGE_TYPES } from './mime';
 import { LocalStorage, type MediaStorage } from './storage';
 
@@ -380,6 +387,136 @@ export async function updateAttachment(
   }
   await kernel.hooks.doAction('edit_attachment', attachment.id);
   return (await kernel.posts.get(attachment.id)) as Post;
+}
+
+/* ---------------------------------------------------------- regenerate */
+
+export interface RegenerateOptions {
+  /** Only attachments missing a registered size (or its file) are regenerated. */
+  onlyMissing?: boolean;
+  /** Keep the files of sizes the new set no longer uses. */
+  skipDelete?: boolean;
+}
+
+export interface RegenerateResult {
+  /** False when `onlyMissing` found nothing to do. */
+  regenerated: boolean;
+  /** The sub-sizes the attachment has afterwards. */
+  sizes: string[];
+  /** Files removed because no size uses them any more. */
+  deleted: string[];
+}
+
+async function readAll(stream: ReadableStream): Promise<Uint8Array> {
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+/**
+ * Remakes an image attachment's sub-sizes from its original upload, after
+ * the sizes in Settings → Media (or a theme's) changed: what
+ * `wp media regenerate` does with wp_create_image_subsizes(). The original is
+ * kept; sub-size files no size uses any more are deleted unless `skipDelete`
+ * (or another attachment shares them). Throws MediaError.
+ */
+export async function regenerateImageSizes(
+  kernel: Kernel,
+  attachment: Post,
+  options: RegenerateOptions = {},
+): Promise<RegenerateResult> {
+  if (attachment.type !== 'attachment' || !RESIZABLE_IMAGE_TYPES.has(attachment.mimeType)) {
+    throw new MediaError(
+      'pressbase_not_an_image',
+      `Attachment ${attachment.id} isn’t an image Pressbase can resize.`,
+    );
+  }
+  const id = attachment.id;
+  const meta = (await getMetaMap(kernel, [id], [META_FILE, META_METADATA])).get(id);
+  const attachedFile = typeof meta?.[META_FILE] === 'string' ? (meta[META_FILE] as string) : '';
+  if (!attachedFile) {
+    throw new MediaError('pressbase_missing_file', `Attachment ${id} has no file.`, 404);
+  }
+  const metadata = (meta?.[META_METADATA] ?? {}) as AttachmentMetadata;
+  const folder = attachedFile.includes('/')
+    ? attachedFile.slice(0, attachedFile.lastIndexOf('/') + 1)
+    : '';
+  const originalKey = metadata.original_image
+    ? `${folder}${metadata.original_image}`
+    : attachedFile;
+  const storage = mediaStorage(kernel);
+  const stream = await storage.read(originalKey);
+  if (!stream) {
+    throw new MediaError(
+      'pressbase_missing_file',
+      `The original file of attachment ${id} is missing (${originalKey}).`,
+      404,
+    );
+  }
+  const data = await readAll(stream);
+
+  if (options.onlyMissing) {
+    const size = await imageSize(data);
+    const sizes = (await kernel.hooks.applyFilters(
+      'intermediate_image_sizes_advanced',
+      await registeredImageSizes(kernel),
+      metadata,
+      id,
+    )) as Record<string, ImageSize>;
+    let missing = false;
+    for (const [name, s] of Object.entries(sizes)) {
+      if (!size || !resizeDimensions(size.width, size.height, s.width, s.height, s.crop)) continue;
+      const have = metadata.sizes?.[name];
+      if (!have || !(await storage.stat(`${folder}${have.file}`))) {
+        missing = true;
+        break;
+      }
+    }
+    if (!missing) {
+      return { regenerated: false, sizes: Object.keys(metadata.sizes ?? {}), deleted: [] };
+    }
+  }
+
+  const before = attachmentFiles(attachedFile, metadata);
+  const result = await createImageSubsizes(
+    kernel,
+    storage,
+    originalKey,
+    data,
+    attachment.mimeType,
+    id,
+  );
+  const next = (await kernel.hooks.applyFilters(
+    'wp_generate_attachment_metadata',
+    result.metadata,
+    id,
+    'update',
+  )) as AttachmentMetadata;
+  if (result.attachedFile !== attachedFile)
+    await setMeta(kernel, id, META_FILE, result.attachedFile);
+  await setMeta(kernel, id, META_METADATA, next);
+
+  const deleted: string[] = [];
+  if (!options.skipDelete) {
+    const keep = new Set([...attachmentFiles(result.attachedFile, next), originalKey]);
+    const stale = before.filter((f) => !keep.has(f));
+    if (stale.length) {
+      // Another attachment may use one of these files (imports do this).
+      const shared = await kernel.db
+        .select({ value: schema.postmeta.value })
+        .from(schema.postmeta)
+        .where(
+          and(
+            eq(schema.postmeta.key, META_FILE),
+            inArray(sql<string>`(${schema.postmeta.value} #>> '{}')`, stale),
+          ),
+        );
+      const used = new Set(shared.map((row) => String(row.value)));
+      for (const file of stale.filter((f) => !used.has(f))) {
+        await storage.delete(file);
+        deleted.push(file);
+      }
+    }
+  }
+  return { regenerated: true, sizes: Object.keys(next.sizes ?? {}), deleted };
 }
 
 /* -------------------------------------------------------------- delete */

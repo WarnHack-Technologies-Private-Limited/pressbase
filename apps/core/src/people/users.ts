@@ -3,6 +3,7 @@ import { schema } from '@pressbase/db';
 import { and, count, eq, inArray, ne, sql } from 'drizzle-orm';
 import { DEFAULT_ROLES, type RoleMap } from '../auth/capabilities';
 import { hashPassword } from '../auth/password';
+import type { CurrentUser } from '../auth/users';
 import { stripTags } from '../content/sanitize';
 import type { Kernel } from '../kernel';
 import { deleteAttachment } from '../media/service';
@@ -518,6 +519,78 @@ export async function updateUser(
     passwordChanged: input.password !== undefined,
     emailChanged: changes.email !== undefined && changes.email !== previous.email,
   };
+}
+
+/**
+ * check_role_update(): every role must exist, and nobody may take away their
+ * own edit_users. Pressbase also refuses to leave the site without an
+ * administrator. `viewer` is who makes the change (null: the command line,
+ * acting as no user). Throws UserError.
+ */
+export async function checkRoleChange(
+  kernel: Kernel,
+  target: number,
+  roles: string[],
+  viewer: CurrentUser | null,
+): Promise<void> {
+  const known = await siteRoles(kernel);
+  for (const role of roles) {
+    if (!known[role]) {
+      throw new UserError('rest_user_invalid_role', `The role ${role} does not exist.`, 400, {
+        roles: `The role ${role} does not exist.`,
+      });
+    }
+  }
+  if (viewer?.id === target && !roles.some((r) => known[r]?.capabilities.edit_users)) {
+    throw new UserError(
+      'rest_user_invalid_role',
+      'Sorry, you are not allowed to give users that role.',
+      403,
+      { roles: 'You can’t remove your own ability to manage users.' },
+    );
+  }
+  if (!roles.includes('administrator')) {
+    const admins = await administratorIds(kernel);
+    if (admins.length === 1 && admins[0] === target) {
+      throw new UserError(
+        'rest_user_invalid_role',
+        'The site needs at least one administrator. Make someone else an administrator first.',
+        403,
+        { roles: 'The site needs at least one administrator.' },
+      );
+    }
+  }
+}
+
+/**
+ * What must hold before a user is deleted, for every caller (REST and the
+ * CLI): `reassign` is another existing user, and the site keeps at least one
+ * administrator. Throws UserError.
+ */
+export async function checkUserDeletion(
+  kernel: Kernel,
+  id: number,
+  reassign: number | null,
+): Promise<void> {
+  if (reassign !== null) {
+    const [target] = Number.isInteger(reassign)
+      ? await kernel.db
+          .select({ id: schema.users.id })
+          .from(schema.users)
+          .where(eq(schema.users.id, reassign))
+      : [];
+    if (!target || reassign === id || reassign < 1) {
+      throw new UserError('rest_user_invalid_reassign', 'Invalid user ID for reassignment.', 400);
+    }
+  }
+  const admins = await administratorIds(kernel);
+  if (admins.length === 1 && admins[0] === id) {
+    throw new UserError(
+      'rest_user_cannot_delete',
+      'The site needs at least one administrator. Make someone else an administrator first.',
+      403,
+    );
+  }
 }
 
 /**

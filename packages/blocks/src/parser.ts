@@ -22,6 +22,15 @@ import type { BlockAttributes, ParsedBlock } from './types';
 const TOKENIZER =
   /<!--\s+(\/)?wp:([a-z][a-z0-9_-]*\/)?([a-z][a-z0-9_-]*)\s+({(?:(?=([^}]+|}+(?=})|(?!}\s+\/?-->)[\s\S])*)\5|[\s\S]*?)}\s+)?(\/)?-->/g;
 
+/**
+ * A fresh copy of the block delimiter pattern (global, so use exec() in a
+ * loop or String.replace). Groups as above. For tools that edit attributes
+ * in place, like `pressbase search-replace`.
+ */
+export function blockDelimiterPattern(): RegExp {
+  return new RegExp(TOKENIZER.source, 'g');
+}
+
 type Token =
   | { type: 'no-more-tokens' }
   | {

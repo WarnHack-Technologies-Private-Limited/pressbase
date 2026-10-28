@@ -18,7 +18,12 @@ async function tempDir() {
 }
 
 function holder(pid: number, host = hostname()) {
-  return JSON.stringify({ pid, hostname: host, process: 'server', since: new Date().toISOString() });
+  return JSON.stringify({
+    pid,
+    hostname: host,
+    process: 'server',
+    since: new Date().toISOString(),
+  });
 }
 
 describe('the built-in database lock', () => {
@@ -41,7 +46,9 @@ describe('the built-in database lock', () => {
       await writeFile(`${db}.lock`, holder(child.pid as number));
       const error = await connect(`pglite:${db}`).catch((e: unknown) => e);
       expect(error).toBeInstanceOf(DatabaseLockedError);
-      expect((error as Error).message).toMatch(/Stop the Pressbase server first, or use PostgreSQL/);
+      expect((error as Error).message).toMatch(
+        /Stop the Pressbase server first, or use PostgreSQL/,
+      );
       // The holder's lock is untouched.
       expect(JSON.parse(await readFile(`${db}.lock`, 'utf8')).pid).toBe(child.pid);
     } finally {
