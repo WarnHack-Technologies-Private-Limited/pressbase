@@ -27,7 +27,16 @@ Tokens are CSS custom properties defined in `apps/admin/src/app/globals.css`. Co
 **Rules**
 - The accent is for action and focus only. Don't use it decoratively.
 - Status colour never stands alone. Pair it with an icon or text, for colour-blind users.
-- Dark mode follows the OS (`prefers-color-scheme`). `data-theme="light|dark"` on `<html>` overrides it, ready for a user preference.
+- Dark mode follows the OS (`prefers-color-scheme`). `data-theme="light|dark"` on `<html>` overrides it.
+
+### Choosing light or dark
+
+People choose **System**, **Light** or **Dark** under *Theme* in the user menu (top right). The items are `menuitemradio`s: arrow keys, Home and End move through the menu, Enter or Space picks, Escape closes it.
+
+- **System** removes `data-theme`, so the OS decides. **Light** and **Dark** set it.
+- The choice is saved per user in core (the `pressbase_admin_color_scheme` user meta, through `POST /wp/v2/users/me`), so it follows the person to other browsers, and mirrored in `localStorage` (`pressbase-admin-color-scheme`).
+- **No flash of the wrong theme.** An inline script in the root layout's `<head>` applies the `localStorage` copy before the first paint, on every screen including login and the installer. On admin pages a second inline script applies the account's saved choice and refreshes the mirror, so a new browser gets it right on the first load too. Storage access is wrapped in `try`/`catch`; when it's blocked, the account's choice still applies. The code is in `apps/admin/src/lib/color-scheme.ts`.
+- Changing a token still means checking contrast in both themes, whichever one you use.
 
 ## Typography
 

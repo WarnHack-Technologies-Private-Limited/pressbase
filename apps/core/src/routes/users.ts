@@ -26,17 +26,20 @@ import {
   sendNewUserEmail,
   sendPasswordChangedEmail,
 } from '../people/password-reset';
+import { parseUserMetaUpdate, registeredUserMetaKeys, restUserMeta } from '../people/user-meta';
 import {
   administratorIds,
   countPostsByUsers,
   countUsers,
   deleteUser,
+  deleteUserMeta,
   destroyUserSessions,
   insertUser,
   metaFor,
   PROFILE_META_KEYS,
   profileMeta,
   rolesFromGrants,
+  setUserMeta,
   siteRoles,
   UserError,
   type UserInput,
@@ -84,7 +87,7 @@ async function prepareMany(
   const meta = await metaFor(
     kernel,
     rows.map((r) => r.id),
-    [...PROFILE_META_KEYS, 'capabilities'],
+    [...PROFILE_META_KEYS, 'capabilities', ...(edit ? registeredUserMetaKeys() : [])],
   );
   return Promise.all(
     rows.map((user) => {
@@ -125,7 +128,8 @@ async function prepareMany(
             }
           : {}),
         avatar_urls: {},
-        meta: [],
+        // Registered meta is edit-context only (people/user-meta.ts).
+        meta: edit ? restUserMeta(m) : [],
         _links: {
           self: [{ href: `/wp-json/wp/v2/users/${user.id}` }],
           collection: [{ href: '/wp-json/wp/v2/users' }],
@@ -466,7 +470,9 @@ export function userRoutes() {
 
     const parsed = writeBody.safeParse((await readJson(c)) ?? {});
     if (!parsed.success) return invalidParams(c, parsed.error);
-    const { send_user_notification: _, meta: __, ...body } = parsed.data;
+    const { send_user_notification: _, meta: rawMeta, ...body } = parsed.data;
+    const meta = parseUserMetaUpdate(rawMeta ?? {});
+    if (!meta.success) return invalidParams(c, meta.error);
     const hasRoles = Boolean(body.roles?.length);
 
     // update_item_permissions_check(): changing roles needs promote_user; a
@@ -479,7 +485,10 @@ export function userRoutes() {
         'Sorry, you are not allowed to edit roles of this user.',
       );
     }
-    const onlyRoles = hasRoles && Object.keys(body).every((k) => k === 'roles');
+    const onlyRoles =
+      hasRoles &&
+      Object.keys(body).every((k) => k === 'roles') &&
+      Object.keys(meta.data).length === 0;
     if (!onlyRoles && !(await currentUserCan(kernel, viewer, 'edit_user', id))) {
       return restError(
         c,
@@ -506,6 +515,11 @@ export function userRoutes() {
       }
       if (result.emailChanged) {
         await sendEmailChangedEmail(kernel, result.previous.email, result.user);
+      }
+      // WP_REST_Meta_Fields::update_value(): null deletes, so the default applies again.
+      for (const [key, value] of Object.entries(meta.data)) {
+        if (value === null) await deleteUserMeta(kernel, id, key);
+        else await setUserMeta(kernel, id, key, value);
       }
       await kernel.hooks.doAction('rest_after_insert_user', result.user, body, false);
       return c.json(await prepareOne(kernel, result.user, true));

@@ -54,7 +54,7 @@ The kit lives in `apps/admin/src/components/ui/`. Use these before writing new m
 
 ## Shell: `components/shell/`
 
-- **AdminShell:** sidebar, top bar with the user menu, skip link. Below 860px the sidebar becomes a drawer (made `inert` while closed). Escape closes the drawer and menus.
+- **AdminShell:** sidebar, top bar with the user menu (Profile, Theme: System / Light / Dark, Log out; a WAI-ARIA menu with arrow-key navigation), skip link. Below 860px the sidebar becomes a drawer (made `inert` while closed). Escape closes the drawer and menus.
 - **PageHeader:** the page `h1`, an optional description, and actions on the right.
 
 ## Patterns

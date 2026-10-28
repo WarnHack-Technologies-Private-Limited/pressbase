@@ -41,6 +41,8 @@ export interface Me {
   email: string;
   roles: string[];
   capabilities: Record<string, boolean>;
+  /** Registered user meta, e.g. pressbase_admin_color_scheme. */
+  meta?: Record<string, unknown>;
 }
 
 export interface SiteIndex {
