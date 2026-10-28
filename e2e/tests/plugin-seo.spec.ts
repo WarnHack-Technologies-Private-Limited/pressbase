@@ -100,4 +100,10 @@ test('Pressbase SEO: edit the SEO tab, publish, see the head tags, redirect, see
   // Settings → SEO opens with the first-run questions.
   await page.goto('/admin/settings/pressbase-seo');
   await expect(page.getByRole('heading', { name: 'Set up SEO' })).toBeVisible();
+
+  // Leave the site as the other specs expect it: without the plugin's publish step.
+  await page.goto('/admin/plugins');
+  const seoPlugin = page.getByRole('listitem').filter({ hasText: 'Pressbase SEO' });
+  await seoPlugin.getByRole('button', { name: 'Deactivate Pressbase SEO' }).click();
+  await expect(page.getByText('Pressbase SEO is deactivated.')).toBeVisible();
 });
