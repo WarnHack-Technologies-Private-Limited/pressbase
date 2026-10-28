@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 import { PURGE_ACTION } from './cache/invalidation';
 import { setup } from './test-utils';
@@ -438,6 +439,45 @@ describe('canonical URLs and core head output', () => {
     const draft = await ctx.request('POST', '/wp/v2/posts', { title: 'Draft' });
     expect(await api?.content.canonicalUrl(draft.body.id)).toBe(false);
     expect(await api?.content.permalink(post.id)).toBe(post.link);
+    // get_term_link(), get_userdata() + get_author_posts_url(), wp_get_attachment_image_src().
+    expect(await api?.content.termLink({ id: 1, slug: 'news', taxonomy: 'category' })).toBe(
+      'http://localhost:3000/category/news/',
+    );
+    expect(await api?.content.author(1)).toMatchObject({
+      id: 1,
+      nicename: 'admin',
+      url: 'http://localhost:3000/author/admin/',
+    });
+    expect(await api?.content.author(999)).toBeUndefined();
+    expect(await api?.content.attachmentImage(post.id)).toBe(false);
+    const login = await ctx.app.request('/wp-json/pressbase/v1/auth/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-pressbase-request': '1' },
+      body: JSON.stringify({ login: 'admin', password: 'correct horse battery staple' }),
+    });
+    const cookie = (login.headers.get('set-cookie') ?? '').split(';')[0] ?? '';
+    const png = await sharp({
+      create: { width: 40, height: 30, channels: 3, background: { r: 1, g: 2, b: 3 } },
+    })
+      .png()
+      .toBuffer();
+    const form = new FormData();
+    form.set('file', new File([new Uint8Array(png)], 'dot.png', { type: 'image/png' }));
+    form.set('alt_text', 'A dot');
+    const uploaded = await ctx.app.request('/wp-json/wp/v2/media', {
+      method: 'POST',
+      headers: { cookie, 'x-pressbase-request': '1' },
+      body: form,
+    });
+    const media = (await uploaded.json()) as { id: number; source_url: string };
+    expect(await api?.content.attachmentImage(media.id)).toEqual({
+      id: media.id,
+      url: media.source_url,
+      width: 40,
+      height: 30,
+      alt: 'A dot',
+      mimeType: 'image/png',
+    });
 
     await ctx.kernel.plugins.deactivate('head');
     const restored = await render(ctx, path);

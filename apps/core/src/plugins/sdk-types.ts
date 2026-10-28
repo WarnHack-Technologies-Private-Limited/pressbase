@@ -108,6 +108,7 @@ export type {
   PluginCliHandler,
   PluginCliIo,
 } from './cli';
+export type { AttachmentImage, ContentAuthor } from './content-links';
 export type { PluginI18n } from './i18n';
 export type {} from './manager';
 export type { PluginManifest, PluginManifestInput, PluginPermission } from './manifest';
