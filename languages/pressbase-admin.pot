@@ -266,19 +266,19 @@ msgstr ""
 msgid "Forgot your password?"
 msgstr ""
 
-#: apps/admin/src/components/people/user-editor.tsx:381 apps/admin/src/components/people/user-editor.tsx:383 apps/admin/src/components/settings/general-settings-form.tsx:397
+#: apps/admin/src/components/people/user-editor.tsx:395 apps/admin/src/components/people/user-editor.tsx:397 apps/admin/src/components/settings/general-settings-form.tsx:397
 msgid "Language"
 msgstr ""
 
-#: apps/admin/src/components/people/user-editor.tsx:386
+#: apps/admin/src/components/people/user-editor.tsx:400
 msgid "The language of the admin for you."
 msgstr ""
 
-#: apps/admin/src/components/people/user-editor.tsx:387
+#: apps/admin/src/components/people/user-editor.tsx:401
 msgid "The language of the admin for this person."
 msgstr ""
 
-#: apps/admin/src/components/people/user-editor.tsx:393
+#: apps/admin/src/components/people/user-editor.tsx:407
 msgid "Site default"
 msgstr ""
 
@@ -337,7 +337,7 @@ msgstr ""
 msgid "Requests are sent from this server, never from visitors’ browsers."
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:168 apps/admin/src/components/settings/ai-settings.tsx:173
+#: apps/admin/src/components/settings/ai-settings.tsx:168 apps/admin/src/components/settings/ai-settings.tsx:176
 msgid "Provider"
 msgstr ""
 
@@ -345,73 +345,73 @@ msgstr ""
 msgid "The service that answers AI requests, and the model it uses."
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:188
+#: apps/admin/src/components/settings/ai-settings.tsx:191
 msgid "Model"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:194
+#: apps/admin/src/components/settings/ai-settings.tsx:197
 #, js-format
 msgid "Default (%s)"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:207 apps/admin/src/components/settings/ai-settings.tsx:221
+#: apps/admin/src/components/settings/ai-settings.tsx:210 apps/admin/src/components/settings/ai-settings.tsx:224
 msgid "API key"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:212 apps/admin/src/components/settings/ai-settings.tsx:279
+#: apps/admin/src/components/settings/ai-settings.tsx:215 apps/admin/src/components/settings/ai-settings.tsx:284
 msgid "Remove key"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:222
+#: apps/admin/src/components/settings/ai-settings.tsx:225
 msgid "Replace the key"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:233
+#: apps/admin/src/components/settings/ai-settings.tsx:236
 msgid "The environment variable wins over a saved key."
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:234
+#: apps/admin/src/components/settings/ai-settings.tsx:237
 msgid "Stored on this server and never shown again."
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:241
+#: apps/admin/src/components/settings/ai-settings.tsx:244
 msgid "Daily limit"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:243
+#: apps/admin/src/components/settings/ai-settings.tsx:246
 #, js-format
 msgid "%d requests sent today. The count resets at midnight UTC."
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:249
+#: apps/admin/src/components/settings/ai-settings.tsx:252
 msgid "Requests per day"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:256
+#: apps/admin/src/components/settings/ai-settings.tsx:259
 msgid "For the whole site, all plugins together."
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:263 apps/admin/src/components/settings/general-settings-form.tsx:484 apps/admin/src/components/settings/settings-form.tsx:98
+#: apps/admin/src/components/settings/ai-settings.tsx:267 apps/admin/src/components/settings/general-settings-form.tsx:484 apps/admin/src/components/settings/settings-form.tsx:98
 msgid "Saving…"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:263 apps/admin/src/components/settings/general-settings-form.tsx:484 apps/admin/src/components/settings/settings-form.tsx:98
+#: apps/admin/src/components/settings/ai-settings.tsx:268 apps/admin/src/components/settings/general-settings-form.tsx:484 apps/admin/src/components/settings/settings-form.tsx:98
 msgid "Save changes"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:271
+#: apps/admin/src/components/settings/ai-settings.tsx:276
 msgid "Testing…"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:272
+#: apps/admin/src/components/settings/ai-settings.tsx:277
 msgid "Test connection"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:278
+#: apps/admin/src/components/settings/ai-settings.tsx:283
 msgid "Remove the API key?"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:285
+#: apps/admin/src/components/settings/ai-settings.tsx:290
 msgid "AI features stop working until a new key is saved."
 msgstr ""
 
@@ -862,27 +862,27 @@ msgstr ""
 msgid "PM"
 msgstr ""
 
-#: apps/admin/src/lib/people.ts:49
+#: apps/admin/src/lib/people.ts:51
 msgctxt "User role"
 msgid "Administrator"
 msgstr ""
 
-#: apps/admin/src/lib/people.ts:54
+#: apps/admin/src/lib/people.ts:56
 msgctxt "User role"
 msgid "Editor"
 msgstr ""
 
-#: apps/admin/src/lib/people.ts:59
+#: apps/admin/src/lib/people.ts:61
 msgctxt "User role"
 msgid "Author"
 msgstr ""
 
-#: apps/admin/src/lib/people.ts:64
+#: apps/admin/src/lib/people.ts:66
 msgctxt "User role"
 msgid "Contributor"
 msgstr ""
 
-#: apps/admin/src/lib/people.ts:69
+#: apps/admin/src/lib/people.ts:71
 msgctxt "User role"
 msgid "Subscriber"
 msgstr ""
