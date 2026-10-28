@@ -37,7 +37,12 @@ export const getWpseo = (api: PluginApi) => merged<Wpseo>(api, 'wpseo', WPSEO_DE
 
 /** `pressbase_seo_settings`: one object, so the settings page has no generic fields. */
 export const OWN_OPTION = 'pressbase_seo_settings';
-export const OWN_DEFAULTS: OwnSettings = { robots_txt: '', indexnow: null, setup_done: false };
+export const OWN_DEFAULTS: OwnSettings = {
+  robots_txt: '',
+  indexnow: null,
+  setup_done: false,
+  auto_redirects: true,
+};
 
 export async function getOwn(api: PluginApi): Promise<OwnSettings> {
   const stored = await api.options.get<unknown>('settings', {});
@@ -46,6 +51,7 @@ export async function getOwn(api: PluginApi): Promise<OwnSettings> {
     robots_txt: typeof own.robots_txt === 'string' ? own.robots_txt : '',
     indexnow: typeof own.indexnow === 'boolean' ? own.indexnow : null,
     setup_done: own.setup_done === true,
+    auto_redirects: own.auto_redirects !== false,
   };
 }
 

@@ -234,6 +234,8 @@ export interface OwnSettings {
   /** null until the site owner decides: then on unless search engines are discouraged. */
   indexnow: boolean | null;
   setup_done: boolean;
+  /** Add a 301 when a published post's address changes. */
+  auto_redirects: boolean;
 }
 
 /** The settings the admin page reads and saves, in one object. */

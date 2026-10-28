@@ -604,8 +604,8 @@ export function robotsDirectives(robots: Robots): Record<string, string | boolea
   };
   for (const a of robots.adv) out[a] = true;
   if (robots.index && !robots.adv.includes('nosnippet')) {
-    out['max-snippet'] = '-1';
     out['max-image-preview'] = 'large';
+    out['max-snippet'] = '-1';
     out['max-video-preview'] = '-1';
   }
   return out;

@@ -23,9 +23,7 @@ export function jsonForScript(value: unknown): string {
   return JSON.stringify(value)
     .replace(/</g, '\\u003c')
     .replace(/>/g, '\\u003e')
-    .replace(/&/g, '\\u0026')
-    .replace(/ /g, '\\u2028')
-    .replace(/ /g, '\\u2029');
+    .replace(/&/g, '\\u0026');
 }
 
 /** Plain text from HTML or block markup, with the common entities decoded. */

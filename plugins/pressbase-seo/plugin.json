@@ -8,7 +8,7 @@
     "url": "https://github.com/WarnHack-Technologies-Private-Limited/pressbase"
   },
   "homepage": "https://github.com/WarnHack-Technologies-Private-Limited/pressbase/tree/main/plugins/pressbase-seo",
-  "requires": ">=0.5.0",
+  "requires": ">=0.1.0",
   "main": "dist/index.js",
   "permissions": ["database", "options", "network"],
   "migrations": "migrations",
