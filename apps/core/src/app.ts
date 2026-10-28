@@ -14,8 +14,10 @@ import { blockRoutes } from './routes/blocks';
 import { commentCountRoutes, commentsRoutes } from './routes/comments';
 import { commentsPostRoutes } from './routes/comments-post';
 import { dashboardRoutes, postCountRoutes } from './routes/dashboard';
+import { globalStylesRoutes } from './routes/global-styles';
 import { installRoutes } from './routes/install';
 import { mediaRoutes } from './routes/media';
+import { navigationRoutes } from './routes/navigation';
 import { peopleRoutes } from './routes/people';
 import { postsRoutes } from './routes/posts';
 import { searchRoutes } from './routes/search';
@@ -25,6 +27,7 @@ import { publicFileRoutes, themeRoutes } from './routes/themes';
 import { typeRoutes } from './routes/types';
 import { uploadsRoutes } from './routes/uploads';
 import { userRoutes } from './routes/users';
+import { siteIdentityIndex } from './themes/site-identity';
 import { PRESSBASE_VERSION } from './version';
 
 /**
@@ -67,6 +70,8 @@ export function createApp(kernel: Kernel) {
       url: ready ? await kernel.options.get<string>('home', '') : '',
       namespaces: ['pressbase/v1', 'wp/v2'],
       pressbase: { version: PRESSBASE_VERSION, state: kernel.state },
+      // site_logo, site_icon, site_icon_url, as WordPress's index has them.
+      ...(ready ? await siteIdentityIndex(kernel) : {}),
     });
   });
 
@@ -120,11 +125,23 @@ export function createApp(kernel: Kernel) {
     app.route(path, commentsPostRoutes());
   }
 
+  // Navigation menus (v0.4): the posts controller for wp_navigation at
+  // /wp/v2/navigation (saves go through kernel.posts, so save_post & co fire),
+  // plus the navigation fallback routes. See docs/architecture/navigation.md.
+  const navigation = kernel.postTypes.get('wp_navigation');
+  if (navigation) installed.route(`/wp/v2/${navigation.restBase}`, postsRoutes(navigation));
+  installed.route('/', navigationRoutes());
+
   // Themes and the public site (v0.4): /pressbase/v1/render, /wp/v2/themes and
   // theme activation, plus theme files, WordPress's front-end CSS and the post
   // password form outside /wp-json. See docs/architecture/themes.md, ADR 0007.
   installed.route('/', themeRoutes(kernel));
   app.route('/', publicFileRoutes(kernel));
+
+  // Global styles (v0.4): /wp/v2/global-styles (theme, variations, user styles,
+  // revisions) and the live preview, /pressbase/v1/global-styles/preview.
+  // See docs/architecture/themes.md#global-styles.
+  installed.route('/', globalStylesRoutes(kernel));
 
   api.route('/', installed);
 

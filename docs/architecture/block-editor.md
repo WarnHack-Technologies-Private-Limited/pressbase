@@ -53,6 +53,7 @@ ShortcutProvider (.root)
 
 - `onReady(handle)`: `handle.getContent()` serializes the blocks on demand (saving, autosave, switching to Code); `handle.baseline` is the first parse/serialize pass, so opening a post never counts as a change.
 - `onContentChange(markup)`: debounced (300 ms). It drives the "Unsaved changes" state, the word count and the browser copy.
+- `handle.saveMenus()`: saves the `wp_navigation` menus a Navigation block edited through core-data; `PostEditor` calls it on every save.
 - `onSelectionChange`: selecting a block opens the Block tab, and clearing the selection returns to the Post tab, as in WordPress.
 
 To replace the content (loading a revision, restoring an autosave), `PostEditor` remounts the editor with a new `key`. **Code** view is a textarea over the raw markup; switching back parses it again.
@@ -98,10 +99,11 @@ Covered by `api-fetch.test.ts`.
 | `/wp/v2/block-patterns/*` | The Patterns tab says "No results found." |
 | `/wp/v2/blocks` | Synced patterns (`core/block`) are left out of the inserter. |
 | `/oembed/1.0/proxy` | Embeds (`core/embed`) are left out of the inserter. |
+| `/wp/v2/navigation` | The Navigation block and its items (`NAVIGATION_BLOCKS`: navigation, navigation link, submenu, home link, page list) are left out of the inserter. When present, the block's menu selector lists `wp_navigation` menus, checks permissions with `OPTIONS`, and a new block starts from the header's menu (`/wp-block-editor/v1/navigation-fallback`). See [Navigation](navigation.md). |
 
 Static blocks (paragraph, image, gallery, cover, media & text, file, audio, video…) are always offered; without the media library they still take URLs. `blocks.test.ts` checks this.
 
-`UNSUPPORTED_BLOCKS` are never offered in v0.3. They are the Classic block (TinyMCE), footnotes (post meta through core-data), navigation and site-editing blocks (v0.4), and comment blocks (no endpoints yet).
+`UNSUPPORTED_BLOCKS` are never offered. They are the Classic block (TinyMCE), footnotes (post meta through core-data), and site-editing blocks (template part, post content, pattern, site logo, title and tagline, the navigation overlay's close button).
 
 ### Adding or hiding a block
 
@@ -150,4 +152,4 @@ In the admin (`post-editor.tsx`, helpers in `lib/autosave.ts`, tested in `lib/au
 
 - The canvas, the inserter, the list view, the Block tab and popovers stay light in dark mode (WordPress's UI has no dark theme). See [Components](../design/components.md#block-editor-componentsblock-editor).
 - Undo history is per editor session. It resets when the content is replaced (revision, autosave restore) or after switching from Code back to Visual.
-- Blocks that edit other entities through core-data (footnotes, site title, navigation) are hidden until those entities have endpoints.
+- Blocks that edit other entities through core-data (footnotes, site title) are hidden until those entities have endpoints. The Navigation block edits `wp_navigation` menus; menus are best edited in Appearance → Menus (see [Navigation](navigation.md)).

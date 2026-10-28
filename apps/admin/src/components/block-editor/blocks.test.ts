@@ -61,6 +61,26 @@ describe('allowedBlockTypes', () => {
     }
   });
 
+  it('offers the navigation blocks once core serves /wp/v2/navigation', () => {
+    const base = { blockRenderer: true, oembed: false, syncedPatterns: [] };
+    expect(unavailableReason('core/navigation', base)).toBe('needs navigation menus');
+    const features = { ...base, navigation: true };
+    for (const name of [
+      'core/navigation',
+      'core/navigation-link',
+      'core/navigation-submenu',
+      'core/home-link',
+      'core/page-list',
+    ]) {
+      expect(unavailableReason(name, features), name).toBeNull();
+    }
+    // Still needs the server to render them, once it reports block types.
+    expect(unavailableReason('core/navigation', { ...features, blockTypes: [] })).toBe(
+      'not rendered by the server yet',
+    );
+    expect(unavailableReason('core/navigation-overlay-close', features)).toMatch(/not supported/);
+  });
+
   it('explains why a block is unavailable', () => {
     expect(unavailableReason('core/latest-posts', NO_FEATURES)).toBe('needs the block engine');
     expect(unavailableReason('core/freeform', NO_FEATURES)).toMatch(/not supported/);

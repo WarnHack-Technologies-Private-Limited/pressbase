@@ -92,6 +92,11 @@ export interface BlockEditorHandle {
   getContent(): string;
   /** The initial content after one parse/serialize pass, to compare against. */
   baseline: string;
+  /**
+   * Saves navigation menus (`wp_navigation`) edited through a Navigation
+   * block in this post, as WordPress's multi-entity save does.
+   */
+  saveMenus(): Promise<void>;
 }
 
 export interface BlockEditorProps {
@@ -150,8 +155,13 @@ export default function BlockEditor(props: BlockEditorProps) {
   }, []);
 
   // Hand the parent a way to read the content on demand (saving, autosave).
+  const registry = useRegistry();
   useEffect(() => {
-    onReady({ getContent: () => serialize(blocksRef.current), baseline: initial.baseline });
+    onReady({
+      getContent: () => serialize(blocksRef.current),
+      baseline: initial.baseline,
+      saveMenus: () => saveEditedMenus(registry),
+    });
   }, []);
 
   // Report content changes, debounced: serializing is the expensive part.
@@ -287,6 +297,30 @@ export default function BlockEditor(props: BlockEditorProps) {
 }
 
 /* ----------------------------------------------------------------- pieces */
+
+/** core-data's store, as the Navigation block uses it (only the calls made here). */
+interface CoreDataStore {
+  __experimentalGetDirtyEntityRecords?: () => { kind: string; name: string; key: number }[];
+}
+
+/** Saves the `wp_navigation` records the Navigation block left edited in core-data. */
+async function saveEditedMenus(registry: ReturnType<typeof useRegistry>): Promise<void> {
+  let dirty: { kind: string; name: string; key: number }[] = [];
+  try {
+    const select = registry.select('core') as CoreDataStore | undefined;
+    dirty = select?.__experimentalGetDirtyEntityRecords?.() ?? [];
+  } catch {
+    return; // core-data isn't loaded: nothing was edited through it.
+  }
+  const dispatch = registry.dispatch('core') as {
+    saveEditedEntityRecord?: (kind: string, name: string, key: number) => Promise<unknown>;
+  };
+  for (const record of dirty) {
+    if (record.kind === 'postType' && record.name === 'wp_navigation') {
+      await dispatch.saveEditedEntityRecord?.(record.kind, record.name, record.key);
+    }
+  }
+}
 
 /** The inserter or list view, over the left edge of the canvas. */
 function SidePanel({ kind, onClose }: { kind: Exclude<Panel, null>; onClose: () => void }) {

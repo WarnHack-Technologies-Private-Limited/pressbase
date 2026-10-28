@@ -4,7 +4,7 @@ import { Paintbrush } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useCan } from '@/components/shell/current-user';
-import { Button } from '@/components/ui/button';
+import { Button, ButtonLink } from '@/components/ui/button';
 import { Badge, Card, EmptyState } from '@/components/ui/surface';
 import { useToast } from '@/components/ui/toast';
 import { ApiError, api } from '@/lib/api';
@@ -16,6 +16,7 @@ export function ThemeList({ themes }: { themes: RestTheme[] }) {
   const router = useRouter();
   const toast = useToast();
   const canSwitch = useCan('switch_themes');
+  const canEditStyles = useCan('edit_theme_options');
   const [busy, setBusy] = useState<string | null>(null);
 
   async function activate(theme: RestTheme) {
@@ -74,6 +75,13 @@ export function ThemeList({ themes }: { themes: RestTheme[] }) {
               </p>
               {theme.description.raw && (
                 <p className={styles.description}>{theme.description.raw}</p>
+              )}
+              {active && theme.is_block_theme && canEditStyles && (
+                <div className={styles.actions}>
+                  <ButtonLink href="/admin/appearance/styles" size="sm">
+                    Edit styles
+                  </ButtonLink>
+                </div>
               )}
               {!active && canSwitch && (
                 <div className={styles.actions}>

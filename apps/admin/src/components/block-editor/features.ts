@@ -68,6 +68,8 @@ export interface EditorFeatures {
   syncedPatterns: RestSyncedPattern[] | null;
   /** /oembed/1.0/proxy exists, so embeds can preview. */
   oembed: boolean;
+  /** /wp/v2/navigation exists (wp_navigation menus), so the Navigation block can work. */
+  navigation: boolean;
 }
 
 export const NO_FEATURES: EditorFeatures = {
@@ -78,6 +80,7 @@ export const NO_FEATURES: EditorFeatures = {
   patternCategories: [],
   syncedPatterns: null,
   oembed: false,
+  navigation: false,
 };
 
 type Probe<T> = { exists: boolean; data?: T };
@@ -119,15 +122,18 @@ export function loadEditorFeatures(): Promise<EditorFeatures> {
     const index = apiFetch<RestIndex>({ path: '/' }).catch(() => undefined);
     const probeListed = async (path: string): Promise<Probe<unknown>> =>
       namespaceListed(await index, path) ? probe(path) : { exists: false };
-    const [media, renderer, types, patterns, categories, synced, oembed] = await Promise.all([
-      probe('/wp/v2/media?per_page=1'),
-      probe('/wp/v2/block-renderer/core/archives?context=edit'),
-      probe<RestBlockType[]>('/wp/v2/block-types?context=edit'),
-      probe<RestBlockPattern[]>('/wp/v2/block-patterns/patterns'),
-      probe<RestPatternCategory[]>('/wp/v2/block-patterns/categories'),
-      probe<RestSyncedPattern[]>('/wp/v2/blocks?per_page=100&context=edit'),
-      probeListed('/oembed/1.0/proxy'),
-    ]);
+    const [media, renderer, types, patterns, categories, synced, oembed, navigation] =
+      await Promise.all([
+        probe('/wp/v2/media?per_page=1'),
+        probe('/wp/v2/block-renderer/core/archives?context=edit'),
+        probe<RestBlockType[]>('/wp/v2/block-types?context=edit'),
+        probe<RestBlockPattern[]>('/wp/v2/block-patterns/patterns'),
+        probe<RestPatternCategory[]>('/wp/v2/block-patterns/categories'),
+        probe<RestSyncedPattern[]>('/wp/v2/blocks?per_page=100&context=edit'),
+        probeListed('/oembed/1.0/proxy'),
+        // Navigation menus (v0.4). A 401/403 still means the route exists.
+        probe('/wp/v2/navigation?per_page=1'),
+      ]);
     return {
       media: media.exists,
       blockRenderer: renderer.exists,
@@ -136,6 +142,7 @@ export function loadEditorFeatures(): Promise<EditorFeatures> {
       patternCategories: Array.isArray(categories.data) ? categories.data : [],
       syncedPatterns: synced.exists ? (Array.isArray(synced.data) ? synced.data : []) : null,
       oembed: oembed.exists,
+      navigation: navigation.exists,
     };
   })();
   return cached;

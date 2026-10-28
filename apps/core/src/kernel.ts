@@ -1,6 +1,7 @@
 import { connect, type DatabaseConnection } from '@pressbase/db';
 import { HookBus } from '@pressbase/hooks';
 import { BlocksService } from './blocks/service';
+import { registerCacheInvalidation } from './cache/invalidation';
 import { registerCommentNotifications } from './comments/notify';
 import { CommentsService } from './comments/service';
 import type { Config } from './config';
@@ -12,7 +13,9 @@ import { TermsService } from './content/terms';
 import { Mailer } from './mail/mailer';
 import { registerCoreSettings, SettingsRegistry } from './options/settings';
 import { Options } from './options/store';
+import { registerGlobalStylesHooks, registerGlobalStylesPostType } from './themes/global-styles';
 import { ThemesService } from './themes/service';
+import { registerSiteIdentityHooks, registerSiteIdentitySettings } from './themes/site-identity';
 import { registerThemeSupports } from './themes/supports';
 import { DB_VERSION } from './version';
 
@@ -55,6 +58,14 @@ export class Kernel {
     registerCoreTaxonomies(this.taxonomies);
     registerCommentNotifications(this);
     registerThemeSupports(this);
+    // Global styles and site identity (v0.4): the wp_global_styles post type,
+    // site_logo / site_icon settings. See docs/architecture/themes.md.
+    registerGlobalStylesPostType(this.postTypes);
+    registerGlobalStylesHooks(this);
+    registerSiteIdentitySettings(this.settings);
+    registerSiteIdentityHooks(this);
+    // Public page caching: content changes announce the cache tags they make stale.
+    registerCacheInvalidation(this);
   }
 
   get state(): SiteState {

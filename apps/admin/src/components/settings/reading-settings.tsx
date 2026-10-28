@@ -11,6 +11,8 @@ export interface ReadingSettings extends Record<string, unknown> {
   page_for_posts: number;
   posts_per_page: number;
   blog_public: boolean;
+  posts_per_rss: number;
+  rss_use_excerpt: boolean;
 }
 
 /** Settings → Reading, as in WordPress's options-reading.php. */
@@ -102,10 +104,47 @@ export function ReadingSettingsForm({
             </div>
           </Card>
 
+          <Card title="Feeds" description="What feed readers get from your RSS and Atom feeds.">
+            <div className={styles.fields}>
+              <TextField
+                label="Feeds show the most recent"
+                type="number"
+                min={1}
+                max={100}
+                value={values.posts_per_rss}
+                onChange={(e) => set('posts_per_rss', Number(e.target.value))}
+                error={errors.posts_per_rss}
+                hint="Items per feed, from 1 to 100."
+                style={{ maxWidth: '8rem' }}
+              />
+              <fieldset className={styles.formats}>
+                <legend>For each post in a feed, include</legend>
+                <label className={styles.format} style={{ gridTemplateColumns: 'auto 1fr' }}>
+                  <input
+                    type="radio"
+                    name="rss_use_excerpt"
+                    checked={!values.rss_use_excerpt}
+                    onChange={() => set('rss_use_excerpt', false)}
+                  />
+                  <span>Full text</span>
+                </label>
+                <label className={styles.format} style={{ gridTemplateColumns: 'auto 1fr' }}>
+                  <input
+                    type="radio"
+                    name="rss_use_excerpt"
+                    checked={values.rss_use_excerpt}
+                    onChange={() => set('rss_use_excerpt', true)}
+                  />
+                  <span>Excerpt</span>
+                </label>
+              </fieldset>
+            </div>
+          </Card>
+
           <Card title="Search engine visibility">
             <Checkbox
               label="Ask search engines not to index this site"
-              description="It’s up to search engines to honour this request."
+              description="It’s up to search engines to honour this request. The XML sitemap is turned off and robots.txt asks crawlers to stay away."
               checked={!values.blog_public}
               onChange={(e) => set('blog_public', !e.target.checked)}
             />

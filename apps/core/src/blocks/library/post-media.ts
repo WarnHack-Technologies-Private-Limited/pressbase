@@ -9,6 +9,7 @@ import {
 } from '@pressbase/blocks';
 import { schema } from '@pressbase/db';
 import { and, asc, desc, eq, gt, lt } from 'drizzle-orm';
+import { addCacheTags, CacheTag } from '../../cache/tags';
 import { permalink, permalinkContext } from '../../content/permalinks';
 import type { Post } from '../../content/posts';
 import { sanitizePostTitle } from '../../content/sanitize';
@@ -58,7 +59,10 @@ export async function attachmentImage(
     const ratio = width / height;
     const all = [
       { file: file.slice(folder.length), width: metadata.width, height: metadata.height },
-      ...Object.values(metadata.sizes ?? {}),
+      // Site icon crops (site_icon-*) are favicons, not alternatives for this image.
+      ...Object.entries(metadata.sizes ?? {})
+        .filter(([name]) => !name.startsWith('site_icon-'))
+        .map(([, item]) => item),
     ];
     const seen = new Set<number>();
     for (const item of all) {
@@ -206,6 +210,8 @@ async function adjacentPost(
     )
     .orderBy(next ? asc(posts.date) : desc(posts.date))
     .limit(1);
+  // The neighbour changes when a post of this type is published or unpublished.
+  addCacheTags(CacheTag.posts(post.type), row && CacheTag.post(row.id));
   return row;
 }
 
@@ -390,7 +396,11 @@ export async function renderPostAuthor(
   return `<div ${getBlockWrapperAttributes(block, { class: classes })}>${avatar}<div class="wp-block-post-author__content">${byline}<p class="wp-block-post-author__name">${name}</p>${description}</div></div>`;
 }
 
-/** render_block_core_site_logo(): nothing until the site has a logo (site_logo option). */
+/**
+ * render_block_core_site_logo() with get_custom_logo(): nothing until the
+ * site has a logo (the site_logo option). The image's own alt text wins over
+ * the site name; the width attribute scales width and height together.
+ */
 export async function renderSiteLogo(
   attributes: BlockAttributes,
   _content: string,
@@ -400,18 +410,28 @@ export async function renderSiteLogo(
   const logo = Number(await kernel.options.get<number>('site_logo', 0));
   if (!logo) return '';
   const width = Number(attributes.width) || 0;
-  const style = width ? `width:${width}px;` : '';
   const site = await siteInfo(kernel);
+  const alt = await kernel.posts.getMeta(logo, META_ALT);
   let image = await attachmentImage(block, logo, 'full', {
     class: 'custom-logo',
-    alt: site.name,
-    ...(style ? { style } : {}),
+    alt: typeof alt === 'string' && alt ? alt : site.name,
   });
   if (!image) return '';
-  if (attributes.isLink !== false) {
-    image = `<a href="${escUrl(`${site.home}/`)}" class="custom-logo-link" rel="home"${attributes.linkTarget === '_blank' ? ' target="_blank"' : ''}>${image}</a>`;
+  if (width) {
+    // The wp_get_attachment_image_src filter: width from the block, height to match.
+    image = image.replace(
+      /width="(\d+)" height="(\d+)"/,
+      (_m, w, h) => `width="${width}" height="${Math.round(width / (Number(w) / Number(h)))}"`,
+    );
   }
-  const classes =
-    attributes.className && String(attributes.className).includes('is-style-rounded') ? '' : '';
-  return `<div ${getBlockWrapperAttributes(block, { class: classes })}>${image}</div>`;
+  if (attributes.isLink !== false) {
+    const main = currentPage()?.main;
+    const current = main?.isFrontPage && !main.isPaged ? ' aria-current="page"' : '';
+    const newTab =
+      attributes.linkTarget === '_blank'
+        ? ' aria-label="(Home link, opens in a new tab)" target="_blank"'
+        : '';
+    image = `<a href="${escUrl(`${site.home}/`)}" class="custom-logo-link" rel="home"${current}${newTab}>${image}</a>`;
+  }
+  return `<div ${getBlockWrapperAttributes(block, { class: width ? '' : 'is-default-size' })}>${image}</div>`;
 }

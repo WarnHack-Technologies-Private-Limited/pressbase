@@ -74,6 +74,8 @@ Undeclared names still work, with `unknown` arguments.
 | `wp_trash_post` / `trashed_post` | action | `postId`         | before / after moving to the Trash                 |
 | `untrashed_post` | action | `postId`                   | after restoring from the Trash                     |
 | `before_delete_post` / `deleted_post` | action | `postId, post` | around permanent deletion                    |
+| `post_updated`   | action | `postId, postAfter, postBefore` | after an existing post is updated, before `save_post` |
+| `set_object_terms` | action | `objectId, termIds, ttIds, taxonomy, append, oldTtIds` | after a post's terms in one taxonomy are set |
 | `created_term`, `edited_term` | action | `termId, taxonomy` | after a term is created / updated              |
 | `delete_term`    | action | `termId, taxonomy, term`   | after a term is deleted                            |
 | `content_query_args` | filter | `args`                 | before every `ContentQuery` runs (like `pre_get_posts`) |
@@ -133,5 +135,16 @@ Undeclared names still work, with `unknown` arguments.
 | `rest_prepare_comment` | filter | `item, comment, context` | each comment in a REST response |
 | `rest_insert_comment`, `rest_after_insert_comment` | action | `comment, body, creating` | after a REST create or update |
 | `rest_delete_comment` | action | `comment, response` | after a REST delete |
+| `save_post_wp_global_styles` | action | `postId, post, update` | user global styles saved (REST, a restored revision, or code); core re-resolves the active theme's styles on it |
+| `pressbase_global_styles_updated` | action | `stylesheet, post, config` | **after** a theme's user global styles changed and the active theme's stylesheet was rebuilt. Pressbase's own hook (WordPress only cleans its theme.json caches here): the one to listen to for invalidating cached pages after a style change. `switch_theme` and `updated_option` (`site_logo`, `site_icon`, `blogname`…) cover the other appearance changes. |
+| `site_icon_meta_tags` | filter | `tags` | the icon tags `wp_site_icon()` prints in the public page head |
+| `pressbase_cache_purge` | action | `tags, reason` | a change made public pages stale; `tags` are cache tags (`post:12`, `site`…). Core forwards them to `apps/web`; a CDN integration can listen too. See [The public site](public-site.md#page-caching) |
+| `do_robotstxt` / `robots_txt` | action / filter | — / `output, public` | before / after `/robots.txt` is built |
+| `wp_title_rss`, `the_title_rss`, `the_permalink_rss`, `the_excerpt_rss`, `the_content_feed` | filter | `title, format` / `title` / `link` / `excerpt` / `html, format` | feed channel title and items |
+| `comment_author_rss`, `comment_text_rss` | filter | `author` / `text` | comment feed items |
+| `wp_sitemaps_enabled` | filter | `enabled` | whether sitemaps are served (default: the site is public) |
+| `wp_sitemaps_max_urls` | filter | `max, objectType` | URLs per sitemap page (2,000) |
+| `wp_sitemaps_post_types`, `wp_sitemaps_taxonomies` | filter | `names` | which post types and taxonomies get sitemaps |
+| `wp_sitemaps_posts_query_args` | filter | `args, postType` | the query of a posts sitemap |
 
 **When you add a hook to core,** use WordPress's name if WordPress has an equivalent. Add it to this table and declare its types.

@@ -12,14 +12,8 @@ export const UNSUPPORTED_BLOCKS: ReadonlySet<string> = new Set([
   'core/freeform',
   // Stores its notes in post meta through core-data's entity editing.
   'core/footnotes',
-  // Navigation menus and site editing arrive with themes (v0.4).
-  'core/navigation',
-  'core/navigation-link',
-  'core/navigation-submenu',
+  // Site editing arrives later. (Navigation blocks: see NAVIGATION_BLOCKS.)
   'core/navigation-overlay-close',
-  'core/home-link',
-  'core/page-list',
-  'core/page-list-item',
   'core/template-part',
   'core/post-content',
   'core/pattern',
@@ -29,12 +23,32 @@ export const UNSUPPORTED_BLOCKS: ReadonlySet<string> = new Set([
 ]);
 
 /**
+ * The Navigation block and its items. They edit `wp_navigation` menus through
+ * core-data, so they're offered once core serves /wp/v2/navigation (the
+ * `navigation` feature probe). See docs/architecture/navigation.md.
+ */
+export const NAVIGATION_BLOCKS: ReadonlySet<string> = new Set([
+  'core/navigation',
+  'core/navigation-link',
+  'core/navigation-submenu',
+  'core/home-link',
+  'core/page-list',
+  'core/page-list-item',
+]);
+
+/**
  * Core blocks rendered on the server (no saved HTML): they need the block
  * engine (`/wp/v2/block-renderer`) to show anything on the site.
  * From block-library: the blocks without a `save` function, plus containers
  * that only make sense with them.
  */
 export const DYNAMIC_BLOCKS: ReadonlySet<string> = new Set([
+  // Navigation (also needs the navigation probe, above).
+  'core/navigation',
+  'core/navigation-link',
+  'core/navigation-submenu',
+  'core/home-link',
+  'core/page-list',
   // Comments: shown once the server reports them in /wp/v2/block-types.
   'core/comments',
   'core/comment-template',
@@ -99,7 +113,7 @@ export const DYNAMIC_BLOCKS: ReadonlySet<string> = new Set([
 
 /** The server features `unavailableReason()` looks at. */
 export type BlockFeatures = Pick<EditorFeatures, 'blockRenderer' | 'oembed' | 'syncedPatterns'> &
-  Partial<Pick<EditorFeatures, 'blockTypes'>>;
+  Partial<Pick<EditorFeatures, 'blockTypes' | 'navigation'>>;
 
 /**
  * Why a block is left out of the inserter, or null when it's offered.
@@ -112,6 +126,7 @@ export type BlockFeatures = Pick<EditorFeatures, 'blockRenderer' | 'oembed' | 's
  */
 export function unavailableReason(name: string, features: BlockFeatures): string | null {
   if (UNSUPPORTED_BLOCKS.has(name)) return 'not supported in the post editor yet';
+  if (NAVIGATION_BLOCKS.has(name) && !features.navigation) return 'needs navigation menus';
   if (DYNAMIC_BLOCKS.has(name)) {
     if (!features.blockRenderer) return 'needs the block engine';
     if (features.blockTypes && !features.blockTypes.some((type) => type.name === name)) {

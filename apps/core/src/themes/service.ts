@@ -1,19 +1,25 @@
+import type { Dirent } from 'node:fs';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   type BlockStyleMetadata,
   CORE_BLOCK_STYLE_METADATA,
+  type GlobalStylesConfig,
   getGlobalStylesheet,
   type JsonObject,
+  keyPresetsByOrigin,
   type ResolvedThemeJson,
   resolveThemeJson,
+  type StyleVariation,
+  styleVariationScope,
   type ThemeJsonData,
   type ThemeJsonPartial,
 } from '@pressbase/theme-json';
 import type { Kernel } from '../kernel';
 import { THEME_COMPAT, type ThemeCompat } from './compat';
 import { readFileHeaders, THEME_HEADERS } from './file-headers';
+import { decodeGlobalStyles, userGlobalStylesPost } from './global-styles';
 import { loadPhpPattern } from './php-patterns';
 
 /**
@@ -71,6 +77,16 @@ export interface TemplatePartFile extends TemplateFile {
   title: string;
 }
 
+/** What the theme's styles are resolved from, before user global styles. */
+export interface ThemeStyleSources {
+  /** The theme's theme.json (the parent's, then the child's on top). */
+  themeData: ThemeJsonData;
+  /** Block style variation partials (styles/blocks, styles/sections…). */
+  partials: ThemeJsonPartial[];
+  blocks: Record<string, BlockStyleMetadata>;
+  registeredStyles: Record<string, string[]>;
+}
+
 /** The active theme, loaded: templates, parts, theme.json and global styles. */
 export interface ActiveTheme {
   info: ThemeInfo;
@@ -91,6 +107,15 @@ export interface ActiveTheme {
   };
   /** Stylesheet URLs the theme enqueues. */
   stylesheets: string[];
+  /**
+   * Theme style variations (JSON files under `styles/` without `blockTypes`),
+   * as WP_Theme_JSON_Resolver::get_style_variations() returns them: presets
+   * keyed by the theme origin, a title from the file name when there is none.
+   */
+  variations: StyleVariation[];
+  /** User global styles (the custom origin): the `wp_global_styles` post and its config. */
+  globalStyles: { id: number | null; config: GlobalStylesConfig };
+  sources: ThemeStyleSources;
   /** URL of a file in the theme (get_theme_file_uri()): child first, then parent. */
   fileUri(relative: string): string;
 }
@@ -310,20 +335,10 @@ export class ThemesService {
         styles: type.styles.map((s) => s.name),
       };
     }
-    const userStyles = await this.kernel.options.get<ThemeJsonData | undefined>(
-      `pressbase_global_styles_${info.stylesheet}`,
-      undefined,
-    );
-    const themeJson = resolveThemeJson({
-      theme: themeData,
-      blockStyleVariations: partials,
-      user: userStyles,
-      blocks,
-      registeredStyles,
-    });
-    const styles = getGlobalStylesheet(themeJson, {
-      resolveFileUri: (relative) => fileUri(relative),
-    });
+    const sources: ThemeStyleSources = { themeData, partials, blocks, registeredStyles };
+    const globalStyles = await this.#userStyles(info.stylesheet);
+    const resolvedStyles = resolveStyles(sources, globalStyles.config, fileUri);
+    const { themeJson } = resolvedStyles;
 
     // Templates and parts: the child's first, then the parent's.
     const templates = new Map<string, TemplateFile>();
@@ -351,8 +366,7 @@ export class ThemesService {
       info,
       parent,
       compat,
-      themeJson,
-      settings: themeJson.tree.getGlobalSettings(),
+      ...resolvedStyles,
       templates,
       parts,
       customTemplates: themeJson.tree
@@ -364,17 +378,79 @@ export class ThemesService {
           postTypes: Array.isArray(t.postTypes) ? t.postTypes.map(String) : ['page'],
         })),
       css: {
-        global: styles.stylesheet,
-        custom: styles.customCss,
-        fontFaces: styles.fontFaces,
+        ...resolvedStyles.css,
         blockStyles: (compat?.blockStyles ?? []).map((s) => s.inlineStyle ?? '').join(''),
       },
       stylesheets: (compat?.stylesheets ?? []).map((file) => fileUri(file)),
+      variations: await readStyleVariations(chain),
+      globalStyles,
+      sources,
       fileUri,
     };
     await this.#registerPatterns(active, chain);
     this.#active = active;
     return active;
+  }
+
+  /** The active theme's user global styles post, decoded (get_user_data()). */
+  async #userStyles(stylesheet: string): Promise<ActiveTheme['globalStyles']> {
+    const post = await userGlobalStylesPost(this.kernel, stylesheet);
+    return post
+      ? { id: post.id, config: decodeGlobalStyles(post.content) }
+      : { id: null, config: { version: 3, isGlobalStylesUserThemeJSON: true } };
+  }
+
+  /**
+   * Re-reads the user global styles and rebuilds the active theme's styles,
+   * without reloading its files. Renders already running keep the old styles.
+   */
+  async refreshStyles(): Promise<void> {
+    const current = this.#active;
+    if (!current) return;
+    const globalStyles = await this.#userStyles(current.info.stylesheet);
+    if (this.#active !== current) return;
+    const resolved = resolveStyles(current.sources, globalStyles.config, current.fileUri);
+    this.#active = {
+      ...current,
+      ...resolved,
+      css: { ...resolved.css, blockStyles: current.css.blockStyles },
+      globalStyles,
+    };
+  }
+
+  /**
+   * The active theme with other user global styles, for previews: nothing is
+   * stored, and the cached theme is left alone.
+   */
+  async withUserStyles(config: GlobalStylesConfig): Promise<ActiveTheme> {
+    const active = await this.active();
+    const resolved = resolveStyles(active.sources, config, active.fileUri);
+    return {
+      ...active,
+      ...resolved,
+      css: { ...resolved.css, blockStyles: active.css.blockStyles },
+      globalStyles: { id: active.globalStyles.id, config },
+    };
+  }
+
+  /**
+   * get_merged_data( 'theme' ): WordPress's defaults and the theme, without
+   * user styles — settings with presets keyed by origin, and the theme's
+   * styles as written (`var:preset|…`), for /wp/v2/global-styles/themes/{stylesheet}.
+   */
+  async themeGlobalStyles(): Promise<{ settings: JsonObject; styles: JsonObject }> {
+    const active = await this.active();
+    const tree = resolveThemeJson({
+      theme: active.sources.themeData,
+      blockStyleVariations: active.sources.partials,
+      blocks: active.sources.blocks,
+      registeredStyles: active.sources.registeredStyles,
+    }).tree;
+    const theme = keyPresetsByOrigin(active.sources.themeData, 'theme');
+    return {
+      settings: tree.getSettings(),
+      styles: (theme.styles as JsonObject | undefined) ?? {},
+    };
   }
 
   /** _register_theme_block_patterns() and the theme's pattern categories. */
@@ -417,6 +493,74 @@ export class ThemesService {
       }
     }
   }
+}
+
+/** Resolves theme.json with the given user styles and builds the global stylesheet. */
+function resolveStyles(
+  sources: ThemeStyleSources,
+  user: GlobalStylesConfig,
+  fileUri: (relative: string) => string,
+): Pick<ActiveTheme, 'themeJson' | 'settings'> & {
+  css: Omit<ActiveTheme['css'], 'blockStyles'>;
+} {
+  const themeJson = resolveThemeJson({
+    theme: sources.themeData,
+    blockStyleVariations: sources.partials,
+    user,
+    blocks: sources.blocks,
+    registeredStyles: sources.registeredStyles,
+  });
+  const styles = getGlobalStylesheet(themeJson, { resolveFileUri: fileUri });
+  return {
+    themeJson,
+    settings: themeJson.tree.getGlobalSettings(),
+    css: { global: styles.stylesheet, custom: styles.customCss, fontFaces: styles.fontFaces },
+  };
+}
+
+/** JSON files under a folder, recursively (recursively_iterate_json()). */
+async function jsonFilesIn(dir: string): Promise<string[]> {
+  let entries: Dirent[];
+  try {
+    entries = await readdir(dir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  const files: string[] = [];
+  for (const entry of entries) {
+    if (entry.name.startsWith('.')) continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) files.push(...(await jsonFilesIn(full)));
+    else if (entry.isFile() && /\.json$/i.test(entry.name)) files.push(full);
+  }
+  return files;
+}
+
+/**
+ * WP_Theme_JSON_Resolver::get_style_variations( 'theme' ): every JSON file
+ * under the theme's `styles/` folder that isn't a block style variation; a
+ * child theme's file hides a parent file with the same name. Sorted by path.
+ */
+async function readStyleVariations(chain: ThemeInfo[]): Promise<StyleVariation[]> {
+  const [child, parent] = chain;
+  const files = child ? await jsonFilesIn(path.join(child.dir, 'styles')) : [];
+  if (parent) {
+    const childNames = new Set(files.map((f) => path.basename(f)));
+    for (const file of await jsonFilesIn(path.join(parent.dir, 'styles'))) {
+      if (!childNames.has(path.basename(file))) files.push(file);
+    }
+  }
+  const variations: StyleVariation[] = [];
+  for (const file of files.sort()) {
+    const data = await readJson(file);
+    if (!data || typeof data !== 'object' || Array.isArray(data)) continue;
+    if (styleVariationScope(data) !== 'theme') continue;
+    const { $schema: _schema, ...rest } = keyPresetsByOrigin(data, 'theme') as StyleVariation;
+    const variation = rest as StyleVariation;
+    if (!variation.title) variation.title = path.basename(file, '.json');
+    variations.push(variation);
+  }
+  return variations;
 }
 
 /** Child theme.json on top of the parent's (WP_Theme_JSON::merge() handles the rest). */

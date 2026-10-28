@@ -9,7 +9,7 @@ Everything is served under `/wp-json`, as in WordPress:
 
 | Method                   | Route                              | Access           | Purpose                                                           |
 | ------------------------ | ---------------------------------- | ---------------- | ----------------------------------------------------------------- |
-| GET                      | `/wp-json`                         | public           | Site name, description, URL, namespaces, Pressbase version and state. |
+| GET                      | `/wp-json`                         | public           | Site name, description, URL, namespaces, Pressbase version and state; once installed, `site_logo`, `site_icon` and `site_icon_url`, as WordPress's index has them. |
 | GET                      | `/pressbase/v1/install`                | public           | Install state, system checks, whether a setup code is needed.     |
 | POST                     | `/pressbase/v1/install/database-check` | before install   | Test database details.                                            |
 | POST                     | `/pressbase/v1/install`                | before install   | Install the site and sign in the administrator.                   |
@@ -19,7 +19,7 @@ Everything is served under `/wp-json`, as in WordPress:
 | POST                     | `/pressbase/v1/auth/lost-password` | public           | `{ login }` → emails a reset link. Same answer whether or not the account exists. See [People](people.md#password-reset). |
 | POST                     | `/pressbase/v1/auth/check-reset-key` | public         | `{ login, key }` → `200`, or `400 invalid_key` / `expired_key`.   |
 | POST                     | `/pressbase/v1/auth/reset-password` | public          | `{ login, key, password }` → sets the password and logs the user out everywhere. |
-| GET / POST / PUT / PATCH | `/wp/v2/settings`                  | `manage_options` | Read or update registered settings.                               |
+| GET / POST / PUT / PATCH | `/wp/v2/settings`                  | `manage_options` | Read or update registered settings, including `site_logo` and `site_icon` (attachment IDs, `0` for none). |
 | GET                      | `/pressbase/v1/dashboard`              | `read`           | Counts, recent content and system facts for the dashboard.        |
 | GET                      | `/pressbase/v1/post-counts/{type}`     | `edit_{type}s`   | Items per status, for the admin's status tabs (`wp_count_posts`). |
 | GET / POST               | `/wp/v2/posts`, `/wp/v2/pages`         | read: public · write: see below | List and create. Supports WordPress's collection parameters. |
@@ -30,9 +30,9 @@ Everything is served under `/wp-json`, as in WordPress:
 | GET / POST               | `/wp/v2/categories`, `/wp/v2/tags`     | read: public · create: see below | Terms. `DELETE ?force=true` only (terms have no trash). |
 | GET / POST / PUT / PATCH / DELETE | `/wp/v2/{categories\|tags}/{id}` | `edit_term` / `delete_term` | One term.                                           |
 | GET                      | `/wp/v2/types`, `/wp/v2/taxonomies`, `/wp/v2/statuses` | public | Registered post types, taxonomies and statuses (labels, capabilities with `context=edit`). |
-| GET                      | `/wp/v2/users`, `/wp/v2/users/{id}`    | public: published authors only · `list_users`: everyone | People. `context=edit` adds username, email, first/last name, nickname, locale, registered date, roles and capabilities. `roles=editor,author` filters (needs `list_users`). |
+| GET                      | `/wp/v2/users`, `/wp/v2/users/{id}`    | public: published authors only · `list_users`: everyone | People. `context=edit` adds username, email, first/last name, nickname, locale, registered date, roles, capabilities and registered `meta`. `roles=editor,author` filters (needs `list_users`). |
 | POST                     | `/wp/v2/users`                     | `create_users` (+ `promote_users` for `roles`) | Create a user: `username`, `email`, `password` required. Pressbase adds `send_user_notification` to email a "set your password" link. |
-| POST / PUT / PATCH       | `/wp/v2/users/{id\|me}`            | `edit_user` (yourself, or `edit_users`); `promote_user` for `roles` | Update. Usernames can't change. See [People](people.md#who-may-do-what). |
+| POST / PUT / PATCH       | `/wp/v2/users/{id\|me}`            | `edit_user` (yourself, or `edit_users`); `promote_user` for `roles` | Update. Usernames can't change. `meta` writes registered user meta (`null` resets a key). See [People](people.md#who-may-do-what). |
 | DELETE                   | `/wp/v2/users/{id\|me}?force=true&reassign={id\|false}` | `delete_users` | Delete; `reassign` moves the user's content, `false` deletes it. The last administrator can't be deleted. |
 | GET                      | `/pressbase/v1/user-counts`        | `list_users`     | `{ total, roles: { role: n, none: n }, posts: { id: n } }` (`count_users()`; posts for `?include=1,2`). |
 | GET / POST / DELETE      | `/wp/v2/users/{id\|me}/application-passwords` | `edit_user` | List, create (`{ name, app_id? }`; the response carries the password, once) or revoke all. |
@@ -49,13 +49,28 @@ Everything is served under `/wp-json`, as in WordPress:
 | GET / POST / PUT / PATCH / DELETE | `/wp/v2/comments/{id}`    | read: as the post · write: `edit_comment` | One comment. `DELETE` trashes; `?force=true` deletes permanently. |
 | GET                      | `/pressbase/v1/comment-counts`     | `moderate_comments` | Comments per status (`wp_count_comments()`) plus `mine`, for the admin's tabs. |
 | POST                     | `/wp-comments-post` (outside `/wp-json`) | anyone | The classic comment form, `application/x-www-form-urlencoded`. Redirects back, or shows an error page. See [Comments](comments.md#the-form-endpoint-post-wp-comments-post). |
-| GET                      | `/pressbase/v1/render?url=/path/`      | public (drafts and private posts need the right capability) | A page of the public site: `{ status, headers, html }`. Used by `apps/web`. See [Themes](themes.md). |
+| GET                      | `/pressbase/v1/render?url=/path/`      | public (drafts and private posts need the right capability) | A page of the public site, a feed, a sitemap or `robots.txt`: `{ status, headers, html, tags }`. `html` is the body whatever its `content-type`; `tags` are the cache tags it depends on. Used by `apps/web`. See [Themes](themes.md) and [The public site](public-site.md). |
 | GET                      | `/wp/v2/themes`, `/wp/v2/themes/{stylesheet}` | `switch_themes`; `edit_posts` for the active theme (`?status=active`) | Installed themes (`WP_REST_Themes_Controller` fields: `stylesheet`, `template`, `name`, `version`, `screenshot`, `status`, `is_block_theme`…). |
 | POST                     | `/pressbase/v1/themes/{stylesheet}/activate` | `switch_themes` | Activates a block theme (`switch_theme()`). |
+| GET                      | `/wp/v2/global-styles/themes/{stylesheet}` | `edit_posts` (any type) or `edit_theme_options` | The active theme's `settings` (presets keyed by origin) and `styles`, with `_links["wp:theme-file"]` for `file:./` URLs. Other themes: `404 rest_theme_not_found`. |
+| GET                      | `/wp/v2/global-styles/themes/{stylesheet}/variations` | as above | The theme's style variations (`styles/**/*.json` without `blockTypes`): full, colour-only and typography-only, each with `title`, `settings`, `styles`. |
+| GET                      | `/wp/v2/global-styles/{id}`            | `read_post` (`edit_posts`); `context=edit` needs `edit_post` | User global styles: `id`, `title`, `settings`, `styles`, `_links` (`version-history` with `count`, `wp:action-publish`, `wp:action-edit-css`). The active theme's ID is in `/wp/v2/themes?status=active` → `_links["wp:user-global-styles"]` (created on first request). |
+| POST / PUT / PATCH       | `/wp/v2/global-styles/{id}`            | `edit_post` (`edit_theme_options`) | Saves `styles` and/or `settings` (a missing one keeps the stored value) and `title`. `styles.css` is checked by `validate_custom_css()`; for users without `unfiltered_html`, unsafe values are removed (`remove_insecure_properties()`) and custom CSS is dropped. Keeps a revision. |
+| GET                      | `/wp/v2/global-styles/{id}/revisions`, `…/revisions/{revision}` | `edit_post` on the parent | Saved versions, newest first: `id`, `author`, `date(_gmt)`, `modified(_gmt)`, `parent`, `settings`, `styles`. `page`, `per_page`, `offset`; `X-WP-Total`, `X-WP-TotalPages`. |
+| POST                     | `/pressbase/v1/global-styles/preview`  | `edit_theme_options` | Renders a public page (`url`, default `/`) with unsaved `styles` / `settings` over the stored ones, sanitised as a save would be: `{ status, headers, html }` with `cache-control: no-store`. **Never stores anything.** |
 | GET / HEAD               | `/wp-content/themes/{theme}/{path}`, `/wp-includes/{path}` | public | Theme assets and WordPress's front-end CSS (outside `/wp-json`). |
 | POST                     | `/wp-login.php?action=postpass` | public | The post password form: sets the `wp-postpass` cookie and redirects back. |
+| GET / POST               | `/wp/v2/navigation`                    | read: public for published menus · create: `edit_theme_options` | Navigation menus (`wp_navigation`). The posts controller; same parameters as posts. `OPTIONS` answers with an `Allow` header. See [Navigation](navigation.md). |
+| GET / POST / PUT / PATCH / DELETE | `/wp/v2/navigation/{id}`      | `edit_theme_options` to write | One menu; `Allow` header, revisions at `…/revisions`. |
+| GET                      | `/wp-block-editor/v1/navigation-fallback` | `edit_theme_options` | The menu a Navigation block without one uses, created from the page list when there's none (`WP_REST_Navigation_Fallback_Controller`). `?_embed` embeds it. |
+| GET / PUT                | `/pressbase/v1/navigation-fallback`    | `edit_theme_options` | Which menu the header (ref-less Navigation blocks) shows: `{ id, current }`; `PUT { id }`. |
+| POST                     | `/pressbase/v1/navigation-preview`     | `edit_theme_options` | A public page rendered with unsaved menu markup in the header, for Appearance → Menus. |
 | GET / POST               | `/wp/v2/blocks`                        | read: `edit_posts` · create: `publish_posts` | Synced patterns (`wp_block`). Same parameters as posts. |
 | GET / POST / PUT / PATCH / DELETE | `/wp/v2/blocks/{id}`          | `edit_post` / `delete_post` | One synced pattern: `title.raw`, `content.raw`, `wp_pattern_sync_status`; write it with `meta.wp_pattern_sync_status`. |
+
+`posts_per_rss` and `rss_use_excerpt` (Settings → Reading's feed settings) are Pressbase additions to `/wp/v2/settings`; WordPress keeps them out of the REST settings.
+
+`apps/web` also answers `POST /_pressbase/revalidate` (outside `/wp-json`, not part of core): core's cache purges, `{ "tags": [...] }` with `Authorization: Bearer <PRESSBASE_REVALIDATE_SECRET>`. It answers `401 pressbase_invalid_secret`, `400 rest_invalid_param` without tags, `404 pressbase_cache_disabled` when caching is off, and `{ purged, tags }` otherwise. See [ADR 0008](../adr/0008-public-page-caching.md).
 
 Routes other than the index and installer return `503 pressbase_not_installed` until the site is installed.
 
@@ -63,7 +78,7 @@ Routes other than the index and installer return `503 pressbase_not_installed` u
 
 The same parameters as WordPress: `context`, `page`, `per_page` (max 100), `search`, `after`, `before`, `modified_after`, `modified_before`, `author`, `author_exclude`, `include`, `exclude`, `offset`, `order`, `orderby` (`date`, `modified`, `title`, `slug`, `id`, `include`, `author`, `parent`, `relevance`, plus `menu_order` for pages), `slug`, `status`, `sticky`, `parent`, `parent_exclude`, `menu_order`, and one filter per taxonomy (`categories`, `categories_exclude`, `tags`, `tags_exclude`). List parameters accept `a,b`, `a[]=x&a[]=y` or repeated keys.
 
-Responses carry `X-WP-Total`, `X-WP-TotalPages` and a `Link` header with `prev` and `next`.
+Responses carry `X-WP-Total`, `X-WP-TotalPages` and a `Link` header with `prev` and `next`. `OPTIONS` on a collection or an item answers with an `Allow` header listing the methods the current user may use (`rest_send_allow_header()`); single items send it with `GET` too, and edit-context items carry it as `_links.self[0].targetHints.allow`. core-data's `canUser()` reads both. The same controller serves `/wp/v2/navigation`.
 
 ### Media
 
@@ -185,6 +200,11 @@ The shape matches WordPress:
 | `rest_cannot_manage_themes`        | 401 / 403 | Activating a theme without `switch_themes`.                                |
 | `rest_theme_not_found`             | 404       | No installed theme with that folder name.                                  |
 | `pressbase_theme_not_block_theme`  | 400       | Activating a theme without `templates/index.html`.                        |
+| `rest_cannot_read_global_styles`   | 401 / 403 | Theme global styles or variations without `edit_posts` / `edit_theme_options`. |
+| `rest_global_styles_not_found`     | 404       | No `wp_global_styles` post with that ID.                                   |
+| `rest_forbidden_context`, `rest_cannot_view` | 401 / 403 | Reading user global styles (`context=edit` needs `edit_post`).    |
+| `rest_custom_css_illegal_markup`, `rest_custom_css_invalid_type` | 400 | `styles.css` that could close the `<style>` element, or isn't a string. |
+| `rest_revision_invalid_page_number`, `rest_revision_invalid_offset_number` | 400 | Revisions past the last page or offset. |
 | `pressbase_db_*`                   | 400       | Installer database problems. `data.hint` holds the next step for the user. |
 | `pressbase_already_installed`      | 409       | Installer called on an installed site.                                     |
 

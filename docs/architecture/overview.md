@@ -21,7 +21,7 @@
 | ------------------- | ---- | ------------------------------------------------------------------ |
 | `apps/core`         | 4000 | Owns all data and all rules. Everything goes through its REST API. |
 | `apps/admin`        | 3000 | The admin interface. Holds no business logic; it calls core.       |
-| `apps/web`          | 3001 | The public site: forwards each page to core's renderer ([ADR 0007](../adr/0007-public-rendering.md)). |
+| `apps/web`          | 3001 | The public site: forwards each page to core's renderer ([ADR 0007](../adr/0007-public-rendering.md)) and caches anonymous pages until core purges them ([ADR 0008](../adr/0008-public-page-caching.md)). |
 
 ### Why core is separate from Next.js
 
@@ -31,7 +31,7 @@ WordPress lets an administrator upload a plugin and use it immediately. A Next.j
 
 ### The public site
 
-Any path the admin doesn't own (`/`, `/2026/10/27/hello/`, `/category/news/`) is rewritten to `apps/web`, which asks core to render it (`GET /wp-json/pressbase/v1/render?url=…`) and returns the HTML with core's status and headers. Core runs the main query, picks a template from the active block theme and renders it. See [Themes and the public site](themes.md).
+Any path the admin doesn't own (`/`, `/2026/10/27/hello/`, `/category/news/`) is rewritten to `apps/web`, which asks core to render it (`GET /wp-json/pressbase/v1/render?url=…`) and returns the HTML with core's status and headers. Core runs the main query, picks a template from the active block theme and renders it. See [Themes and the public site](themes.md). Feeds, sitemaps and `robots.txt` take the same path, and `apps/web` answers repeat anonymous views from its page cache; see [The public site](public-site.md).
 
 ### The admin and the API
 

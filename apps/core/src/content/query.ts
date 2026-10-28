@@ -14,6 +14,7 @@ import {
   type SQL,
   sql,
 } from 'drizzle-orm';
+import { addCacheTags, CacheTag } from '../cache/tags';
 import type { Kernel } from '../kernel';
 import type { Post } from './posts';
 
@@ -82,6 +83,8 @@ export interface QueryArgs {
   post_parent__in?: number[];
   post_parent__not_in?: number[];
   s?: string;
+  /** true: only password-protected posts; false: only posts without a password (WP_Query's has_password). */
+  has_password?: boolean;
   /** Full MIME types (`image/png`) or media types (`image`), as in WordPress. */
   post_mime_type?: string | string[];
   tax_query?: TaxQueryClause[];
@@ -226,6 +229,9 @@ export async function queryPosts(kernel: Kernel, input: QueryArgs): Promise<Quer
     where.push(or(isNull(posts.parentId), notInArray(posts.parentId, args.post_parent__not_in)));
   }
   if (args.menu_order !== undefined) where.push(eq(posts.menuOrder, args.menu_order));
+  if (args.has_password !== undefined) {
+    where.push(args.has_password ? sql`${posts.password} <> ''` : eq(posts.password, ''));
+  }
   if (args.date_after) where.push(sql`${posts.date} > ${args.date_after}`);
   if (args.date_before) where.push(sql`${posts.date} < ${args.date_before}`);
   if (args.modified_after) where.push(sql`${posts.modified} > ${args.modified_after}`);
@@ -304,6 +310,12 @@ export async function queryPosts(kernel: Kernel, input: QueryArgs): Promise<Quer
   const rows = await (unlimited
     ? rowsQuery.offset(offset)
     : rowsQuery.limit(perPage).offset(offset));
+
+  // A page that runs this query lists posts of these types (see cache/tags.ts).
+  addCacheTags(
+    ...(types.includes('any') ? ['posts:any'] : types.map(CacheTag.posts)),
+    ...rows.map((row) => CacheTag.post(row.id)),
+  );
 
   let found = rows.length;
   if (!args.no_found_rows && !unlimited) {

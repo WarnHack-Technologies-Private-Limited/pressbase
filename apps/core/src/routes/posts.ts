@@ -157,7 +157,13 @@ async function prepareItem(post: Post, p: Prepared): Promise<Record<string, unkn
     item.generated_slug = post.slug;
   }
   item._links = {
-    self: [{ href: `/wp-json/wp/v2/${type.restBase}/${post.id}` }],
+    self: [
+      {
+        href: `/wp-json/wp/v2/${type.restBase}/${post.id}`,
+        // What the user may do with it (WP 6.7+), so core-data skips an OPTIONS request.
+        ...(edit ? { targetHints: { allow: await itemMethods(kernel, p.user, post) } } : {}),
+      },
+    ],
     collection: [{ href: `/wp-json/wp/v2/${type.restBase}` }],
     about: [{ href: `/wp-json/wp/v2/types/${type.name}` }],
     ...(post.authorId
@@ -176,6 +182,33 @@ async function prepareItem(post: Post, p: Prepared): Promise<Record<string, unkn
     post,
     context,
   )) as Record<string, unknown>;
+}
+
+/**
+ * The methods a user may use on one post, as rest_send_allow_header() lists
+ * them in `Allow` (core-data's canUser() reads it).
+ */
+async function itemMethods(
+  kernel: Kernel,
+  user: CurrentUser | null,
+  post: Post,
+): Promise<string[]> {
+  const methods = ['GET'];
+  if (await currentUserCan(kernel, user, 'edit_post', post.id))
+    methods.push('POST', 'PUT', 'PATCH');
+  if (await currentUserCan(kernel, user, 'delete_post', post.id)) methods.push('DELETE');
+  return methods;
+}
+
+/** Prepares one post as the controller answers it (for other controllers that embed posts). */
+export async function preparePost(
+  kernel: Kernel,
+  type: PostType,
+  user: CurrentUser | null,
+  post: Post,
+  context: RestContext,
+): Promise<Record<string, unknown>> {
+  return prepareItem(post, await prepareContext(kernel, type, user, context, [post]));
 }
 
 /** WP_REST_Posts_Controller::check_read_permission() */
@@ -374,6 +407,15 @@ export function postsRoutes(type: PostType) {
     return c.json(items);
   });
 
+  /* --------------------------------------------------------- OPTIONS */
+
+  // rest_send_allow_header(): which methods the current user may use here.
+  app.options('/', (c) => {
+    const methods = userCan(c.get('user'), type.cap.create_posts) ? ['GET', 'POST'] : ['GET'];
+    c.header('Allow', methods.join(', '));
+    return c.json({ namespace: 'wp/v2', methods: ['GET', 'POST'] });
+  });
+
   /* ------------------------------------------------------------ read */
 
   const loadOwn = async (c: Context<AppEnv>) => {
@@ -383,6 +425,13 @@ export function postsRoutes(type: PostType) {
   };
   const invalidId = (c: Context<AppEnv>) =>
     restError(c, 404, 'rest_post_invalid_id', 'Invalid post ID.');
+
+  app.options('/:id{[0-9]+}', async (c) => {
+    const post = await loadOwn(c);
+    if (!post) return invalidId(c);
+    c.header('Allow', (await itemMethods(c.get('kernel'), c.get('user'), post)).join(', '));
+    return c.json({ namespace: 'wp/v2', methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] });
+  });
 
   app.get('/:id{[0-9]+}', async (c) => {
     const kernel = c.get('kernel');
@@ -426,6 +475,7 @@ export function postsRoutes(type: PostType) {
       [post],
       password,
     );
+    c.header('Allow', (await itemMethods(kernel, user, post)).join(', '));
     return c.json(await prepareItem(post, prepared));
   });
 

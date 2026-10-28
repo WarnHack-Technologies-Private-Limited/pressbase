@@ -2,7 +2,7 @@
 
 Each release has a theme and a clear finish line. The `release` values in `apps/admin/src/lib/sections.ts` and the settings sub-navigation come from this page, so update them together.
 
-## v0.1: Foundation ✅ (current)
+## v0.1: Foundation ✅
 
 - [x] Monorepo: pnpm workspaces, Turborepo, TypeScript, Biome, Vitest.
 - [x] `@pressbase/hooks`: actions and filters with priorities, async callbacks, typed names.
@@ -47,9 +47,9 @@ Shipped in three milestones: content model, media, and people and conversation.
 - [x] Media library inside the editor (image, cover, gallery… "Media Library" buttons) and featured images.
 - [x] Inserter Media tab, `/wp/v2/search` for link suggestions, multi-select in galleries.
 
-## v0.4: Themes and the public site (in progress)
+## v0.4: Themes and the public site ✅
 
-The foundation has shipped: Twenty Twenty-Five renders the home page, posts, pages, archives, search, comments and 404. See [ADR 0007](adr/0007-public-rendering.md).
+Twenty Twenty-Five renders the home page, posts, pages, archives, search, comments and 404 ([ADR 0007](adr/0007-public-rendering.md)), with page caching ([ADR 0008](adr/0008-public-page-caching.md)), feeds, sitemaps, global styles and menus. The site editor (templates and parts) moves to a later release.
 
 - [x] `apps/web`: the public site, served by core's renderer (one origin with the admin).
 - [x] `theme.json` engine (`@pressbase/theme-json`): presets, global styles, layout, fonts.
@@ -59,10 +59,16 @@ The foundation has shipped: Twenty Twenty-Five renders the home page, posts, pag
 - [x] Comments on the public site: threaded list, pagination (`/comment-page-N/`), the comment form.
 - [x] Admin: Appearance (themes list, activate), "Visit site".
 - [x] **Milestone:** Twenty Twenty-Five renders unchanged (its core templates).
-- [ ] Page caching in `apps/web` (ISR / cache tags, invalidated on content changes).
-- [ ] Theme style variations, duotone, responsive style states.
-- [ ] RSS feeds, sitemaps, `wp_head`-style hooks for plugins.
-- [ ] Site editor and global styles UI (`wp_template`, `wp_global_styles`, `wp_navigation`).
+- [x] Page caching in `apps/web`: tagged pages, purged by core on content changes (`pressbase_cache_purge`).
+- [x] Global styles (Appearance → Styles), theme style variations, site logo and icon.
+- [x] Navigation menus (`wp_navigation`, Appearance → Menus).
+- [x] RSS and Atom feeds, `wp-sitemap.xml`, `robots.txt`.
+- [x] Admin colour scheme: system, light or dark per user (#2).
+- [x] Logins with WordPress password hashes (phpass and bcrypt) (#6).
+- [x] Playwright end-to-end tests in CI (#7) and a Docker image (#8).
+- [ ] Duotone, responsive style states. → later
+- [ ] Site editor: templates and template parts (`wp_template`, `wp_template_part`). → later
+- [ ] Settings → Permalinks screen (the routing already follows `permalink_structure`). → v0.5
 
 ## v0.5: Plugins
 
@@ -72,6 +78,8 @@ The foundation has shipped: Twenty Twenty-Five renders the home page, posts, pag
 - [ ] Job queue and cron (pg-boss).
 - [ ] `create-pressbase-plugin` scaffolding and the plugin SDK.
 - [ ] Plugin permissions (network, filesystem, database scopes).
+- [ ] `wp_head` / `wp_footer`-style hooks so plugins can add to public pages.
+- [ ] Settings → Permalinks.
 
 ## v0.6: Migration and tooling
 
@@ -79,7 +87,7 @@ The foundation has shipped: Twenty Twenty-Five renders the home page, posts, pag
 - [ ] Direct WordPress (MySQL) migration: users and password hashes, media, SEO meta.
 - [ ] `pressbase` CLI (similar to wp-cli).
 - [ ] Internationalisation: `.po`/`.mo` files, `@wordpress/i18n`.
-- [ ] RSS, sitemaps, Site Health.
+- [ ] Site Health.
 
 ## v1.0: Stable
 

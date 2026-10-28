@@ -1,4 +1,11 @@
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import type { NextConfig } from 'next';
+
+// Read the repository's .env as core does (variables already set win), so
+// PRESSBASE_REVALIDATE_SECRET reaches both apps from one place in development.
+const rootEnv = path.resolve(process.cwd(), '../../.env');
+if (existsSync(rootEnv)) process.loadEnvFile(rootEnv);
 
 const CORE_URL = process.env.CORE_URL ?? 'http://localhost:4000';
 
@@ -25,6 +32,11 @@ const nextConfig: NextConfig = {
   // WordPress permalinks end with a slash; core decides canonical redirects.
   skipTrailingSlashRedirect: true,
   poweredByHeader: false,
+  // The Docker image runs Next.js's standalone server (see the Dockerfile).
+  // Tracing starts at the repository root so workspace packages are included.
+  ...(process.env.PRESSBASE_STANDALONE
+    ? { output: 'standalone' as const, outputFileTracingRoot: path.resolve(process.cwd(), '../..') }
+    : {}),
   // Next.js would otherwise write an AGENTS.md into the app on `next dev`.
   agentRules: false,
 };

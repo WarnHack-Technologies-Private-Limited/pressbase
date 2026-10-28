@@ -18,7 +18,7 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | `populate_roles()`, `WP_Roles`                                      | `apps/core/src/auth/capabilities.ts`                                                 | Same roles and capabilities, without the legacy `level_*` ones.    |
 | `current_user_can()`                                                | `userCan(user, cap)`                                                                 | Primitive capabilities only, until `map_meta_cap` arrives in v0.2. |
 | `wp_signon`, auth cookies                                           | `routes/auth.ts`, `auth/sessions.ts`                                                 | Sessions in their own table. Same 2- and 14-day lifetimes.         |
-| `wp_hash_password`                                                  | `auth/password.ts`                                                                   | scrypt. Verifying WordPress hashes on migration comes in v0.6.     |
+| `wp_hash_password`, `wp_check_password`, `PasswordHash` (phpass)    | `auth/password.ts`                                                                   | scrypt. Imported WordPress hashes (`$wp$2y$`, bcrypt, phpass `$P$`, MD5) are verified, then re-hashed on login. |
 | REST error shape (`WP_Error` → JSON)                                | `restError()` in `apps/core/src/http.ts`                                             | `{ code, message, data: { status } }`.                             |
 | `X-WP-Nonce` (REST CSRF)                                            | `X-Pressbase-Request` header                                                             | See [Security](security.md).                                       |
 | `wp-admin/` menu                                                    | `apps/admin/src/lib/sections.ts`                                                     | Same order, grouped.                                               |
@@ -49,7 +49,23 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | `template-loader.php`, `get_*_template()` | `apps/core/src/frontend/hierarchy.ts` | |
 | `template-canvas.php`, `get_the_block_template_html()`, `wp_get_document_title()`, `get_body_class()` | `apps/core/src/frontend/render.ts` | |
 | `WP_REST_Themes_Controller` | `apps/core/src/routes/themes.ts` | Plus theme activation. |
+| `feed-rss2.php`, `feed-rss2-comments.php`, `feed-atom.php`, `feed-atom-comments.php`, `do_feed()`, `feed_links()`, `feed_links_extra()` | `apps/core/src/frontend/feeds.ts` | RSS 2.0 and Atom; `rss` and `rdf` answer RSS 2.0. See [The public site](public-site.md). |
+| `WP_Sitemaps` and its providers, `WP_Sitemaps_Stylesheet` | `apps/core/src/frontend/sitemaps.ts` | Same URLs and 2,000-URL pages; password-protected posts are left out. |
+| `do_robots()` | `apps/core/src/frontend/robots.ts` | Disallows `/admin/`. |
+| `esc_xml()`, `ent2ncr()` | `apps/core/src/frontend/xml.ts` | |
+| Caching plugins (`clean_post_cache`, page caches) | `apps/core/src/cache/`, `apps/web/src/lib/page-cache.ts` | Tag-based purges. See [ADR 0008](../adr/0008-public-page-caching.md). |
+| `publish_future_post` (wp-cron) | a one-minute timer in `apps/core/src/server.ts` | Until the job queue arrives. |
 | `themes.php` | `/admin/appearance` | |
+| `register_post_type( 'wp_navigation' )`, `WP_Navigation_Fallback`, `WP_REST_Navigation_Fallback_Controller` | `apps/core/src/content/post-types.ts`, `content/navigation.ts`, `routes/navigation.ts` | The header's menu is chosen with the `pressbase_navigation_fallback` option. See [Navigation](navigation.md). |
+| `blocks/navigation.php`, `navigation-link.php`, `navigation-submenu.php`, `home-link.php`, `view.js` | `apps/core/src/blocks/library/navigation.ts` | A small inline script instead of the Interactivity API. |
+| Site editor → Navigation, `nav-menus.php` | `/admin/appearance/menus` | |
+| `WP_Theme_JSON_Resolver::get_style_variations()`, the site editor's style variation logic | `packages/theme-json/src/style-variations.ts`, `kernel.themes` (`active().variations`) | Full, colour and typography variations; choosing one writes the user's global styles, as in WordPress. |
+| `wp_global_styles` post type, `get_user_data_from_wp_global_styles()`, `get_user_global_styles_post_id()` | `apps/core/src/themes/global-styles.ts` | One post per theme, slug `wp-global-styles-{stylesheet}` (no `wp_theme` term). |
+| `WP_REST_Global_Styles_Controller`, `WP_REST_Global_Styles_Revisions_Controller` | `apps/core/src/routes/global-styles.ts` | Plus `/pressbase/v1/global-styles/preview`. |
+| `WP_Theme_JSON::remove_insecure_properties()`, `wp_filter_global_styles_post()`, `safecss_filter_attr()`, `validate_custom_css()` | `packages/theme-json/src/sanitize.ts` | |
+| Site editor → Styles | `/admin/appearance/styles` | The essentials: variations, colours, type, layout, revisions, live preview. |
+| `site_logo`, `site_icon`, `get_custom_logo()`, `WP_Site_Icon`, `get_site_icon_url()`, `wp_site_icon()` | `apps/core/src/themes/site-identity.ts`, `blocks/library/post-media.ts` (`core/site-logo`) | Icon crops are sub-sizes of the chosen image (`site_icon-512` … `site_icon-32`), not a separate cropped attachment. |
+| Customizer → Site Identity, `options-general.php` site icon | Settings → General, *Site identity* card | |
 | `wp-content/themes/twentytwentyfive` | `themes/twentytwentyfive` | Bundled, unchanged. |
 | `upload.php`, `options-media.php`, the media modal | `/admin/media`, `/admin/settings/media`, `MediaPicker` | |
 | `wp_insert_user`, `wp_update_user`, `wp_delete_user` (with reassign), `validate_username`, `is_email`, `count_users`, `count_many_users_posts` | `apps/core/src/people/users.ts`, `validation.ts` | See [People](people.md). |
@@ -70,7 +86,8 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | WordPress                                      | Pressbase (planned)                             | Release |
 | ---------------------------------------------- | ------------------------------------------- | ------- |
 | Autosave | Autosaves endpoint, with the block editor | v0.3 |
-| Site editor (`wp_template`, `wp_global_styles`, `wp_navigation`) | Admin site editor | later |
+| Site editor (`wp_template`, `wp_global_styles`) | Admin site editor | later |
+| Classic menus (`nav_menu`, `/wp/v2/menus`, `WP_Classic_To_Block_Menu_Converter`) | Converted to `wp_navigation` by the importer | v0.6 |
 | Plugins API, `activate_plugin`                 | Plugin loader + `plugin.json`               | v0.5    |
 | `wp-cron.php`                                  | pg-boss job queue                           | v0.5    |
 | Importer, wp-cli                               | Migration tool, `pressbase` CLI                 | v0.6    |

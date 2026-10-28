@@ -17,7 +17,9 @@ interface Dashboard {
     pages: number;
     comments: number;
     pendingComments: number;
+    users: number;
   };
+  appearance: { customized: boolean };
   recent: { id: number; title: string; type: string; status: string; modified: string }[];
   system: { version: string; database: 'postgres' | 'pglite'; node: string };
 }
@@ -40,11 +42,17 @@ function relativeTime(iso: string): string {
 }
 
 export default async function DashboardPage() {
-  const [{ data }, { data: me }, { data: site }] = await Promise.all([
+  const [dashboard, current, index] = await Promise.all([
     coreGet<Dashboard>('/pressbase/v1/dashboard'),
     coreGet<Me>('/wp/v2/users/me'),
     coreGet<SiteIndex>('/'),
   ]);
+  // Logged out or not installed: the admin layout is already redirecting, and
+  // the error bodies have none of the fields below.
+  if (dashboard.status !== 200 || current.status !== 200) return null;
+  const { data } = dashboard;
+  const { data: me } = current;
+  const { data: site } = index;
   const firstName = me.name.split(/\s+/)[0];
   const canManage = Boolean(me.capabilities.manage_options);
   const canModerate = Boolean(me.capabilities.moderate_comments);
@@ -81,8 +89,18 @@ export default async function DashboardPage() {
       href: '/admin/posts/new',
       capability: 'edit_posts',
     },
-    { label: 'Invite your team', done: false, release: 'v0.2' },
-    { label: 'Choose a theme', done: false, release: 'v0.4' },
+    {
+      label: 'Invite your team',
+      done: data.counts.users > 1,
+      href: '/admin/users/new',
+      capability: 'create_users',
+    },
+    {
+      label: 'Make the site look like yours',
+      done: data.appearance.customized,
+      href: '/admin/appearance/styles',
+      capability: 'edit_theme_options',
+    },
   ];
   const completed = steps.filter((s) => s.done).length;
 

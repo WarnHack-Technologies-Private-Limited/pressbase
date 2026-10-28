@@ -1,5 +1,7 @@
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
+import { schema } from '@pressbase/db';
+import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { createApp } from './app';
 import { DEFAULT_ROLES, resolveCapabilities } from './auth/capabilities';
@@ -28,8 +30,13 @@ describe('installer', () => {
     expect(me.body.capabilities.manage_options).toBe(true);
 
     const dashboard = await request('GET', '/pressbase/v1/dashboard');
-    expect(dashboard.body.counts).toMatchObject({ posts: 1, pages: 1, comments: 1 });
+    expect(dashboard.body.counts).toMatchObject({ posts: 1, pages: 1, comments: 1, users: 1 });
     expect(dashboard.body.site).toMatchObject({ title: 'Test Site', url: 'http://localhost:3000' });
+    // The setup checklist's "Make the site look like yours" step.
+    expect(dashboard.body.appearance).toEqual({ customized: false });
+    await kernel.options.set('site_logo', 12);
+    const customized = await request('GET', '/pressbase/v1/dashboard');
+    expect(customized.body.appearance).toEqual({ customized: true });
 
     expect(await kernel.options.get('timezone_string')).toBe('Asia/Kolkata');
   });
@@ -152,6 +159,32 @@ describe('authentication', () => {
       password: SITE.password,
     });
     expect(locked.status).toBe(429);
+  });
+
+  it.each([
+    ['WordPress 6.8+ bcrypt', '$wp$2y$10$tes3bQytvZ69BqQLRphk/ur0gWONRjw62zyQGjq.qxbHWUqF/bjC6'],
+    ['phpass', '$P$BanTSbIFxngeBnrtMEcuNtNlm1dauL/'],
+  ])('accepts an imported %s hash once, then re-hashes it with scrypt', async (_, hash) => {
+    const { request, kernel } = await installed();
+    await kernel.db.update(schema.users).set({ pass: hash }).where(eq(schema.users.login, 'admin'));
+
+    const wrong = await request('POST', '/pressbase/v1/auth/login', {
+      login: 'admin',
+      password: 'Password',
+    });
+    expect(wrong.status).toBe(401);
+    const ok = await request('POST', '/pressbase/v1/auth/login', {
+      login: 'admin',
+      password: 'password',
+    });
+    expect(ok.status).toBe(200);
+
+    const [row] = await kernel.db
+      .select({ pass: schema.users.pass })
+      .from(schema.users)
+      .where(eq(schema.users.login, 'admin'));
+    expect(row?.pass).toMatch(/^\$scrypt\$/);
+    expect(await verifyPassword('password', row?.pass ?? '')).toBe(true);
   });
 
   it('rejects unsafe requests without the X-Pressbase-Request header', async () => {

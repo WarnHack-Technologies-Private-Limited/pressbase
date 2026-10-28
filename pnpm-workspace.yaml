@@ -1,6 +1,7 @@
 packages:
   - "apps/*"
   - "packages/*"
+  - "e2e"
 minimumReleaseAgeExclude:
   - "@electric-sql/pglite@0.5.12"
   - lucide-react@1.62.0

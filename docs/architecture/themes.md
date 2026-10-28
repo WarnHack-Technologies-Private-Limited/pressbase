@@ -6,6 +6,9 @@ How Pressbase loads WordPress block themes, turns `theme.json` into CSS, and ren
 |---|---|---|
 | theme.json engine | `packages/theme-json` (`@pressbase/theme-json`) | `WP_Theme_JSON`, `WP_Theme_JSON_Resolver`, `wp_get_global_stylesheet()`, fluid typography, `wp_get_layout_style()`, `WP_Font_Face` |
 | Themes | `apps/core/src/themes/` (`kernel.themes`) | `WP_Theme`, `search_theme_directories()`, `switch_theme()`, `_register_theme_block_patterns()` |
+| Style variations, sanitising user styles | `packages/theme-json/src/{style-variations,sanitize}.ts` | `get_style_variations()`, the site editor's variation logic, `remove_insecure_properties()`, `safecss_filter_attr()` |
+| User global styles | `apps/core/src/themes/global-styles.ts`, `routes/global-styles.ts` | `wp_global_styles`, `WP_REST_Global_Styles_Controller` (+ revisions) |
+| Site logo and icon | `apps/core/src/themes/site-identity.ts` | `get_custom_logo()`, `WP_Site_Icon`, `wp_site_icon()` |
 | Block supports needing the theme | `apps/core/src/themes/supports.ts` | `block-supports/layout.php`, `elements.php`, `position.php`, `typography.php`, `block-style-variations.php` |
 | Request routing, main query | `apps/core/src/frontend/query.ts` | `WP::parse_request()`, `WP_Rewrite`, `WP_Query` main query, `redirect_canonical()` |
 | Template hierarchy | `apps/core/src/frontend/hierarchy.ts` | `template-loader.php`, `get_*_template()` |
@@ -30,6 +33,8 @@ Browser ── GET /2026/10/27/hello/ ──▶ apps/web   :3001 ◀────
 ```
 
 `/wp-json/*`, `/wp-content/*`, `/wp-includes/*` and `/wp-login.php` are proxied straight to core by both Next.js apps.
+
+The same endpoint answers feeds, sitemaps and `robots.txt`, and `apps/web` caches anonymous answers by the cache tags core returns with each render. See [The public site](public-site.md).
 
 ## The theme.json engine
 
@@ -65,7 +70,9 @@ What it does, as WordPress does:
 
 The tests in `packages/theme-json/src/theme-json.test.ts` compare the output for Twenty Twenty-Five with what WordPress 7.1 prints.
 
-Not ported yet: responsive (viewport) style states, duotone filters, background image uploads in global styles, and style variations of the whole theme (`styles/*.json` colour and typography presets are loaded by nothing until the site editor arrives).
+Not ported yet: responsive (viewport) style states, duotone filters and background image uploads in global styles.
+
+The package also holds the pieces of the site editor and of WordPress's save path that global styles need: `style-variations.ts` (sorting, applying and recognising style variations) and `sanitize.ts` (`removeInsecureProperties()`, `isSafeCssDeclaration()`, `validateCustomCss()`). Both are described below.
 
 ## Themes in core
 
@@ -74,6 +81,66 @@ Not ported yet: responsive (viewport) style states, duotone filters, background 
 The active theme comes from the `stylesheet` and `template` options (the installer sets `twentytwentyfive`). A missing theme falls back to the default. `kernel.themes.active()` loads and caches it: templates, parts with their areas, `theme.json` resolved against the registered block types, the global stylesheet, patterns and the stylesheets to enqueue. `kernel.themes.activate(stylesheet)` switches, fires `switch_theme` and reloads. `kernel.themes.reload()` picks up edited theme files.
 
 Theme files are served at `/wp-content/themes/{theme}/…` with the uploads' safety rules: each path segment decoded and checked (no `..`, hidden files, encoded slashes or control characters), only static types (CSS, JS, images, fonts, video; never PHP, HTML, JSON or Markdown), the real path must stay in the theme folder, `nosniff`, a sandboxing CSP on SVG, `ETag` and `Last-Modified` with 304s.
+
+## Global styles
+
+What a site owner changes about a theme's look — WordPress's "global styles" — is the **custom origin** of theme.json, layered over WordPress's defaults and the theme. Pressbase stores and merges it as WordPress does.
+
+```
+default (WordPress)  ─┐
+theme.json (parent → child) ─┤ WP_Theme_JSON::merge()  ──▶ global stylesheet ──▶ <style id='global-styles-inline-css'>
+user global styles (wp_global_styles post) ─┘
+```
+
+### Style variations
+
+A block theme's `styles/` folder holds two kinds of partial theme.json files (`WP_Theme_JSON_Resolver::get_style_variations()`, read recursively, child theme first, a child file hiding a parent file with the same name, sorted by path):
+
+- **Block style variations** have `blockTypes` (`styles/blocks/*.json`, `styles/sections/*.json`). They register block styles such as `section-1` and are part of the theme layer (above).
+- **Theme style variations** don't. Twenty Twenty-Five ships 23: eight full ones (`01-evening.json` … `08-midnight.json`), eight colour-only (`styles/colors/*.json`) and seven typography-only (`styles/typography/*.json`). `kernel.themes.active().variations` lists them with presets keyed by the `theme` origin, as WordPress's REST API returns them; a file without `title` is named after itself.
+
+As in the site editor, a variation is never "active" by reference. **Choosing one writes it into the user's global styles** (`applyStyleVariation()`):
+
+- a **full** variation replaces the user's settings and styles;
+- a **colour** (or **typography**) variation keeps every other user value, removes the user's colour (or typography) values (`removePropertiesFromObject()`) and deep-merges the variation's in (`mergeBaseAndUserConfigs()`, lists replaced).
+
+`styleVariationKind()` tells the kinds apart the way the editor does (`isVariationWithProperties(variation, ['color'])`: every value lives under a `color` key), and `isStyleVariationApplied()` recognises a variation inside a user config, so a screen can show which is in use. A variation's palette is stored as `settings.color.palette.theme`, so it **replaces** the theme's palette (same slugs, new colours) rather than adding to it; the same goes for a typography variation's `fontFamilies` — its fonts load, the theme's no longer do. The tests in `packages/theme-json/src/style-variations.test.ts` merge Evening, Noon and the typography presets over Twenty Twenty-Five and check the stylesheet.
+
+### User global styles
+
+Stored as WordPress stores them (`apps/core/src/themes/global-styles.ts`):
+
+- One **`wp_global_styles` post per theme**, slug `wp-global-styles-{stylesheet}`, status `publish`, title "Custom Styles", content a user theme.json: `{"version":3,"isGlobalStylesUserThemeJSON":true,"settings":{…},"styles":{…}}` with `<`, `>` and `&` escaped. WordPress also tags the post with a `wp_theme` term; Pressbase finds it by slug.
+- The post type is registered as in `create_initial_post_types()`: not public, `read` → `edit_posts`, everything else → `edit_theme_options`, with **revisions**. Every save keeps one.
+- It is created on demand, the first time the active theme is listed through `/wp/v2/themes` (the `wp:user-global-styles` link), as `get_user_global_styles_post_id()` does.
+- **Saving** (`POST /wp/v2/global-styles/{id}`): a missing `styles` or `settings` keeps the stored value; `styles.css` must pass `validate_custom_css()` (no `</style`, nor a prefix of it at the end) for everyone; for users **without `unfiltered_html`**, `removeInsecureProperties()` keeps only declarations that pass `safecss_filter_attr()` (preset references, `calc()`/`var()`/`clamp()`…, http(s) `url()`s on url properties, gradients on backgrounds — no other functions, `\`, `&`, `}`, `=`, comments, and, stricter than WordPress, no `;`, `{`, `<`, `>`), presets with safe names, slugs and values, and plain settings; custom CSS survives only with `edit_css` (which maps to `unfiltered_html`). Unknown blocks are dropped.
+- **Rendering**: the active theme's styles are resolved with the user config as the custom origin. When the custom origin is merged, values that could escape a declaration are dropped again and custom CSS that could close the style element is ignored, so a hand-edited post can't break the page either.
+- After any save of a `wp_global_styles` post (`save_post_wp_global_styles`), `kernel.themes.refreshStyles()` rebuilds the active theme's stylesheet (without re-reading theme files) and core fires **`pressbase_global_styles_updated`** `(stylesheet, post, config)` — the hook for cache invalidation. Renders already running keep the styles they started with.
+
+### The live preview
+
+`POST /pressbase/v1/global-styles/preview` takes `{ url, styles?, settings? }`, prepares them exactly as a save would (validation and sanitising included) on top of the stored config, and renders the page through the normal renderer with `kernel.themes.withUserStyles(config)` — a copy of the active theme with those styles — passed as `RenderRequest.theme`. Block supports read the theme from the page render, so layout widths change too. Nothing is written: not the post, not a revision, not the theme cache. The answer has `cache-control: no-store` and `x-robots-tag: noindex`.
+
+The admin shows it in a sandboxed `iframe` (`srcdoc`, `sandbox="allow-same-origin"`: same origin so theme fonts load, no scripts) and keeps links and the search form inside the preview.
+
+### Site identity: logo and icon
+
+`apps/core/src/themes/site-identity.ts`:
+
+- **Settings** `site_logo` and `site_icon` (attachment IDs, `0` for none) are registered in `/wp/v2/settings`, as WordPress registers them. The REST index (`/wp-json/`) also carries `site_logo`, `site_icon` and `site_icon_url`.
+- **Logo.** `core/site-logo` renders `get_custom_logo()`'s markup: `<a href="{home}/" class="custom-logo-link" rel="home">` (with `aria-current="page"` on the front page) around `<img class="custom-logo">`, alt text from the image, else the site title; the block's `width` scales width and height; `is-default-size` without one.
+- **Icon.** When `site_icon` changes (and on first use, for sites that got the option another way), the image is cropped from its centre to squares of WP_Site_Icon's sizes — 512, 270, 192, 180 and 32 pixels — saved as PNGs beside it (`photo-32x32.png`) and recorded in its metadata as `site_icon-{size}`, so they are deleted with it. WordPress makes a separate cropped attachment through its cropper; Pressbase has no cropper yet.
+- **Head tags** (`wp_site_icon()`, filter `site_icon_meta_tags`), printed near the end of the public page head:
+
+  ```html
+  <link rel="icon" href="…/mark-32x32.png" sizes="32x32" />
+  <link rel="icon" href="…/mark-192x192.png" sizes="192x192" />
+  <link rel="apple-touch-icon" href="…/mark-180x180.png" />
+  <meta name="msapplication-TileImage" content="…/mark-270x270.png" />
+  ```
+
+- Deleting the image clears the option (`WP_Site_Icon::delete_attachment_data()`); the same goes for the logo.
+- The admin uses the icon as its favicon and in the sidebar, in place of the site's initial.
 
 ### Twenty Twenty-Five
 
@@ -168,7 +235,8 @@ With `/%postname%/`-style structures, pages are tried before posts ("verbose pag
 1. Runs the main query; a redirect answers immediately.
 2. Picks the template and renders it with `kernel.blocks.render()`, inside a `PageRender` (`frontend/page.ts`) that travels with the render through `AsyncLocalStorage`: the main query (for `core/query` with `inherit`, pagination, titles), unique IDs, the collected CSS and scripts, the request's path and cookies. Singular views render with the post as context.
 3. Wraps the result in `<div class="wp-site-blocks">`, adds the skip link (`#wp--skip-link--target` on the first `<main>`), and builds the head: `<title>` (`wp_get_document_title()`), robots meta, canonical link, the block library CSS (`/wp-includes/css/dist/block-library/style.min.css`, WordPress 7.1.3's), global styles, variation and block support CSS, the theme's stylesheets and `@font-face` rules. `<body>` gets `get_body_class()`'s classes.
-4. Answers `404` for 404s, with `Cache-Control: public, max-age=0, must-revalidate` (private for logged-in visitors) and an `ETag`; a matching `If-None-Match` gives 304.
+4. Answers `404` for 404s, with `Cache-Control: public, max-age=0, must-revalidate` (private for logged-in visitors, unlocked protected posts and held-comment previews) and an `ETag`; a matching `If-None-Match` gives 304. The head links the site's feeds (`feed_links()`, `feed_links_extra()`).
+5. Returns the cache tags of everything the render read (`tags`), for `apps/web`'s page cache ([ADR 0008](../adr/0008-public-page-caching.md)).
 
 ### Template blocks
 
@@ -180,10 +248,10 @@ With `/%postname%/`-style structures, pages are tried before posts ("verbose pag
 | `core/query`, `core/post-template` | `inherit: true` shows the main query; other queries run `build_query_vars_from_query_block()` and paginate with `?query-{id}-page=N`. Items get `get_post_class()`. |
 | `core/query-pagination` (+ `-previous`, `-next`, `-numbers`) | `paginate_links()` markup, arrows, `/page/N/` links. |
 | `core/query-title`, `core/query-no-results`, `core/term-description` | Archive titles with WordPress's prefixes (`Category: <span>…</span>`). |
-| `core/navigation`, `-link`, `-submenu`, `core/home-link` | WordPress's markup. Without items, the newest `wp_navigation` menu (once that post type exists) or a page list. The responsive overlay opens with a small inline script; a `<noscript>` style shows the items when JavaScript is off. Current items get `current-menu-item` and `aria-current`. |
+| `core/navigation`, `-link`, `-submenu`, `core/home-link`, `core/page-list` | WordPress's markup. A `wp_navigation` menu by `ref`; without a `ref` or items (Twenty Twenty-Five's header), the menu chosen in Appearance → Menus, else the newest menu, else a page list. Accessible submenu toggles (`aria-expanded`), the responsive overlay as a modal dialog, a small inline script instead of the Interactivity API, and a `<noscript>` style so menus work without JavaScript. Current items get `current-menu-item` and `aria-current`. See [Navigation](navigation.md). |
 | `core/post-featured-image` | `wp_get_attachment_image()` with `srcset`, aspect ratio, `fetchpriority="high"` on the first image, lazy loading after. |
 | `core/post-navigation-link` | Previous (older) and next (newer) posts, with arrows and labels. |
-| `core/read-more`, `core/post-author`, `core/avatar`, `core/site-logo` | Avatars are initials on a colour, as an inline SVG: no Gravatar request, so no reader's or author's email hash leaves the site. The site logo renders once a `site_logo` option exists. |
+| `core/read-more`, `core/post-author`, `core/avatar`, `core/site-logo` | Avatars are initials on a colour, as an inline SVG: no Gravatar request, so no reader's or author's email hash leaves the site. The site logo renders once `site_logo` is set (see *Site identity*). |
 
 ## Building a Pressbase-compatible block theme
 
@@ -199,8 +267,7 @@ Anything a theme does in `functions.php` doesn't happen; keep styles in `theme.j
 
 ## Not yet
 
-- The site editor: editing templates, parts, global styles and navigation menus (`wp_template`, `wp_template_part`, `wp_global_styles`, `wp_navigation` post types).
-- Theme style variations (`styles/*.json`), responsive style states, duotone.
-- Comments blocks (being built separately; they render nothing until registered), RSS feeds, the admin bar, `wp_head` hooks for plugins, oEmbed.
+- The site editor: editing templates and parts (`wp_template`, `wp_template_part`). Global styles have the essentials (Appearance → Styles); per-block styles, shadows, borders, the style book and "Additional CSS" in the admin are still to come (the REST API takes them already).
+- Responsive style states, duotone; the image cropper for the site icon (the centre is used).
+- The admin bar, `wp_head` hooks for plugins, oEmbed.
 - Post formats, sticky-post styling beyond ordering, attachment pages, custom post type archives.
-- Caching rendered pages in `apps/web` with revalidation on content changes.

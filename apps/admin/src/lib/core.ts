@@ -41,6 +41,8 @@ export interface Me {
   email: string;
   roles: string[];
   capabilities: Record<string, boolean>;
+  /** Registered user meta, e.g. pressbase_admin_color_scheme. */
+  meta?: Record<string, unknown>;
 }
 
 export interface SiteIndex {
@@ -48,4 +50,8 @@ export interface SiteIndex {
   description: string;
   url: string;
   pressbase: { version: string; state: InstallStatus['state'] };
+  /** Site identity, as WordPress's REST index has it (once installed). */
+  site_logo?: number;
+  site_icon?: number;
+  site_icon_url?: string;
 }

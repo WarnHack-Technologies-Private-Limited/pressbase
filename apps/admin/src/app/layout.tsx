@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
+import { colorSchemeScript } from '@/lib/color-scheme';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -17,7 +18,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    // The inline script sets data-theme before React hydrates.
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: colorSchemeScript() }} />
+      </head>
       <body>{children}</body>
     </html>
   );
