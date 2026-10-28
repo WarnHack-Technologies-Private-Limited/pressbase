@@ -17,9 +17,9 @@ import type { Post, PostsService } from '../content/posts';
 import { type QueryArgs, type QueryResult, queryPosts } from '../content/query';
 import type { Taxonomy, TaxonomyArgs } from '../content/taxonomies';
 import type { TermsService } from '../content/terms';
-import { type AppEnv, restError } from '../http';
 import { wpGetCanonicalUrl } from '../frontend/head';
 import type { PublicFileHandler, PublicFileOptions } from '../frontend/public-files';
+import { type AppEnv, restError } from '../http';
 import type { Kernel } from '../kernel';
 import { PRESSBASE_VERSION } from '../version';
 import {
@@ -162,7 +162,12 @@ export interface PluginApi {
     /** register_term_meta(): `taxonomy` '' registers the key for every taxonomy. */
     registerTermMeta(taxonomy: string, metaKey: string, args?: RegisterMetaArgs): void;
     /** get_metadata(): the first value (or the registered default) with `single`, else every value. */
-    get(objectType: MetaObjectType, id: number, metaKey: string, single?: boolean): Promise<unknown>;
+    get(
+      objectType: MetaObjectType,
+      id: number,
+      metaKey: string,
+      single?: boolean,
+    ): Promise<unknown>;
     /** add_metadata(): the new row's ID, or false. */
     add(
       objectType: MetaObjectType,
@@ -180,7 +185,12 @@ export interface PluginApi {
       previous?: unknown,
     ): Promise<boolean>;
     /** delete_metadata(): every value of the key, or only those equal to `value`. */
-    delete(objectType: MetaObjectType, id: number, metaKey: string, value?: unknown): Promise<boolean>;
+    delete(
+      objectType: MetaObjectType,
+      id: number,
+      metaKey: string,
+      value?: unknown,
+    ): Promise<boolean>;
   };
   /** The public page cache (ADR 0008, 0017). */
   readonly cache: {

@@ -93,7 +93,12 @@ describe('servePublicRequest', () => {
     expect(hit.headers.get('x-pressbase-cache')).toBe('HIT');
 
     // A plugin adds a redirect for /old/ and purges path:/old (api.cache.purgePaths()).
-    const redirect = { status: 301, headers: { location: '/new/' }, html: '', tags: ['site', 'path:/old'] };
+    const redirect = {
+      status: 301,
+      headers: { location: '/new/' },
+      html: '',
+      tags: ['site', 'path:/old'],
+    };
     core.pages['/old/'] = redirect;
     core.pages['/old/?ref=x'] = redirect;
     expect(cache.purge(['path:/old'])).toBe(2);

@@ -264,7 +264,7 @@ export async function wpGetCanonicalUrl(
   postOrId: Post | number,
 ): Promise<string | false> {
   const post = typeof postOrId === 'number' ? await kernel.posts.get(postOrId) : postOrId;
-  if (!post || post.status !== 'publish') return false;
+  if (post?.status !== 'publish') return false;
   const links = await permalinkContext(kernel);
   let url = await permalink(kernel, post, links);
   const page = currentPage();

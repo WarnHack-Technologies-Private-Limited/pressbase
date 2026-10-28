@@ -284,7 +284,7 @@ async function route(kernel: Kernel, request: RenderRequest): Promise<Rendered> 
   // Files plugins serve at fixed paths (/llms.txt), after core's own.
   const file = kernel.publicFiles.get(url.pathname);
   if (file) {
-    const served = await servePublicFile(kernel, file, request, url, cacheControl);
+    const served = await servePublicFile(file, request, url, cacheControl);
     return served ?? renderPage(kernel, request, { notFound: true });
   }
 
@@ -293,7 +293,6 @@ async function route(kernel: Kernel, request: RenderRequest): Promise<Rendered> 
 
 /** A plugin file's answer; undefined when the handler has nothing to serve (a 404). */
 async function servePublicFile(
-  kernel: Kernel,
   file: PublicFile,
   request: RenderRequest,
   url: URL,
@@ -346,7 +345,9 @@ async function renderPage(
   const { url, commentQuery } = pageUrl(request.url);
   const user = request.user;
   const main =
-    !notFound && resolved ? await resolved : await resolveMainQuery(kernel, url, { user, notFound });
+    !notFound && resolved
+      ? await resolved
+      : await resolveMainQuery(kernel, url, { user, notFound });
   // What the page is about (the rest is recorded as it renders).
   const queried = main.queriedObject;
   addCacheTags(

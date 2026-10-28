@@ -113,7 +113,11 @@ export interface RestMetaField {
   prepareCallback?: (value: unknown, field: RestMetaField) => unknown;
 }
 
-type AddFilter = (name: string, callback: (...args: never[]) => unknown, priority?: number) => () => void;
+type AddFilter = (
+  name: string,
+  callback: (...args: never[]) => unknown,
+  priority?: number,
+) => () => void;
 
 interface Storage {
   table: typeof schema.postmeta;
@@ -246,7 +250,10 @@ export class MetaService {
     const suffix = subtype ? `_for_${subtype}` : '';
     if (args.sanitizeCallback) {
       offs.push(
-        addFilter(`sanitize_${objectType}_meta_${metaKey}${suffix}`, args.sanitizeCallback as never),
+        addFilter(
+          `sanitize_${objectType}_meta_${metaKey}${suffix}`,
+          args.sanitizeCallback as never,
+        ),
       );
     }
     if (args.authCallback) {
@@ -255,10 +262,10 @@ export class MetaService {
       );
     }
 
-    let bySubtype = this.#keys.get(objectType);
-    if (!bySubtype) this.#keys.set(objectType, (bySubtype = new Map()));
-    let byKey = bySubtype.get(subtype);
-    if (!byKey) bySubtype.set(subtype, (byKey = new Map()));
+    const bySubtype = this.#keys.get(objectType) ?? new Map<string, Map<string, RegisteredMeta>>();
+    this.#keys.set(objectType, bySubtype);
+    const byKey = bySubtype.get(subtype) ?? new Map<string, RegisteredMeta>();
+    bySubtype.set(subtype, byKey);
     byKey.set(metaKey, entry);
 
     let done = false;
@@ -281,7 +288,9 @@ export class MetaService {
   /** registered_meta_key_exists() / get_registered_metadata() for one key. */
   registeredKey(objectType: MetaObjectType, key: string, subtype = ''): RegisteredMeta | undefined {
     const bySubtype = this.#keys.get(objectType);
-    return (subtype ? bySubtype?.get(subtype)?.get(key) : undefined) ?? bySubtype?.get('')?.get(key);
+    return (
+      (subtype ? bySubtype?.get(subtype)?.get(key) : undefined) ?? bySubtype?.get('')?.get(key)
+    );
   }
 
   /** WP_REST_Meta_Fields::get_registered_fields(): the keys shown in REST, by field name. */
@@ -401,8 +410,8 @@ export class MetaService {
       .where(keys ? and(inArray(column, ids), inArray(table.key, keys)) : inArray(column, ids))
       .orderBy(asc(table.id));
     for (const row of rows) {
-      let byKey = out.get(row.objectId);
-      if (!byKey) out.set(row.objectId, (byKey = new Map()));
+      const byKey = out.get(row.objectId) ?? new Map<string, unknown[]>();
+      out.set(row.objectId, byKey);
       const list = byKey.get(row.key) ?? [];
       list.push(row.value);
       byKey.set(row.key, list);
@@ -416,7 +425,12 @@ export class MetaService {
    * otherwise `undefined` (single) or `[]`.
    */
   async get(objectType: MetaObjectType, id: number, key: string, single: true): Promise<unknown>;
-  async get(objectType: MetaObjectType, id: number, key: string, single?: false): Promise<unknown[]>;
+  async get(
+    objectType: MetaObjectType,
+    id: number,
+    key: string,
+    single?: false,
+  ): Promise<unknown[]>;
   async get(objectType: MetaObjectType, id: number, key: string, single = false): Promise<unknown> {
     assertType(objectType);
     const stored = (await this.values(objectType, [id], [key])).get(id)?.get(key) ?? [];

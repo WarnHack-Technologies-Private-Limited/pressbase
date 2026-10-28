@@ -6,6 +6,7 @@ import { type SiteInfo, siteInfo, termLink } from '../blocks/helpers';
 import type { Taxonomy } from '../content/taxonomies';
 import type { Term } from '../content/terms';
 import { type AppEnv, invalidParams, readJson, restError } from '../http';
+import { authorizeRestMeta, parseRestMeta, readRestMeta, writeRestMeta } from './meta-fields';
 import {
   authStatus,
   boolParam,
@@ -18,7 +19,6 @@ import {
   setPaginationHeaders,
   stringList,
 } from './rest-util';
-import { authorizeRestMeta, parseRestMeta, readRestMeta, writeRestMeta } from './meta-fields';
 
 /**
  * /wp/v2/categories, /wp/v2/tags — a port of WP_REST_Terms_Controller
@@ -123,7 +123,10 @@ export function termsRoutes(taxonomy: Taxonomy) {
     }
     setPaginationHeaders(c, total, totalPages, q.page);
     const base = await home(c);
-    const meta = await termMeta(c, terms.map((t) => t.id));
+    const meta = await termMeta(
+      c,
+      terms.map((t) => t.id),
+    );
     return c.json(terms.map((t) => prepare(t, taxonomy, base, q.context, meta)));
   });
 

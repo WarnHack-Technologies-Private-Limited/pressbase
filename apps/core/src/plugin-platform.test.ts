@@ -162,9 +162,18 @@ describe('registered meta (register_post_meta, register_term_meta)', () => {
 
     // map_meta_cap() directly.
     const { currentUserCan } = await import('./auth/meta-caps');
-    const admin = { id: 1, capabilities: { edit_posts: true, edit_others_posts: true, edit_published_posts: true } };
+    const admin = {
+      id: 1,
+      capabilities: { edit_posts: true, edit_others_posts: true, edit_published_posts: true },
+    };
     expect(
-      await currentUserCan(ctx.kernel, admin as never, 'edit_post_meta', post.id, '_yoast_wpseo_title'),
+      await currentUserCan(
+        ctx.kernel,
+        admin as never,
+        'edit_post_meta',
+        post.id,
+        '_yoast_wpseo_title',
+      ),
     ).toBe(true);
     expect(
       await currentUserCan(ctx.kernel, admin as never, 'edit_post_meta', post.id, '_edit_lock'),
@@ -420,7 +429,9 @@ describe('canonical URLs and core head output', () => {
     await ctx.kernel.plugins.activate('head');
     const taken = await render(ctx, path);
     expect(taken.html.match(/rel="canonical"/g)).toHaveLength(1);
-    expect(taken.html).toContain(`<link rel="canonical" href="${post.link}?ref=canonical" data-seo />`);
+    expect(taken.html).toContain(
+      `<link rel="canonical" href="${post.link}?ref=canonical" data-seo />`,
+    );
     expect(ctx.kernel.coreCallbacks.has('wp_head', 'rel_canonical')).toBe(false);
     const api = ctx.kernel.plugins.runtime('head')?.api;
     expect(api?.hooks.removeAction('wp_head', 'no_such_callback')).toBe(false);
@@ -521,9 +532,15 @@ describe('api.public.addFile', () => {
     expect(publicFilePathProblem('/llms.txt')).toBeUndefined();
     expect(publicFilePathProblem('/0123abcd.txt')).toBeUndefined();
 
-    await plugin(ctx, 'one', { 'index.js': `export default (api) => api.public.addFile('/llms.txt', () => 'one');` });
-    await plugin(ctx, 'two', { 'index.js': `export default (api) => api.public.addFile('/llms.txt', () => 'two');` });
-    await plugin(ctx, 'three', { 'index.js': `export default (api) => api.public.addFile('/robots.txt', () => 'mine');` });
+    await plugin(ctx, 'one', {
+      'index.js': `export default (api) => api.public.addFile('/llms.txt', () => 'one');`,
+    });
+    await plugin(ctx, 'two', {
+      'index.js': `export default (api) => api.public.addFile('/llms.txt', () => 'two');`,
+    });
+    await plugin(ctx, 'three', {
+      'index.js': `export default (api) => api.public.addFile('/robots.txt', () => 'mine');`,
+    });
     await ctx.kernel.plugins.activate('one');
     await expect(ctx.kernel.plugins.activate('two')).rejects.toThrow(/already served by one/);
     await expect(ctx.kernel.plugins.activate('three')).rejects.toThrow(/belongs to Pressbase/);
