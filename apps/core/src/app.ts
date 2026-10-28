@@ -8,6 +8,7 @@ import {
 } from './http';
 import type { Kernel } from './kernel';
 import { applicationPasswordAuth } from './people/application-passwords';
+import { pluginRoutes } from './plugins/dispatch';
 import { authRoutes } from './routes/auth';
 import { autosavesRoutes } from './routes/autosaves';
 import { blockRoutes } from './routes/blocks';
@@ -19,6 +20,7 @@ import { installRoutes } from './routes/install';
 import { mediaRoutes } from './routes/media';
 import { navigationRoutes } from './routes/navigation';
 import { peopleRoutes } from './routes/people';
+import { pluginsRoutes } from './routes/plugins';
 import { postsRoutes } from './routes/posts';
 import { searchRoutes } from './routes/search';
 import { settingsRoutes } from './routes/settings';
@@ -68,7 +70,7 @@ export function createApp(kernel: Kernel) {
       name: ready ? await kernel.options.get<string>('blogname', '') : '',
       description: ready ? await kernel.options.get<string>('blogdescription', '') : '',
       url: ready ? await kernel.options.get<string>('home', '') : '',
-      namespaces: ['pressbase/v1', 'wp/v2'],
+      namespaces: ['pressbase/v1', 'wp/v2', ...kernel.plugins.namespaces()],
       pressbase: { version: PRESSBASE_VERSION, state: kernel.state },
       // site_logo, site_icon, site_icon_url, as WordPress's index has them.
       ...(ready ? await siteIdentityIndex(kernel) : {}),
@@ -85,15 +87,16 @@ export function createApp(kernel: Kernel) {
   installed.route('/wp/v2/users', userRoutes());
   installed.route('/wp/v2/settings', settingsRoutes());
   installed.route('/wp/v2', typeRoutes());
-  // One controller per registered type and taxonomy, at its rest_base. Plugins
-  // register theirs before the app is built (the plugin loader arrives in v0.5).
+  // One controller per core type and taxonomy, at its rest_base. Types and
+  // taxonomies plugins register are routed per request (pluginRoutes, below).
   for (const type of kernel.postTypes.all()) {
     if (type.showInRest && ['post', 'page'].includes(type.name)) {
       installed.route(`/wp/v2/${type.restBase}`, postsRoutes(type));
     }
   }
   for (const taxonomy of kernel.taxonomies.all()) {
-    if (taxonomy.showInRest) installed.route(`/wp/v2/${taxonomy.restBase}`, termsRoutes(taxonomy));
+    if (taxonomy.showInRest && !kernel.plugins.ownerOf('taxonomy', taxonomy.name))
+      installed.route(`/wp/v2/${taxonomy.restBase}`, termsRoutes(taxonomy));
   }
   // Media: the attachments controller, plus the uploaded files themselves, which
   // WordPress serves from /wp-content/uploads outside the REST API.
@@ -142,6 +145,12 @@ export function createApp(kernel: Kernel) {
   // revisions) and the live preview, /pressbase/v1/global-styles/preview.
   // See docs/architecture/themes.md#global-styles.
   installed.route('/', globalStylesRoutes(kernel));
+
+  // Plugins (v0.5): /wp/v2/plugins, then — last, as a catch-all — the post
+  // types, taxonomies and REST namespaces of active plugins, looked up per
+  // request so activation needs no restart. See docs/architecture/plugins.md.
+  installed.route('/wp/v2/plugins', pluginsRoutes());
+  installed.all('*', pluginRoutes);
 
   api.route('/', installed);
 

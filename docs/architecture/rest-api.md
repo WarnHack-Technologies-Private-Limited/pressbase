@@ -45,6 +45,9 @@ Everything is served under `/wp-json`, as in WordPress:
 | GET                      | `/wp/v2/block-types`, `/wp/v2/block-types/{namespace}`, `/wp/v2/block-types/{namespace}/{name}` | `edit_posts` (any type) | Registered block types: attributes, context, supports, `is_dynamic`. `?namespace=` filters. |
 | GET / POST               | `/wp/v2/block-renderer/{namespace}/{name}` | `edit_posts`, or `edit_post` with `post_id` | Renders a dynamic block: `{ rendered }`. Takes `attributes` (query `attributes[key]=…` or JSON body), `post_id`, `context`. |
 | GET                      | `/wp/v2/block-patterns/patterns`, `/wp/v2/block-patterns/categories` | `edit_posts` (any type) | Registered patterns and pattern categories. |
+| GET / POST               | `/wp/v2/plugins`                   | `activate_plugins` · upload: `install_plugins` | List installed plugins (`status`, `search`), or install one from a .zip (multipart `file`). See [Plugins](plugins.md#rest-wpv2plugins). |
+| GET / POST / PUT / PATCH / DELETE | `/wp/v2/plugins/{plugin}`  | `activate_plugins` · delete: + `delete_plugins` | One plugin: `{ status, permissions }` activates or deactivates; `DELETE` removes an inactive one. |
+| any                      | `/{plugin-namespace}/…`, `/wp/v2/{plugin rest_base}` | the plugin's `permission` callback / the post type's capabilities | Routes, post types and taxonomies of active plugins, routed per request. |
 | GET / POST               | `/wp/v2/comments`                  | read: public (approved comments on readable posts) · create: anyone, when the post is open | Comments. See *Comments* below. |
 | GET / POST / PUT / PATCH / DELETE | `/wp/v2/comments/{id}`    | read: as the post · write: `edit_comment` | One comment. `DELETE` trashes; `?force=true` deletes permanently. |
 | GET                      | `/pressbase/v1/comment-counts`     | `moderate_comments` | Comments per status (`wp_count_comments()`) plus `mine`, for the admin's tabs. |

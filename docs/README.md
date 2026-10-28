@@ -20,6 +20,7 @@ These docs live with the code and change in the same pull requests. If a doc is 
 - [Comments](architecture/comments.md): the comment pipeline, moderation, blocks and the comment form.
 - [Themes and the public site](architecture/themes.md): theme.json, block themes, routing, the template hierarchy and page rendering.
 - [The public site: caching, feeds, sitemaps](architecture/public-site.md): the page cache and its invalidation, RSS and Atom feeds, XML sitemaps, robots.txt.
+- [Plugins](architecture/plugins.md): writing a plugin, plugin.json, the lifecycle, installing, the security model and its limits.
 - [REST API](architecture/rest-api.md): endpoints, errors, authentication.
 - [Block editor](architecture/block-editor.md): how Gutenberg runs in the admin, api-fetch, hidden blocks, autosave.
 - [Installer](architecture/installer.md): site states, the install flow, configuration.

@@ -40,7 +40,7 @@ hooks.didAction('save_post'); // → 1
 - **Order:** ascending priority, then the order callbacks were added.
 - **Async:** each callback is awaited before the next one runs.
 - **Snapshot:** callbacks added or removed while a hook is running take effect from the next run.
-- **Errors:** propagate to the caller. Core will isolate plugin failures when the plugin loader lands (v0.5).
+- **Errors:** propagate to the caller. Callbacks a plugin adds through its `api.hooks` are wrapped: an exception is logged and recorded against the plugin, and the hook carries on (a filter keeps its incoming value). See [Plugins](plugins.md#when-a-plugin-breaks).
 
 ## Typing hook names
 
@@ -146,5 +146,10 @@ Undeclared names still work, with `unknown` arguments.
 | `wp_sitemaps_max_urls` | filter | `max, objectType` | URLs per sitemap page (2,000) |
 | `wp_sitemaps_post_types`, `wp_sitemaps_taxonomies` | filter | `names` | which post types and taxonomies get sitemaps |
 | `wp_sitemaps_posts_query_args` | filter | `args, postType` | the query of a posts sitemap |
+| `activate_plugin` / `activated_plugin` | action | `slug` | before a plugin's migrations and code run / after it's active. See [Plugins](plugins.md#lifecycle) |
+| `deactivate_plugin` / `deactivated_plugin` | action | `slug` | before / after a plugin is switched off and its registrations removed |
+| `pre_uninstall_plugin` | action | `slug, manifest` | before an inactive plugin's `uninstall` runs and its folder is deleted |
+| `deleted_plugin` | action | `slug, deleted` | after a plugin was deleted (`deleted` is false if its files couldn't be removed) |
+| `pressbase_plugin_error` | action | `slug, error` | a plugin failed to load or activate, or one of its hooks or routes threw; `error` is `{ message, during, time }` |
 
 **When you add a hook to core,** use WordPress's name if WordPress has an equivalent. Add it to this table and declare its types.

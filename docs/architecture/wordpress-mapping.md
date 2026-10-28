@@ -54,6 +54,9 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | `do_robots()` | `apps/core/src/frontend/robots.ts` | Disallows `/admin/`. |
 | `esc_xml()`, `ent2ncr()` | `apps/core/src/frontend/xml.ts` | |
 | Caching plugins (`clean_post_cache`, page caches) | `apps/core/src/cache/`, `apps/web/src/lib/page-cache.ts` | Tag-based purges. See [ADR 0008](../adr/0008-public-page-caching.md). |
+| `get_plugins()`, `activate_plugin()`, `deactivate_plugins()`, `delete_plugins()`, `uninstall_plugin()`, plugin file headers | `apps/core/src/plugins/` (`kernel.plugins`), `plugin.json` | ES modules; tracked registrations instead of a fresh process per request. See [Plugins](plugins.md). |
+| `WP_REST_Plugins_Controller`, `Plugin_Upgrader` (upload) | `apps/core/src/routes/plugins.ts` | `plugin` is the folder name; installs from an uploaded .zip only. |
+| `plugins.php`, `plugin-install.php?tab=upload` | `/admin/plugins` | |
 | `publish_future_post` (wp-cron) | a one-minute timer in `apps/core/src/server.ts` | Until the job queue arrives. |
 | `themes.php` | `/admin/appearance` | |
 | `register_post_type( 'wp_navigation' )`, `WP_Navigation_Fallback`, `WP_REST_Navigation_Fallback_Controller` | `apps/core/src/content/post-types.ts`, `content/navigation.ts`, `routes/navigation.ts` | The header's menu is chosen with the `pressbase_navigation_fallback` option. See [Navigation](navigation.md). |
@@ -88,7 +91,6 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | Autosave | Autosaves endpoint, with the block editor | v0.3 |
 | Site editor (`wp_template`, `wp_global_styles`) | Admin site editor | later |
 | Classic menus (`nav_menu`, `/wp/v2/menus`, `WP_Classic_To_Block_Menu_Converter`) | Converted to `wp_navigation` by the importer | v0.6 |
-| Plugins API, `activate_plugin`                 | Plugin loader + `plugin.json`               | v0.5    |
 | `wp-cron.php`                                  | pg-boss job queue                           | v0.5    |
 | Importer, wp-cli                               | Migration tool, `pressbase` CLI                 | v0.6    |
 | `__()`, text domains                           | `@wordpress/i18n`, `.po`/`.mo`              | v0.6    |
