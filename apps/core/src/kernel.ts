@@ -1,5 +1,8 @@
 import { connect, type DatabaseConnection } from '@pressbase/db';
 import { HookBus } from '@pressbase/hooks';
+import { registerCoreAbilities } from './abilities/core-abilities';
+import { AbilitiesRegistry } from './abilities/registry';
+import { AiClient } from './ai/client';
 import { BlocksService } from './blocks/service';
 import { registerCacheInvalidation } from './cache/invalidation';
 import { registerCommentNotifications } from './comments/notify';
@@ -82,6 +85,10 @@ export class Kernel {
   readonly cli = new CliCommands();
   /** Translations, locales and language packs: l10n.php (see docs/architecture/i18n.md). */
   readonly i18n = new I18n(this);
+  /** The Abilities API: wp_register_ability() and friends (v0.7, see docs/architecture/ai.md). */
+  readonly abilities = new AbilitiesRegistry(this);
+  /** The AI client: wp_ai_client_prompt(), providers, caps and the usage log (v0.7, ADR 0019). */
+  readonly ai = new AiClient(this);
   #connection: DatabaseConnection | undefined;
   #options: Options | undefined;
   #state: SiteState = 'needs-database';
@@ -106,6 +113,10 @@ export class Kernel {
     registerPublicPageHooks(this);
     // WXR import (v0.6): the pressbase/import job. See docs/architecture/import-export.md.
     registerImportJobs(this);
+    // Abilities and the AI client (v0.7): core/get-site-info, and pruning the
+    // AI usage log with the daily job cleanup. See docs/architecture/ai.md.
+    registerCoreAbilities(this);
+    this.hooks.addAction('pressbase_prune_jobs', () => this.ai.pruneLog());
   }
 
   get state(): SiteState {
