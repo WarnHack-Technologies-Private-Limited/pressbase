@@ -24,8 +24,10 @@ import {
 } from './admin';
 import { createAssets, type PluginAssets, type PluginScripts, type PluginStyles } from './assets';
 import { type Background, createBackground, type PluginCron, type PluginJobs } from './background';
+import type { PluginCliCommandArgs, PluginCliHandler } from './cli';
 import type { InstalledPlugin } from './discovery';
 import { createSubApp } from './dispatch';
+import { createPluginI18n, type PluginI18n } from './i18n';
 import type { PluginPermission } from './manifest';
 
 /**
@@ -174,6 +176,19 @@ export interface PluginApi {
   readonly admin: {
     addPage(args: PluginPageArgs): void;
   };
+  /**
+   * Commands for the `pressbase` CLI: WP_CLI::add_command(). The name is the
+   * plugin's slug, then optional subcommand words (`daily-tips rotate`).
+   * Returns a function that removes the command. See plugins/cli.ts.
+   */
+  readonly cli: {
+    addCommand(name: string, handler: PluginCliHandler, args?: PluginCliCommandArgs): () => void;
+  };
+  /**
+   * Translations in the plugin's text domain (its slug), loaded from its
+   * `languages/` folder: `api.i18n.__('Daily tip')`. See plugins/i18n.ts.
+   */
+  readonly i18n: PluginI18n;
 }
 
 /** What a plugin's main module exports. */
@@ -526,6 +541,27 @@ export class PluginRuntime {
       admin: Object.freeze({
         addPage: (args: PluginPageArgs) => this.adminRegistrations.addPage(args),
       }),
+      cli: Object.freeze({
+        addCommand: (name: string, handler: PluginCliHandler, args: PluginCliCommandArgs = {}) => {
+          const off = kernel.cli.add({
+            name,
+            handler,
+            plugin: slug,
+            shortdesc: args.shortdesc,
+            synopsis: args.synopsis,
+            longdesc: args.longdesc,
+          });
+          let removed = false;
+          const remove = () => {
+            if (removed) return;
+            removed = true;
+            off();
+          };
+          this.#track(remove);
+          return remove;
+        },
+      }),
+      i18n: createPluginI18n({ kernel, slug, dir: plugin.dir, track }),
     };
     return Object.freeze(api);
   }

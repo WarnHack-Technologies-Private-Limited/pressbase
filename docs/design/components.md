@@ -124,6 +124,15 @@ toast('Could not save.', { tone: 'danger' });
 | History | Saved versions, newest first, with date, author and "Theme defaults" / "Custom styles"; **Preview** loads one into the preview, and Save restores it. |
 | `StylePreview` | The real public page rendered with the unsaved styles (core's preview endpoint), debounced. Two frames take turns so updates never flash; the scroll position is kept. Desktop / Tablet / Phone sizes (scaled to fit); links and search stay inside the preview; "Open page" opens the live page. |
 
+## Site Health: `components/site-health/`
+
+| Component | Pattern |
+|---|---|
+| `StatusScreen` | A *Site health status* card with a score ring and the rating in words ("Good", "Should be improved", or "Results are still loading…" with a spinner and how many tests are left), never colour alone. Then a card per group, *N critical issues* and *N recommended improvements*, each with a one-line intro, and **Passed tests** (a disclosure button, `aria-expanded`) for the rest. **Check again** reruns everything. When the tests finish, a polite live region says so. |
+| `AccordionItem` | A heading holding a full-width button (`aria-expanded`, `aria-controls`) and its panel. Status items show an icon with a text label (Critical, Recommended, Passed), the title, and the category badge (Security, Performance, Privacy). |
+| `InfoScreen` | An intro card with **Copy site info to clipboard** (a toast confirms; "Copied!" shows beside the button for 3 seconds), then every section as a collapsed accordion item with a two-column table that stacks on phones. Private values carry a "Not copied" badge. Directory sizes fill in after the page loads. |
+| `SiteHealthSummary` | The Dashboard's *Site health* card: the last rating with its icon, WordPress's sentence, "Take a look at the N items on the Site Health screen" and when it was checked. Before any check: "No information yet…". |
+
 ## Settings: site identity
 
 `SiteLogoField` and `SiteIconField` (`components/settings/site-identity-fields.tsx`) sit in General → *Site identity*: a `<fieldset>` each, choosing an image with `MediaPicker`. The logo shows on a sunken, dashed-when-empty well; the icon previews at real size in a browser-tab mock and as a phone home-screen tile, and notes images that aren't square (the centre is used) or are smaller than 512 px. Both save with the rest of the form.

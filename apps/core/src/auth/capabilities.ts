@@ -106,8 +106,18 @@ export function resolveCapabilities(
   const userRoles = Object.keys(grants).filter((key) => grants[key] && roles[key]);
   const capabilities: Record<string, boolean> = {};
   for (const role of userRoles) Object.assign(capabilities, roles[role]?.capabilities);
+  // wp_maybe_grant_install_languages_cap() (wp-includes/capabilities.php): whoever
+  // can update core or install plugins or themes can install languages.
+  if (capabilities.update_core || capabilities.install_plugins || capabilities.install_themes) {
+    capabilities.install_languages = true;
+  }
   for (const [key, granted] of Object.entries(grants)) {
     if (!roles[key]) capabilities[key] = granted;
+  }
+  // wp_maybe_grant_site_health_caps() (wp-includes/capabilities.php): whoever
+  // may install plugins may view Site Health, unless it is revoked directly.
+  if (capabilities.install_plugins && grants.view_site_health_checks !== false) {
+    capabilities.view_site_health_checks = true;
   }
   return { roles: userRoles, capabilities };
 }

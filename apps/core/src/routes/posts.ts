@@ -269,7 +269,8 @@ function collectionSchema(type: PostType) {
   });
 }
 
-function bodySchema() {
+/** The fields a create or update accepts (also used by `pressbase post create|update`). */
+export function postBodySchema() {
   return z.object({
     date: z.string().nullable().optional(),
     date_gmt: z.string().nullable().optional(),
@@ -292,7 +293,7 @@ function bodySchema() {
 export function postsRoutes(type: PostType) {
   const app = new Hono<AppEnv>({ strict: false });
   const collectionArgs = collectionSchema(type);
-  const body = bodySchema();
+  const body = postBodySchema();
   const taxonomiesFor = (kernel: Kernel) =>
     kernel.taxonomies.forObjectType(type.name).filter((t) => t.showInRest);
 

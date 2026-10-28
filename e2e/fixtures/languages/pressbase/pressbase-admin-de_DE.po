@@ -1,0 +1,28 @@
+# A few of Pressbase's own admin strings in German, for the end-to-end tests.
+msgid ""
+msgstr ""
+"Project-Id-Version: Pressbase e2e fixture\n"
+"Language: de_DE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+msgid "Site language"
+msgstr "Sprache der Website"
+
+msgid "Language"
+msgstr "Sprache"
+
+msgid "Settings saved"
+msgstr "Einstellungen gespeichert"
+
+msgid "Save changes"
+msgstr "Änderungen speichern"
+
+msgid "Visit site"
+msgstr "Website ansehen"
+
+#, js-format
+msgid "Welcome, %s"
+msgstr "Willkommen, %s"

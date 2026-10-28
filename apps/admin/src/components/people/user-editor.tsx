@@ -4,6 +4,8 @@ import { ArrowLeft, KeyRound, UserX } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { ApiError, api } from '@/lib/api';
+import { useI18n } from '@/lib/i18n/context';
+import { type InstalledLanguage, type Languages, languageLabel } from '@/lib/languages';
 import { displayNameOptions, type EditUser, formatGmt, ROLES, roleLabel } from '@/lib/people';
 import settings from '../settings/settings.module.css';
 import { useCurrentUser } from '../shell/current-user';
@@ -26,6 +28,8 @@ interface Values {
   url: string;
   description: string;
   role: string;
+  /** '' for the site's language. */
+  locale: string;
 }
 
 function valuesOf(user: EditUser): Values {
@@ -38,6 +42,7 @@ function valuesOf(user: EditUser): Values {
     url: user.url,
     description: user.description,
     role: user.roles[0] ?? '',
+    locale: user.locale_setting ?? '',
   };
 }
 
@@ -50,6 +55,7 @@ export function UserEditor({ id, self = false }: { id: number; self?: boolean })
   const router = useRouter();
   const me = useCurrentUser();
   const toast = useToast();
+  const { __ } = useI18n();
   const [user, setUser] = useState<EditUser | null>(null);
   const [loadError, setLoadError] = useState<string>();
   const [values, setValues] = useState<Values | null>(null);
@@ -77,6 +83,14 @@ export function UserEditor({ id, self = false }: { id: number; self?: boolean })
   useEffect(() => {
     load();
   }, [load]);
+
+  // Installed languages for the Language select (WordPress shows it when there are any).
+  const [languages, setLanguages] = useState<InstalledLanguage[]>([]);
+  useEffect(() => {
+    api<Languages>('/pressbase/v1/languages')
+      .then((data) => setLanguages(data.installed))
+      .catch(() => setLanguages([]));
+  }, []);
 
   const saved = useMemo(() => (user ? valuesOf(user) : null), [user]);
   const changed = useMemo(() => {
@@ -362,6 +376,33 @@ export function UserEditor({ id, self = false }: { id: number; self?: boolean })
               }
             />
           </Card>
+
+          {languages.length > 1 && (
+            <Card title={__('Language', 'pressbase-admin')}>
+              <SelectField
+                label={__('Language', 'pressbase-admin')}
+                hint={
+                  isMe
+                    ? __('The language of the admin for you.', 'pressbase-admin')
+                    : __('The language of the admin for this person.', 'pressbase-admin')
+                }
+                value={values.locale}
+                onChange={(e) => set('locale', e.target.value)}
+                error={errors.locale}
+              >
+                <option value="">{__('Site default', 'pressbase-admin')}</option>
+                {languages.map((language) => (
+                  <option
+                    key={language.language}
+                    value={language.language}
+                    lang={language.language.replace('_', '-')}
+                  >
+                    {languageLabel(language)}
+                  </option>
+                ))}
+              </SelectField>
+            </Card>
+          )}
 
           <Card
             title="Account"

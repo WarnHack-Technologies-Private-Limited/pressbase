@@ -23,6 +23,7 @@
     "@wordpress/element": "10.0.0",
     "@wordpress/format-library": "6.0.0",
     "@wordpress/hooks": "5.0.0",
+    "@wordpress/i18n": "7.0.0",
     "@wordpress/keyboard-shortcuts": "6.0.0",
     "@wordpress/media-utils": "6.0.0",
     "@wordpress/notices": "6.0.0",

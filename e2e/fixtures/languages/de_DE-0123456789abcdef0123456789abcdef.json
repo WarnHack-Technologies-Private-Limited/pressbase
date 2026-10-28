@@ -1,0 +1,21 @@
+{
+  "translation-revision-date": "2026-10-01 00:00:00+0000",
+  "generator": "Pressbase e2e fixture",
+  "domain": "messages",
+  "locale_data": {
+    "messages": {
+      "": {
+        "domain": "messages",
+        "plural-forms": "nplurals=2; plural=n != 1;",
+        "lang": "de"
+      },
+      "Add block": ["Block hinzufügen"],
+      "Undo": ["Rückgängig"],
+      "Redo": ["Wiederholen"],
+      "Add title": ["Titel hinzufügen"],
+      "Type / to choose a block": ["Tippe / zur Auswahl eines Blocks"],
+      "Block: %s": ["Block: %s"]
+    }
+  },
+  "comment": { "reference": "wp-includes/js/dist/block-editor.js" }
+}

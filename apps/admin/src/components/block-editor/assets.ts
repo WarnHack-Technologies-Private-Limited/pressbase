@@ -18,11 +18,28 @@ export const EDITOR_STYLESHEETS = {
   'block-library-editor.css': 'node_modules/@wordpress/block-library/build-style/editor.css',
   'block-library-theme.css': 'node_modules/@wordpress/block-library/build-style/theme.css',
   'format-library.css': 'node_modules/@wordpress/format-library/build-style/style.css',
+  // Right-to-left copies, for RTL languages (WordPress's wp_style_add_data( …, 'rtl', 'replace' )).
+  'components-rtl.css': 'node_modules/@wordpress/components/build-style/style-rtl.css',
+  'block-editor-rtl.css': 'node_modules/@wordpress/block-editor/build-style/style-rtl.css',
+  'block-editor-content-rtl.css':
+    'node_modules/@wordpress/block-editor/build-style/content-rtl.css',
+  'block-library-rtl.css': 'node_modules/@wordpress/block-library/build-style/style-rtl.css',
+  'block-library-editor-rtl.css':
+    'node_modules/@wordpress/block-library/build-style/editor-rtl.css',
+  'block-library-theme-rtl.css': 'node_modules/@wordpress/block-library/build-style/theme-rtl.css',
+  'format-library-rtl.css': 'node_modules/@wordpress/format-library/build-style/style-rtl.css',
   // Pressbase's own canvas styles: typography, layout and the title field.
   'canvas.css': 'src/components/block-editor/canvas.css',
 } as const;
 
 export type EditorStylesheet = keyof typeof EDITOR_STYLESHEETS;
+
+/** The right-to-left copy of a stylesheet, when there is one. */
+export function directional(name: EditorStylesheet, rtl: boolean): EditorStylesheet {
+  if (!rtl) return name;
+  const rtlName = name.replace(/\.css$/, '-rtl.css');
+  return rtlName in EDITOR_STYLESHEETS ? (rtlName as EditorStylesheet) : name;
+}
 
 /** Loaded on the admin page, for toolbars, popovers, the inserter and the inspector. */
 export const UI_STYLESHEETS: EditorStylesheet[] = [

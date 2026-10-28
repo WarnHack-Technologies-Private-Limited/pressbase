@@ -464,10 +464,36 @@ export class Cron {
     return (await this.#select().limit(limit)).map(toEvent);
   }
 
+  /**
+   * Runs the next scheduled event of `hook` (with these arguments, when
+   * given) now, as `wp cron event run` does (wp-cli's
+   * Cron_Event_Command::run_event()): the event leaves the queue, a
+   * recurring one is rescheduled, then its action fires. A plugin's event is
+   * rescheduled under the plugin. Returns the event, or false when none is
+   * scheduled (or the worker took it first).
+   */
+  async runNow(hook: string, args?: unknown[]): Promise<CronEvent | false> {
+    const key = args === undefined ? undefined : cronArgsKey(args);
+    const [job] = await this.#select(this.#match(hook, key)).limit(1);
+    if (!job) return false;
+    // Out of the queue first, so the worker can't run it as well.
+    const taken = await this.kernel.db
+      .delete(schema.jobs)
+      .where(and(eq(schema.jobs.id, job.id), eq(schema.jobs.status, 'pending')))
+      .returning({ id: schema.jobs.id });
+    if (!taken.length) return false;
+    const owner =
+      job.name === this.jobName
+        ? this
+        : new Cron(this.kernel, { owner: job.name.slice(CRON_JOB.length + 1) });
+    await owner.#run(job.data as CronJobData);
+    return toEvent(job);
+  }
+
   /* ------------------------------------------------------------- internals */
 
   /** wp-cron.php for one event: reschedule a recurring event, then fire its action. */
-  async #run(data: CronJobData, _context: JobContext): Promise<void> {
+  async #run(data: CronJobData, _context?: JobContext): Promise<void> {
     const args = Array.isArray(data.args) ? data.args : [];
     if (data.schedule) {
       const result = await this.#reschedule(

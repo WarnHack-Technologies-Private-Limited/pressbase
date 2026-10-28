@@ -31,6 +31,17 @@ export type { HtmlOutput } from '../frontend/head';
 export type { PageRender } from '../frontend/page';
 export type {} from '../frontend/render';
 export type {} from '../frontend/title';
+export type {} from '../i18n/l10n';
+export type {} from '../i18n/language-packs';
+export type { ExportOptions } from '../import-export/exporter';
+export type {
+  ImportComment,
+  ImportMeta,
+  ImportPost,
+  ImportPostTerm,
+  ImportTerm,
+} from '../import-export/records';
+export type { ImportPostData } from '../import-export/writer';
 export type {} from '../jobs/core-events';
 export type { CronEvent, CronSchedule } from '../jobs/cron';
 export type { EnqueueOptions, HandlerOptions, Job, JobContext } from '../jobs/queue';
@@ -39,6 +50,17 @@ export type {} from '../people/application-passwords';
 export type {} from '../people/password-reset';
 export type {} from '../people/users';
 export type {} from '../routes/users';
+export type {
+  DebugField,
+  DebugInfo,
+  DebugSection,
+  DebugValue,
+  SiteHealthAsyncTest,
+  SiteHealthDirectTest,
+  SiteHealthStatus,
+  SiteHealthTestResult,
+  SiteStatusTests,
+} from '../site-health/types';
 export type {
   PageParent,
   PluginPageArgs,
@@ -57,6 +79,13 @@ export type {
   Version,
 } from './assets';
 export type { PluginCron, PluginJobContext, PluginJobHandler, PluginJobs } from './background';
+export type {
+  PluginCliAssocArgs,
+  PluginCliCommandArgs,
+  PluginCliHandler,
+  PluginCliIo,
+} from './cli';
+export type { PluginI18n } from './i18n';
 export type {} from './manager';
 export type { PluginManifest, PluginManifestInput, PluginPermission } from './manifest';
 export type {

@@ -71,6 +71,10 @@ Everything is served under `/wp-json`, as in WordPress:
 | GET / POST               | `/wp/v2/blocks`                        | read: `edit_posts` · create: `publish_posts` | Synced patterns (`wp_block`). Same parameters as posts. |
 | GET / POST / PUT / PATCH / DELETE | `/wp/v2/blocks/{id}`          | `edit_post` / `delete_post` | One synced pattern: `title.raw`, `content.raw`, `wp_pattern_sync_status`; write it with `meta.wp_pattern_sync_status`. |
 
+| GET                      | `/pressbase/v1/site-health`, `/pressbase/v1/site-health/info` | `view_site_health_checks` | Site Health: the direct tests' results and the async tests to run; the Info tab's sections and copy text. See [Site Health](site-health.md#rest-api). |
+| GET / POST               | `/pressbase/v1/site-health/result` | `view_site_health_checks` | The last check's counts and rating, for the Dashboard; `POST { counts }` saves them. |
+| GET                      | `/wp-site-health/v1/tests/{test}`, `/wp-site-health/v1/directory-sizes` | `view_site_health_checks` (`site_health_test_rest_capability_{check}`) | WordPress's Site Health routes: one async test's result; folder and database sizes. |
+
 `posts_per_rss` and `rss_use_excerpt` (Settings → Reading's feed settings) are Pressbase additions to `/wp/v2/settings`; WordPress keeps them out of the REST settings.
 
 `apps/web` also answers `POST /_pressbase/revalidate` (outside `/wp-json`, not part of core): core's cache purges, `{ "tags": [...] }` with `Authorization: Bearer <PRESSBASE_REVALIDATE_SECRET>`. It answers `401 pressbase_invalid_secret`, `400 rest_invalid_param` without tags, `404 pressbase_cache_disabled` when caching is off, and `{ purged, tags }` otherwise. See [ADR 0008](../adr/0008-public-page-caching.md).

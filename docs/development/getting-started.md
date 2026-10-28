@@ -53,7 +53,7 @@ Open <http://localhost:3000> and follow the installer. Without `DATABASE_URL` it
 docker compose up -d     # Pressbase + postgres:17 from docker-compose.yml, on http://localhost:3000
 ```
 
-`docker compose up --build` builds the image from your checkout instead of pulling it; `docker build -t pressbase .` builds it on its own.
+`docker exec pressbase pressbase plugin list` runs the [CLI](cli.md) inside the container when the site uses PostgreSQL. The server holds the built-in database, so then stop the container and run `docker run --rm -v pressbase:/data pressbase pressbase plugin list`. `docker compose up --build` builds the image from your checkout instead of pulling it; `docker build -t pressbase .` builds it on its own.
 
 | Variable | Default in the image | Purpose |
 | --- | --- | --- |
@@ -111,6 +111,18 @@ See `.env.example`. Core reads the repo-root `.env` in development.
 | `PRESSBASE_SMTP_HOST`, `PRESSBASE_SMTP_PORT`, `PRESSBASE_SMTP_USER`, `PRESSBASE_SMTP_PASS`, `PRESSBASE_SMTP_SECURE` | — · `587` (`465` when secure) | SMTP server as separate settings. `SECURE=true` uses TLS from the start. |
 | `PRESSBASE_MAIL_FROM` | site title + `pressbase@<site host>` | Sender, e.g. `"The Morning Paper <hello@example.com>"` |
 | `PRESSBASE_WORKER` | on | `off` stops this core process from running background jobs and cron events, when another process sharing the database runs them. See [Jobs and cron](../architecture/jobs.md#the-worker). |
+| `PRESSBASE_MAX_IMPORT_MB` | `1024` | Largest WordPress export file Tools → Import accepts |
+| `PRESSBASE_IMPORT_ALLOW_PRIVATE_HOSTS` | off | `1` lets the importer download attachments from private network addresses (a WordPress site on your own network). Off guards against SSRF. |
+
+## Moving a WordPress site to Pressbase
+
+1. On the WordPress site, go to **Tools → Export**, choose **All content** and download the file.
+2. In Pressbase, go to **Tools → Import** and upload that `.xml` file.
+3. Check what's in it, then choose who each author's posts belong to: an existing user, or a new user (they get a random password and can reset it).
+4. Leave **Download and import file attachments** on to copy the images and files into the media library; the old site must still be online. Links to old files and pages are pointed at the new ones.
+5. **Start import.** The import runs in the background; you can leave the page and come back. When it's done, a summary lists what was imported, what was skipped (already there, or a post type this site doesn't have) and anything that failed, with the reason.
+
+Importing the same file again is safe: what's already there is skipped. To move content the other way, **Tools → Export** downloads a file WordPress's importer reads. Details: [Import and export](../architecture/import-export.md).
 
 ## Email
 

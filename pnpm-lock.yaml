@@ -249,6 +249,9 @@ importers:
       "@wordpress/hooks":
         specifier: 5.0.0
         version: 5.0.0
+      "@wordpress/i18n":
+        specifier: 7.0.0
+        version: 7.0.0
       "@wordpress/keyboard-shortcuts":
         specifier: 6.0.0
         version: 6.0.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -316,6 +319,9 @@ importers:
       hono:
         specifier: 4.13.14
         version: 4.13.14
+      htmlparser2:
+        specifier: 12.0.0
+        version: 12.0.0
       nodemailer:
         specifier: 10.0.15
         version: 10.0.15
@@ -391,6 +397,34 @@ importers:
         specifier: workspace:*
         version: link:../hooks
     devDependencies:
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: 5.0.5
+        version: 5.0.5(@types/node@26.6.5)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))
+
+  packages/cli:
+    dependencies:
+      "@pressbase/core":
+        specifier: workspace:*
+        version: link:../../apps/core
+      "@pressbase/db":
+        specifier: workspace:*
+        version: link:../db
+      drizzle-orm:
+        specifier: 0.45.4
+        version: 0.45.4(@electric-sql/pglite@0.5.12)(postgres@3.4.9)
+      tsx:
+        specifier: 4.23.15
+        version: 4.23.15
+    devDependencies:
+      "@types/node":
+        specifier: 26.6.5
+        version: 26.6.5
+      sharp:
+        specifier: 0.35.5
+        version: 0.35.5(@types/node@26.6.5)
       typescript:
         specifier: 5.9.3
         version: 5.9.3

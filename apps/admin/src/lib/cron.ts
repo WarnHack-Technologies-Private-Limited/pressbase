@@ -31,6 +31,7 @@ const CORE_HOOKS: Record<string, string> = {
   publish_future_post: 'Publish a scheduled post',
   pressbase_delete_expired_sessions: 'Remove expired login sessions',
   pressbase_prune_jobs: 'Clear out old task records',
+  wp_site_health_scheduled_check: 'Check site health',
 };
 
 export function describeHook(hook: string): string | undefined {

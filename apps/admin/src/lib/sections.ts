@@ -11,11 +11,15 @@ import {
   Users,
   Wrench,
 } from 'lucide-react';
+import { msgid } from './i18n/locale';
 
 /**
  * The admin's information architecture: WordPress's menu order, grouped.
  * `release` marks sections that are not built yet; their pages show what is
  * coming instead of a dead end. Keep in step with docs/roadmap.md.
+ *
+ * Labels are English, marked with msgid() for translators; the shell shows
+ * them with `__(label, 'pressbase-admin')`.
  */
 export interface Section {
   slug: string;
@@ -34,78 +38,76 @@ export interface SectionGroup {
 
 export const SECTION_GROUPS: SectionGroup[] = [
   {
-    items: [{ slug: '', label: 'Dashboard', icon: LayoutDashboard, capability: 'read' }],
+    items: [{ slug: '', label: msgid('Dashboard'), icon: LayoutDashboard, capability: 'read' }],
   },
   {
-    label: 'Content',
+    label: msgid('Content'),
     items: [
       {
         slug: 'posts',
-        label: 'Posts',
+        label: msgid('Posts'),
         icon: PenSquare,
         capability: 'edit_posts',
       },
       {
         slug: 'pages',
-        label: 'Pages',
+        label: msgid('Pages'),
         icon: FileText,
         capability: 'edit_pages',
       },
       {
         slug: 'media',
-        label: 'Media',
+        label: msgid('Media'),
         icon: Image,
         capability: 'upload_files',
       },
       {
         slug: 'comments',
-        label: 'Comments',
+        label: msgid('Comments'),
         icon: MessageSquare,
         capability: 'moderate_comments',
       },
     ],
   },
   {
-    label: 'Design',
+    label: msgid('Design'),
     items: [
       {
         slug: 'appearance',
-        label: 'Appearance',
+        label: msgid('Appearance'),
         icon: Paintbrush,
         capability: 'switch_themes',
       },
     ],
   },
   {
-    label: 'Extend',
+    label: msgid('Extend'),
     items: [
       {
         slug: 'plugins',
-        label: 'Plugins',
+        label: msgid('Plugins'),
         icon: Plug,
         capability: 'activate_plugins',
-        summary: 'Add features with plugins that install at runtime — no rebuild required.',
+        summary: msgid('Add features with plugins that install at runtime — no rebuild required.'),
       },
     ],
   },
   {
-    label: 'Manage',
+    label: msgid('Manage'),
     items: [
       {
         slug: 'users',
-        label: 'Users',
+        label: msgid('Users'),
         icon: Users,
         capability: 'list_users',
       },
       {
         slug: 'tools',
-        label: 'Tools',
+        label: msgid('Tools'),
         icon: Wrench,
         capability: 'edit_posts',
-        release: 'v0.6',
-        summary: 'Import from WordPress, export your content and check your site’s health.',
       },
-      { slug: 'settings', label: 'Settings', icon: Settings, capability: 'manage_options' },
+      { slug: 'settings', label: msgid('Settings'), icon: Settings, capability: 'manage_options' },
     ],
   },
 ];

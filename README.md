@@ -83,7 +83,15 @@ cp .env.example .env             # then set DATABASE_URL=postgres://pressbase:pr
 pnpm dev
 ```
 
-More detail is in [Getting started](docs/development/getting-started.md).
+Or install from the terminal, without the browser, with the `pressbase` CLI:
+
+```bash
+pnpm pressbase core install --builtin-database --url=http://localhost:3000 \
+  --title="My site" --admin_user=admin --admin_email=you@example.com
+pnpm pressbase post list
+```
+
+More detail is in [Getting started](docs/development/getting-started.md) and the [CLI reference](docs/development/cli.md).
 
 ### Run with Docker
 
@@ -108,7 +116,7 @@ Open <http://localhost:3000> and follow the installer. Configuration, SMTP and h
 | Path                  | What it is                                                                                                          |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `apps/core`           | The core server (Hono on Node.js): REST API at `/wp-json`, content, media, people, comments, themes and rendering.   |
-| `apps/admin`          | The admin app (Next.js): installer, dashboard, block editor, media, comments, users, appearance and settings.       |
+| `apps/admin`          | The admin app (Next.js): installer, dashboard, block editor, media, comments, users, appearance, tools (Site Health) and settings. |
 | `apps/web`            | The public site (Next.js): serves pages rendered by core, with a tagged page cache.                                 |
 | `packages/db`         | PostgreSQL schema (Drizzle ORM), migrations and the connection factory. Also runs on the built-in database (PGlite). |
 | `packages/hooks`      | Actions and filters: the extension system, modelled on `WP_Hook`.                                                   |

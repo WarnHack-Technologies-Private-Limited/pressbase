@@ -23,6 +23,7 @@ New here? The [README](../README.md#see-it-in-action) shows Pressbase in action:
 - [Media](architecture/media.md): uploads, storage, image sizes, file serving and its security.
 - [Hooks](architecture/hooks.md): actions and filters, and the hooks core fires.
 - [Jobs and cron](architecture/jobs.md): the job queue, its worker, WP-Cron and scheduled posts.
+- [Import and export](architecture/import-export.md): WXR in and out, the import pipeline, attachment downloads.
 - [Blocks](architecture/blocks.md): parsing, rendering, dynamic blocks and patterns.
 - [People](architecture/people.md): users and roles, application passwords, mail, password reset.
 - [Comments](architecture/comments.md): the comment pipeline, moderation, blocks and the comment form.
@@ -31,7 +32,9 @@ New here? The [README](../README.md#see-it-in-action) shows Pressbase in action:
 - [Public page hooks, scripts and styles](architecture/scripts-and-styles.md): `wp_head`, `wp_body_open`, `wp_footer`, `kernel.scripts` and `kernel.styles`.
 - [Plugins](architecture/plugins.md): writing a plugin, plugin.json, the lifecycle, installing, the security model and its limits.
 - [REST API](architecture/rest-api.md): endpoints, errors, authentication.
+- [Site Health](architecture/site-health.md): Tools → Site Health's tests, the Info tab, the Dashboard rating and how plugins extend them.
 - [Block editor](architecture/block-editor.md): how Gutenberg runs in the admin, api-fetch, hidden blocks, autosave.
+- [Internationalisation](architecture/i18n.md): text domains, `.mo`/`.po`/JSON files, the site's and users' languages, language packs, RTL, translating the admin and the block editor.
 - [Installer](architecture/installer.md): site states, the install flow, configuration.
 - [Security](architecture/security.md): threat model and protections.
 
@@ -50,6 +53,8 @@ New here? The [README](../README.md#see-it-in-action) shows Pressbase in action:
 - [Testing](development/testing.md): what to test and how.
 - [Conventions](development/conventions.md): code style and patterns.
 - [Writing plugins](development/writing-plugins.md): `create-pressbase-plugin`, the SDK, building and packing a plugin.
+- [The pressbase CLI](development/cli.md): every command, its flags and examples (like wp-cli).
+- [Translating Pressbase](development/translating.md): contributing a translation, `pnpm i18n:extract`, making strings translatable.
 
 ## Decisions
 

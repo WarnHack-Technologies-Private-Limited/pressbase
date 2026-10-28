@@ -1,5 +1,6 @@
 import { schema } from '@pressbase/db';
 import { eq } from 'drizzle-orm';
+import { z } from 'zod';
 import type { Kernel } from '../kernel';
 import type { Post } from './posts';
 
@@ -247,4 +248,85 @@ export async function permalinkHistory(kernel: Kernel): Promise<PermalinkHistory
 export function remember(list: string[], previous: string, current: string): string[] {
   if (previous === current) return list;
   return [previous, ...list.filter((v) => v !== previous && v !== current)].slice(0, HISTORY_LIMIT);
+}
+
+/* ------------------------------------------------------ saving the settings */
+
+export interface PermalinkSettings {
+  permalink_structure: string;
+  category_base: string;
+  tag_base: string;
+}
+
+/** What a save may change (the REST body of /pressbase/v1/permalinks). */
+export const permalinkSettingsInput = z.object({
+  permalink_structure: z.string().max(200).optional(),
+  category_base: z.string().max(200).optional(),
+  tag_base: z.string().max(200).optional(),
+});
+
+/** The three options Settings → Permalinks edits. */
+export async function permalinkSettings(kernel: Kernel): Promise<PermalinkSettings> {
+  return {
+    permalink_structure: await kernel.options.get<string>('permalink_structure', ''),
+    category_base: await kernel.options.get<string>('category_base', ''),
+    tag_base: await kernel.options.get<string>('tag_base', ''),
+  };
+}
+
+/**
+ * Saving Settings → Permalinks (wordpress/wp-admin/options-permalink.php):
+ * each value is normalised, the bases must differ, and the replaced values
+ * are remembered so old addresses keep redirecting (frontend/query.ts).
+ * Used by /pressbase/v1/permalinks and `pressbase rewrite structure`.
+ * Returns the saved settings, or a message per refused field.
+ */
+export async function savePermalinkSettings(
+  kernel: Kernel,
+  input: Partial<PermalinkSettings>,
+): Promise<
+  { ok: true; settings: PermalinkSettings } | { ok: false; params: Record<string, string> }
+> {
+  const params: Record<string, string> = {};
+  const next: Partial<PermalinkSettings> = {};
+  const check = (name: keyof PermalinkSettings, sanitize: (v: string) => Sanitized) => {
+    const value = input[name];
+    if (value === undefined) return;
+    const result = sanitize(value);
+    if (result.ok) next[name] = result.value;
+    else params[name] = result.error;
+  };
+  check('permalink_structure', sanitizePermalinkStructure);
+  check('category_base', sanitizePermalinkBase);
+  check('tag_base', sanitizePermalinkBase);
+
+  const current = await permalinkSettings(kernel);
+  const category = basePath(next.category_base ?? current.category_base, 'category');
+  const tag = basePath(next.tag_base ?? current.tag_base, 'tag');
+  if (!params.category_base && !params.tag_base && category === tag) {
+    params[next.tag_base !== undefined ? 'tag_base' : 'category_base'] =
+      'The category base and the tag base must be different.';
+  }
+  if (Object.keys(params).length > 0) return { ok: false, params };
+
+  const history = await permalinkHistory(kernel);
+  const updated = {
+    structures:
+      next.permalink_structure === undefined
+        ? history.structures
+        : remember(history.structures, current.permalink_structure, next.permalink_structure),
+    categoryBases: remember(
+      history.categoryBases,
+      basePath(current.category_base, 'category'),
+      category,
+    ),
+    tagBases: remember(history.tagBases, basePath(current.tag_base, 'tag'), tag),
+  };
+  if (JSON.stringify(updated) !== JSON.stringify(history)) {
+    await kernel.options.set(PERMALINK_HISTORY_OPTION, updated, { autoload: true });
+  }
+  for (const [name, value] of Object.entries(next)) {
+    if (value !== current[name as keyof PermalinkSettings]) await kernel.options.set(name, value);
+  }
+  return { ok: true, settings: await permalinkSettings(kernel) };
 }

@@ -26,6 +26,21 @@ export interface Config {
   revalidate?: { urls: string[]; secret: string };
   /** Run the job queue worker in this process (PRESSBASE_WORKER=off disables it). Default true. */
   worker?: boolean;
+  /** The public app's URLs (WEB_URL), when set, for Site Health's loopback test. */
+  webUrls?: string[];
+  /** WXR import (docs/architecture/import-export.md). */
+  import?: ImportConfig;
+}
+
+export interface ImportConfig {
+  /** Largest WXR file accepted, in megabytes (PRESSBASE_MAX_IMPORT_MB). Default 1024. */
+  maxFileMb?: number;
+  /**
+   * Download attachments from private, loopback and link-local addresses
+   * (PRESSBASE_IMPORT_ALLOW_PRIVATE_HOSTS=1), for imports from a site on your
+   * own network. Off by default: see the SSRF notes in the doc above.
+   */
+  allowPrivateHosts?: boolean;
 }
 
 export interface MailConfig {
@@ -66,7 +81,19 @@ export async function loadConfig(env: NodeJS.ProcessEnv = process.env): Promise<
             .filter(Boolean),
         }
       : undefined,
+    webUrls: env.WEB_URL
+      ? env.WEB_URL.split(',')
+          .map((u) => u.trim())
+          .filter(Boolean)
+      : undefined,
     worker: !['off', '0', 'false', 'no'].includes((env.PRESSBASE_WORKER ?? '').toLowerCase()),
+    import: {
+      maxFileMb:
+        Number(env.PRESSBASE_MAX_IMPORT_MB) > 0 ? Number(env.PRESSBASE_MAX_IMPORT_MB) : 1024,
+      allowPrivateHosts: ['1', 'true', 'yes'].includes(
+        (env.PRESSBASE_IMPORT_ALLOW_PRIVATE_HOSTS ?? '').toLowerCase(),
+      ),
+    },
     mail: {
       smtpUrl: env.PRESSBASE_SMTP_URL || undefined,
       host: env.PRESSBASE_SMTP_HOST || undefined,

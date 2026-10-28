@@ -16,7 +16,7 @@ export {
   WPBlock,
 } from './block';
 export { ALLOWED_PROTOCOLS, escAttr, escHtml, escUrl, stripAllTags } from './escape';
-export { hasBlocks, parseBlocks } from './parser';
+export { blockDelimiterPattern, hasBlocks, parseBlocks } from './parser';
 export {
   type BlockStyle,
   type BlockSupports,

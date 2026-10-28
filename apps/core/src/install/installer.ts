@@ -3,7 +3,10 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { DEFAULT_ROLES } from '../auth/capabilities';
 import { hashPassword } from '../auth/password';
+import { writeSiteConfig } from '../config';
+import type { Kernel } from '../kernel';
 import { DB_VERSION, PRESSBASE_VERSION } from '../version';
+import { describeDatabaseError } from './database';
 
 /** The "About your site" step — WordPress's install.php form. */
 export const siteInput = z.object({
@@ -220,4 +223,62 @@ export async function installSite(db: Database, site: SiteInput): Promise<{ user
 
     return { userId: admin.id };
   });
+}
+
+/** Why an installation didn't happen, with WordPress-style codes. `hint` says what to do next. */
+export class InstallError extends Error {
+  constructor(
+    readonly code: string,
+    message: string,
+    readonly status: 400 | 409,
+    readonly hint?: string,
+  ) {
+    super(message);
+  }
+}
+
+/**
+ * The installer's last step (WordPress's install.php `step=2`), shared by
+ * POST /pressbase/v1/install and `pressbase core install`: connect and
+ * migrate when no database was configured yet, refuse a database that
+ * already holds a site, run installSite(), save config.json and mark the
+ * site ready. Throws InstallError.
+ */
+export async function installPressbase(
+  kernel: Kernel,
+  args: { site: SiteInput; databaseUrl?: string },
+): Promise<{ userId: number }> {
+  if (kernel.state === 'ready') {
+    throw new InstallError(
+      'pressbase_already_installed',
+      'Pressbase is already installed. Log in instead.',
+      409,
+    );
+  }
+  let newDatabaseUrl: string | undefined;
+  if (kernel.state === 'needs-database') {
+    if (!args.databaseUrl) {
+      throw new InstallError('rest_invalid_param', 'Choose a database.', 400);
+    }
+    newDatabaseUrl = args.databaseUrl;
+    let state: string;
+    try {
+      state = await kernel.useDatabase(newDatabaseUrl);
+    } catch (error) {
+      const problem = describeDatabaseError(error);
+      throw new InstallError(problem.code, problem.message, 400, problem.hint);
+    }
+    if (state === 'ready') {
+      await writeSiteConfig(kernel.config.dataDir, { databaseUrl: newDatabaseUrl });
+      throw new InstallError(
+        'pressbase_already_installed',
+        'This database already holds a Pressbase site. Log in instead.',
+        409,
+      );
+    }
+  }
+  const { userId } = await installSite(kernel.db, args.site);
+  if (newDatabaseUrl) await writeSiteConfig(kernel.config.dataDir, { databaseUrl: newDatabaseUrl });
+  await kernel.refreshState();
+  return { userId };
 }

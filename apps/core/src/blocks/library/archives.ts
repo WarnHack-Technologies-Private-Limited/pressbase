@@ -76,7 +76,7 @@ export async function renderArchives(
         ? `${site.home}/${row.year}/`
         : `${site.home}/?m=${row.year}`
       : monthLink(site, row.year, row.month);
-    const text = yearly ? String(row.year) : `${monthName(row.month)} ${row.year}`;
+    const text = yearly ? String(row.year) : `${monthName(row.month, site.dateWords)} ${row.year}`;
     archives += archivesLink(url, text, format, showCount ? `&nbsp;(${row.posts})` : '');
   }
 

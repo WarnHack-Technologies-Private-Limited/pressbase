@@ -71,6 +71,8 @@ Plugins ship compiled JavaScript (`.js` or `.mjs`, ESM). Write TypeScript with [
 | `scripts.*`, `styles.*`, `assets.url(file)` | scripts and stylesheets on public pages, and the plugin's `public/` files ([below](#scripts-styles-and-static-files)) | `wp_enqueue_script`, `wp_enqueue_style`, `plugins_url` |
 | `settings.register(name, args) / addSection(id, args) / get / set` | a setting with its admin field; sections of a settings page. See [Settings](#settings) | `register_setting`, `add_settings_field`, `add_settings_section` |
 | `admin.addPage({ slug, title, parent, capability, entry })` | an admin page, top level or under Settings or Tools. See [Admin pages](#admin-pages) | `add_menu_page`, `add_options_page`, `add_management_page` |
+| `cli.addCommand(name, handler, { shortdesc, synopsis, longdesc })` | a `pressbase` command; `name` is the plugin's slug, then subcommand words. See [the CLI](../development/cli.md#plugin-commands) | `WP_CLI::add_command` |
+| `i18n.__ / _x / _n / _nx`, `i18n.locale()`, `i18n.isRtl()` | translations in the plugin's text domain (its slug), from its `languages/` folder. See [Internationalisation](i18n.md#plugins) | `__()`, `load_plugin_textdomain` |
 
 A route's `handler` receives Hono's context (`c.req.query()`, `await c.req.json()`, `c.json()`…) and returns a `Response` or any JSON value. `permission` is required, as WordPress requires `permission_callback`; returning anything but `true` answers 401 (logged out) or 403.
 
@@ -380,7 +382,7 @@ or `api.admin.addPage({ slug, title, parent, capability, description, entry })`.
 | `parent` | Where it shows | URL | WordPress |
 | --- | --- | --- | --- |
 | `settings` | Settings' sub-navigation, after core's screens | `/admin/settings/{plugin}[/{page}]` | `add_options_page()` |
-| `tools` | listed on **Tools** (which stops saying "coming in v0.6" once a plugin adds a page) | `/admin/tools/{plugin}[/{page}]` | `add_management_page()` |
+| `tools` | listed on **Tools**, under Pressbase's own tools (`apps/admin/src/lib/tools.ts`) | `/admin/tools/{plugin}[/{page}]` | `add_management_page()` |
 | none | the sidebar's **Extend** group, after Plugins | `/admin/plugin/{plugin}[/{page}]` | `add_menu_page()` |
 
 The `/{page}` segment is left out when the page's slug is the plugin's. A page shows its `entry` module's UI, then the settings registered with `page: slug`, or both. `capability` (default `manage_options`) is checked by core: pages a user can't open are left out of their navigation and answer 403. At most 20 pages per plugin.

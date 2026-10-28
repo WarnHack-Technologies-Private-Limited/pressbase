@@ -11,13 +11,17 @@ import { PostsService } from './content/posts';
 import { registerCoreTaxonomies, TaxonomyRegistry } from './content/taxonomies';
 import { TermsService } from './content/terms';
 import { registerPublicPageHooks, ScriptsApi, StylesApi } from './frontend/head';
+import { I18n } from './i18n/l10n';
+import { registerImportJobs } from './import-export/service';
 import { registerCoreEvents } from './jobs/core-events';
 import { Cron } from './jobs/cron';
 import { JobQueue } from './jobs/queue';
 import { Mailer } from './mail/mailer';
 import { registerCoreSettings, SettingsRegistry } from './options/settings';
 import { Options } from './options/store';
+import { CliCommands } from './plugins/cli';
 import { PluginManager } from './plugins/manager';
+import { SiteHealth } from './site-health/service';
 import { registerGlobalStylesHooks, registerGlobalStylesPostType } from './themes/global-styles';
 import { ThemesService } from './themes/service';
 import { registerSiteIdentityHooks, registerSiteIdentitySettings } from './themes/site-identity';
@@ -63,6 +67,12 @@ export class Kernel {
   readonly styles = new StylesApi(this.hooks);
   /** Installed plugins, loading and the plugin lifecycle (see docs/architecture/plugins.md). */
   readonly plugins = new PluginManager(this);
+  /** Site Health: status tests and debug information (see docs/architecture/site-health.md). */
+  readonly siteHealth = new SiteHealth(this);
+  /** Commands plugins add to the `pressbase` CLI (v0.6, see docs/development/cli.md). */
+  readonly cli = new CliCommands();
+  /** Translations, locales and language packs: l10n.php (see docs/architecture/i18n.md). */
+  readonly i18n = new I18n(this);
   #connection: DatabaseConnection | undefined;
   #options: Options | undefined;
   #state: SiteState = 'needs-database';
@@ -85,6 +95,8 @@ export class Kernel {
     registerCoreEvents(this);
     // Public page hooks: wp_head, wp_footer, wp_enqueue_scripts (v0.5).
     registerPublicPageHooks(this);
+    // WXR import (v0.6): the pressbase/import job. See docs/architecture/import-export.md.
+    registerImportJobs(this);
   }
 
   get state(): SiteState {

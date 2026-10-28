@@ -6,6 +6,8 @@ import { CacheTag } from './cache/tags';
 import { loadConfig } from './config';
 import { Kernel } from './kernel';
 
+// Named in the built-in database's lock file, so `pressbase` can say who holds it.
+process.env.PRESSBASE_PROCESS ??= 'the Pressbase server';
 const config = await loadConfig();
 const kernel = new Kernel(config);
 await kernel.boot();

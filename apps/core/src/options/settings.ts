@@ -139,7 +139,8 @@ export function registerCoreSettings(registry: SettingsRegistry): void {
     schema: z.number().int().min(0).max(6),
     default: 1,
   });
-  registry.register('language', { option: 'locale', schema: z.enum(['en_US']), default: 'en_US' });
+  // `language` (WordPress's WPLANG, stored in the `locale` option) is
+  // registered by i18n/l10n.ts: only installed languages are accepted.
   registry.register('posts_per_page', {
     option: 'posts_per_page',
     schema: z.number().int().min(1).max(100),

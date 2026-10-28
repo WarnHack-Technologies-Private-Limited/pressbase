@@ -54,11 +54,28 @@ function ordinal(day: number): string {
   return ['th', 'st', 'nd', 'rd'][day % 10] ?? 'th';
 }
 
-export function formatPhpDate(format: string, date: Date, timeZone = 'UTC'): string {
+/** Month and weekday names in a language (WP_Locale), as wp_date() uses them. */
+export interface DateWords {
+  month: string[];
+  monthAbbrev: string[];
+  weekday: string[];
+  weekdayAbbrev: string[];
+  meridiem: { am: string; pm: string; AM: string; PM: string };
+}
+
+export function formatPhpDate(
+  format: string,
+  date: Date,
+  timeZone = 'UTC',
+  words?: DateWords,
+): string {
   const p = parts(date, timeZone);
   const weekdayIndex = WEEKDAYS.indexOf(p.weekday);
   const hour12 = p.hour % 12 || 12;
-  const month = MONTHS[p.month - 1] ?? '';
+  const englishMonth = MONTHS[p.month - 1] ?? '';
+  const month = words?.month[p.month - 1] ?? englishMonth;
+  const weekday = words?.weekday[weekdayIndex] ?? p.weekday;
+  const meridiem = words?.meridiem ?? { am: 'am', pm: 'pm', AM: 'AM', PM: 'PM' };
 
   let out = '';
   for (let i = 0; i < format.length; i++) {
@@ -78,10 +95,10 @@ export function formatPhpDate(format: string, date: Date, timeZone = 'UTC'): str
         out += ordinal(p.day);
         break;
       case 'D':
-        out += p.weekday.slice(0, 3);
+        out += words?.weekdayAbbrev[weekdayIndex] ?? p.weekday.slice(0, 3);
         break;
       case 'l':
-        out += p.weekday;
+        out += weekday;
         break;
       case 'N':
         out += weekdayIndex === 0 ? 7 : weekdayIndex;
@@ -93,7 +110,7 @@ export function formatPhpDate(format: string, date: Date, timeZone = 'UTC'): str
         out += month;
         break;
       case 'M':
-        out += month.slice(0, 3);
+        out += words?.monthAbbrev[p.month - 1] ?? englishMonth.slice(0, 3);
         break;
       case 'm':
         out += pad(p.month);
@@ -108,10 +125,10 @@ export function formatPhpDate(format: string, date: Date, timeZone = 'UTC'): str
         out += pad(p.year % 100);
         break;
       case 'a':
-        out += p.hour < 12 ? 'am' : 'pm';
+        out += p.hour < 12 ? meridiem.am : meridiem.pm;
         break;
       case 'A':
-        out += p.hour < 12 ? 'AM' : 'PM';
+        out += p.hour < 12 ? meridiem.AM : meridiem.PM;
         break;
       case 'g':
         out += hour12;

@@ -28,6 +28,8 @@ import {
 import { Popover } from '@wordpress/components';
 import { useStateWithHistory } from '@wordpress/compose';
 import { useDispatch, useRegistry, useSelect } from '@wordpress/data';
+// The editor's own toolbar uses WordPress's strings, translated with Gutenberg's (translations.ts).
+import { __, isRTL } from '@wordpress/i18n';
 import '@wordpress/format-library';
 import {
   store as keyboardShortcutsStore,
@@ -48,7 +50,7 @@ import {
 import { createPortal } from 'react-dom';
 import { Button } from '../ui/button';
 import { configureApiFetch } from './api-fetch';
-import { assetUrl, CANVAS_STYLESHEETS, UI_STYLESHEETS } from './assets';
+import { assetUrl, CANVAS_STYLESHEETS, directional, UI_STYLESHEETS } from './assets';
 import styles from './block-editor.module.css';
 import { allowedBlockTypes, countWords, readingMinutes } from './blocks';
 import { type EditorFeatures, loadEditorFeatures, NO_FEATURES, toEditorPattern } from './features';
@@ -76,9 +78,9 @@ if (!getBlockType('core/paragraph')) {
 
 /** HTML for the canvas iframe's <head>. Stable, so the iframe is built once. */
 const RESOLVED_ASSETS = {
-  styles: CANVAS_STYLESHEETS.map((name) => `<link rel="stylesheet" href="${assetUrl(name)}">`).join(
-    '',
-  ),
+  styles: CANVAS_STYLESHEETS.map(
+    (name) => `<link rel="stylesheet" href="${assetUrl(directional(name, isRTL()))}">`,
+  ).join(''),
   scripts: '',
 };
 
@@ -179,7 +181,7 @@ export default function BlockEditor(props: BlockEditorProps) {
     const names = getBlockTypes().map((type) => type.name);
     return {
       alignWide: true,
-      bodyPlaceholder: 'Type / to choose a block',
+      bodyPlaceholder: __('Type / to choose a block'),
       allowedBlockTypes: allowedBlockTypes(names, features),
       __experimentalBlockPatterns: features.patterns.map(toEditorPattern),
       __experimentalBlockPatternCategories: features.patternCategories,
@@ -195,7 +197,7 @@ export default function BlockEditor(props: BlockEditorProps) {
       enableOpenverseMediaCategory: false,
       canLockBlocks: true,
       codeEditingEnabled: true,
-      isRTL: false,
+      isRTL: isRTL(),
     };
   }, [features, canUnfilteredHtml, postId]);
 
@@ -205,7 +207,12 @@ export default function BlockEditor(props: BlockEditorProps) {
   return (
     <ShortcutProvider className={styles.root}>
       {UI_STYLESHEETS.map((name) => (
-        <link key={name} rel="stylesheet" href={assetUrl(name)} precedence="pressbase-editor" />
+        <link
+          key={name}
+          rel="stylesheet"
+          href={assetUrl(directional(name, isRTL()))}
+          precedence="pressbase-editor"
+        />
       ))}
       <BlockEditorProvider
         value={value.blocks}
@@ -230,13 +237,13 @@ export default function BlockEditor(props: BlockEditorProps) {
             aria-controls="pressbase-editor-panel"
             onClick={() => togglePanel('inserter')}
           >
-            Add block
+            {__('Add block')}
           </Button>
           <Button
             size="sm"
             variant="ghost"
             icon={<Undo2 size={16} aria-hidden="true" />}
-            aria-label="Undo"
+            aria-label={__('Undo')}
             title="Undo (Ctrl+Z)"
             aria-disabled={!history.hasUndo}
             onClick={() => history.hasUndo && history.undo()}
@@ -246,7 +253,7 @@ export default function BlockEditor(props: BlockEditorProps) {
             size="sm"
             variant="ghost"
             icon={<Redo2 size={16} aria-hidden="true" />}
-            aria-label="Redo"
+            aria-label={__('Redo')}
             title="Redo (Ctrl+Shift+Z)"
             aria-disabled={!history.hasRedo}
             onClick={() => history.hasRedo && history.redo()}
@@ -436,8 +443,8 @@ function TitleField({
         ref={ref}
         className="pressbase-title"
         rows={1}
-        placeholder="Add title"
-        aria-label="Add title"
+        placeholder={__('Add title')}
+        aria-label={__('Add title')}
         value={value}
         onChange={(event) => onChange(event.target.value.replace(/\n/g, ' '))}
         onKeyDown={(event) => {
