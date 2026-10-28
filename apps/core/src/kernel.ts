@@ -12,6 +12,7 @@ import { registerCoreTaxonomies, TaxonomyRegistry } from './content/taxonomies';
 import { TermsService } from './content/terms';
 import { registerPublicPageHooks, ScriptsApi, StylesApi } from './frontend/head';
 import { I18n } from './i18n/l10n';
+import { registerImportJobs } from './import-export/service';
 import { registerCoreEvents } from './jobs/core-events';
 import { Cron } from './jobs/cron';
 import { JobQueue } from './jobs/queue';
@@ -94,6 +95,8 @@ export class Kernel {
     registerCoreEvents(this);
     // Public page hooks: wp_head, wp_footer, wp_enqueue_scripts (v0.5).
     registerPublicPageHooks(this);
+    // WXR import (v0.6): the pressbase/import job. See docs/architecture/import-export.md.
+    registerImportJobs(this);
   }
 
   get state(): SiteState {

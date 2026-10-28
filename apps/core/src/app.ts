@@ -18,6 +18,7 @@ import { commentsPostRoutes } from './routes/comments-post';
 import { cronRoutes } from './routes/cron';
 import { dashboardRoutes, postCountRoutes } from './routes/dashboard';
 import { globalStylesRoutes } from './routes/global-styles';
+import { exportRoutes, importRoutes } from './routes/import-export';
 import { installRoutes } from './routes/install';
 import { i18nRoutes, languagesRoutes, requestLocale } from './routes/languages';
 import { mediaRoutes } from './routes/media';
@@ -102,6 +103,9 @@ export function createApp(kernel: Kernel) {
   installed.route('/pressbase/v1/permalinks', permalinksRoutes());
   // Installed languages and WordPress.org language packs (v0.6).
   installed.route('/pressbase/v1/languages', languagesRoutes());
+  // Tools → Import and Export (v0.6): WXR in and out. See docs/architecture/import-export.md.
+  installed.route('/pressbase/v1/import', importRoutes());
+  installed.route('/pressbase/v1/export', exportRoutes());
   installed.route('/wp/v2', typeRoutes());
   // One controller per core type and taxonomy, at its rest_base. Types and
   // taxonomies plugins register are routed per request (pluginRoutes, below).

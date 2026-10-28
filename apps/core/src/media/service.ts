@@ -153,6 +153,12 @@ export interface UploadInput {
   description?: string;
   altText?: string;
   parentId?: number | null;
+  /**
+   * The attachment's date, which also picks its year/month folder (the
+   * importer keeps a file's original date and folder, as wp_upload_bits() is
+   * given the post's date). Default: now, or the parent post's month.
+   */
+  date?: Date;
 }
 
 /** Year and month folders follow the site's time zone, as current_time() does. */
@@ -251,7 +257,7 @@ export async function uploadAttachment(kernel: Kernel, input: UploadInput): Prom
       throw new MediaError('rest_invalid_param', 'Invalid parent type.');
     }
   }
-  const folderDate = parent && parent.type !== 'page' ? parent.date : new Date();
+  const folderDate = input.date ?? (parent && parent.type !== 'page' ? parent.date : new Date());
   const folder = await uploadFolder(kernel, folderDate);
   const storage = mediaStorage(kernel);
 
@@ -272,7 +278,7 @@ export async function uploadAttachment(kernel: Kernel, input: UploadInput): Prom
   const title = filterHtml ? sanitizePostTitle(rawTitle) : rawTitle;
   const caption = input.caption ?? '';
   const description = input.description ?? '';
-  const now = new Date();
+  const now = input.date ?? new Date();
 
   let created: Post | undefined;
   try {

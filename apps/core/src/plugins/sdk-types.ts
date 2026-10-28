@@ -33,6 +33,15 @@ export type {} from '../frontend/render';
 export type {} from '../frontend/title';
 export type {} from '../i18n/l10n';
 export type {} from '../i18n/language-packs';
+export type { ExportOptions } from '../import-export/exporter';
+export type {
+  ImportComment,
+  ImportMeta,
+  ImportPost,
+  ImportPostTerm,
+  ImportTerm,
+} from '../import-export/records';
+export type { ImportPostData } from '../import-export/writer';
 export type {} from '../jobs/core-events';
 export type { CronEvent, CronSchedule } from '../jobs/cron';
 export type { EnqueueOptions, HandlerOptions, Job, JobContext } from '../jobs/queue';

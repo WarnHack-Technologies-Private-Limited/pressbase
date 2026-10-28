@@ -108,7 +108,7 @@ The tree model and its operations are pure functions in `apps/admin/src/lib/menu
 
 ## Not yet
 
-- Classic menus (`nav_menu` terms, `/wp/v2/menus`, `/wp/v2/menu-items`, `/wp/v2/menu-locations`) and `WP_Classic_To_Block_Menu_Converter`: there are no classic menus to convert. The importer (v0.6) should convert a WordPress site's classic menus into `wp_navigation` posts the way the converter does.
+- Classic menus (`nav_menu` terms, `/wp/v2/menus`, `/wp/v2/menu-items`, `/wp/v2/menu-locations`) and `WP_Classic_To_Block_Menu_Converter`. Classic menus never live in Pressbase: the WXR importer converts them into `wp_navigation` posts the way the converter does (see [Import and export](import-export.md)).
 - Custom overlays (`overlay` template parts, `core/navigation-overlay-close`), `__unstableLocation`, Block Hooks in menus.
 - Menu edits made through a Navigation block in the post editor are saved when the post is saved (the dirty `wp_navigation` records core-data holds, as WordPress's multi-entity save does), but the post's "Unsaved changes" state doesn't notice menu-only edits. Appearance → Menus is the place to edit menus.
 - The Navigation block asks for classic menus (`GET /wp/v2/menus`) and settings permissions (`OPTIONS /wp/v2/settings`); both answer 404 (`rest_no_route`) and the block carries on, but the requests show in the browser console.
