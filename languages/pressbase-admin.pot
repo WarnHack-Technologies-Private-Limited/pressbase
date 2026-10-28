@@ -12,202 +12,202 @@ msgstr ""
 "X-Generator: pressbase i18n:extract\n"
 "X-Domain: pressbase-admin\n"
 
-#: apps/admin/src/app/admin/page.tsx:15 apps/admin/src/lib/sections.ts:41
+#: apps/admin/src/app/admin/page.tsx:16 apps/admin/src/lib/sections.ts:41
 msgid "Dashboard"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:57
+#: apps/admin/src/app/admin/page.tsx:58
 msgid "just now"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:80
+#: apps/admin/src/app/admin/page.tsx:81
 msgid "Install Pressbase"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:82
+#: apps/admin/src/app/admin/page.tsx:83
 msgid "Give your site a name"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:88
+#: apps/admin/src/app/admin/page.tsx:89
 msgid "Add a tagline"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:95
+#: apps/admin/src/app/admin/page.tsx:96
 msgid "Write your first post"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:101
+#: apps/admin/src/app/admin/page.tsx:102
 msgid "Invite your team"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:107
+#: apps/admin/src/app/admin/page.tsx:108
 msgid "Make the site look like yours"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:116
+#: apps/admin/src/app/admin/page.tsx:117
 msgid "Published posts"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:117
+#: apps/admin/src/app/admin/page.tsx:118
 msgid "Drafts"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:118 apps/admin/src/lib/sections.ts:54
+#: apps/admin/src/app/admin/page.tsx:119 apps/admin/src/lib/sections.ts:54
 msgid "Pages"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:120 apps/admin/src/lib/sections.ts:66
+#: apps/admin/src/app/admin/page.tsx:121 apps/admin/src/lib/sections.ts:66
 msgid "Comments"
 msgstr ""
 
 #. translators: %s: a number of comments.
-#: apps/admin/src/app/admin/page.tsx:125
+#: apps/admin/src/app/admin/page.tsx:126
 #, js-format
 msgid "%s awaiting moderation"
 msgid_plural "%s awaiting moderation"
 msgstr[0] ""
 msgstr[1] ""
 
-#: apps/admin/src/app/admin/page.tsx:139
+#: apps/admin/src/app/admin/page.tsx:140
 msgid " · "
 msgstr ""
 
 #. translators: %s: the user's first name.
-#: apps/admin/src/app/admin/page.tsx:146
+#: apps/admin/src/app/admin/page.tsx:147
 #, js-format
 msgid "Welcome, %s"
 msgstr ""
 
 #. translators: %s: the site's title.
-#: apps/admin/src/app/admin/page.tsx:150
+#: apps/admin/src/app/admin/page.tsx:151
 #, js-format
 msgid "Here’s what’s happening on %s."
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:151
+#: apps/admin/src/app/admin/page.tsx:152
 msgid "your site"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:160
+#: apps/admin/src/app/admin/page.tsx:161
 msgid "Search engines are asked not to index this site"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:162
+#: apps/admin/src/app/admin/page.tsx:163
 msgid "That’s useful while you build. Remember to change it before you launch."
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:171
+#: apps/admin/src/app/admin/page.tsx:172
 msgid "At a glance"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:191
+#: apps/admin/src/app/admin/page.tsx:192
 msgid "Get your site ready"
 msgstr ""
 
 #. translators: 1: steps done, 2: all steps.
-#: apps/admin/src/app/admin/page.tsx:194
+#: apps/admin/src/app/admin/page.tsx:195
 #, js-format
 msgid "%1$s of %2$s done"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:211
+#: apps/admin/src/app/admin/page.tsx:212
 msgid "Done"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:217
+#: apps/admin/src/app/admin/page.tsx:218
 msgid "To do"
 msgstr ""
 
 #. translators: %s: a version number.
-#: apps/admin/src/app/admin/page.tsx:234
+#: apps/admin/src/app/admin/page.tsx:235
 #, js-format
 msgid "Coming in %s"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:245
+#: apps/admin/src/app/admin/page.tsx:246
 msgid "Site health"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:252
+#: apps/admin/src/app/admin/page.tsx:255
 msgid "Database"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:256
+#: apps/admin/src/app/admin/page.tsx:259
 msgctxt "database"
 msgid "Built-in"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:264
+#: apps/admin/src/app/admin/page.tsx:267
 msgid "Search engines"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:267
+#: apps/admin/src/app/admin/page.tsx:270
 msgctxt "search engines"
 msgid "Allowed"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:271
+#: apps/admin/src/app/admin/page.tsx:274
 msgctxt "search engines"
 msgid "Discouraged"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:285
+#: apps/admin/src/app/admin/page.tsx:288
 msgid "The built-in database is for trying Pressbase. Use PostgreSQL for a live site."
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:295
+#: apps/admin/src/app/admin/page.tsx:298
 msgid "Recently edited"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:298
+#: apps/admin/src/app/admin/page.tsx:301
 msgid "Nothing yet. Your latest posts and pages will show here."
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:308
+#: apps/admin/src/app/admin/page.tsx:311
 msgid "(no title)"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:313
+#: apps/admin/src/app/admin/page.tsx:316
 msgctxt "post type singular name"
 msgid "Page"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:314
+#: apps/admin/src/app/admin/page.tsx:317
 msgctxt "post type singular name"
 msgid "Post"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:316
+#: apps/admin/src/app/admin/page.tsx:319
 msgctxt "post status"
 msgid "Draft"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:331
+#: apps/admin/src/app/admin/page.tsx:334
 msgid "Recent comments"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:334
+#: apps/admin/src/app/admin/page.tsx:337
 msgid "View all"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:340
+#: apps/admin/src/app/admin/page.tsx:343
 msgid "No comments yet. When readers comment, they’ll show here."
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:351
+#: apps/admin/src/app/admin/page.tsx:354
 msgid "(empty)"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:355
+#: apps/admin/src/app/admin/page.tsx:358
 msgid "Anonymous"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:357
+#: apps/admin/src/app/admin/page.tsx:360
 msgctxt "comment status"
 msgid "Pending"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:360
+#: apps/admin/src/app/admin/page.tsx:363
 msgctxt "comment status"
 msgid "Spam"
 msgstr ""
@@ -228,7 +228,16 @@ msgstr ""
 msgid "Log in"
 msgstr ""
 
-#: apps/admin/src/components/block-editor/index.tsx:17
+#: apps/admin/src/components/block-editor/server-blocks.tsx:80
+msgid "This block’s plugin is inactive"
+msgstr ""
+
+#: apps/admin/src/components/block-editor/server-blocks.tsx:81
+#, js-format
+msgid "“%s” comes from a plugin that isn’t active, so it can’t be edited or shown on the site. It stays in the post as it is: activate the plugin to use it again."
+msgstr ""
+
+#: apps/admin/src/components/block-editor/skeleton.tsx:11
 msgid "Loading the editor…"
 msgstr ""
 
@@ -266,19 +275,19 @@ msgstr ""
 msgid "Forgot your password?"
 msgstr ""
 
-#: apps/admin/src/components/people/user-editor.tsx:381 apps/admin/src/components/people/user-editor.tsx:383 apps/admin/src/components/settings/general-settings-form.tsx:397
+#: apps/admin/src/components/people/user-editor.tsx:395 apps/admin/src/components/people/user-editor.tsx:397 apps/admin/src/components/settings/general-settings-form.tsx:397
 msgid "Language"
 msgstr ""
 
-#: apps/admin/src/components/people/user-editor.tsx:386
+#: apps/admin/src/components/people/user-editor.tsx:400
 msgid "The language of the admin for you."
 msgstr ""
 
-#: apps/admin/src/components/people/user-editor.tsx:387
+#: apps/admin/src/components/people/user-editor.tsx:401
 msgid "The language of the admin for this person."
 msgstr ""
 
-#: apps/admin/src/components/people/user-editor.tsx:393
+#: apps/admin/src/components/people/user-editor.tsx:407
 msgid "Site default"
 msgstr ""
 
@@ -737,27 +746,27 @@ msgstr ""
 msgid "PM"
 msgstr ""
 
-#: apps/admin/src/lib/people.ts:49
+#: apps/admin/src/lib/people.ts:51
 msgctxt "User role"
 msgid "Administrator"
 msgstr ""
 
-#: apps/admin/src/lib/people.ts:54
+#: apps/admin/src/lib/people.ts:56
 msgctxt "User role"
 msgid "Editor"
 msgstr ""
 
-#: apps/admin/src/lib/people.ts:59
+#: apps/admin/src/lib/people.ts:61
 msgctxt "User role"
 msgid "Author"
 msgstr ""
 
-#: apps/admin/src/lib/people.ts:64
+#: apps/admin/src/lib/people.ts:66
 msgctxt "User role"
 msgid "Contributor"
 msgstr ""
 
-#: apps/admin/src/lib/people.ts:69
+#: apps/admin/src/lib/people.ts:71
 msgctxt "User role"
 msgid "Subscriber"
 msgstr ""

@@ -253,6 +253,7 @@ describe('the Settings API', () => {
     expect((await ctx.request('GET', '/pressbase/v1/admin-extensions')).body).toEqual({
       pages: [],
       modules: [],
+      blocks: [],
     });
     expect(
       (await ctx.request('GET', '/pressbase/v1/plugin-pages/daily-tips/daily-tips')).status,
