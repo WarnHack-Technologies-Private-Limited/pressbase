@@ -1,10 +1,12 @@
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sql } from 'drizzle-orm';
 import type { PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core';
+import { lockDirectory } from './lock';
 import * as schema from './schema';
 
+export { DatabaseLockedError, type LockHolder } from './lock';
 export { schema };
 
 export type Database = PgDatabase<PgQueryResultHKT, typeof schema>;
@@ -60,7 +62,16 @@ export async function connect(
     const target = url.slice('pglite:'.length);
     // PGlite creates its own directory but not missing parents (a fresh data dir).
     if (target !== 'memory') await mkdir(path.dirname(path.resolve(target)), { recursive: true });
-    const client = target === 'memory' ? new PGlite() : new PGlite(target);
+    // One process at a time: a second one would corrupt the files (see lock.ts).
+    const lock = target === 'memory' ? undefined : await lockDirectory(path.resolve(target));
+    let client: InstanceType<typeof PGlite>;
+    try {
+      client = target === 'memory' ? new PGlite() : new PGlite(target);
+      await client.waitReady;
+    } catch (error) {
+      await lock?.release();
+      throw error;
+    }
     const db = drizzle(client, { schema });
     return {
       db: db as unknown as Database,
@@ -69,7 +80,13 @@ export async function connect(
       exec: async (script) => {
         await client.exec(script);
       },
-      close: () => client.close(),
+      close: async () => {
+        try {
+          await client.close();
+        } finally {
+          await lock?.release();
+        }
+      },
     };
   }
 
@@ -103,4 +120,35 @@ export async function testConnection(url: string): Promise<void> {
   } finally {
     await connection.close();
   }
+}
+
+export interface MigrationStatus {
+  /** Every migration Pressbase ships, oldest first, and whether this database has it. */
+  migrations: { tag: string; applied: boolean }[];
+  /** Tags of the migrations that haven't run yet. */
+  pending: string[];
+}
+
+/**
+ * Which of Pressbase's migrations a database has, without applying any. It
+ * reads Drizzle's journal and the `drizzle.__drizzle_migrations` table the
+ * way Drizzle's migrator does: a migration ran when a row is at least as new
+ * as its journal timestamp.
+ */
+export async function migrationStatus(connection: DatabaseConnection): Promise<MigrationStatus> {
+  const journal = JSON.parse(
+    await readFile(path.join(MIGRATIONS_FOLDER, 'meta', '_journal.json'), 'utf8'),
+  ) as { entries: { tag: string; when: number }[] };
+  let latest = -1;
+  try {
+    const result: unknown = await connection.db.execute(
+      sql`select max(created_at) as latest from drizzle.__drizzle_migrations`,
+    );
+    const rows = ((result as { rows?: unknown }).rows ?? result) as { latest: unknown }[];
+    latest = rows[0]?.latest == null ? -1 : Number(rows[0].latest);
+  } catch {
+    // No migrations table yet: an empty database.
+  }
+  const migrations = journal.entries.map((e) => ({ tag: e.tag, applied: e.when <= latest }));
+  return { migrations, pending: migrations.filter((m) => !m.applied).map((m) => m.tag) };
 }
