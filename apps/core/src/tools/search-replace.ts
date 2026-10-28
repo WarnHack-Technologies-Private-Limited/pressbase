@@ -270,7 +270,10 @@ function replaceInText(
         if (r.count) {
           delimiter = whole.replace(
             attrs,
-            serializeBlockAttributes(r.value as Record<string, unknown>),
+            // The group includes the whitespace before -->; keep it. (A function, so `$` stays literal.)
+            () =>
+              serializeBlockAttributes(r.value as Record<string, unknown>) +
+              attrs.slice(attrs.trimEnd().length),
           );
           count += r.count;
         }
