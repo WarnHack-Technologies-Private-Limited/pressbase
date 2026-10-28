@@ -36,6 +36,7 @@ import {
 import {
   META,
   type MetaName,
+  metaKey,
   type SettingsPayload,
   SLUG,
   SOCIAL_DEFAULTS,
@@ -110,8 +111,16 @@ function registerMeta(api: PluginApi): void {
     };
     api.meta.registerPostMeta('', META[name], args);
     if (TERM_META_NAMES.includes(name)) {
-      api.meta.registerTermMeta('category', META[name], args);
-      api.meta.registerTermMeta('post_tag', META[name], args);
+      const termArgs =
+        name === 'noindex'
+          ? {
+              ...args,
+              sanitizeCallback: (value: unknown) =>
+                ['index', 'noindex'].includes(String(value)) ? String(value) : 'default',
+            }
+          : args;
+      api.meta.registerTermMeta('category', metaKey('term', name), termArgs);
+      api.meta.registerTermMeta('post_tag', metaKey('term', name), termArgs);
     }
   }
 }

@@ -143,8 +143,8 @@ describe('head output', () => {
     expect(head(missing.html)).toContain('<title>Page not found - Test Site</title>');
     expect(head(missing.html)).toContain('noindex');
 
-    ctx.kernel.hooks.addFilter('pressbase_seo_schema_graph', (nodes: unknown[]) => [
-      ...nodes,
+    ctx.kernel.hooks.addFilter('pressbase_seo_schema_graph', (nodes) => [
+      ...(nodes as unknown[]),
       { '@type': 'FAQPage', '@id': 'http://localhost:3000/#faq' },
     ]);
     const post = await publish(ctx, { title: 'Filtered' });

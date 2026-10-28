@@ -42,29 +42,36 @@ export type MetaName = keyof typeof META;
 export type SeoMeta = Partial<Record<MetaName, string>>;
 
 /**
- * Term meta uses the same keys. (Yoast itself keeps term data in one option,
- * `wpseo_taxonomy_meta`, keyed `wpseo_title`, `wpseo_desc`…; Pressbase's MySQL
- * migration moves that onto each term as `_yoast_wpseo_*` term meta, which is
- * what's read here. The `wpseo_noindex` value there is 'noindex'/'index'/'default'
- * and is migrated to '1'/'2'/'0'.)
+ * Term meta, under the keys Yoast uses inside its `wpseo_taxonomy_meta`
+ * option (taxonomy → term ID → `wpseo_title`, `wpseo_desc`…). Pressbase's
+ * WordPress migration moves that option onto each term as term meta with
+ * these same keys, so they're read as they arrive. `wpseo_noindex` is
+ * 'noindex', 'index' or 'default'.
  */
-export const TERM_META_NAMES: MetaName[] = [
-  'title',
-  'metadesc',
-  'focuskw',
-  'canonical',
-  'noindex',
-  'ogTitle',
-  'ogDescription',
-  'ogImage',
-  'ogImageId',
-  'twitterTitle',
-  'twitterDescription',
-  'twitterImage',
-  'twitterImageId',
-  'bctitle',
-  'cornerstone',
-];
+export const TERM_META: Partial<Record<MetaName, string>> = {
+  title: 'wpseo_title',
+  metadesc: 'wpseo_desc',
+  focuskw: 'wpseo_focuskw',
+  canonical: 'wpseo_canonical',
+  noindex: 'wpseo_noindex',
+  ogTitle: 'wpseo_opengraph-title',
+  ogDescription: 'wpseo_opengraph-description',
+  ogImage: 'wpseo_opengraph-image',
+  ogImageId: 'wpseo_opengraph-image-id',
+  twitterTitle: 'wpseo_twitter-title',
+  twitterDescription: 'wpseo_twitter-description',
+  twitterImage: 'wpseo_twitter-image',
+  twitterImageId: 'wpseo_twitter-image-id',
+  bctitle: 'wpseo_bctitle',
+  cornerstone: 'wpseo_is_cornerstone',
+};
+
+export const TERM_META_NAMES = Object.keys(TERM_META) as MetaName[];
+
+/** The stored key of a field, for posts or terms. */
+export function metaKey(type: 'post' | 'term', name: MetaName): string {
+  return type === 'term' ? (TERM_META[name] ?? META[name]) : META[name];
+}
 
 /** Yoast's separator options (`wpseo_titles.separator`) and what each prints. */
 export const SEPARATORS: Record<string, string> = {

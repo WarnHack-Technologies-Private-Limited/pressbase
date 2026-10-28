@@ -1,5 +1,5 @@
 import type { PluginApi } from '@pressbase/plugin-sdk';
-import { bool, META, postTypeAppearance, taxonomyAppearance } from './shared';
+import { bool, META, postTypeAppearance, TERM_META, taxonomyAppearance } from './shared';
 import { CACHE_TAG, getTitles, getWpseo } from './store';
 
 /**
@@ -50,8 +50,8 @@ export function registerSitemaps(api: PluginApi): void {
     const db = api.db;
     if (!db) return args;
     const rows = await db.query<{ id: number | string }>(
-      db.sql`select term_id as id from termmeta where key = ${META.noindex}
-             and (value #>> '{}') in ('1', 'noindex')`,
+      db.sql`select term_id as id from termmeta where key = ${TERM_META.noindex}
+             and (value #>> '{}') = 'noindex'`,
     );
     if (!rows.length) return args;
     return { ...args, exclude: [...(args.exclude ?? []), ...rows.map((r) => Number(r.id))] };

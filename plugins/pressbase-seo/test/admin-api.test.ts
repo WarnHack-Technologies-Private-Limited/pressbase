@@ -61,9 +61,9 @@ describe('Yoast meta in REST', () => {
     const ctx = await site();
     const tag = await ctx.request('POST', '/wp/v2/tags', {
       name: 'Oolong',
-      meta: { _yoast_wpseo_title: '%%term_title%% guide %%sep%% %%sitename%%' },
+      meta: { wpseo_title: '%%term_title%% guide %%sep%% %%sitename%%' },
     });
-    expect(tag.body.meta._yoast_wpseo_title).toBe('%%term_title%% guide %%sep%% %%sitename%%');
+    expect(tag.body.meta.wpseo_title).toBe('%%term_title%% guide %%sep%% %%sitename%%');
     await publish(ctx, { title: 'Tagged', tags: [tag.body.id] });
     expect((await render(ctx, '/tag/oolong/')).html).toContain('<title>Oolong guide - Test Site</title>');
   });

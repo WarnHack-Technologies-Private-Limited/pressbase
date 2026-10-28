@@ -122,7 +122,7 @@ describe('the 404 log', () => {
 
     const { Redirects } = await import('../src/redirects');
     const runtime = ctx.kernel.plugins.runtime('pressbase-seo');
-    const redirects = new Redirects(runtime!.api);
+    const redirects = new Redirects(runtime!.api as never);
     for (let i = 0; i < 12; i++) await redirects.log404(`/gone-${i}`, '');
     await redirects.prune404(5);
     expect(await redirects.list404({ limit: 100 })).toHaveLength(5);

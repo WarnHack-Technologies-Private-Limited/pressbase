@@ -5,6 +5,7 @@ import {
   bool,
   META,
   type MetaName,
+  metaKey,
   metaRobots,
   postTypeAppearance,
   type SeoMeta,
@@ -119,7 +120,7 @@ export async function readMeta(
 ): Promise<SeoMeta> {
   const out: SeoMeta = {};
   for (const name of names) {
-    const value = await api.meta.get(type, id, META[name], true);
+    const value = await api.meta.get(type, id, metaKey(type, name), true);
     if (value !== undefined && value !== null && value !== '') out[name] = String(value);
   }
   return out;
@@ -181,7 +182,7 @@ async function termAncestors(api: PluginApi, term: Term): Promise<Term[]> {
 }
 
 async function crumbName(api: PluginApi, type: 'post' | 'term', id: number, fallback: string) {
-  const bc = await api.meta.get(type, id, META.bctitle, true);
+  const bc = await api.meta.get(type, id, metaKey(type, 'bctitle'), true);
   return typeof bc === 'string' && bc.trim() ? bc.trim() : fallback;
 }
 
@@ -444,7 +445,7 @@ export async function computeHead(api: PluginApi, context: RenderContext): Promi
       titleTemplate = meta.title ?? appearance.title;
       descTemplate = meta.metadesc ?? appearance.metadesc;
       robots = metaRobots(
-        { ...meta, noindex: meta.noindex === 'noindex' ? '1' : meta.noindex === 'index' ? '2' : meta.noindex },
+        { ...meta, noindex: meta.noindex === 'noindex' ? '1' : meta.noindex === 'index' ? '2' : '0' },
         appearance.noindex,
       );
       canonical = meta.canonical || pagedUrl(await api.content.termLink(term), paged, pretty);

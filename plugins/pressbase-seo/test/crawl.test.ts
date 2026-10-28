@@ -14,7 +14,7 @@ describe('sitemaps', () => {
     });
     const tag = await ctx.request('POST', '/wp/v2/tags', { name: 'Quiet' });
     await ctx.request('POST', `/wp/v2/tags/${tag.body.id}`, {
-      meta: { '_yoast_wpseo_meta-robots-noindex': '1' },
+      meta: { wpseo_noindex: 'noindex' },
     });
     const loud = await ctx.request('POST', '/wp/v2/tags', { name: 'Loud' });
     await publish(ctx, { title: 'Tagged', tags: [tag.body.id, loud.body.id] });

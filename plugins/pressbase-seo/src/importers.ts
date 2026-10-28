@@ -1,5 +1,5 @@
 import type { PluginApi } from '@pressbase/plugin-sdk';
-import { META, type MetaName } from './shared';
+import { type MetaName, metaKey } from './shared';
 import { aioseoToYoast, rankMathToYoast } from './vars';
 
 /**
@@ -97,10 +97,11 @@ async function importObject(
     if (raw === undefined || raw === null || raw === '') continue;
     const value = convert(raw);
     if (value === undefined) continue;
-    const current = await api.meta.get(type, id, META[target], true);
+    const current = await api.meta.get(type, id, metaKey(type, target), true);
     done.add(target);
     if (current !== undefined && current !== null && current !== '') continue;
-    await api.meta.update(type, id, META[target], value);
+    const stored = type === 'term' && target === 'noindex' ? 'noindex' : value;
+    await api.meta.update(type, id, metaKey(type, target), stored);
     fields++;
   }
   return fields;
