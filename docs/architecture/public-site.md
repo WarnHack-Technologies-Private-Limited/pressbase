@@ -125,7 +125,7 @@ Each sitemap holds at most 2,000 URLs (`wp_sitemaps_max_urls`). Drafts, private 
 
 Sitemaps are off (404) when Settings → Reading asks search engines not to index the site (`blog_public` false), as `wp_sitemaps_enabled()` decides.
 
-Filters: `wp_sitemaps_enabled`, `wp_sitemaps_max_urls`, `wp_sitemaps_post_types`, `wp_sitemaps_posts_query_args`, `wp_sitemaps_taxonomies`.
+Filters: `wp_sitemaps_enabled`, `wp_sitemaps_max_urls`, `wp_sitemaps_add_provider` (return `false` to drop a provider), `wp_sitemaps_post_types`, `wp_sitemaps_posts_query_args`, `wp_sitemaps_taxonomies`, `wp_sitemaps_taxonomies_query_args`, and the entry filters `wp_sitemaps_posts_entry`, `wp_sitemaps_taxonomies_entry` and `wp_sitemaps_users_entry` (each `<url>` as `{ loc, lastmod, changefreq, priority }`; the renderer prints those four tags, as `WP_Sitemaps_Renderer` does). Pressbase SEO uses them to leave out noindexed content and add `lastmod` to terms.
 
 ## robots.txt
 

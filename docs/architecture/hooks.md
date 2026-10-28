@@ -154,6 +154,9 @@ Plugins see the same declarations through `@pressbase/plugin-sdk`, whose types a
 | `wp_sitemaps_max_urls` | filter | `max, objectType` | URLs per sitemap page (2,000) |
 | `wp_sitemaps_post_types`, `wp_sitemaps_taxonomies` | filter | `names` | which post types and taxonomies get sitemaps |
 | `wp_sitemaps_posts_query_args` | filter | `args, postType` | the query of a posts sitemap |
+| `wp_sitemaps_taxonomies_query_args` | filter | `args, taxonomy` | the term query of a taxonomy sitemap (`TermListArgs`: `exclude`, `include`…) |
+| `wp_sitemaps_add_provider` | filter | `provider, name` | each provider (`posts`, `taxonomies`, `users`); `false` leaves it out |
+| `wp_sitemaps_posts_entry`, `wp_sitemaps_taxonomies_entry`, `wp_sitemaps_users_entry` | filter | `entry, post, postType` / `entry, term, taxonomy` / `entry, user` | one `<url>`: `{ loc, lastmod?, changefreq?, priority? }` |
 | _any cron hook_, e.g. `publish_future_post` | action | the event's `args` | the job queue worker, when a scheduled event is due (see [Jobs and cron](jobs.md)) |
 | `cron_schedules` | filter | `schedules` | add recurrences to `hourly`, `twicedaily`, `daily`, `weekly` |
 | `pre_schedule_event`, `schedule_event`, `pre_reschedule_event`, `pre_unschedule_event`, `pre_clear_scheduled_hook`, `pre_unschedule_hook`, `pre_get_scheduled_event` | filter | as in WordPress | short-circuit or change `kernel.cron` calls |
