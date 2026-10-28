@@ -2,6 +2,13 @@
 
 These docs live with the code and change in the same pull requests. If a doc is wrong, that's a bug: fix it or open an issue.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/posts-dark.png">
+  <img alt="The Posts screen in the Pressbase admin" src="assets/screenshots/posts.png">
+</picture>
+
+New here? The [README](../README.md#see-it-in-action) shows Pressbase in action: the block editor, Twenty Twenty-Five style variations, the public site and the admin. Screenshots live in [`assets/screenshots/`](assets/screenshots/); when a change alters a screen shown there, update the image in the same pull request.
+
 ## Product
 
 - [Vision and principles](vision.md): why Pressbase exists, who it's for, and what it won't do.
