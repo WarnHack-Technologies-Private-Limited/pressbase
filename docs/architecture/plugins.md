@@ -73,6 +73,12 @@ Plugins ship compiled JavaScript (`.js` or `.mjs`, ESM). Write TypeScript with [
 | `admin.addPage({ slug, title, parent, capability, entry })` | an admin page, top level or under Settings or Tools. See [Admin pages](#admin-pages) | `add_menu_page`, `add_options_page`, `add_management_page` |
 | `cli.addCommand(name, handler, { shortdesc, synopsis, longdesc })` | a `pressbase` command; `name` is the plugin's slug, then subcommand words. See [the CLI](../development/cli.md#plugin-commands) | `WP_CLI::add_command` |
 | `i18n.__ / _x / _n / _nx`, `i18n.locale()`, `i18n.isRtl()` | translations in the plugin's text domain (its slug), from its `languages/` folder. See [Internationalisation](i18n.md#plugins) | `__()`, `load_plugin_textdomain` |
+| `meta.register / registerPostMeta / registerTermMeta`, `meta.get / add / update / delete` | registered meta, shown under `meta` in REST with `showInRest`. See [Registered meta](#registered-meta) | `register_meta()`, `register_post_meta()`, `get_metadata()` & co. |
+| `hooks.removeAction('wp_head', 'rel_canonical')` | removes one of core's named callbacks; restored on deactivation. See [Head output](#head-output-and-canonical-urls) | `remove_action()` with a function name |
+| `content.permalink(post)`, `content.canonicalUrl(post)` | a post's URL, and its canonical URL after `get_canonical_url` | `get_permalink()`, `wp_get_canonical_url()` |
+| `cache.purge(tags) / purgePaths(paths) / addTags(...) / pathTag(path)` | purge cached public pages. See [api.cache](#the-page-cache-apicache) | caching plugins' purge functions |
+| `public.addFile(path, handler, options)` | a file at a fixed root path (`/llms.txt`). See [Plugin files](#plugin-files-at-the-site-root) | a rewrite rule and a `template_redirect` callback |
+| `db.query(sql)` | one query's rows, on PostgreSQL and PGlite. See [Plugin tables](#plugin-tables-at-scale) | `$wpdb->get_results()` |
 
 A route's `handler` receives Hono's context (`c.req.query()`, `await c.req.json()`, `c.json()`…) and returns a `Response` or any JSON value. `permission` is required, as WordPress requires `permission_callback`; returning anything but `true` answers 401 (logged out) or 403.
 
@@ -280,6 +286,183 @@ api.assets.url('logo.svg'); // → /wp-content/plugins/reading-time/logo.svg
 ```
 
 Registered outside a page render (in `register`), a handle is site-wide; it is dequeued and deregistered when the plugin is deactivated. Registered during a render, it belongs to that page only. Activating or deactivating a plugin purges the page cache (`site` tag), so cached pages don't keep a removed stylesheet.
+
+## Meta, requests, head output, the cache and files (v0.7)
+
+The server half of the plugin API gaps found while planning Pressbase SEO ([plan](../plans/first-party-plugins.md#platform-work-first-plugin-api-gaps), gaps 1 and 5 to 9). Tests: `apps/core/src/plugin-platform.test.ts`.
+
+### Registered meta
+
+`register_post_meta()`, `register_term_meta()` and `register_meta()` (`wordpress/wp-includes/meta.php`), with the REST `meta` field of `WP_REST_Meta_Fields` (`rest-api/fields/class-wp-rest-meta-fields.php`). Code: `content/meta.ts` (`kernel.meta`), `routes/meta-fields.ts`, `auth/meta-caps.ts`.
+
+```ts
+api.meta.registerPostMeta('', '_yoast_wpseo_title', {   // '' = every post type
+  type: 'string',
+  single: true,
+  showInRest: true,
+  sanitizeCallback: (value) => String(value).trim(),
+  // Protected keys (leading _) need this to be editable through REST.
+  authCallback: (allowed, key, postId, userId, cap, caps) => true,
+});
+api.meta.registerPostMeta('post', 'reading_level', {
+  type: 'integer', single: true, default: 3,
+  showInRest: { schema: { minimum: 1, maximum: 5 } },
+});
+api.meta.registerTermMeta('category', '_yoast_wpseo_bctitle', { single: true, showInRest: true, authCallback: () => true });
+
+await api.meta.get('post', 12, 'reading_level', true);   // 3 until something is stored
+await api.meta.update('post', 12, 'reading_level', 4);   // update_metadata()
+```
+
+| Argument | Notes | WordPress |
+| --- | --- | --- |
+| `type` | `string` (default), `boolean`, `integer`, `number`, `array`, `object`: the type of each value | `type` |
+| `single` | one value (true) or a list, one row per value (default false) | `single` |
+| `default` | returned while nothing is stored; must match the type | `default` |
+| `label`, `description` | in the REST schema | same |
+| `showInRest` | `true`, or `{ name, schema, prepareCallback }`. `array` values need `schema.items` | `show_in_rest` |
+| `sanitizeCallback(value, key, objectType, subtype)` | runs on every write, as the filter `sanitize_{type}_meta_{key}[_for_{subtype}]` | `sanitize_callback` |
+| `authCallback(allowed, key, objectId, userId, cap, caps)` | may the user add, edit or delete the key? As the filter `auth_{type}_meta_{key}[_for_{subtype}]` | `auth_callback` |
+
+| `api.meta.` | WordPress |
+| --- | --- |
+| `register(objectType, key, args)` (`post`, `term`, `user`, `comment`), `registerPostMeta(postType, key, args)`, `registerTermMeta(taxonomy, key, args)` | `register_meta()`, `register_post_meta()`, `register_term_meta()` |
+| `get(objectType, id, key, single?)` | `get_metadata()` (with `filter_default_metadata()`); `undefined` where WordPress gives `''` |
+| `add(objectType, id, key, value, unique?)` → row ID or `false` | `add_metadata()` |
+| `update(objectType, id, key, value, previous?)` → changed? | `update_metadata()` |
+| `delete(objectType, id, key, value?)` | `delete_metadata()` |
+
+**REST.** Keys registered with `showInRest` appear under `meta` in `/wp/v2/posts`, `/wp/v2/pages`, plugin post types that support `custom-fields`, and every taxonomy's terms, in the `view` and `edit` contexts (as in WordPress, they're readable by anyone who can read the object: don't register private data with `showInRest`). A single key shows its value or the default; a multi key a list; a stored value that doesn't fit the schema reads as `null`. Writes take `{ "meta": { "key": value } }`:
+
+- unregistered names are ignored; `null` (or `[]` for a multi key) deletes;
+- values are coerced (`"4"` → 4) and validated against the schema: `400 rest_invalid_param`, `data.params.meta` says why;
+- the user needs `edit_post_meta` / `delete_post_meta` (`…_term_meta`) for the key: `map_meta_cap()` maps them to `edit_post` (or `edit_term`), then asks the key's auth callback. Without one, an unprotected key is allowed and a protected one (`_yoast_wpseo_title`, anything starting with `_`, filter `is_protected_meta`) is refused: `rest_cannot_update` / `rest_cannot_delete`, 401 or 403, "Sorry, you are not allowed to edit the {key} custom field."
+
+Unlike WordPress, values and permissions are checked before the post or term is saved, so a refused meta write leaves nothing half-saved (a new object is created first, since the auth callback needs its ID). Writes fire `added_{type}_meta`, `updated_{type}_meta` and `deleted_{type}_meta`; a published post's meta change purges `post:{id}`, a term's `term:{id}`. Deactivating the plugin unregisters its keys and callbacks; stored values stay. Revisions of meta (`revisions_enabled`) and user and comment meta in REST are not built yet.
+
+### Early request hooks: template_redirect and 404s
+
+Code: `frontend/template-redirect.ts`, `frontend/render.ts`; the cache decision is [ADR 0017](../adr/0017-early-request-hooks-and-the-page-cache.md).
+
+```ts
+api.hooks.addAction('template_redirect', async (request) => {
+  const rule = await findRedirect(request.path);           // the plugin's own lookup
+  if (rule?.status === 410) request.notFound(410);
+  else if (rule) request.redirect(rule.target, rule.status); // 301, 302, 303, 307, 308
+});
+api.hooks.addAction('pressbase_404', ({ path, query, referrer }) => log404(path, referrer));
+api.hooks.addFilter('pre_handle_404', (preempt, main, url) => url.pathname === '/virtual/' || preempt);
+```
+
+| Hook | Type | Arguments | WordPress |
+| --- | --- | --- | --- |
+| `template_redirect` | action | `request`: `path`, `query`, `referrer`, `user`, `main()` (the main query, resolved on first use and shared with the render), `redirect(location, status = 302)`, `notFound(404 \| 410)`, `answer` | `template_redirect` in `template-loader.php`, with `wp_redirect()` + `exit` |
+| `pre_handle_404` | filter | `false, main, url`: anything but `false` keeps the URL from being a 404 (status 200) | `pre_handle_404` in `WP::handle_404()` (`class-wp.php`) |
+| `pressbase_404` | action | `{ path, query, referrer, user, main }`: a 404 is being served (pages, missing sitemaps and feeds, `notFound(404)`) | none: WordPress plugins check `is_404()` in `template_redirect` |
+
+`template_redirect` runs once per public render, before robots.txt, sitemaps, feeds, plugin files and pages; the first `redirect()` or `notFound()` wins (later calls return `false`). Locations must be `http(s)` URLs or paths starting with `/`; line breaks and unsafe characters are removed or encoded (`wp_sanitize_redirect()`). A plugin redirect wins over core's own canonical and old-permalink redirects.
+
+**With the page cache** ([ADR 0017](../adr/0017-early-request-hooks-and-the-page-cache.md)): these hooks run inside the render `apps/web` caches and shares with every anonymous visitor.
+
+- Decide from the URL and the site's data, never from the visitor (cookies, user agent, referrer).
+- When a rule changes, purge its source path: `await api.cache.purgePaths(['/old-post/'])`. Every answer carries a `path:{path}` tag, so this drops the cached page (and its `?query` variants) and the next request gets the redirect. Regex rules purge `site`.
+- While anything listens to `pressbase_404`, 404 answers are `no-store`, so every hit reaches the action (WordPress's `nocache_headers()`). Keep the callback quick, or queue the write with `api.jobs`.
+
+### Head output and canonical URLs
+
+Core's head callbacks carry WordPress's function names, so a plugin that prints its own tags removes core's by name, as `remove_action( 'wp_head', 'rel_canonical' )` does. Removed callbacks come back, in their place, when the plugin is deactivated (`core-callbacks.ts`).
+
+```ts
+api.hooks.removeAction('wp_head', 'rel_canonical');
+api.hooks.addAction('wp_head', async (out, page) => {
+  const object = page.main.queriedObject;
+  const url = object?.kind === 'post' && (await api.content.canonicalUrl(object.post));
+  if (url) out.print(`<link rel="canonical" href="${escapeAttribute(url)}" />`); // escape what you print
+}, 1);
+api.hooks.addFilter('get_canonical_url', (url, post) => url);   // or just filter core's
+```
+
+| Named callback on `wp_head` | Priority | Prints |
+| --- | --- | --- |
+| `_block_template_viewport_meta_tag` | 0 | viewport meta |
+| `wp_robots` | 1 | robots meta (filter `wp_robots` to change it rather than removing it) |
+| `_wp_render_title_tag` | 1 | `<title>` (filters `document_title_parts`, `pre_get_document_title`, `document_title_separator`) |
+| `wp_generator` | 1 | generator meta |
+| `rel_canonical` | 1 | `<link rel="canonical">` on published singular pages, from `wp_get_canonical_url()` |
+| `feed_links` | 2 | feed links (`feed_links()` and `feed_links_extra()`) |
+| `wp_site_icon` | 99 | site icon links |
+
+Core prints no meta description and no Open Graph or X tags, so a plugin adds its own without removing anything. `api.content.canonicalUrl(post)` is `wp_get_canonical_url()`: the permalink of a published post (with `comment-page-N/` when it's the page being rendered), through the `get_canonical_url` filter; `false` for anything unpublished. `api.content.permalink(post)` is `get_permalink()`.
+
+### The page cache: api.cache
+
+Output a plugin prints is cached ([ADR 0008](../adr/0008-public-page-caching.md)). Content changes and option changes (including the plugin's own `api.options` and settings) already purge what they affect. For anything else:
+
+| `api.cache.` | |
+| --- | --- |
+| `purge(tags)` | announces `pressbase_cache_purge (tags, 'plugin:{slug}')`, which reaches every `apps/web` instance: `site`, `post:{id}`, `term:{id}`, `posts:{type}`, `path:{path}`, or the plugin's own tags |
+| `purgePaths(paths)` | `purge()` with each path's tag |
+| `addTags(...tags)` | records tags on the render in progress (in `wp_head`, a block, a file handler) so a later `purge()` reaches it, e.g. `my-plugin:settings` |
+| `pathTag(path)` | `path:/old-post` (no trailing slash, no query) |
+
+Tags are 1 to 200 printable ASCII characters. Prefix your own with the plugin's slug.
+
+### Plugin files at the site root
+
+```ts
+api.public.addFile('/llms.txt', async () => {
+  const { posts } = await api.content.query({ post_type: 'post', posts_per_page: 20 });
+  return `# Posts\n${posts.map((p) => `- ${p.title}`).join('\n')}`;
+});
+api.public.addFile(`/${key}.txt`, () => key, { cache: false });  // IndexNow's key file
+```
+
+`addFile(path, handler, { contentType, cache })` returns a function that removes the file. The handler receives `{ path, query, user }` and returns the body as a string, `{ body, status, contentType, headers }`, a `Response`, or `null` for a 404. The content type defaults from the extension (`.txt` → `text/plain; charset=utf-8`, `.xml`, `.json`, `.md`, `.csv`, `.html`). A handler that throws answers 500 and is recorded against the plugin.
+
+- **Core wins:** `robots.txt`, `favicon.ico`, sitemap and feed addresses (as core parses them, pretty or plain), anything under `/wp-`, and the admin's paths (`/admin`, `/login`, `/install`, `/lost-password`, `/reset-password`, `/editor-assets`, `/_next`, `/_pressbase`) are refused when the file is added, so the plugin fails to activate rather than shadowing them. Paths are letters, numbers, `.`, `_`, `~` and `-` in `/`-separated segments (`/.well-known/thing.json` is fine); two plugins can't serve the same path.
+- **Only active plugins answer:** files are removed on deactivation, which also purges `site`.
+- **Caching:** answers are cached like pages, tagged with what the handler read (`api.content.query` records `posts:post`, so a new post refreshes `/llms.txt`), `site` and the file's path tag. Use `cache: false` (`private, no-store`) when the content can change without a purge; or call `api.cache.purgePaths([path])` when it does.
+
+Answers come from core's render endpoint, so they work on the public site and, through the admin's fallback rewrite, on the admin origin too.
+
+### Plugin tables at scale
+
+Plugin migrations are plain SQL ([Migrations](#migrations)), so indexes, unique constraints, partial indexes and foreign keys to the plugin's own tables all work. For tables that grow (redirects, form entries, logs):
+
+```sql
+-- migrations/0001-redirects.sql
+create table my_seo_redirects (
+  id bigserial primary key,
+  source text not null,
+  target text not null,
+  status smallint not null default 301,
+  hits bigint not null default 0,
+  last_hit timestamptz
+);
+create unique index my_seo_redirects_source_idx on my_seo_redirects (source);
+create index my_seo_redirects_last_hit_idx on my_seo_redirects (last_hit);
+```
+
+```ts
+const { db } = api; // needs the "database" permission
+const { sql } = db;
+// Upsert on the unique index: one statement, no race.
+await db.query(sql`insert into my_seo_redirects (source, target) values (${from}, ${to})
+                   on conflict (source) do update set target = excluded.target`);
+// Keyset pagination: "after the last id", never OFFSET (which reads every skipped row).
+const page = await db.query<{ id: string; source: string }>(
+  sql`select id, source from my_seo_redirects where id > ${after} order by id limit 50`);
+// Pruning in batches, from a daily cron event.
+api.cron.addAction('prune', () => db.query(sql`delete from my_seo_404s where id in (
+  select id from my_seo_404s where last_hit < now() - interval '90 days' limit 5000)`));
+```
+
+- `api.db.query(sql)` runs one query and returns its rows on PostgreSQL and PGlite alike (`api.db.db.execute()` returns `{ rows }` on one and an array on the other). `bigint` columns can come back as strings: convert with `Number()`.
+- Index every column you filter or sort on; keep a unique index on natural keys (a redirect's source) and use `on conflict` instead of check-then-insert.
+- Paginate with keyset conditions (`where id > $last order by id limit n`, or `(created, id) < ($c, $i)` for newest first) and return a cursor; `offset` gets slower with every page.
+- Cap logs: a daily `api.cron` event deleting old rows in batches (a few thousand per statement keeps locks short), and count with a capped `select count(*) from (… limit 10001)` rather than counting millions of rows.
+- `create index concurrently` can't run inside a transaction: on PostgreSQL put it alone in its own migration file (one statement runs outside an implicit transaction block). On PGlite it isn't needed.
+- Drop your tables in `uninstall`. Name them with the plugin's prefix.
 
 ## The SDK
 
