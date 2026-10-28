@@ -39,7 +39,7 @@ RUN mkdir -p /out \
  && cp -a apps/web/.next/standalone /out/web \
  && cp -a apps/web/.next/static /out/web/apps/web/.next/static
 
-# Core runs from its TypeScript source (themes, static files and migrations
+# Core runs from its TypeScript source (themes, translations, static files and migrations
 # are found relative to it, and plugins will be imported at runtime), so it
 # keeps the repository's layout, with production dependencies only.
 RUN mkdir -p /out/core \
@@ -49,7 +49,7 @@ RUN mkdir -p /out/core \
  && pnpm install --frozen-lockfile --prod --filter "@pressbase/core..." \
  && cd /repo \
  && cp -a --parents apps/core/src apps/core/static packages/*/src packages/db/migrations \
-      themes /out/core/
+      themes languages /out/core/
 
 # ---------------------------------------------------------------------------
 # Runtime: Node.js, the three apps, and nothing else.

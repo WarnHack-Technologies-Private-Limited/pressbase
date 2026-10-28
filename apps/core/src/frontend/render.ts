@@ -174,7 +174,10 @@ export async function renderPublicPage(
   kernel: Kernel,
   request: RenderRequest,
 ): Promise<RenderedPage> {
-  const { result, tags } = await collectCacheTags(() => route(kernel, request));
+  // Public pages are in the site's language, whoever asks (get_locale(), not the user's).
+  const { result, tags } = await kernel.i18n.withLocale(kernel.i18n.getLocale(), () =>
+    collectCacheTags(() => route(kernel, request)),
+  );
   const headers = { ...result.headers };
   if (result.status === 200 && !headers.etag) {
     headers.etag = `W/"${createHash('sha1').update(result.html).digest('base64url').slice(0, 27)}"`;

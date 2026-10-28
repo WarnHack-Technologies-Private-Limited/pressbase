@@ -2,13 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { installable, languageLabel } from './languages';
 
 describe('languages', () => {
-  it('labels a language by its own name, then its English one', () => {
-    expect(languageLabel({ native_name: 'Deutsch', english_name: 'German' })).toBe(
-      'Deutsch (German)',
-    );
-    expect(languageLabel({ native_name: 'Afrikaans', english_name: 'Afrikaans' })).toBe(
-      'Afrikaans',
-    );
+  it('labels a language in its own words, as wp_dropdown_languages() does', () => {
+    expect(languageLabel({ native_name: 'Deutsch', english_name: 'German' })).toBe('Deutsch');
+    expect(languageLabel({ native_name: '', english_name: 'Afrikaans' })).toBe('Afrikaans');
   });
 
   it('offers only the packs not installed yet', () => {

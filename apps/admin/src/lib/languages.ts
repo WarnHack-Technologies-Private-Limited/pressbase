@@ -35,11 +35,12 @@ export interface InstallResult {
   installed: InstalledLanguage[];
 }
 
-/** "Deutsch (German)", or the one name when they're the same. */
+/**
+ * A language as wp_dropdown_languages() shows it: in its own words
+ * ("Deutsch"), so people find their language whatever the admin's is.
+ */
 export function languageLabel(language: Pick<InstalledLanguage, 'english_name' | 'native_name'>) {
-  return language.native_name === language.english_name
-    ? language.native_name
-    : `${language.native_name} (${language.english_name})`;
+  return language.native_name || language.english_name;
 }
 
 /** WordPress.org's packs that aren't installed yet, by English name. */
