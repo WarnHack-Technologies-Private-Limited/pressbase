@@ -51,6 +51,7 @@ New here? The [README](../README.md#see-it-in-action) shows Pressbase in action:
 - [Testing](development/testing.md): what to test and how.
 - [Conventions](development/conventions.md): code style and patterns.
 - [Writing plugins](development/writing-plugins.md): `create-pressbase-plugin`, the SDK, building and packing a plugin.
+- [The pressbase CLI](development/cli.md): every command, its flags and examples (like wp-cli).
 
 ## Decisions
 

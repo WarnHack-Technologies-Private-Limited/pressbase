@@ -5,6 +5,7 @@
 #
 #   docker build -t pressbase .
 #   docker run -p 3000:3000 -v pressbase:/data pressbase
+#   docker exec <container> pressbase post list    # the CLI (docs/development/cli.md)
 #
 # Then open http://localhost:3000. See docs/development/getting-started.md.
 
@@ -46,10 +47,10 @@ RUN mkdir -p /out/core \
  && cp -a --parents package.json pnpm-lock.yaml pnpm-workspace.yaml \
       apps/*/package.json packages/*/package.json e2e/package.json /out/core/ \
  && cd /out/core \
- && pnpm install --frozen-lockfile --prod --filter "@pressbase/core..." \
+ && pnpm install --frozen-lockfile --prod --filter "@pressbase/core..." --filter "@pressbase/cli..." \
  && cd /repo \
  && cp -a --parents apps/core/src apps/core/static packages/*/src packages/db/migrations \
-      themes /out/core/
+      packages/cli/bin themes /out/core/
 
 # ---------------------------------------------------------------------------
 # Runtime: Node.js, the three apps, and nothing else.
@@ -66,6 +67,12 @@ COPY --from=build /out/core /app/core
 COPY --from=build --chown=node:node /out/admin /app/admin
 COPY --from=build --chown=node:node /out/web /app/web
 COPY docker/start.mjs docker/healthcheck.mjs /app/
+# The `pressbase` CLI on the PATH: `docker exec <container> pressbase …`. It
+# reads PRESSBASE_DATA_DIR (/data) like the server. With the built-in
+# database the server holds it, so the CLI asks you to stop the server first
+# (or use PostgreSQL); see docs/development/cli.md.
+RUN printf '#!/bin/sh\nexec node /app/core/packages/cli/bin/pressbase.mjs "$@"\n' > /usr/local/bin/pressbase \
+ && chmod 755 /usr/local/bin/pressbase
 
 # config.json, the built-in database, uploads, themes and the mail outbox.
 RUN mkdir -p /data && chown node:node /data

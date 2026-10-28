@@ -85,7 +85,7 @@ Twenty Twenty-Five renders the home page, posts, pages, archives, search, commen
 
 - [ ] WXR importer.
 - [ ] Direct WordPress (MySQL) migration: users and password hashes, media, SEO meta.
-- [ ] `pressbase` CLI (similar to wp-cli).
+- [x] `pressbase` CLI (similar to wp-cli). See [The pressbase CLI](development/cli.md), [ADR 0014](adr/0014-pressbase-cli.md).
 - [ ] Internationalisation: `.po`/`.mo` files, `@wordpress/i18n`.
 - [x] Site Health: Tools → Site Health (Status and Info), the Dashboard rating, `site_status_tests` and `debug_information`. See [Site Health](architecture/site-health.md).
 

@@ -88,6 +88,12 @@ export function describeDatabaseError(error: unknown): DatabaseProblem {
         message: 'That database does not exist yet.',
         hint: 'Create it first, for example with: createdb <name>',
       };
+    case 'PRESSBASE_DB_LOCKED':
+      return {
+        code: 'pressbase_db_locked',
+        message: 'Another Pressbase process is using the built-in database.',
+        hint: 'Stop the Pressbase server or the pressbase command first, or use PostgreSQL.',
+      };
     case '42501':
       return {
         code: 'pressbase_db_permission',

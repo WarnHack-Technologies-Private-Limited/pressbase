@@ -17,6 +17,7 @@ import { JobQueue } from './jobs/queue';
 import { Mailer } from './mail/mailer';
 import { registerCoreSettings, SettingsRegistry } from './options/settings';
 import { Options } from './options/store';
+import { CliCommands } from './plugins/cli';
 import { PluginManager } from './plugins/manager';
 import { SiteHealth } from './site-health/service';
 import { registerGlobalStylesHooks, registerGlobalStylesPostType } from './themes/global-styles';
@@ -66,6 +67,8 @@ export class Kernel {
   readonly plugins = new PluginManager(this);
   /** Site Health: status tests and debug information (see docs/architecture/site-health.md). */
   readonly siteHealth = new SiteHealth(this);
+  /** Commands plugins add to the `pressbase` CLI (v0.6, see docs/development/cli.md). */
+  readonly cli = new CliCommands();
   #connection: DatabaseConnection | undefined;
   #options: Options | undefined;
   #state: SiteState = 'needs-database';

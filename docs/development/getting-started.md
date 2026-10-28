@@ -53,7 +53,7 @@ Open <http://localhost:3000> and follow the installer. Without `DATABASE_URL` it
 docker compose up -d     # Pressbase + postgres:17 from docker-compose.yml, on http://localhost:3000
 ```
 
-`docker compose up --build` builds the image from your checkout instead of pulling it; `docker build -t pressbase .` builds it on its own.
+`docker exec pressbase pressbase plugin list` runs the [CLI](cli.md) inside the container when the site uses PostgreSQL. The server holds the built-in database, so then stop the container and run `docker run --rm -v pressbase:/data pressbase pressbase plugin list`. `docker compose up --build` builds the image from your checkout instead of pulling it; `docker build -t pressbase .` builds it on its own.
 
 | Variable | Default in the image | Purpose |
 | --- | --- | --- |

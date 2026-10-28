@@ -71,6 +71,7 @@ Plugins ship compiled JavaScript (`.js` or `.mjs`, ESM). Write TypeScript with [
 | `scripts.*`, `styles.*`, `assets.url(file)` | scripts and stylesheets on public pages, and the plugin's `public/` files ([below](#scripts-styles-and-static-files)) | `wp_enqueue_script`, `wp_enqueue_style`, `plugins_url` |
 | `settings.register(name, args) / addSection(id, args) / get / set` | a setting with its admin field; sections of a settings page. See [Settings](#settings) | `register_setting`, `add_settings_field`, `add_settings_section` |
 | `admin.addPage({ slug, title, parent, capability, entry })` | an admin page, top level or under Settings or Tools. See [Admin pages](#admin-pages) | `add_menu_page`, `add_options_page`, `add_management_page` |
+| `cli.addCommand(name, handler, { shortdesc, synopsis, longdesc })` | a `pressbase` command; `name` is the plugin's slug, then subcommand words. See [the CLI](../development/cli.md#plugin-commands) | `WP_CLI::add_command` |
 
 A route's `handler` receives Hono's context (`c.req.query()`, `await c.req.json()`, `c.json()`…) and returns a `Response` or any JSON value. `permission` is required, as WordPress requires `permission_callback`; returning anything but `true` answers 401 (logged out) or 403.
 

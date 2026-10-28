@@ -1,0 +1,30 @@
+{
+  "name": "@pressbase/cli",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The pressbase command: manage a Pressbase site from a terminal or a script, like wp-cli.",
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "bin": {
+    "pressbase": "./bin/pressbase.mjs"
+  },
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@pressbase/core": "workspace:*",
+    "@pressbase/db": "workspace:*",
+    "drizzle-orm": "0.45.4",
+    "tsx": "4.23.15"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "sharp": "0.35.5",
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  }
+}

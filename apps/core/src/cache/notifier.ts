@@ -24,7 +24,15 @@ export interface NotifierOptions {
   log?: (message: string) => void;
 }
 
-export function startRevalidationNotifier(kernel: Kernel, options: NotifierOptions): () => void {
+/**
+ * Starts forwarding purges. Returns `stop()`, which sends what is still
+ * batched and resolves once every delivery has finished (short-lived
+ * processes, like the `pressbase` CLI, wait for it before exiting).
+ */
+export function startRevalidationNotifier(
+  kernel: Kernel,
+  options: NotifierOptions,
+): () => Promise<void> {
   const {
     urls,
     secret,
@@ -35,6 +43,7 @@ export function startRevalidationNotifier(kernel: Kernel, options: NotifierOptio
   } = options;
   let pending = new Set<string>();
   let timer: NodeJS.Timeout | undefined;
+  const inFlight = new Set<Promise<unknown>>();
 
   const deliver = async (url: string, tags: string[]) => {
     const endpoint = `${url.replace(/\/+$/, '')}${REVALIDATE_PATH}`;
@@ -65,16 +74,20 @@ export function startRevalidationNotifier(kernel: Kernel, options: NotifierOptio
     // `site` purges everything; the other tags would be redundant.
     const tags = pending.has(CacheTag.site) ? [CacheTag.site] : [...pending];
     pending = new Set();
-    if (tags.length) void Promise.all(urls.map((url) => deliver(url, tags)));
+    if (!tags.length) return;
+    const delivery = Promise.all(urls.map((url) => deliver(url, tags)));
+    inFlight.add(delivery);
+    void delivery.finally(() => inFlight.delete(delivery));
   };
 
   const off = kernel.hooks.addAction(PURGE_ACTION, async (tags) => {
     for (const tag of tags) pending.add(tag);
     timer ??= setTimeout(flush, delayMs);
   });
-  return () => {
+  return async () => {
     off();
     if (timer) clearTimeout(timer);
     flush();
+    await Promise.all(inFlight);
   };
 }

@@ -18,7 +18,7 @@ import { z } from 'zod';
 import { resolveCapabilities } from '../auth/capabilities';
 import { currentUserCan } from '../auth/meta-caps';
 import { SESSION_COOKIE } from '../auth/sessions';
-import { type CurrentUser, userCan } from '../auth/users';
+import { userCan } from '../auth/users';
 import { type AppEnv, invalidParams, readJson, restError } from '../http';
 import type { Kernel } from '../kernel';
 import {
@@ -28,7 +28,8 @@ import {
 } from '../people/password-reset';
 import { parseUserMetaUpdate, registeredUserMetaKeys, restUserMeta } from '../people/user-meta';
 import {
-  administratorIds,
+  checkRoleChange,
+  checkUserDeletion,
   countPostsByUsers,
   countUsers,
   deleteUser,
@@ -163,7 +164,8 @@ const listArgs = z.object({
 
 const text = (max: number) => z.string().max(max, `Use ${max} characters or fewer.`);
 
-const writeBody = z.object({
+/** The fields a create or update accepts (also used by `pressbase user create|update`). */
+export const userWriteBody = z.object({
   username: z.string().optional(),
   name: text(250).optional(),
   first_name: text(250).optional(),
@@ -209,49 +211,18 @@ function targetId(c: Context<AppEnv>): number | 'not-logged-in' {
 const notLoggedIn = (c: Context) =>
   restError(c, 401, 'rest_not_logged_in', 'You are not currently logged in.');
 
-/**
- * check_role_update(): every role must exist, and nobody may give themselves
- * a role without edit_users. Pressbase also refuses to leave the site without
- * an administrator.
- */
+/** check_role_update(), answered as a REST error (see checkRoleChange()). */
 async function checkRoleUpdate(
   c: Context<AppEnv>,
   target: number,
   roles: string[],
 ): Promise<Response | undefined> {
-  const kernel = c.get('kernel');
-  const viewer = c.get('user') as CurrentUser;
-  const known = await siteRoles(kernel);
-  for (const role of roles) {
-    const definition = known[role];
-    if (!definition) {
-      return restError(c, 400, 'rest_user_invalid_role', `The role ${role} does not exist.`, {
-        params: { roles: `The role ${role} does not exist.` },
-      });
-    }
+  try {
+    await checkRoleChange(c.get('kernel'), target, roles, c.get('user'));
+    return undefined;
+  } catch (error) {
+    return userError(c, error);
   }
-  if (viewer.id === target && !roles.some((r) => known[r]?.capabilities.edit_users)) {
-    return restError(
-      c,
-      authStatus(c),
-      'rest_user_invalid_role',
-      'Sorry, you are not allowed to give users that role.',
-      { params: { roles: 'You can’t remove your own ability to manage users.' } },
-    );
-  }
-  if (!roles.includes('administrator')) {
-    const admins = await administratorIds(kernel);
-    if (admins.length === 1 && admins[0] === target) {
-      return restError(
-        c,
-        403,
-        'rest_user_invalid_role',
-        'The site needs at least one administrator. Make someone else an administrator first.',
-        { params: { roles: 'The site needs at least one administrator.' } },
-      );
-    }
-  }
-  return undefined;
 }
 
 export function userRoutes() {
@@ -411,7 +382,7 @@ export function userRoutes() {
       );
     }
     const raw = await readJson(c);
-    const parsed = writeBody.safeParse(raw ?? {});
+    const parsed = userWriteBody.safeParse(raw ?? {});
     if (!parsed.success) return invalidParams(c, parsed.error);
     const body = parsed.data;
     if ((raw as { id?: unknown })?.id) {
@@ -468,7 +439,7 @@ export function userRoutes() {
     const existing = await findUser(kernel, id);
     if (!existing) return restError(c, 404, 'rest_user_invalid_id', 'Invalid user ID.');
 
-    const parsed = writeBody.safeParse((await readJson(c)) ?? {});
+    const parsed = userWriteBody.safeParse((await readJson(c)) ?? {});
     if (!parsed.success) return invalidParams(c, parsed.error);
     const { send_user_notification: _, meta: rawMeta, ...body } = parsed.data;
     const meta = parseUserMetaUpdate(rawMeta ?? {});
@@ -566,30 +537,10 @@ export function userRoutes() {
         params: { reassign: 'Choose who gets this user’s content, or delete it.' },
       });
     }
-    let reassign: number | null = null;
-    if (!['false', '', '0'].includes(reassignRaw)) {
-      reassign = Number(reassignRaw);
-      if (
-        !Number.isInteger(reassign) ||
-        reassign === id ||
-        reassign < 1 ||
-        !(await findUser(kernel, reassign))
-      ) {
-        return restError(c, 400, 'rest_user_invalid_reassign', 'Invalid user ID for reassignment.');
-      }
-    }
-    const admins = await administratorIds(kernel);
-    if (admins.length === 1 && admins[0] === id) {
-      return restError(
-        c,
-        403,
-        'rest_user_cannot_delete',
-        'The site needs at least one administrator. Make someone else an administrator first.',
-      );
-    }
-
+    const reassign = ['false', '', '0'].includes(reassignRaw) ? null : Number(reassignRaw);
     const previous = await prepareOne(kernel, user, true);
     try {
+      await checkUserDeletion(kernel, id, reassign);
       await deleteUser(kernel, id, reassign);
     } catch (error) {
       return userError(c, error);

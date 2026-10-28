@@ -6,7 +6,6 @@ import { setCookie } from 'hono/cookie';
 import { z } from 'zod';
 import { createSession, SESSION_COOKIE } from '../auth/sessions';
 import { loadUser } from '../auth/users';
-import { writeSiteConfig } from '../config';
 import {
   type AppEnv,
   clientIp,
@@ -16,8 +15,8 @@ import {
   restError,
 } from '../http';
 import { databaseInput, databaseUrlFrom, describeDatabaseError } from '../install/database';
-import { installSite, siteInput } from '../install/installer';
-import type { Kernel, SiteState } from '../kernel';
+import { InstallError, installPressbase, siteInput } from '../install/installer';
+import type { Kernel } from '../kernel';
 import { PRESSBASE_VERSION } from '../version';
 
 const MIN_NODE_MAJOR = 22;
@@ -135,38 +134,30 @@ export function installRoutes() {
       );
     }
 
+    if (kernel.state === 'needs-database' && !database) {
+      return restError(c, 400, 'rest_invalid_param', 'Invalid parameter(s): database', {
+        params: { database: 'Choose a database.' },
+      });
+    }
+
     installing = true;
     try {
-      let newDatabaseUrl: string | undefined;
-      if (kernel.state === 'needs-database') {
-        if (!database) {
-          return restError(c, 400, 'rest_invalid_param', 'Invalid parameter(s): database', {
-            params: { database: 'Choose a database.' },
-          });
-        }
-        newDatabaseUrl = databaseUrlFrom(database, kernel.config.dataDir);
-        let state: SiteState;
-        try {
-          state = await kernel.useDatabase(newDatabaseUrl);
-        } catch (error) {
-          const problem = describeDatabaseError(error);
-          return restError(c, 400, problem.code, problem.message, { hint: problem.hint });
-        }
-        if (state === 'ready') {
-          await writeSiteConfig(kernel.config.dataDir, { databaseUrl: newDatabaseUrl });
-          return restError(
-            c,
-            409,
-            'pressbase_already_installed',
-            'This database already holds a Pressbase site. Log in instead.',
-          );
-        }
+      let userId: number;
+      try {
+        ({ userId } = await installPressbase(kernel, {
+          site,
+          databaseUrl: database ? databaseUrlFrom(database, kernel.config.dataDir) : undefined,
+        }));
+      } catch (error) {
+        if (!(error instanceof InstallError)) throw error;
+        return restError(
+          c,
+          error.status,
+          error.code,
+          error.message,
+          error.hint ? { hint: error.hint } : {},
+        );
       }
-
-      const { userId } = await installSite(kernel.db, site);
-      if (newDatabaseUrl)
-        await writeSiteConfig(kernel.config.dataDir, { databaseUrl: newDatabaseUrl });
-      await kernel.refreshState();
 
       // Sign the new administrator in, so the installer can hand over to the dashboard.
       const session = await createSession(kernel, userId, {
