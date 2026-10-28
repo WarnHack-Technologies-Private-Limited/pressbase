@@ -27,7 +27,13 @@ const dirs: string[] = [];
 
 afterEach(async () => {
   await Promise.all(kernels.splice(0).map((k) => k.shutdown()));
-  await Promise.all(dirs.splice(0).map((d) => rm(d, { recursive: true, force: true })));
+  // Notification mail is sent without being awaited, so the outbox can still be
+  // receiving files while the directory is removed (ENOTEMPTY); retry briefly.
+  await Promise.all(
+    dirs
+      .splice(0)
+      .map((d) => rm(d, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 })),
+  );
 });
 
 export interface TestResponse {
