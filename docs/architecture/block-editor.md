@@ -121,6 +121,10 @@ Static blocks (paragraph, image, gallery, cover, media & text, file, audio, vide
 - New dynamic core blocks (no `save`) go in `DYNAMIC_BLOCKS`.
 - Plugin blocks that are only registered on the server appear automatically once `/wp/v2/block-types` reports them with `is_dynamic: true`.
 
+### Plugin blocks
+
+Before the editor parses the post, `BlockEditor` (the default export of `block-editor.tsx`) shows the skeleton while `preparePluginBlocks()` (`server-blocks.tsx`) imports active plugins' block editor modules (`blocks` in `/pressbase/v1/admin-extensions`), reads `/wp/v2/block-types` and registers each plugin block once, merging the server's metadata with the module's `edit`/`save` (`lib/extensions/blocks.ts`). Saved plugin blocks therefore parse as themselves. The blocks' `style` and `editorStyle` sheets join the canvas iframe's stylesheets. A `core/missing` block whose original name is outside `core/` shows "This block’s plugin is inactive" (an `editor.BlockEdit` filter) and keeps its markup. See [Plugins](plugins.md#blocks) and [ADR 0020](../adr/0020-plugin-blocks.md).
+
 ### Media
 
 - **Uploads.** `mediaUpload` posts to `/wp/v2/media`, so drag-and-drop and the Upload buttons in blocks go straight into the media library.

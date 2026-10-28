@@ -68,6 +68,8 @@ kernel.blocks.registerBlockType('my-plugin/notice', {
 ```
 
 - Names are `namespace/name`, lowercase. Keys follow `block.json`, so a `block.json` file can be spread into the arguments.
+- Plugins register blocks through `api.blocks` instead, scoped to their namespace and taken back on deactivation ([Plugins](plugins.md#blocks)).
+- `styleHandles` (WP_Block_Type's `style_handles`) are enqueued by a core `render_block` filter while a public page that shows the block renders, as `WP_Block::render()` does; `editorScriptHandles` and `editorStyleHandles` are reported by `/wp/v2/block-types`.
 - Every block gets the `lock` and `metadata` attributes; supports add theirs (`align`, `anchor`, `className`, `style`, `textColor`, `backgroundColor`, `gradient`, `fontSize`, `fontFamily`, `borderColor`, `layout`), as WordPress's block supports do.
 - `block.services` in core is `{ kernel, user, rest }`. `block.context`, `block.innerBlocks`, `block.parent`, `block.renderContent()`, `block.renderInnerBlocks()`, `block.uniqueId()` and `block.withRecursionGuard()` are available too.
 - `getBlockWrapperAttributes(block, extra)` builds the outer element's attributes: your classes first, then the block supports' classes and inline styles in WordPress's order — align, colours (text, background, gradient, link), custom class, the generated `wp-block-{name}` class, typography (preset or custom size, family, style, weight, line height, columns, decoration, transform, letter spacing, writing mode, text align), border (radius, colour, style, width, per side), spacing (padding, margin), dimensions (min height, height, width), shadow, `aria-label` and the anchor `id`. `__experimentalSkipSerialization` (whole feature or a list of sub-features) is honoured.
@@ -139,6 +141,6 @@ Every other WordPress core block (Group, Columns, Buttons, Image…) is register
 
 - Block bindings, the Interactivity API directives and hooked blocks (Block Hooks API).
 - Style variations registry, `variations` callbacks (`post-terms` taxonomy variations), `wp_pattern_category`.
-- Asset handles (`editor_script_handles` and friends are empty: the admin bundles the editor).
+- Script handles for core blocks (`editor_script_handles` and friends are empty for them: the admin bundles the editor). Plugin blocks have their `editor_script_handles`, `style_handles` and `editor_style_handles`.
 - Duotone and responsive (per-viewport) block styles.
 - `wpautop`, `wptexturize` and shortcodes in `the_content`.

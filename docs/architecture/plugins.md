@@ -79,6 +79,7 @@ Plugins ship compiled JavaScript (`.js` or `.mjs`, ESM). Write TypeScript with [
 | `cache.purge(tags) / purgePaths(paths) / addTags(...) / pathTag(path)` | purge cached public pages. See [api.cache](#the-page-cache-apicache) | caching plugins' purge functions |
 | `public.addFile(path, handler, options)` | a file at a fixed root path (`/llms.txt`). See [Plugin files](#plugin-files-at-the-site-root) | a rewrite rule and a `template_redirect` callback |
 | `db.query(sql)` | one query's rows, on PostgreSQL and PGlite. See [Plugin tables](#plugin-tables-at-scale) | `$wpdb->get_results()` |
+| `blocks.register(name, args) / registerFromMetadata(path, args) / unregister / isRegistered` | blocks with a server render and an editor module, plus `escHtml`, `escAttr`, `escUrl`, `getBlockWrapperAttributes`. See [Blocks](#blocks) | `register_block_type()`, `register_block_type_from_metadata()` |
 
 A route's `handler` receives Hono's context (`c.req.query()`, `await c.req.json()`, `c.json()`…) and returns a `Response` or any JSON value. `permission` is required, as WordPress requires `permission_callback`; returning anything but `true` answers 401 (logged out) or 403.
 
@@ -610,6 +611,7 @@ Modules must use the admin's React through `window.pressbase`, not bundle their 
 | `PostsListColumn`, `PostsListRowAction`, `PostsListFilter` | Fills for the posts and pages lists ([Slots](#slots)) |
 | `TermEditFields`, `UserProfileFields` | Fills for the category and tag edit form, and the profile and user edit screens ([Slots](#slots)) |
 | `editor` | the post being edited, live: `usePost(selector?)`, `getPost()`, `getEditedPostAttribute(name)`, `editPost(edits)`, `subscribe(listener)` ([Live editor data](#live-editor-data)) |
+| `blocks` | Gutenberg's `registerBlockType` and what a block's edit function needs, for blocks' editor modules ([Blocks](#blocks)) |
 | `components` | the admin's UI kit: `Button`, `Spinner`, `Card`, `Notice`, `Badge`, `EmptyState`, `TextField`, `TextAreaField`, `SelectField`, `Checkbox` |
 | `useToast()`, `useCurrentUser()` | the admin's toast (`toast('Saved.')`) and the user, with `capabilities` |
 
@@ -715,6 +717,78 @@ The editor panel is Pressbase's own sidebar, not Gutenberg's `@wordpress/edit-po
 - Modules are served **only while the plugin is active**, only from the folders that hold declared modules (a module at the plugin's root is served alone), never the server `main` file, and only with allowed extensions (`.js`, `.mjs`, `.css`, images, fonts). Paths are decoded and checked segment by segment (`..`, encoded slashes, dot-files and symlinks out of the folder answer 404). Responses carry `X-Content-Type-Options: nosniff` and no CORS header. **Don't put secrets in a module's folder**: anything there is downloadable while the plugin is active.
 - **CSP.** Module URLs are same-origin (the admin proxies `/wp-content/plugins/*` to core, like `/wp-json`), loaded with `import()`: no inline scripts, `eval` or third-party origins. The admin doesn't send a Content-Security-Policy yet; when it does, `script-src 'self'` covers plugin modules.
 - **Caching.** With `?ver=` matching the plugin's version, modules are `Cache-Control: public, max-age=31536000, immutable`; otherwise `no-cache`. Bump the version when a module changes.
+
+## Blocks
+
+A plugin registers blocks on the server and gives them an editor module; both load at runtime, with no rebuild ([ADR 0020](../adr/0020-plugin-blocks.md), plan gap 4). Code: `apps/core/src/plugins/blocks.ts`, `apps/admin/src/lib/extensions/blocks.ts`, `apps/admin/src/components/block-editor/server-blocks.tsx`. Tests: `apps/core/src/plugin-blocks.test.ts`, `apps/admin/src/lib/extensions/blocks.test.ts`, `e2e/tests/plugin-blocks.spec.ts`. The example is Daily Tips' `daily-tips/tip`.
+
+### On the server: api.blocks
+
+```js
+// index.js
+api.blocks.register('daily-tips/tip', {
+  title: 'Daily tip',
+  category: 'widgets',          // text, media, design, widgets, theme or embed
+  icon: 'lightbulb',            // a Dashicon name
+  attributes: { accent: { type: 'string', default: '#3858e9' } },
+  supports: { align: ['wide', 'full'], anchor: true },
+  editorScript: 'admin/tip.js', // the editor module, in the plugin folder
+  style: 'tip.css',             // public/tip.css: on pages that show the block, and in the editor
+  render: async (attributes, content, block) =>
+    `<aside ${api.blocks.getBlockWrapperAttributes(block)}>${api.blocks.escHtml(attributes.accent)}</aside>`,
+});
+```
+
+| `api.blocks.` | | WordPress |
+| --- | --- | --- |
+| `register(name, args)` | `name` is `{plugin-slug}/{block}`. `args` are block.json's keys (`title`, `category`, `icon`, `description`, `keywords`, `attributes`, `supports`, `usesContext`, `providesContext`, `parent`, `ancestor`, `allowedBlocks`, `example`, `styles`, `variations`, `apiVersion`), plus `render`, `editorScript` (a `.js`/`.mjs` module path), `style` and `editorStyle` (files in `public/`, one or a list) | `register_block_type()` |
+| `registerFromMetadata(fileOrFolder, args?)` | reads `block.json` (a folder or the file, relative to the plugin folder) after the `block_type_metadata` filter. `file:` paths are relative to the block.json: `editorScript`, `style`/`editorStyle` (must be in `public/`; other values are style handles you registered with `api.styles`), and `render` (a module whose default export is the callback). `args` override the file. Async: `await` it in `register`. Returns the name | `register_block_type_from_metadata()` |
+| `unregister(name)`, `isRegistered(name)` | | `unregister_block_type()`, `WP_Block_Type_Registry::is_registered()` |
+| `escHtml`, `escAttr`, `escUrl`, `getBlockWrapperAttributes(block, extra)` | escaping, and the outer element's attributes with block supports' classes and styles ([Blocks](blocks.md#registering-a-block)) | `esc_html()`, `esc_attr()`, `esc_url()`, `get_block_wrapper_attributes()` |
+
+- **Validation.** Mistakes throw on registration and fail activation: a name outside the plugin's namespace, a duplicate, an attribute without a `type` (or `enum`), an unknown type, a default that doesn't match its schema, `providesContext` naming a missing attribute, non-list `keywords`, a style path outside `public/`, an editor module outside the plugin.
+- **Rendering.** The block renders through `render_block()` like core's: `pre_render_block`, `render_block_data`, `render_block_context`, then `render(attributes, content, block)`, then `render_block` and `render_block_{name}`. Attributes are prepared against the schema first: a value that doesn't match is dropped and its default used. `block.context` has the names in `usesContext` (`postId`, `postType`…). A render that throws is recorded against the plugin (the Plugins screen shows it) and renders nothing; a non-string result renders nothing.
+- **Trust.** The callback's output is used as it is, as WordPress uses a `render_callback`'s. Core's dynamic blocks escape every value they print, and plugins must too (`api.blocks.escHtml`…). There is no allow-list filter on the output: a form block needs `<form>` and `<input>`, and a plugin's server code is already fully trusted ([Security model](#security-model-and-limits)).
+- **Styles.** `style` files are registered as `{namespace}-{name}-style` (`-style-2`… for more; `generate_block_asset_handle()`) and enqueued only while a public page that shows the block renders, as `WP_Block::render()` does. `editorStyle` (`…-editor-style`) is for the editor canvas only. A REST render enqueues nothing.
+- **Deactivation** unregisters the block and its handles. Posts keep the block's markup. The public site renders it as WordPress renders an unregistered block: its saved HTML, which for a dynamic block is nothing.
+- **The page cache** is purged (`site`) when a plugin registers or unregisters a block (activation and deactivation purge it too).
+- **REST.** `/wp/v2/block-types` lists plugin blocks with `editor_script_handles`, `style_handles` and `editor_style_handles`; `/wp/v2/block-renderer/{name}` renders them for previews. `/pressbase/v1/admin-extensions` lists each block's editor module and canvas stylesheets under `blocks`.
+
+### In the editor: window.pressbase.blocks
+
+The editor module is a UI module ([above](#ui-modules)) that the editor imports before it parses the post, so saved blocks are never flagged invalid. It calls `registerBlockType` with `edit` (and `save` for a static block); the title, category, attributes, supports and context come from the server and can't be changed here.
+
+```js
+// admin/tip.js — no build step
+const {
+  element: { createElement: h, Fragment },
+  blocks: { registerBlockType, useBlockProps, InspectorControls, ServerSideRender, components: { PanelBody, TextControl } },
+} = window.pressbase;
+
+registerBlockType('daily-tips/tip', {
+  edit: ({ attributes, setAttributes }) =>
+    h(Fragment, null,
+      h(InspectorControls, null,
+        h(PanelBody, { title: 'Colour' },
+          h(TextControl, { type: 'color', label: 'Accent colour', value: attributes.accent, onChange: (accent) => setAttributes({ accent }) }))),
+      h('div', useBlockProps(), h(ServerSideRender, { block: 'daily-tips/tip', attributes }))),
+});
+```
+
+| `pressbase.blocks.` | Gutenberg |
+| --- | --- |
+| `registerBlockType(name, { edit, save, … })` | `wp.blocks.registerBlockType( metadata, settings )` |
+| `useBlockProps` (with `.save`), `useInnerBlocksProps`, `InspectorControls`, `BlockControls`, `RichText` (with `.Content`), `InnerBlocks` (with `.Content`) | `wp.blockEditor` |
+| `ServerSideRender` | `wp.serverSideRender` (previews through `/wp/v2/block-renderer`) |
+| `components.PanelBody`, `TextControl`, `ToggleControl`, `SelectControl`, `Placeholder` | `wp.components` |
+
+- **Dynamic blocks are the main path.** Without `save`, the block saves only its comment (`<!-- wp:daily-tips/tip {"accent":"#d63638"} /-->`) and the server renders it. A dynamic block with no editor module still works: the editor previews it with ServerSideRender.
+- **Static blocks** pass `save`; the server can still register them without `render` so `/wp/v2/block-types` knows them. Their saved HTML stays in posts after deactivation, as in WordPress.
+- **Blocks must use `useBlockProps()`** on their outer element: they're registered with `apiVersion: 3` for the iframed canvas.
+- The members are delegates, resolved when called or rendered, so a module can destructure them at load time. Outside the editor, calling one throws "pressbase.blocks.X is only available in the block editor."
+- Only blocks in the loading plugin's namespace can be registered. A module that fails to import is reported like any plugin module, and its dynamic blocks fall back to the preview.
+- **Inserter.** Blocks appear under their `category`; use one of WordPress's (`text`, `media`, `design`, `widgets`, `theme`, `embed`).
+- **Inactive plugins.** A block whose plugin isn't active opens as WordPress's `core/missing`, which keeps its markup exactly; the editor shows "This block’s plugin is inactive" in its place.
 
 ## Not yet
 
