@@ -12,7 +12,7 @@ import { parseFeedRequest, renderFeed } from './feeds';
 import { HtmlOutput } from './head';
 import { templateHierarchy } from './hierarchy';
 import { PageRender, withPage } from './page';
-import type { PublicFile } from './public-files';
+import type { PublicFile, PublicFileBody } from './public-files';
 import { type MainQuery, resolveMainQuery } from './query';
 import { renderRobots } from './robots';
 import { parseSitemapRequest, renderSitemap } from './sitemaps';
@@ -308,21 +308,16 @@ async function servePublicFile(
   const headers: Record<string, string> = {};
   let status = 200;
   let body: string;
-  if (result instanceof Response) {
-    status = result.status;
-    result.headers.forEach((value, name) => {
-      headers[name] = value;
-    });
-    body = await result.text();
-  } else if (typeof result === 'string') {
+  if (typeof result === 'string') {
     body = result;
   } else {
-    status = result.status ?? 200;
-    for (const [name, value] of Object.entries(result.headers ?? {})) {
+    const answer: PublicFileBody = result;
+    status = answer.status ?? 200;
+    for (const [name, value] of Object.entries(answer.headers ?? {})) {
       headers[name.toLowerCase()] = value;
     }
-    if (result.contentType) headers['content-type'] = result.contentType;
-    body = String(result.body ?? '');
+    if (answer.contentType) headers['content-type'] = answer.contentType;
+    body = String(answer.body ?? '');
   }
   headers['content-type'] ??= file.contentType;
   headers['x-content-type-options'] = 'nosniff';

@@ -417,7 +417,7 @@ api.public.addFile('/llms.txt', async () => {
 api.public.addFile(`/${key}.txt`, () => key, { cache: false });  // IndexNow's key file
 ```
 
-`addFile(path, handler, { contentType, cache })` returns a function that removes the file. The handler receives `{ path, query, user }` and returns the body as a string, `{ body, status, contentType, headers }`, a `Response`, or `null` for a 404. The content type defaults from the extension (`.txt` → `text/plain; charset=utf-8`, `.xml`, `.json`, `.md`, `.csv`, `.html`). A handler that throws answers 500 and is recorded against the plugin.
+`addFile(path, handler, { contentType, cache })` returns a function that removes the file. The handler receives `{ path, query, user }` and returns the body as a string, `{ body, status, contentType, headers }`, or `null` for a 404. The content type defaults from the extension (`.txt` → `text/plain; charset=utf-8`, `.xml`, `.json`, `.md`, `.csv`, `.html`). A handler that throws answers 500 and is recorded against the plugin.
 
 - **Core wins:** `robots.txt`, `favicon.ico`, sitemap and feed addresses (as core parses them, pretty or plain), anything under `/wp-`, and the admin's paths (`/admin`, `/login`, `/install`, `/lost-password`, `/reset-password`, `/editor-assets`, `/_next`, `/_pressbase`) are refused when the file is added, so the plugin fails to activate rather than shadowing them. Paths are letters, numbers, `.`, `_`, `~` and `-` in `/`-separated segments (`/.well-known/thing.json` is fine); two plugins can't serve the same path.
 - **Only active plugins answer:** files are removed on deactivation, which also purges `site`.

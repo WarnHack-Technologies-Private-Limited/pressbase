@@ -36,7 +36,7 @@ export interface PublicFileBody {
 }
 
 /** A string is the body; null or undefined answers 404 (nothing to serve right now). */
-export type PublicFileResult = string | PublicFileBody | Response | null | undefined;
+export type PublicFileResult = string | PublicFileBody | null | undefined;
 
 export type PublicFileHandler = (
   request: PublicFileRequest,
