@@ -33,7 +33,12 @@ export interface RestAutosave {
 export interface LocalBackup extends EditableFields {
   /** When the copy was written (ms since the epoch). */
   savedAt: number;
+  /** Unsaved meta edits (plugins' fields), by key. */
+  meta?: Record<string, unknown>;
 }
+
+const hasMeta = (backup: LocalBackup) =>
+  Boolean(backup.meta && Object.keys(backup.meta).length > 0);
 
 /** REST GMT dates have no zone designator. */
 export const gmtTime = (value: string) => new Date(`${value.replace(/Z$/, '')}Z`).getTime();
@@ -90,7 +95,9 @@ export function readBackup(storage: StorageLike | undefined, key: string): Local
       typeof value.title !== 'string' ||
       typeof value.content !== 'string' ||
       typeof value.excerpt !== 'string' ||
-      typeof value.savedAt !== 'number'
+      typeof value.savedAt !== 'number' ||
+      (value.meta !== undefined &&
+        (typeof value.meta !== 'object' || value.meta === null || Array.isArray(value.meta)))
     ) {
       return null;
     }
@@ -124,8 +131,9 @@ export function usefulBackup(
 ): LocalBackup | null {
   if (!backup) return null;
   if (savedModifiedGmt && backup.savedAt <= gmtTime(savedModifiedGmt)) return null;
-  if (!backup.title.trim() && !backup.content.trim() && !backup.excerpt.trim()) return null;
-  return differs(backup, saved) ? backup : null;
+  if (!backup.title.trim() && !backup.content.trim() && !backup.excerpt.trim() && !hasMeta(backup))
+    return null;
+  return differs(backup, saved) || hasMeta(backup) ? backup : null;
 }
 
 /** The browser's localStorage, when there is one and it's allowed. */

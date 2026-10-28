@@ -87,6 +87,19 @@ describe('local backups', () => {
     ).toBeNull();
   });
 
+  it('keeps plugins’ unsaved meta edits, and offers a copy that only has those', () => {
+    const storage = memoryStorage();
+    const key = backupKey('post', 11);
+    const saved = { title: 'Hello', content: '<p>Saved</p>', excerpt: '' };
+    const copy = { ...saved, savedAt: Date.now(), meta: { _yoast_wpseo_focuskw: 'tomatoes' } };
+    writeBackup(storage, key, copy);
+    expect(readBackup(storage, key)).toEqual(copy);
+    expect(usefulBackup(copy, saved)).toEqual(copy);
+    expect(usefulBackup({ ...copy, meta: {} }, saved)).toBeNull();
+    storage.setItem(key, JSON.stringify({ ...copy, meta: ['bad'] }));
+    expect(readBackup(storage, key)).toBeNull();
+  });
+
   it('compares like WordPress, ignoring whitespace runs', () => {
     const a = { title: 'A  title', content: 'x\r\n\r\ny', excerpt: '' };
     expect(differs(a, { title: 'A title', content: 'x\ny', excerpt: ' ' })).toBe(false);

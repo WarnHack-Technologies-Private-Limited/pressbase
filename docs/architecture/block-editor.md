@@ -59,8 +59,11 @@ ShortcutProvider (.root)
 
 - `onReady(handle)`: `handle.getContent()` serializes the blocks on demand (saving, autosave, switching to Code); `handle.baseline` is the first parse/serialize pass, so opening a post never counts as a change.
 - `onContentChange(markup)`: debounced (300 ms). It drives the "Unsaved changes" state, the word count and the browser copy.
+- `handle.parse(markup)`: `@wordpress/blocks`' `parse()`, kept by `PostEditor` (also in Code view) to give plugins the parsed blocks.
 - `handle.saveMenus()`: saves the `wp_navigation` menus a Navigation block edited through core-data; `PostEditor` calls it on every save.
 - `onSelectionChange`: selecting a block opens the Block tab, and clearing the selection returns to the Post tab, as in WordPress.
+
+`PostEditor` publishes the post to plugins' UI modules as `window.pressbase.editor` and applies their `editPost()` edits to its form state ([Plugins](plugins.md#live-editor-data), [ADR 0018](../adr/0018-editor-data-for-plugins.md)). Plugins' sidebars are tabs after Post and Block; selecting a block doesn't leave a plugin's tab.
 
 To replace the content (loading a revision, restoring an autosave), `PostEditor` remounts the editor with a new `key`. **Code** view is a textarea over the raw markup; switching back parses it again.
 

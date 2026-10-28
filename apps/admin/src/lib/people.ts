@@ -23,6 +23,8 @@ export interface EditUser {
   roles: string[];
   registered_date: string;
   capabilities: Record<string, boolean>;
+  /** Registered user meta (`show_in_rest`), by key. */
+  meta?: Record<string, unknown>;
 }
 
 export interface UserCounts {

@@ -14,6 +14,9 @@ import {
   type RestUser,
   STATUS_LABELS,
 } from '@/lib/content';
+import { filterQuery, listFilters } from '@/lib/extensions/lists';
+import { appliesTo, type FillEntry, SLOTS } from '@/lib/extensions/registry';
+import { ExtensionBoundary, extensionStore, RenderFill, useFills } from '../extensions/host';
 import { useCurrentUser } from '../shell/current-user';
 import { PageHeader } from '../shell/page-header';
 import { Button, ButtonLink } from '../ui/button';
@@ -85,6 +88,36 @@ export function PostList({ config }: { config: ContentType }) {
   const [confirm, setConfirm] = useState<number[] | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // Plugins' columns, row actions and filters (PostsListColumn, …RowAction, …Filter).
+  const allColumns = useFills(SLOTS.postsListColumns);
+  const columns = useMemo(
+    () => allColumns.filter((fill) => appliesTo(fill, config.type)),
+    [allColumns, config.type],
+  );
+  const allActions = useFills(SLOTS.postsListRowActions);
+  const rowActions = useMemo(
+    () => allActions.filter((fill) => appliesTo(fill, config.type)),
+    [allActions, config.type],
+  );
+  const allFilters = useFills(SLOTS.postsListFilters);
+  const filters = useMemo(
+    () => listFilters(allFilters.filter((fill) => appliesTo(fill, config.type))),
+    [allFilters, config.type],
+  );
+  // The REST parameters the chosen plugin filters add; a string, so loading reruns only on change.
+  const pluginQuery = JSON.stringify(
+    filterQuery(
+      filters,
+      (key) => params.get(key),
+      (filter, error) =>
+        console.error(
+          `[plugin:${filters.find((f) => f.id === filter.id)?.owner}] filter failed:`,
+          error,
+        ),
+    ),
+  );
+  const pluginFiltered = filters.some((filter) => params.get(filter.id));
+
   const setParams = useCallback(
     (changes: Record<string, string | undefined>) => {
       const next = new URLSearchParams(params);
@@ -111,6 +144,8 @@ export function PostList({ config }: { config: ContentType }) {
     });
     if (search) q.set('search', search);
     if (category) q.set('categories', category);
+    for (const [key, value] of Object.entries(JSON.parse(pluginQuery) as Record<string, string>))
+      q.set(key, value);
     if (config.hierarchical && !search) {
       q.set('orderby', 'title');
       q.set('order', 'asc');
@@ -150,7 +185,7 @@ export function PostList({ config }: { config: ContentType }) {
       setError(err instanceof ApiError ? err.message : 'Could not load the list.');
       setRows([]);
     }
-  }, [config, status, search, category, page, treeMode]);
+  }, [config, status, search, category, page, treeMode, pluginQuery]);
 
   useEffect(() => {
     load();
@@ -224,7 +259,7 @@ export function PostList({ config }: { config: ContentType }) {
   /* ------------------------------------------------------------ render */
 
   const isTrash = status === 'trash';
-  const filtered = Boolean(search || category);
+  const filtered = Boolean(search || category || pluginFiltered);
   const newHref = `/admin/${config.base}/new`;
 
   return (
@@ -287,6 +322,22 @@ export function PostList({ config }: { config: ContentType }) {
                 ))}
               </select>
             )}
+            {filters.map((filter) => (
+              <select
+                key={filter.id}
+                className={styles.select}
+                aria-label={filter.label}
+                value={params.get(filter.id) ?? ''}
+                onChange={(e) => setParams({ [filter.id]: e.target.value || undefined })}
+              >
+                <option value="">{filter.label}</option>
+                {filter.options.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            ))}
             <div className={styles.search}>
               <Search size={16} aria-hidden="true" />
               <input
@@ -358,7 +409,11 @@ export function PostList({ config }: { config: ContentType }) {
                 <Button
                   onClick={() => {
                     setQuery('');
-                    setParams({ s: undefined, cat: undefined });
+                    setParams({
+                      s: undefined,
+                      cat: undefined,
+                      ...Object.fromEntries(filters.map((f) => [f.id, undefined])),
+                    });
                   }}
                 >
                   Clear filters
@@ -402,6 +457,11 @@ export function PostList({ config }: { config: ContentType }) {
                   </>
                 )}
                 <th className={styles.hideNarrow}>Date</th>
+                {columns.map((fill) => (
+                  <th key={fill.id} className={styles.hideNarrow}>
+                    {typeof fill.props.title === 'string' ? fill.props.title : ''}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -443,7 +503,7 @@ export function PostList({ config }: { config: ContentType }) {
                       {stateLabel && <span className={styles.state}> — {stateLabel}</span>}
                       {post.sticky && <span className={styles.state}> — Sticky</span>}
                       {post.password && <span className={styles.state}> — Password protected</span>}
-                      {editable && (
+                      {(editable || (!isTrash && rowActions.length > 0)) && (
                         <div className={styles.rowActions}>
                           {isTrash ? (
                             <>
@@ -464,20 +524,32 @@ export function PostList({ config }: { config: ContentType }) {
                               </button>
                             </>
                           ) : (
-                            <>
-                              <Link href={editHref} className={styles.rowAction}>
-                                Edit
-                              </Link>
-                              <button
-                                type="button"
-                                className={styles.rowAction}
-                                data-tone="danger"
-                                onClick={() => trash([post.id])}
-                              >
-                                Trash
-                              </button>
-                            </>
+                            editable && (
+                              <>
+                                <Link href={editHref} className={styles.rowAction}>
+                                  Edit
+                                </Link>
+                                <button
+                                  type="button"
+                                  className={styles.rowAction}
+                                  data-tone="danger"
+                                  onClick={() => trash([post.id])}
+                                >
+                                  Trash
+                                </button>
+                              </>
+                            )
                           )}
+                          {!isTrash &&
+                            rowActions.map((fill) => (
+                              <ExtensionBoundary
+                                key={fill.id}
+                                owner={fill.owner}
+                                place="posts list row action"
+                              >
+                                <PluginRowAction fill={fill} post={post} reload={load} />
+                              </ExtensionBoundary>
+                            ))}
                         </div>
                       )}
                     </td>
@@ -514,6 +586,15 @@ export function PostList({ config }: { config: ContentType }) {
                           : post.modified,
                       )}
                     </td>
+                    {columns.map((fill) => (
+                      <td key={fill.id} className={`${styles.meta} ${styles.hideNarrow}`}>
+                        <RenderFill
+                          fill={fill}
+                          place="posts list column"
+                          fillProps={{ post, postType: config.type }}
+                        />
+                      </td>
+                    ))}
                   </tr>
                 );
               })}
@@ -566,5 +647,56 @@ export function PostList({ config }: { config: ContentType }) {
         This can’t be undone. Revisions are deleted too.
       </ConfirmDialog>
     </>
+  );
+}
+
+type ListPost = Record<string, unknown>;
+
+/** A plugin's row action (PostsListRowAction): a link or a button, unless `isVisible` hides it. */
+function PluginRowAction({
+  fill,
+  post,
+  reload,
+}: {
+  fill: FillEntry;
+  post: RestPost;
+  reload: () => Promise<void>;
+}) {
+  const toast = useToast();
+  const row = post as unknown as ListPost;
+  const { label, href, onClick, isVisible } = fill.props as {
+    label?: string | ((post: ListPost) => string);
+    href?: (post: ListPost) => string;
+    onClick?: (post: ListPost, list: { reload: () => Promise<void> }) => unknown;
+    isVisible?: (post: ListPost) => boolean;
+  };
+  if (typeof isVisible === 'function' && !isVisible(row)) return null;
+  const text = typeof label === 'function' ? label(row) : label;
+  if (!text) return null;
+  if (typeof href === 'function') {
+    return (
+      <a href={href(row)} className={styles.rowAction}>
+        {text}
+      </a>
+    );
+  }
+  if (typeof onClick !== 'function') return null;
+  return (
+    <button
+      type="button"
+      className={styles.rowAction}
+      onClick={() =>
+        Promise.resolve()
+          .then(() => onClick(row, { reload }))
+          .catch((error) => {
+            console.error(`[plugin:${fill.owner ?? 'unknown'}] row action failed:`, error);
+            toast(`The ${extensionStore.title(fill.owner)} plugin couldn’t do that.`, {
+              tone: 'danger',
+            });
+          })
+      }
+    >
+      {text}
+    </button>
   );
 }

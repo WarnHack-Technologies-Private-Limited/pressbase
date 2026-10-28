@@ -394,7 +394,14 @@ export function postsRoutes(type: PostType) {
       else args.post__not_in = [...(args.post__not_in ?? []), ...sticky];
     }
 
-    const result = await queryPosts(kernel, args);
+    // rest_{$post_type}_query (WP_REST_Posts_Controller::get_items()): plugins turn their own
+    // parameters (a posts-list filter's, say) into query arguments. They get every parameter.
+    const filtered = (await kernel.hooks.applyFilters(
+      `rest_${type.name}_query`,
+      args,
+      raw,
+    )) as QueryArgs;
+    const result = await queryPosts(kernel, filtered);
     if (q.page > result.maxPages && result.found > 0) {
       return restError(
         c,

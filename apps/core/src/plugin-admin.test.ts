@@ -158,7 +158,7 @@ describe('the Settings API', () => {
       {
         plugin: 'daily-tips',
         title: 'Daily Tips',
-        url: '/wp-content/plugins/daily-tips/admin/index.js?ver=1.1.0',
+        url: '/wp-content/plugins/daily-tips/admin/index.js?ver=1.2.0',
       },
     ]);
 
@@ -421,7 +421,7 @@ describe('admin pages', () => {
     const ctx = await site();
     expect((await asset(ctx, '/wp-content/plugins/daily-tips/admin/index.js')).status).toBe(404);
     await activate(ctx, 'daily-tips');
-    const res = await asset(ctx, '/wp-content/plugins/daily-tips/admin/index.js?ver=1.1.0');
+    const res = await asset(ctx, '/wp-content/plugins/daily-tips/admin/index.js?ver=1.2.0');
     expect(res.status).toBe(200);
     expect(await res.text()).toContain("registerPlugin('daily-tips'");
     expect((await asset(ctx, '/wp-content/plugins/daily-tips/index.js')).status).toBe(404);

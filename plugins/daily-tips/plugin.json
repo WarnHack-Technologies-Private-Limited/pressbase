@@ -1,8 +1,8 @@
 {
   "name": "daily-tips",
   "title": "Daily Tips",
-  "version": "1.1.0",
-  "description": "Shows a short writing tip with every post in the REST API, on the dashboard and in the editor, serves a random tip at /wp-json/daily-tips/v1/tip, and adds a Tips post type for your own.",
+  "version": "1.2.0",
+  "description": "Shows a short writing tip with every post in the REST API, on the dashboard and in the editor (with a Writing sidebar that follows what you type and a Words column in the posts list), serves a random tip at /wp-json/daily-tips/v1/tip, and adds a Tips post type for your own.",
   "author": {
     "name": "The Pressbase contributors",
     "url": "https://github.com/WarnHack-Technologies-Private-Limited/pressbase"
