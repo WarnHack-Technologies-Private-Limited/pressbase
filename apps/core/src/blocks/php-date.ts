@@ -6,6 +6,8 @@
  * offset characters (c, O, P) that server-rendered blocks need.
  */
 
+import { type DateWords, ENGLISH_DATE_WORDS } from '../i18n/locale';
+
 const pad = (n: number, width = 2) => String(Math.abs(n)).padStart(width, '0');
 
 const MONTHS = [
@@ -65,8 +67,8 @@ export function wallClock(date: Date, timeZone: string): WallClock {
   return { ...w, offset };
 }
 
-export function monthName(month: number): string {
-  return MONTHS[month - 1] ?? '';
+export function monthName(month: number, words: DateWords = ENGLISH_DATE_WORDS): string {
+  return words.month[month - 1] ?? MONTHS[month - 1] ?? '';
 }
 
 function ordinal(day: number): string {
@@ -79,11 +81,20 @@ function offsetString(minutes: number, colon: boolean): string {
   return `${sign}${pad(Math.trunc(minutes / 60))}${colon ? ':' : ''}${pad(minutes % 60)}`;
 }
 
-export function formatPhpDate(format: string, date: Date, timeZone = 'UTC'): string {
+/**
+ * `words` are the month and weekday names (WP_Locale), so dates read in the
+ * site's language as with wp_date(): `kernel.i18n.dateWords()`.
+ */
+export function formatPhpDate(
+  format: string,
+  date: Date,
+  timeZone = 'UTC',
+  words: DateWords = ENGLISH_DATE_WORDS,
+): string {
   const p = wallClock(date, timeZone);
   const hour12 = p.hour % 12 || 12;
-  const month = monthName(p.month);
-  const weekday = WEEKDAYS[p.weekday] ?? '';
+  const month = monthName(p.month, words);
+  const weekday = words.weekday[p.weekday] ?? '';
 
   let out = '';
   for (let i = 0; i < format.length; i++) {
@@ -103,7 +114,7 @@ export function formatPhpDate(format: string, date: Date, timeZone = 'UTC'): str
         out += ordinal(p.day);
         break;
       case 'D':
-        out += weekday.slice(0, 3);
+        out += words.weekdayAbbrev[p.weekday] ?? weekday.slice(0, 3);
         break;
       case 'l':
         out += weekday;
@@ -118,7 +129,7 @@ export function formatPhpDate(format: string, date: Date, timeZone = 'UTC'): str
         out += month;
         break;
       case 'M':
-        out += month.slice(0, 3);
+        out += words.monthAbbrev[p.month - 1] ?? month.slice(0, 3);
         break;
       case 'm':
         out += pad(p.month);
@@ -133,10 +144,10 @@ export function formatPhpDate(format: string, date: Date, timeZone = 'UTC'): str
         out += pad(p.year % 100);
         break;
       case 'a':
-        out += p.hour < 12 ? 'am' : 'pm';
+        out += p.hour < 12 ? words.meridiem.am : words.meridiem.pm;
         break;
       case 'A':
-        out += p.hour < 12 ? 'AM' : 'PM';
+        out += p.hour < 12 ? words.meridiem.AM : words.meridiem.PM;
         break;
       case 'g':
         out += hour12;

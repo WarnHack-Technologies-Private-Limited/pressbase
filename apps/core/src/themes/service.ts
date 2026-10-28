@@ -157,6 +157,8 @@ export class ThemesService {
   #loading: Promise<ActiveTheme> | undefined;
   /** Pattern and category names registered by the active theme, to unregister on switch. */
   #registered = { patterns: [] as string[], categories: [] as string[] };
+  /** The active theme's text domain paths, forgotten on switch. */
+  #textdomains: (() => void)[] = [];
 
   constructor(private readonly kernel: Kernel) {
     kernel.hooks.addAction('init', async () => {
@@ -460,13 +462,37 @@ export class ThemesService {
     for (const name of this.#registered.categories) blocks.unregisterBlockPatternCategory(name);
     this.#registered = { patterns: [], categories: [] };
 
+    // Patterns are translated once, into the site's language, through the
+    // theme's text domain (WordPress translates them per request, in the
+    // request's locale). See docs/architecture/i18n.md.
+    const i18n = this.kernel.i18n;
+    const locale = i18n.getLocale();
+    // load_theme_textdomain(): a theme's own `languages/` folder, after languages/themes.
+    for (const forget of this.#textdomains.splice(0)) forget();
+    for (const theme of chain) {
+      this.#textdomains.push(
+        i18n.loadThemeTextdomain(
+          theme.textDomain || theme.stylesheet,
+          path.join(theme.dir, 'languages'),
+        ),
+      );
+    }
+    const domain = active.info.textDomain || active.info.stylesheet;
+    const gettext = (text: string, textDomain: string) => i18n.translate(text, textDomain, locale);
+    const gettextWithContext = (text: string, context: string, textDomain: string) =>
+      i18n.translateWithContext(text, context, textDomain, locale);
     for (const category of active.compat?.patternCategories ?? []) {
-      blocks.registerBlockPatternCategory(category.name, category);
+      blocks.registerBlockPatternCategory(category.name, {
+        ...category,
+        label: gettext(category.label, domain),
+      });
       this.#registered.categories.push(category.name);
     }
     const context = {
       templateUri: `${THEMES_URL_PATH}/${(chain[chain.length - 1] as ThemeInfo).stylesheet}`,
       stylesheetUri: `${THEMES_URL_PATH}/${active.info.stylesheet}`,
+      gettext,
+      gettextWithContext,
     };
     const seen = new Set<string>();
     for (const theme of chain) {
@@ -488,6 +514,16 @@ export class ThemesService {
         const { slug, ...pattern } = result.pattern;
         if (seen.has(slug)) continue;
         seen.add(slug);
+        // _register_theme_block_patterns() (wp-includes/block-patterns.php).
+        const textDomain = theme.textDomain || theme.stylesheet;
+        pattern.title = gettextWithContext(pattern.title, 'Pattern title', textDomain);
+        if (pattern.description) {
+          pattern.description = gettextWithContext(
+            pattern.description,
+            'Pattern description',
+            textDomain,
+          );
+        }
         blocks.registerBlockPattern(slug, { ...pattern, source: 'theme' });
         this.#registered.patterns.push(slug);
       }

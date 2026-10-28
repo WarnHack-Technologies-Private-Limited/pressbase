@@ -11,6 +11,7 @@ import { PostsService } from './content/posts';
 import { registerCoreTaxonomies, TaxonomyRegistry } from './content/taxonomies';
 import { TermsService } from './content/terms';
 import { registerPublicPageHooks, ScriptsApi, StylesApi } from './frontend/head';
+import { I18n } from './i18n/l10n';
 import { registerCoreEvents } from './jobs/core-events';
 import { Cron } from './jobs/cron';
 import { JobQueue } from './jobs/queue';
@@ -63,6 +64,8 @@ export class Kernel {
   readonly styles = new StylesApi(this.hooks);
   /** Installed plugins, loading and the plugin lifecycle (see docs/architecture/plugins.md). */
   readonly plugins = new PluginManager(this);
+  /** Translations, locales and language packs: l10n.php (see docs/architecture/i18n.md). */
+  readonly i18n = new I18n(this);
   #connection: DatabaseConnection | undefined;
   #options: Options | undefined;
   #state: SiteState = 'needs-database';

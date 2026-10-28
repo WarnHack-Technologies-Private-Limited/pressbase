@@ -111,7 +111,10 @@ async function prepareMany(
         link: `${home}/author/${user.nicename}/`,
         ...(edit
           ? {
-              locale: profile.locale || 'en_US',
+              // get_user_locale(): the user's language, or the site's.
+              locale: profile.locale || kernel.i18n.getLocale(),
+              // Pressbase: the stored choice, '' for "Site default" (Profile's select).
+              locale_setting: profile.locale,
               nickname: profile.nickname || user.login,
             }
           : {}),

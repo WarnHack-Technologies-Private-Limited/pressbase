@@ -341,8 +341,13 @@ function nicenameFrom(value: string): string {
 
 const plain = (value: string, max = 250) => stripTags(value).replace(/\s+/g, ' ').slice(0, max);
 
-function cleanLocale(locale: string): string {
-  if (locale === '' || /^[a-z]{2,3}(_[A-Z]{2})?$/.test(locale)) return locale;
+/**
+ * A user's language: '' (the site's), en_US or an installed language, as
+ * WP_REST_Users_Controller's schema allows (get_available_languages()).
+ */
+function cleanLocale(kernel: Kernel, locale: string): string {
+  if (locale === '' || locale === 'en_US' || kernel.i18n.getAvailableLanguages().includes(locale))
+    return locale;
   throw new UserError('rest_invalid_param', 'Invalid parameter(s): locale', 400, {
     locale: 'Choose a language from the list.',
   });
@@ -420,7 +425,7 @@ export async function insertUser(kernel: Kernel, input: UserInput): Promise<User
         { userId: row.id, key: 'first_name', value: first },
         { userId: row.id, key: 'last_name', value: last },
         { userId: row.id, key: 'description', value: (input.description ?? '').trim() },
-        { userId: row.id, key: 'locale', value: cleanLocale(input.locale ?? '') },
+        { userId: row.id, key: 'locale', value: cleanLocale(kernel, input.locale ?? '') },
         {
           userId: row.id,
           key: 'capabilities',
@@ -487,7 +492,7 @@ export async function updateUser(
     changes.nicename = slug;
   }
   if (input.roles !== undefined) await checkRoles(kernel, input.roles);
-  const locale = input.locale !== undefined ? cleanLocale(input.locale) : undefined;
+  const locale = input.locale !== undefined ? cleanLocale(kernel, input.locale) : undefined;
 
   let user = previous;
   if (Object.keys(changes).length) {

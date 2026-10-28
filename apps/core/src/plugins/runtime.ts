@@ -26,6 +26,7 @@ import { createAssets, type PluginAssets, type PluginScripts, type PluginStyles 
 import { type Background, createBackground, type PluginCron, type PluginJobs } from './background';
 import type { InstalledPlugin } from './discovery';
 import { createSubApp } from './dispatch';
+import { createPluginI18n, type PluginI18n } from './i18n';
 import type { PluginPermission } from './manifest';
 
 /**
@@ -174,6 +175,11 @@ export interface PluginApi {
   readonly admin: {
     addPage(args: PluginPageArgs): void;
   };
+  /**
+   * Translations in the plugin's text domain (its slug), loaded from its
+   * `languages/` folder: `api.i18n.__('Daily tip')`. See plugins/i18n.ts.
+   */
+  readonly i18n: PluginI18n;
 }
 
 /** What a plugin's main module exports. */
@@ -526,6 +532,7 @@ export class PluginRuntime {
       admin: Object.freeze({
         addPage: (args: PluginPageArgs) => this.adminRegistrations.addPage(args),
       }),
+      i18n: createPluginI18n({ kernel, slug, dir: plugin.dir, track }),
     };
     return Object.freeze(api);
   }
