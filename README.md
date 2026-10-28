@@ -35,6 +35,24 @@ pnpm dev
 
 More detail is in [Getting started](docs/development/getting-started.md).
 
+### Run with Docker
+
+One image runs everything. With the built-in database, to try it:
+
+```bash
+docker run -p 3000:3000 -v pressbase:/data ghcr.io/warnhack-technologies-private-limited/pressbase
+```
+
+With PostgreSQL 17, for a real site:
+
+```bash
+git clone https://github.com/WarnHack-Technologies-Private-Limited/pressbase.git && cd pressbase
+echo "PRESSBASE_SETUP_TOKEN=$(openssl rand -hex 16)" > .env   # the installer will ask for it
+docker compose up -d
+```
+
+Open <http://localhost:3000> and follow the installer. Configuration, SMTP and how the image is built are in [Getting started](docs/development/getting-started.md#run-with-docker).
+
 ## What's in the box
 
 | Path             | What it is                                                                                                    |

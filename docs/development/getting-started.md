@@ -38,6 +38,39 @@ pnpm dev
 
 With `DATABASE_URL` set, the installer skips the database step. Without it, you can enter the same details in the installer, which saves them to `apps/core/.pressbase/config.json`.
 
+## Run with Docker
+
+The official image runs core, the admin and the public site in one container. Only port 3000 needs publishing: the admin forwards the API and the public pages internally.
+
+```bash
+docker run -d --name pressbase -p 3000:3000 -v pressbase:/data \
+  ghcr.io/warnhack-technologies-private-limited/pressbase:latest
+```
+
+Open <http://localhost:3000> and follow the installer. Without `DATABASE_URL` it offers the built-in database (kept in the `/data` volume, good for trying Pressbase) or the details of your PostgreSQL server (saved to `/data/config.json`). For a real site, use PostgreSQL and a setup code:
+
+```bash
+docker compose up -d     # Pressbase + postgres:17 from docker-compose.yml, on http://localhost:3000
+```
+
+`docker compose up --build` builds the image from your checkout instead of pulling it; `docker build -t pressbase .` builds it on its own.
+
+| Variable | Default in the image | Purpose |
+| --- | --- | --- |
+| `DATABASE_URL` | — | PostgreSQL URL. Without it, the installer asks. |
+| `PRESSBASE_SETUP_TOKEN` | — | The installer asks for this code. Set it on any server reachable from the internet. |
+| `PRESSBASE_DATA_DIR` | `/data` | `config.json`, the built-in database, uploads, themes, the mail outbox. Mount a volume here. |
+| `PRESSBASE_SMTP_URL`, `PRESSBASE_SMTP_*`, `PRESSBASE_MAIL_FROM` | — | Outgoing email, as [above](#environment-variables). Without SMTP, mail goes to `/data/outbox`. |
+| `PORT` | `3000` | The admin's port inside the container (the one to publish). |
+| `PRESSBASE_CORE_PORT`, `PRESSBASE_WEB_PORT` | `4000`, `3001` | Internal ports for core and the public site. They're fixed in the image's build (see below), so leave them alone. |
+
+How the image is put together (`Dockerfile`, `docker/`):
+
+- **Multi-stage build** on `node:24-bookworm-slim` (Debian, so the prebuilt `sharp` and `esbuild` binaries work on amd64 and arm64). The build stage installs the workspace and builds the admin and the public site with Next.js's `output: 'standalone'` (switched on by `PRESSBASE_STANDALONE=1`). Next.js fixes its rewrites at build time, so the image is built with `CORE_URL=http://127.0.0.1:4000` and `WEB_URL=http://127.0.0.1:3001`.
+- **Core runs from its TypeScript source with tsx**, as `pnpm --filter @pressbase/core start` does, with production dependencies only (`pnpm install --prod --filter "@pressbase/core..."`). Bundling it was the alternative, but core finds bundled themes, its static files and the database migrations relative to its source files, and plugins will be `import()`ed at runtime ([ADR 0003](../adr/0003-core-separate-from-next.md)); a bundle would break both and save little.
+- **`docker/start.mjs`** (plain Node.js) starts the three servers, prefixes their logs (`[core]`, `[web]`, `[admin]`), forwards `SIGTERM`/`SIGINT`, and exits when any of them stops, so Docker's restart policy takes over. **`docker/healthcheck.mjs`** is the `HEALTHCHECK`: core directly, plus the public site and the admin through their proxies.
+- Runs as the unprivileged `node` user. Core's code is owned by root and read-only to it; `/data` belongs to `node`.
+
 ## Resetting your local site
 
 | Setup                         | Reset with                                                             |

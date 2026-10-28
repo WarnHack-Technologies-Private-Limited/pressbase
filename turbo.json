@@ -10,7 +10,7 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
-      "env": ["CORE_URL", "WEB_URL"]
+      "env": ["CORE_URL", "WEB_URL", "PRESSBASE_STANDALONE"]
     },
     "test": {
       "outputs": []
