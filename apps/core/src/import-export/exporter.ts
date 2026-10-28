@@ -557,8 +557,8 @@ export type ExportOutput =
   | ((chunk: string) => unknown);
 
 /**
- * Writes the WXR export to `output` and returns how many chunks were
- * written. The CLI calls this with a file stream.
+ * Writes the WXR export to `output`, waiting for a Node stream to drain.
+ * The CLI calls this with a file stream.
  */
 export async function exportWxr(
   kernel: Kernel,

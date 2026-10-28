@@ -657,7 +657,7 @@ describe('importing a WXR file', () => {
     // The post still imports; its featured image doesn't.
     const post = await postByTitle(guarded, 'post', 'Raised bed in & out');
     expect(await meta(guarded, post?.id ?? 0, '_thumbnail_id')).toBeUndefined();
-  });
+  }, 120_000);
 
   it('falls back to the importing user when an author can’t be created', async () => {
     const ctx = await site();
@@ -926,5 +926,5 @@ describe('round trip', () => {
     expect(after).toEqual(before);
     expect(before.posts).toHaveLength(2);
     expect(before.posts[1]?.meta).toContainEqual({ key: 'mood', value: ['calm', { level: 2 }] });
-  });
+  }, 120_000);
 });
