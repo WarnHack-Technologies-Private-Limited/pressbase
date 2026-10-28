@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react';
 import { ApiError, api } from '@/lib/api';
+import { useI18n } from '@/lib/i18n/context';
 import { Button } from '../ui/button';
 import { Notice } from '../ui/surface';
 import { useToast } from '../ui/toast';
@@ -34,6 +35,7 @@ export function SettingsForm<T extends Record<string, unknown>>({
 }) {
   const router = useRouter();
   const toast = useToast();
+  const { __ } = useI18n();
   const [saved, setSaved] = useState(initial);
   const [values, setValues] = useState(initial);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -66,11 +68,16 @@ export function SettingsForm<T extends Record<string, unknown>>({
       ) as T;
       setSaved(next);
       setValues(next);
-      toast('Settings saved.');
+      toast(__('Settings saved.', 'pressbase-admin'));
       router.refresh();
     } catch (error) {
       if (error instanceof ApiError && error.data.params) setErrors(error.data.params);
-      else setProblem(error instanceof ApiError ? error.message : 'Could not save your changes.');
+      else
+        setProblem(
+          error instanceof ApiError
+            ? error.message
+            : __('Could not save your changes.', 'pressbase-admin'),
+        );
     } finally {
       setBusy(false);
     }
@@ -81,14 +88,14 @@ export function SettingsForm<T extends Record<string, unknown>>({
       {problem && <Notice tone="danger" title={problem} />}
       {children({ values, set, errors })}
       {dirty && (
-        <section className={styles.savebar} aria-label="Unsaved changes">
-          <span>You have unsaved changes</span>
+        <section className={styles.savebar} aria-label={__('Unsaved changes', 'pressbase-admin')}>
+          <span>{__('You have unsaved changes', 'pressbase-admin')}</span>
           <div className={styles.savebarActions}>
             <Button variant="ghost" onClick={() => setValues(saved)} disabled={busy}>
-              Discard
+              {__('Discard', 'pressbase-admin')}
             </Button>
             <Button type="submit" variant="primary" loading={busy}>
-              {busy ? 'Saving…' : 'Save changes'}
+              {busy ? __('Saving…', 'pressbase-admin') : __('Save changes', 'pressbase-admin')}
             </Button>
           </div>
         </section>

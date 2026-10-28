@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pluralFunction, PluralForms, PluralFormsError } from './plural-forms';
+import { PluralForms, PluralFormsError, pluralFunction } from './plural-forms';
 import {
   CONTEXT_GLUE,
   compileMo,

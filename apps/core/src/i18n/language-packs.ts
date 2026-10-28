@@ -139,7 +139,10 @@ export class LanguagePacks {
       if (!response.ok || !body || !Array.isArray(body.translations)) {
         throw new LanguagePackError(
           'translations_api_failed',
-          this.kernel.i18n.__('WordPress.org sent an unexpected answer. Try again later.', 'pressbase'),
+          this.kernel.i18n.__(
+            'WordPress.org sent an unexpected answer. Try again later.',
+            'pressbase',
+          ),
           502,
         );
       }
@@ -182,12 +185,18 @@ export class LanguagePacks {
     try {
       url = new URL(packageUrl);
     } catch {
-      throw new LanguagePackError('download_failed', this.kernel.i18n.__('The language pack’s address is invalid.', 'pressbase'));
+      throw new LanguagePackError(
+        'download_failed',
+        this.kernel.i18n.__('The language pack’s address is invalid.', 'pressbase'),
+      );
     }
     if (url.protocol !== 'https:' || !PACKAGE_HOSTS.has(url.hostname)) {
       throw new LanguagePackError(
         'download_failed',
-        this.kernel.i18n.__('Language packs are only downloaded from downloads.wordpress.org.', 'pressbase'),
+        this.kernel.i18n.__(
+          'Language packs are only downloaded from downloads.wordpress.org.',
+          'pressbase',
+        ),
       );
     }
     let response: Response;
@@ -215,11 +224,17 @@ export class LanguagePacks {
     }
     const length = Number(response.headers.get('content-length') ?? 0);
     if (length > MAX_PACKAGE_BYTES) {
-      throw new LanguagePackError('download_failed', this.kernel.i18n.__('The language pack is too large.', 'pressbase'));
+      throw new LanguagePackError(
+        'download_failed',
+        this.kernel.i18n.__('The language pack is too large.', 'pressbase'),
+      );
     }
     const bytes = new Uint8Array(await response.arrayBuffer());
     if (bytes.byteLength > MAX_PACKAGE_BYTES) {
-      throw new LanguagePackError('download_failed', this.kernel.i18n.__('The language pack is too large.', 'pressbase'));
+      throw new LanguagePackError(
+        'download_failed',
+        this.kernel.i18n.__('The language pack is too large.', 'pressbase'),
+      );
     }
     let entries: ReturnType<typeof readZip>;
     try {
@@ -227,7 +242,9 @@ export class LanguagePacks {
     } catch (error) {
       throw new LanguagePackError(
         'incompatible_archive',
-        error instanceof ZipError ? error.message : this.kernel.i18n.__('The language pack isn’t a valid .zip file.', 'pressbase'),
+        error instanceof ZipError
+          ? error.message
+          : this.kernel.i18n.__('The language pack isn’t a valid .zip file.', 'pressbase'),
       );
     }
     await mkdir(dir, { recursive: true });
@@ -256,7 +273,10 @@ export class LanguagePacks {
    */
   async install(language: string): Promise<InstallResult> {
     if (!isLocale(language) || language === 'en_US') {
-      throw new LanguagePackError('invalid_language', this.kernel.i18n.__('Choose a language from the list.', 'pressbase'));
+      throw new LanguagePackError(
+        'invalid_language',
+        this.kernel.i18n.__('Choose a language from the list.', 'pressbase'),
+      );
     }
     const i18n = this.kernel.i18n;
     const result: InstallResult = { language, core: false, themes: [], skipped: [] };

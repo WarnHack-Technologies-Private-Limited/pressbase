@@ -39,6 +39,9 @@ import {
   pageHref,
   pagesUnder,
 } from '@/lib/extensions/pages';
+import { useI18n } from '@/lib/i18n/context';
+import { msgid } from '@/lib/i18n/locale';
+import { roleLabel } from '@/lib/people';
 import { SECTION_GROUPS } from '@/lib/sections';
 import { ExtensionErrors, ExtensionsProvider, PluginArea } from '../extensions/host';
 import { Button } from '../ui/button';
@@ -52,9 +55,9 @@ function initials(name: string): string {
 }
 
 const SCHEME_CHOICES: { value: ColorScheme; label: string; icon: typeof Sun }[] = [
-  { value: 'system', label: 'System', icon: Monitor },
-  { value: 'light', label: 'Light', icon: Sun },
-  { value: 'dark', label: 'Dark', icon: Moon },
+  { value: 'system', label: msgid('System', 'color scheme'), icon: Monitor },
+  { value: 'light', label: msgid('Light', 'color scheme'), icon: Sun },
+  { value: 'dark', label: msgid('Dark', 'color scheme'), icon: Moon },
 ];
 
 /** Arrow keys, Home and End move between a menu's items (WAI-ARIA menu pattern). */
@@ -125,6 +128,7 @@ export function AdminShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { __, _x, sprintf } = useI18n();
   const narrow = useIsNarrow();
   const [navOpen, setNavOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -192,7 +196,7 @@ export function AdminShell({
       ? pathname === '/admin'
       : pathname === `/admin/${slug}` || pathname.startsWith(`/admin/${slug}/`);
 
-  const role = user.roles[0] ? user.roles[0][0]?.toUpperCase() + user.roles[0].slice(1) : '';
+  const role = user.roles[0] ? _x(roleLabel(user.roles[0]), 'User role', 'pressbase-admin') : '';
   const topPages = pagesUnder(extensions, null);
 
   return (
@@ -202,14 +206,14 @@ export function AdminShell({
           <script dangerouslySetInnerHTML={{ __html: colorSchemeScript(savedScheme) }} />
         )}
         <a href="#main" className="skip-link">
-          Skip to content
+          {__('Skip to content', 'pressbase-admin')}
         </a>
 
         <aside
           className={styles.sidebar}
           data-open={navOpen}
           inert={narrow && !navOpen}
-          aria-label="Admin"
+          aria-label={_x('Admin', 'navigation landmark', 'pressbase-admin')}
         >
           <div className={styles.site}>
             <span className={styles.siteIcon} aria-hidden="true" data-image={Boolean(siteIcon)}>
@@ -220,8 +224,13 @@ export function AdminShell({
               )}
             </span>
             <div style={{ minWidth: 0 }}>
-              <div className={styles.siteName}>{siteName || 'Untitled site'}</div>
-              <div className={styles.siteMeta}>Pressbase {version}</div>
+              <div className={styles.siteName}>
+                {siteName || __('Untitled site', 'pressbase-admin')}
+              </div>
+              <div className={styles.siteMeta}>
+                {/* translators: %s: the Pressbase version. */}
+                {sprintf(__('Pressbase %s', 'pressbase-admin'), version)}
+              </div>
             </div>
           </div>
 
@@ -230,7 +239,7 @@ export function AdminShell({
               <div key={group.label ?? i}>
                 {group.label && (
                   <div className={styles.groupLabel} id={`nav-${group.label}`}>
-                    {group.label}
+                    {__(group.label, 'pressbase-admin')}
                   </div>
                 )}
                 <ul
@@ -249,10 +258,12 @@ export function AdminShell({
                             aria-current={isCurrent(item.slug) ? 'page' : undefined}
                           >
                             <item.icon size={18} aria-hidden="true" />
-                            {item.label}
+                            {__(item.label, 'pressbase-admin')}
                             {release && (
                               <span className={styles.soon}>
-                                <span className="visually-hidden">, coming in </span>
+                                <span className="visually-hidden">
+                                  {__(', coming in ', 'pressbase-admin')}
+                                </span>
                                 {release}
                               </span>
                             )}
@@ -280,7 +291,10 @@ export function AdminShell({
           </nav>
 
           <p className={styles.sidebarFooter}>
-            Developer preview. Sections marked with a version are on the way.
+            {__(
+              'Developer preview. Sections marked with a version are on the way.',
+              'pressbase-admin',
+            )}
           </p>
         </aside>
 
@@ -298,15 +312,17 @@ export function AdminShell({
               size="sm"
               className={styles.menuButton}
               onClick={() => setNavOpen(true)}
-              aria-label="Open menu"
+              aria-label={__('Open menu', 'pressbase-admin')}
               aria-expanded={navOpen}
               icon={<Menu size={18} aria-hidden="true" />}
             />
             <div className={styles.spacer} />
             <a href={siteUrl || '/'} className={styles.visitSite} target="_blank" rel="noreferrer">
-              Visit site
+              {__('Visit site', 'pressbase-admin')}
               <ExternalLink size={14} aria-hidden="true" />
-              <span className="visually-hidden">(opens in a new tab)</span>
+              <span className="visually-hidden">
+                {__('(opens in a new tab)', 'pressbase-admin')}
+              </span>
             </a>
             <div ref={menuRef}>
               <button
@@ -327,7 +343,7 @@ export function AdminShell({
                 <div
                   className={styles.userMenu}
                   role="menu"
-                  aria-label="Account"
+                  aria-label={__('Account', 'pressbase-admin')}
                   onKeyDown={(event) => onMenuKeyDown(event, () => setMenuOpen(false))}
                 >
                   <div className={styles.userMenuHeader}>
@@ -343,11 +359,11 @@ export function AdminShell({
                     onClick={() => setMenuOpen(false)}
                   >
                     <UserRound size={16} aria-hidden="true" />
-                    Profile
+                    {__('Profile', 'pressbase-admin')}
                   </Link>
                   <fieldset aria-labelledby={themeLabelId} className={styles.menuGroup}>
                     <div id={themeLabelId} className={styles.menuLabel}>
-                      Theme
+                      {_x('Theme', 'color scheme', 'pressbase-admin')}
                     </div>
                     {SCHEME_CHOICES.map((choice) => (
                       <button
@@ -359,7 +375,7 @@ export function AdminShell({
                         onClick={() => chooseScheme(choice.value)}
                       >
                         <choice.icon size={16} aria-hidden="true" />
-                        {choice.label}
+                        {_x(choice.label, 'color scheme', 'pressbase-admin')}
                         {scheme === choice.value && (
                           <Check size={16} aria-hidden="true" className={styles.menuCheck} />
                         )}
@@ -373,7 +389,7 @@ export function AdminShell({
                     onClick={logOut}
                   >
                     <LogOut size={16} aria-hidden="true" />
-                    Log out
+                    {__('Log out', 'pressbase-admin')}
                   </button>
                 </div>
               )}

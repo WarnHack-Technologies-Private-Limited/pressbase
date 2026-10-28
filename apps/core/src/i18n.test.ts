@@ -189,9 +189,9 @@ describe('locales (determine_locale)', () => {
     expect(site_.body.locale).toBe('fr_FR');
     // Anonymous visitors get the site's language.
     const anonymous = ctx.client();
-    expect((await anonymous.request('GET', '/pressbase/v1/i18n/admin?_locale=user')).body.locale).toBe(
-      'fr_FR',
-    );
+    expect(
+      (await anonymous.request('GET', '/pressbase/v1/i18n/admin?_locale=user')).body.locale,
+    ).toBe('fr_FR');
     // wp_lang= for the login screen, installed languages only.
     expect(
       (await anonymous.request('GET', '/pressbase/v1/i18n/admin?wp_lang=de_DE')).body.locale,
@@ -269,9 +269,7 @@ describe('translations for the admin and the block editor', () => {
     const res = await ctx.app.request('/wp-json/pressbase/v1/i18n/admin');
     const body = (await res.json()) as { locale_data: Record<string, Record<string, unknown>> };
     expect(body.locale_data['pressbase-admin']?.Posts).toEqual(['Beiträge']);
-    expect(body.locale_data['pressbase-admin']?.['Site language']).toEqual([
-      'Sprache der Website',
-    ]);
+    expect(body.locale_data['pressbase-admin']?.['Site language']).toEqual(['Sprache der Website']);
     // Cached by ETag.
     const again = await ctx.app.request('/wp-json/pressbase/v1/i18n/admin', {
       headers: { 'if-none-match': res.headers.get('etag') ?? '' },
@@ -293,7 +291,10 @@ describe('translations for the admin and the block editor', () => {
       JSON.stringify({
         domain: 'messages',
         locale_data: {
-          messages: { '': { domain: 'messages', 'plural-forms': 'nplurals=2; plural=n != 1;' }, ...messages },
+          messages: {
+            '': { domain: 'messages', 'plural-forms': 'nplurals=2; plural=n != 1;' },
+            ...messages,
+          },
         },
         comment: { reference },
       });
@@ -313,7 +314,11 @@ describe('translations for the admin and the block editor', () => {
       `de_DE-${'c'.repeat(32)}.json`,
       jed('wp-admin/js/privacy-tools.js', { 'Copied!': ['Kopiert!'] }),
     );
-    await writeLanguageFile(ctx, `fr_FR-${'d'.repeat(32)}.json`, jed('wp-includes/js/dist/a.js', {}));
+    await writeLanguageFile(
+      ctx,
+      `fr_FR-${'d'.repeat(32)}.json`,
+      jed('wp-includes/js/dist/a.js', {}),
+    );
     const res = await ctx.request('GET', '/pressbase/v1/i18n/editor?_locale=user');
     expect(res.status).toBe(200);
     expect(res.body.locale).toBe('en_US');
@@ -350,7 +355,9 @@ describe('the public site in the site’s language', () => {
     expect(created.status).toBe(201);
 
     const render = async (url: string) => {
-      const res = await ctx.app.request(`/wp-json/pressbase/v1/render?url=${encodeURIComponent(url)}`);
+      const res = await ctx.app.request(
+        `/wp-json/pressbase/v1/render?url=${encodeURIComponent(url)}`,
+      );
       return ((await res.json()) as { html: string }).html;
     };
     expect(await render('/no-such-page/')).toContain('Page not found');
@@ -372,7 +379,9 @@ describe('the public site in the site’s language', () => {
     await writeLanguageFile(ctx, 'ar.po', po('ar', [['ltr', 'rtl', 'text direction']]));
     await ctx.request('POST', '/wp/v2/settings', { language: 'ar' });
     expect(ctx.kernel.i18n.isRtl()).toBe(true);
-    const res = await ctx.app.request(`/wp-json/pressbase/v1/render?url=${encodeURIComponent('/')}`);
+    const res = await ctx.app.request(
+      `/wp-json/pressbase/v1/render?url=${encodeURIComponent('/')}`,
+    );
     const { html } = (await res.json()) as { html: string };
     expect(html).toContain('<html dir="rtl" lang="ar">');
     expect(html).toMatch(/<body class="[^"]*\brtl\b/);
@@ -418,8 +427,7 @@ describe('plugins', () => {
       po('de_DE', [
         ['Good morning', 'Guten Morgen'],
         ['Post', 'Veröffentlichen', 'verb'],
-      ]) +
-        '\nmsgid "%d tip"\nmsgid_plural "%d tips"\nmsgstr[0] "%d Tipp"\nmsgstr[1] "%d Tipps"\n',
+      ]) + '\nmsgid "%d tip"\nmsgid_plural "%d tips"\nmsgstr[0] "%d Tipp"\nmsgstr[1] "%d Tipps"\n',
     );
     await german(ctx);
     await ctx.kernel.plugins.activate('greeter');
@@ -435,7 +443,11 @@ describe('plugins', () => {
       count: '%d Tipps',
     });
     // languages/plugins wins over the plugin's own folder.
-    await writeLanguageFile(ctx, 'plugins/greeter-de_DE.po', po('de_DE', [['Good morning', 'Moin']]));
+    await writeLanguageFile(
+      ctx,
+      'plugins/greeter-de_DE.po',
+      po('de_DE', [['Good morning', 'Moin']]),
+    );
     ctx.kernel.i18n.reloadLocale('de_DE');
     expect((await ctx.request('GET', '/greeter/v1/hello')).body.text).toBe('Moin');
     // Deactivating forgets the plugin's folder.
@@ -544,10 +556,15 @@ describe('language packs (wp_download_language_pack)', () => {
       'de_DE',
     ]);
     const files = await readdir(path.join(ctx.dataDir, 'languages'));
-    expect(files.sort()).toEqual(['de_DE-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.json', 'de_DE.mo', 'de_DE.po', 'themes']);
-    expect(existsSync(path.join(ctx.dataDir, 'languages', 'themes', 'twentytwentyfive-de_DE.mo'))).toBe(
-      true,
-    );
+    expect(files.sort()).toEqual([
+      'de_DE-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.json',
+      'de_DE.mo',
+      'de_DE.po',
+      'themes',
+    ]);
+    expect(
+      existsSync(path.join(ctx.dataDir, 'languages', 'themes', 'twentytwentyfive-de_DE.mo')),
+    ).toBe(true);
     expect(requests.some((r) => r.includes('slug=twentytwentyfive'))).toBe(true);
 
     expect((await ctx.request('POST', '/wp/v2/settings', { language: 'de_DE' })).status).toBe(200);
@@ -564,12 +581,12 @@ describe('language packs (wp_download_language_pack)', () => {
     const ctx = await site();
     mockNetwork(ctx);
     const editor = await ctx.loginAs('ed', 'editor');
-    expect((await editor.request('POST', '/pressbase/v1/languages', { language: 'de_DE' })).status).toBe(
-      403,
-    );
-    expect((await ctx.request('POST', '/pressbase/v1/languages', { language: '../x' })).status).toBe(
-      400,
-    );
+    expect(
+      (await editor.request('POST', '/pressbase/v1/languages', { language: 'de_DE' })).status,
+    ).toBe(403);
+    expect(
+      (await ctx.request('POST', '/pressbase/v1/languages', { language: '../x' })).status,
+    ).toBe(400);
     const missing = await ctx.request('POST', '/pressbase/v1/languages', { language: 'fr_FR' });
     expect(missing.status).toBe(404);
     expect(missing.body.code).toBe('language_not_available');

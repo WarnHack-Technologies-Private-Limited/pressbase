@@ -16,7 +16,7 @@ msgstr ""
 msgid "Sorry, you are not allowed to do that."
 msgstr ""
 
-#: apps/core/src/i18n/l10n.ts:182
+#: apps/core/src/i18n/l10n.ts:181
 msgid "That language isn’t installed. Install it first."
 msgstr ""
 
@@ -30,46 +30,46 @@ msgstr ""
 msgid "WordPress.org sent an unexpected answer. Try again later."
 msgstr ""
 
-#: apps/core/src/i18n/language-packs.ts:185
+#: apps/core/src/i18n/language-packs.ts:190
 msgid "The language pack’s address is invalid."
 msgstr ""
 
-#: apps/core/src/i18n/language-packs.ts:190
+#: apps/core/src/i18n/language-packs.ts:196
 msgid "Language packs are only downloaded from downloads.wordpress.org."
 msgstr ""
 
 #. translators: %s: the network error.
-#: apps/core/src/i18n/language-packs.ts:200
+#: apps/core/src/i18n/language-packs.ts:209
 #, js-format
 msgid "The language pack couldn’t be downloaded: %s"
 msgstr ""
 
 #. translators: %d: an HTTP status code.
-#: apps/core/src/i18n/language-packs.ts:210
+#: apps/core/src/i18n/language-packs.ts:219
 #, js-format
 msgid "The language pack couldn’t be downloaded (HTTP %d)."
 msgstr ""
 
-#: apps/core/src/i18n/language-packs.ts:218 apps/core/src/i18n/language-packs.ts:222
+#: apps/core/src/i18n/language-packs.ts:229 apps/core/src/i18n/language-packs.ts:236
 msgid "The language pack is too large."
 msgstr ""
 
-#: apps/core/src/i18n/language-packs.ts:230
+#: apps/core/src/i18n/language-packs.ts:247
 msgid "The language pack isn’t a valid .zip file."
 msgstr ""
 
-#: apps/core/src/i18n/language-packs.ts:247
+#: apps/core/src/i18n/language-packs.ts:264
 msgid "The language pack holds no translation files."
 msgstr ""
 
-#: apps/core/src/i18n/language-packs.ts:259 apps/core/src/people/users.ts:352
+#: apps/core/src/i18n/language-packs.ts:278 apps/core/src/people/users.ts:352
 msgid "Choose a language from the list."
 msgstr ""
 
-#: apps/core/src/i18n/language-packs.ts:268
+#: apps/core/src/i18n/language-packs.ts:288
 msgid "WordPress.org has no translation for that language."
 msgstr ""
 
-#: apps/core/src/i18n/language-packs.ts:287
+#: apps/core/src/i18n/language-packs.ts:307
 msgid "No translation for this language."
 msgstr ""

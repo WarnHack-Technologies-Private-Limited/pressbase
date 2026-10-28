@@ -144,7 +144,7 @@ export function extractStrings(target: ExtractTarget, root = ROOT): PoEntry[] {
           const name = calleeName(node);
           const args = node.arguments;
           let entry: PoEntry | undefined;
-          if (name && FUNCTIONS[name]) {
+          if (name && Object.hasOwn(FUNCTIONS, name)) {
             const [text, plural, context, domain] = FUNCTIONS[name] as [
               number,
               number,
@@ -153,7 +153,11 @@ export function extractStrings(target: ExtractTarget, root = ROOT): PoEntry[] {
             ];
             const singular = literal(args[text]);
             if (singular && literal(args[domain]) === target.domain) {
-              entry = { context: context >= 0 ? (literal(args[context]) ?? '') : '', singular, translations: [] };
+              entry = {
+                context: context >= 0 ? (literal(args[context]) ?? '') : '',
+                singular,
+                translations: [],
+              };
               if (plural >= 0) {
                 const pluralText = literal(args[plural]);
                 if (pluralText === undefined) entry = undefined;
@@ -221,6 +225,30 @@ export function potFor(target: ExtractTarget, root = ROOT): string {
   );
 }
 
+/**
+ * A template without its `#:` source references: what `--check` compares, so
+ * moving code around doesn't make a template stale, only changing its strings.
+ */
+export function withoutReferences(pot: string): string {
+  return pot
+    .split('\n')
+    .filter((line) => !line.startsWith('#:'))
+    .join('\n');
+}
+
+/** Templates whose strings differ from the source's, relative to the repository. */
+export function staleTemplates(root = ROOT): string[] {
+  return TARGETS.filter((target) => {
+    let current = '';
+    try {
+      current = readFileSync(path.join(root, target.pot), 'utf8');
+    } catch {
+      // Missing: stale.
+    }
+    return withoutReferences(current) !== withoutReferences(potFor(target, root));
+  }).map((target) => target.pot);
+}
+
 function main(argv: string[]) {
   const check = argv.includes('--check');
   let stale = false;
@@ -234,7 +262,7 @@ function main(argv: string[]) {
       // A new template.
     }
     const count = extractStrings(target).length;
-    if (current === next) {
+    if (current === next || (check && withoutReferences(current) === withoutReferences(next))) {
       console.log(`${target.pot}: up to date (${count} strings).`);
     } else if (check) {
       stale = true;

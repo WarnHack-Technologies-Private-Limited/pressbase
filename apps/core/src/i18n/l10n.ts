@@ -178,9 +178,7 @@ export class I18n {
       sanitize: (value) => {
         const locale = typeof value === 'string' && value ? value : 'en_US';
         if (locale !== 'en_US' && !this.getAvailableLanguages().includes(locale)) {
-          throw new Error(
-            this.__('That language isn’t installed. Install it first.', 'pressbase'),
-          );
+          throw new Error(this.__('That language isn’t installed. Install it first.', 'pressbase'));
         }
         return locale;
       },
@@ -653,10 +651,7 @@ export class I18n {
         if (found) {
           // WordPress's PHP strings are often printed as HTML (`&rsaquo;`,
           // `&#8217;`); the admin renders text, so entities are decoded.
-          entries.set(
-            key,
-            key.includes('&') ? found.entries : found.entries.map(decodeEntities),
-          );
+          entries.set(key, key.includes('&') ? found.entries : found.entries.map(decodeEntities));
           pluralForms ??= found.source.headers['plural-forms'];
         }
       }
