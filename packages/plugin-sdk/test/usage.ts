@@ -109,3 +109,42 @@ export const seo = definePlugin((api) => {
   void api.cache.purgePaths(['/old/']);
   void api.db?.query<{ id: number }>(api.db.sql`select 1 as id`);
 });
+
+// v0.7: the AI client and the Abilities API.
+export const assistant = definePlugin((api) => {
+  api.abilities.registerCategory('assistant', { label: 'Assistant', description: 'Helpers.' });
+  api.abilities.register<{ text: string }, string>('shout', {
+    label: 'Shout',
+    description: 'Upper-cases text.',
+    category: 'assistant',
+    inputSchema: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] },
+    permissionCallback: (_input, context) => context.can('edit_posts'),
+    executeCallback: (input) => input.text.toUpperCase(),
+    meta: { annotations: { readonly: true }, showInRest: true },
+  });
+  // @ts-expect-error: permissionCallback is required.
+  api.abilities.register('nope', {
+    label: 'x',
+    description: 'x',
+    category: 'assistant',
+    executeCallback: () => 1,
+  });
+  api.hooks.addFilter('wp_supports_ai', (enabled) => enabled);
+  api.hooks.addAction('pressbase_ai_request', (entry) =>
+    api.logger.info(entry.model, entry.outputTokens),
+  );
+  void (async () => {
+    if (!(await api.ai.supportsAi())) return;
+    const result = await api.ai
+      .prompt('Suggest a title.')
+      .usingSystemInstruction('Be brief.')
+      .usingAbilities('core/get-site-info')
+      .generateTextResult();
+    api.logger.info(result.tokenUsage.totalTokens);
+    const json = await api.ai
+      .prompt('Titles?')
+      .asJsonResponse({ type: 'object', properties: { titles: { type: 'array' } } })
+      .generateJson<{ titles: string[] }>();
+    api.logger.info(json.titles.length);
+  })();
+});

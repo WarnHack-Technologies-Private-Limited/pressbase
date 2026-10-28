@@ -216,7 +216,7 @@ msgstr ""
 msgid "General Settings"
 msgstr ""
 
-#: apps/admin/src/app/admin/settings/layout.tsx:12 apps/admin/src/components/settings/settings-nav.tsx:30 apps/admin/src/lib/sections.ts:110
+#: apps/admin/src/app/admin/settings/layout.tsx:12 apps/admin/src/components/settings/settings-nav.tsx:32 apps/admin/src/lib/sections.ts:110
 msgid "Settings"
 msgstr ""
 
@@ -291,6 +291,139 @@ msgstr ""
 msgid "Site default"
 msgstr ""
 
+#: apps/admin/src/components/settings/ai-settings.tsx:87
+msgid "AI settings saved."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:89 apps/admin/src/components/settings/general-settings-form.tsx:324 apps/admin/src/components/settings/settings-form.tsx:79
+msgid "Could not save your changes."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:100
+msgid "API key removed."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:102
+msgid "Could not remove the key."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:118
+#, js-format
+msgid "Connected. %1$s answered with %2$s."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:128
+msgid "Could not reach the AI provider."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:138
+#, js-format
+msgid "Set by the %1$s environment variable, ends in …%2$s"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:143
+#, js-format
+msgid "Saved, ends in …%s"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:144
+msgid "No key saved."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:150
+msgid "AI features"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:151
+msgid "Plugins such as Pressbase SEO can suggest titles, descriptions and alt text. Nothing is sent to a provider until someone asks for a suggestion, and suggestions are never applied without a person choosing them."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:157
+msgid "Turn on AI features"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:158
+msgid "Requests are sent from this server, never from visitors’ browsers."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:168 apps/admin/src/components/settings/ai-settings.tsx:176
+msgid "Provider"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:169
+msgid "The service that answers AI requests, and the model it uses."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:191
+msgid "Model"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:197
+#, js-format
+msgid "Default (%s)"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:210 apps/admin/src/components/settings/ai-settings.tsx:224
+msgid "API key"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:215 apps/admin/src/components/settings/ai-settings.tsx:284
+msgid "Remove key"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:225
+msgid "Replace the key"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:236
+msgid "The environment variable wins over a saved key."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:237
+msgid "Stored on this server and never shown again."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:244
+msgid "Daily limit"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:246
+#, js-format
+msgid "%d requests sent today. The count resets at midnight UTC."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:252
+msgid "Requests per day"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:259
+msgid "For the whole site, all plugins together."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:267 apps/admin/src/components/settings/general-settings-form.tsx:484 apps/admin/src/components/settings/settings-form.tsx:98
+msgid "Saving…"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:268 apps/admin/src/components/settings/general-settings-form.tsx:484 apps/admin/src/components/settings/settings-form.tsx:98
+msgid "Save changes"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:276
+msgid "Testing…"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:277
+msgid "Test connection"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:283
+msgid "Remove the API key?"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:290
+msgid "AI features stop working until a new key is saved."
+msgstr ""
+
 #: apps/admin/src/components/settings/general-settings-form.tsx:90
 #, js-format
 msgid "Custom: %s"
@@ -344,10 +477,6 @@ msgstr ""
 
 #: apps/admin/src/components/settings/general-settings-form.tsx:242
 msgid "Install"
-msgstr ""
-
-#: apps/admin/src/components/settings/general-settings-form.tsx:324 apps/admin/src/components/settings/settings-form.tsx:79
-msgid "Could not save your changes."
 msgstr ""
 
 #: apps/admin/src/components/settings/general-settings-form.tsx:336
@@ -447,14 +576,6 @@ msgstr ""
 msgid "Discard"
 msgstr ""
 
-#: apps/admin/src/components/settings/general-settings-form.tsx:484 apps/admin/src/components/settings/settings-form.tsx:98
-msgid "Saving…"
-msgstr ""
-
-#: apps/admin/src/components/settings/general-settings-form.tsx:484 apps/admin/src/components/settings/settings-form.tsx:98
-msgid "Save changes"
-msgstr ""
-
 #: apps/admin/src/components/settings/general-settings-form.tsx:494
 msgid "Settings saved"
 msgstr ""
@@ -487,11 +608,15 @@ msgstr ""
 msgid "Permalinks"
 msgstr ""
 
-#: apps/admin/src/components/settings/settings-nav.tsx:22
+#: apps/admin/src/components/settings/settings-nav.tsx:20
+msgid "AI"
+msgstr ""
+
+#: apps/admin/src/components/settings/settings-nav.tsx:24
 msgid "Scheduled tasks"
 msgstr ""
 
-#: apps/admin/src/components/settings/settings-nav.tsx:38 apps/admin/src/components/shell/admin-shell.tsx:265
+#: apps/admin/src/components/settings/settings-nav.tsx:40 apps/admin/src/components/shell/admin-shell.tsx:265
 msgid ", coming in "
 msgstr ""
 

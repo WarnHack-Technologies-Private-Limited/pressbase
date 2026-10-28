@@ -46,7 +46,12 @@ declare module '@pressbase/hooks' {
 /** Options whose changes never show on the public site. */
 const PRIVATE_OPTIONS = new Set(['pressbase_db_version', 'pressbase_comment_hash_key', 'cron']);
 const isPrivateOption = (name: string) =>
-  PRIVATE_OPTIONS.has(name) || name.startsWith('_transient') || name.startsWith('_site_transient');
+  PRIVATE_OPTIONS.has(name) ||
+  name.startsWith('_transient') ||
+  name.startsWith('_site_transient') ||
+  // Settings → AI and provider keys (ai/client.ts) never show on the public site.
+  name.startsWith('pressbase_ai_') ||
+  name.startsWith('connectors_ai_');
 
 /** Statuses an anonymous visitor can see (the only pages apps/web caches). */
 const isPublic = (status: string) => status === 'publish';

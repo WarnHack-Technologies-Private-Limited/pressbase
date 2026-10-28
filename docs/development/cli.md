@@ -160,6 +160,18 @@ Everything goes through the plugin manager, so migrations, `activate`/`deactivat
 | `cron test` | fails when events are more than ten minutes late (no job worker running) and lists recent failed jobs. wp-cli tests spawning wp-cron.php; Pressbase has a worker instead |
 | `media regenerate [<id>...] [--only-missing] [--skip-delete]` | remakes image sub-sizes from the originals |
 
+### ability and ai
+
+| Command | |
+| --- | --- |
+| `ability list [--category=…] [--namespace=…]` | fields `name`, `label`, `category`, `description` (also `readonly`, `destructive`, `idempotent`, `show_in_rest`, `plugin`) |
+| `ability get <name>` | the ability with its `input_schema` and `output_schema` |
+| `ability run <name> [--input=<json>] [--format=json\|yaml\|plaintext]` | runs it through `execute()`: input validated, permission checked for `--user` (full trust without it). `--input=-` reads standard input |
+| `ability category list` | |
+| `ai test` | sends a tiny prompt to the provider set in Settings → AI; it counts against the daily limit |
+
+See [AI client and Abilities API](../architecture/ai.md).
+
 ### search-replace
 
 ```

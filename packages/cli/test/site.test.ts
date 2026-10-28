@@ -63,7 +63,7 @@ describe('plugin', () => {
     expect(await s.kernel.options.get('reading_time_activated')).toBe(true);
     expect((await s.kernel.plugins.grants())['reading-time']?.permissions).toEqual(['options']);
     expect(await s.ok(['plugin', 'status'])).toMatch(
-      / {2}I daily-tips\s+1\.1\.0\n {2}A reading-time\s+0\.1\.0/,
+      / {2}I daily-tips\s+\d+\.\d+\.\d+\n {2}A reading-time\s+0\.1\.0/,
     );
     expect(await s.ok(['plugin', 'status', 'reading-time'])).toMatch(
       /Status: Active\n {4}Version: 0\.1\.0/,

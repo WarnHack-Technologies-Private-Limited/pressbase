@@ -309,3 +309,37 @@ export const jobs = pgTable(
       .where(sql`name = 'cron' and status = 'pending'`),
   ],
 );
+
+/* -------------------------------------------------------------- AI requests */
+
+/**
+ * One row per request the AI client sends to a provider (v0.7, ADR 0019):
+ * who asked, for which plugin or ability, which provider and model, the token
+ * counts and how long it took. Never the prompt, the output or the key. The
+ * daily request caps count these rows; rows older than 90 days are pruned.
+ */
+export const aiRequests = pgTable(
+  'ai_requests',
+  {
+    id: id(),
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
+    userId: ref('user_id').references(() => users.id, { onDelete: 'set null' }),
+    /** The plugin that sent it through api.ai; null for core. */
+    plugin: varchar('plugin', { length: 64 }),
+    /** The ability it ran for (`pressbase-seo/suggest-meta`), if any. */
+    ability: varchar('ability', { length: 191 }),
+    provider: varchar('provider', { length: 64 }).notNull(),
+    model: varchar('model', { length: 191 }).notNull(),
+    inputTokens: integer('input_tokens').notNull().default(0),
+    outputTokens: integer('output_tokens').notNull().default(0),
+    durationMs: integer('duration_ms').notNull().default(0),
+    /** `ok` or `error`. */
+    status: varchar('status', { length: 20 }).notNull(),
+    /** The error code when it failed (`prompt_timeout`…). */
+    errorCode: varchar('error_code', { length: 100 }),
+  },
+  (t) => [
+    index('ai_requests_created_at_idx').on(t.createdAt),
+    index('ai_requests_plugin_created_at_idx').on(t.plugin, t.createdAt),
+  ],
+);

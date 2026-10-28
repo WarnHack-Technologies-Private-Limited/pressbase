@@ -37,6 +37,7 @@ New here? The [README](../README.md#see-it-in-action) shows Pressbase in action:
 - [Block editor](architecture/block-editor.md): how Gutenberg runs in the admin, api-fetch, hidden blocks, autosave.
 - [Internationalisation](architecture/i18n.md): text domains, `.mo`/`.po`/JSON files, the site's and users' languages, language packs, RTL, translating the admin and the block editor.
 - [Installer](architecture/installer.md): site states, the install flow, configuration.
+- [AI client and Abilities API](architecture/ai.md): `kernel.ai.prompt()`, providers, Settings → AI, caps and the usage log, `wp_register_ability()` and `/wp-abilities/v1`.
 - [Security](architecture/security.md): threat model and protections.
 
 ## Design
