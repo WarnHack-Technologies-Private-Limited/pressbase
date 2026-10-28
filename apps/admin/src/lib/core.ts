@@ -48,4 +48,8 @@ export interface SiteIndex {
   description: string;
   url: string;
   pressbase: { version: string; state: InstallStatus['state'] };
+  /** Site identity, as WordPress's REST index has it (once installed). */
+  site_logo?: number;
+  site_icon?: number;
+  site_icon_url?: string;
 }

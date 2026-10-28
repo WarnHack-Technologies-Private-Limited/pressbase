@@ -43,6 +43,17 @@
   font-weight: var(--weight-semibold);
 }
 
+.siteIcon[data-image="true"] {
+  overflow: hidden;
+  background: var(--color-surface-sunken);
+}
+
+.siteIcon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .siteName {
   min-width: 0;
   font-weight: var(--weight-semibold);

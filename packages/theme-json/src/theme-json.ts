@@ -16,6 +16,7 @@ import {
   VALID_ORIGINS,
   VALID_TOP_LEVEL_KEYS,
 } from './constants';
+import { validateCustomCss } from './sanitize';
 import { appendToSelector, blockStyleVariationFeatureSelector, scopeSelector } from './selectors';
 import type {
   BlockMetadata,
@@ -104,11 +105,18 @@ function migrate(input: ThemeJsonData, origin: Origin): ThemeJsonData {
   return data;
 }
 
-/** Removes CSS values that could escape their declaration, for user-provided data. */
+/**
+ * Removes CSS values that could escape their declaration, for user-provided
+ * data. Custom CSS (`css`) is kept only when it can't close the style element
+ * (validate_custom_css()); who may save it is checked when it is stored.
+ */
 function stripUnsafeValues(tree: JsonObject): JsonObject {
   const out: JsonObject = {};
   for (const [key, value] of Object.entries(tree)) {
-    if (key === 'css') continue;
+    if (key === 'css') {
+      if (typeof value === 'string' && validateCustomCss(value).ok) out[key] = value;
+      continue;
+    }
     if (typeof value === 'string') {
       if (isSafeCssValue(value) && !/url\s*\(/i.test(value)) out[key] = value;
     } else if (isObject(value)) {

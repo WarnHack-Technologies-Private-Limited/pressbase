@@ -50,6 +50,13 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | `template-canvas.php`, `get_the_block_template_html()`, `wp_get_document_title()`, `get_body_class()` | `apps/core/src/frontend/render.ts` | |
 | `WP_REST_Themes_Controller` | `apps/core/src/routes/themes.ts` | Plus theme activation. |
 | `themes.php` | `/admin/appearance` | |
+| `WP_Theme_JSON_Resolver::get_style_variations()`, the site editor's style variation logic | `packages/theme-json/src/style-variations.ts`, `kernel.themes` (`active().variations`) | Full, colour and typography variations; choosing one writes the user's global styles, as in WordPress. |
+| `wp_global_styles` post type, `get_user_data_from_wp_global_styles()`, `get_user_global_styles_post_id()` | `apps/core/src/themes/global-styles.ts` | One post per theme, slug `wp-global-styles-{stylesheet}` (no `wp_theme` term). |
+| `WP_REST_Global_Styles_Controller`, `WP_REST_Global_Styles_Revisions_Controller` | `apps/core/src/routes/global-styles.ts` | Plus `/pressbase/v1/global-styles/preview`. |
+| `WP_Theme_JSON::remove_insecure_properties()`, `wp_filter_global_styles_post()`, `safecss_filter_attr()`, `validate_custom_css()` | `packages/theme-json/src/sanitize.ts` | |
+| Site editor → Styles | `/admin/appearance/styles` | The essentials: variations, colours, type, layout, revisions, live preview. |
+| `site_logo`, `site_icon`, `get_custom_logo()`, `WP_Site_Icon`, `get_site_icon_url()`, `wp_site_icon()` | `apps/core/src/themes/site-identity.ts`, `blocks/library/post-media.ts` (`core/site-logo`) | Icon crops are sub-sizes of the chosen image (`site_icon-512` … `site_icon-32`), not a separate cropped attachment. |
+| Customizer → Site Identity, `options-general.php` site icon | Settings → General, *Site identity* card | |
 | `wp-content/themes/twentytwentyfive` | `themes/twentytwentyfive` | Bundled, unchanged. |
 | `upload.php`, `options-media.php`, the media modal | `/admin/media`, `/admin/settings/media`, `MediaPicker` | |
 | `wp_insert_user`, `wp_update_user`, `wp_delete_user` (with reassign), `validate_username`, `is_email`, `count_users`, `count_many_users_posts` | `apps/core/src/people/users.ts`, `validation.ts` | See [People](people.md). |

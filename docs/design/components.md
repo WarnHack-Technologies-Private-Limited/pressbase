@@ -108,6 +108,23 @@ toast('Could not save.', { tone: 'danger' });
 | `MediaDetails` | `<dialog>`: preview, file facts, URL with Copy, editable alt text / title / caption / description with an explicit Save, and *Delete permanently* behind a `ConfirmDialog`. Arrow keys page between items. Closing with unsaved changes asks first. Full screen on phones. |
 | `MediaPicker` | Choose one item or upload one (it's then selected). `allowedTypes` limits the kinds; `title` and `selectLabel` name the task ("Set featured image"). Double-click chooses at once. With `multiple`, several items are picked in order (numbered tiles, "N selected" footer with **Clear**, Shift+click for a range), and `multipleLabel(n)` names the button ("Create gallery (3)"). |
 
+## Appearance: `components/appearance/`
+
+| Component | Pattern |
+|---|---|
+| `AppearanceSubnav` | Themes · Styles tabs (`aria-current="page"`), as Posts has. |
+| `ThemeList` | Theme cards; the active block theme offers **Edit styles**. |
+| `StylesEditor` | A controls panel (23rem) beside the preview, wider than the usual 1080px column. The panel's head shows the save state ("Unsaved changes" with a dot, or "Saved" with a check, in a polite live region) with *Discard* and the one primary button, **Save**. Below, an ARIA tablist (arrow keys, Home, End): **Styles**, **Colours**, **Type**, **Layout**, **History**. The footer holds *Reset to theme defaults* and a link to the logo and icon. A warning before leaving with unsaved changes. Below 900px the preview sits on top and the tabs stick under the top bar. |
+| Variation cards | Toggle buttons (`aria-pressed`) drawn like the site editor's style previews: the variation's background, a large "Aa" in its heading font and text colour, and up to three accent dots. The selected card gets an accent ring and a check badge — never colour alone. Palettes are strips of five colours; font pairings show "Aa Aa" in the heading and body fonts. The theme's fonts are loaded for the cards from the theme folder. |
+| Colour roles | Background, Text and Accent: a `<fieldset>` each, with the current colour's swatch, name and hex as its legend, palette swatches as real radio inputs, and a native colour picker for any other colour. Choosing an accent also picks the button text colour that reads best on it. A contrast line under the roles ("Text on background: 12.6:1 — easy to read" or a warning icon with "hard to read (aim for 4.5:1 or more)"). The palette list edits each theme colour in place. |
+| Type and layout | Heading and body font selects with a live sample; base size as a segmented control of the theme's sizes plus a slider; content and wide widths as sliders with "Use the theme's 645px" to undo. |
+| History | Saved versions, newest first, with date, author and "Theme defaults" / "Custom styles"; **Preview** loads one into the preview, and Save restores it. |
+| `StylePreview` | The real public page rendered with the unsaved styles (core's preview endpoint), debounced. Two frames take turns so updates never flash; the scroll position is kept. Desktop / Tablet / Phone sizes (scaled to fit); links and search stay inside the preview; "Open page" opens the live page. |
+
+## Settings: site identity
+
+`SiteLogoField` and `SiteIconField` (`components/settings/site-identity-fields.tsx`) sit in General → *Site identity*: a `<fieldset>` each, choosing an image with `MediaPicker`. The logo shows on a sunken, dashed-when-empty well; the icon previews at real size in a browser-tab mock and as a phone home-screen tile, and notes images that aren't square (the centre is used) or are smaller than 512 px. Both save with the rest of the form.
+
 ## People: `components/people/`
 
 | Component | Pattern |

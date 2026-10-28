@@ -1,6 +1,7 @@
 import { ExternalLink } from 'lucide-react';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import { AppearanceSubnav } from '@/components/appearance/appearance-subnav';
 import { ThemeList } from '@/components/appearance/theme-list';
 import { PageHeader } from '@/components/shell/page-header';
 import { Notice } from '@/components/ui/surface';
@@ -33,6 +34,7 @@ export default async function AppearancePage() {
           </a>
         }
       />
+      <AppearanceSubnav />
       {themes.status === 200 ? (
         <ThemeList themes={sortThemes(themes.data)} />
       ) : (

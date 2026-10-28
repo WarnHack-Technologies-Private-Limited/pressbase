@@ -9,7 +9,7 @@ Everything is served under `/wp-json`, as in WordPress:
 
 | Method                   | Route                              | Access           | Purpose                                                           |
 | ------------------------ | ---------------------------------- | ---------------- | ----------------------------------------------------------------- |
-| GET                      | `/wp-json`                         | public           | Site name, description, URL, namespaces, Pressbase version and state. |
+| GET                      | `/wp-json`                         | public           | Site name, description, URL, namespaces, Pressbase version and state; once installed, `site_logo`, `site_icon` and `site_icon_url`, as WordPress's index has them. |
 | GET                      | `/pressbase/v1/install`                | public           | Install state, system checks, whether a setup code is needed.     |
 | POST                     | `/pressbase/v1/install/database-check` | before install   | Test database details.                                            |
 | POST                     | `/pressbase/v1/install`                | before install   | Install the site and sign in the administrator.                   |
@@ -19,7 +19,7 @@ Everything is served under `/wp-json`, as in WordPress:
 | POST                     | `/pressbase/v1/auth/lost-password` | public           | `{ login }` → emails a reset link. Same answer whether or not the account exists. See [People](people.md#password-reset). |
 | POST                     | `/pressbase/v1/auth/check-reset-key` | public         | `{ login, key }` → `200`, or `400 invalid_key` / `expired_key`.   |
 | POST                     | `/pressbase/v1/auth/reset-password` | public          | `{ login, key, password }` → sets the password and logs the user out everywhere. |
-| GET / POST / PUT / PATCH | `/wp/v2/settings`                  | `manage_options` | Read or update registered settings.                               |
+| GET / POST / PUT / PATCH | `/wp/v2/settings`                  | `manage_options` | Read or update registered settings, including `site_logo` and `site_icon` (attachment IDs, `0` for none). |
 | GET                      | `/pressbase/v1/dashboard`              | `read`           | Counts, recent content and system facts for the dashboard.        |
 | GET                      | `/pressbase/v1/post-counts/{type}`     | `edit_{type}s`   | Items per status, for the admin's status tabs (`wp_count_posts`). |
 | GET / POST               | `/wp/v2/posts`, `/wp/v2/pages`         | read: public · write: see below | List and create. Supports WordPress's collection parameters. |
@@ -52,6 +52,12 @@ Everything is served under `/wp-json`, as in WordPress:
 | GET                      | `/pressbase/v1/render?url=/path/`      | public (drafts and private posts need the right capability) | A page of the public site: `{ status, headers, html }`. Used by `apps/web`. See [Themes](themes.md). |
 | GET                      | `/wp/v2/themes`, `/wp/v2/themes/{stylesheet}` | `switch_themes`; `edit_posts` for the active theme (`?status=active`) | Installed themes (`WP_REST_Themes_Controller` fields: `stylesheet`, `template`, `name`, `version`, `screenshot`, `status`, `is_block_theme`…). |
 | POST                     | `/pressbase/v1/themes/{stylesheet}/activate` | `switch_themes` | Activates a block theme (`switch_theme()`). |
+| GET                      | `/wp/v2/global-styles/themes/{stylesheet}` | `edit_posts` (any type) or `edit_theme_options` | The active theme's `settings` (presets keyed by origin) and `styles`, with `_links["wp:theme-file"]` for `file:./` URLs. Other themes: `404 rest_theme_not_found`. |
+| GET                      | `/wp/v2/global-styles/themes/{stylesheet}/variations` | as above | The theme's style variations (`styles/**/*.json` without `blockTypes`): full, colour-only and typography-only, each with `title`, `settings`, `styles`. |
+| GET                      | `/wp/v2/global-styles/{id}`            | `read_post` (`edit_posts`); `context=edit` needs `edit_post` | User global styles: `id`, `title`, `settings`, `styles`, `_links` (`version-history` with `count`, `wp:action-publish`, `wp:action-edit-css`). The active theme's ID is in `/wp/v2/themes?status=active` → `_links["wp:user-global-styles"]` (created on first request). |
+| POST / PUT / PATCH       | `/wp/v2/global-styles/{id}`            | `edit_post` (`edit_theme_options`) | Saves `styles` and/or `settings` (a missing one keeps the stored value) and `title`. `styles.css` is checked by `validate_custom_css()`; for users without `unfiltered_html`, unsafe values are removed (`remove_insecure_properties()`) and custom CSS is dropped. Keeps a revision. |
+| GET                      | `/wp/v2/global-styles/{id}/revisions`, `…/revisions/{revision}` | `edit_post` on the parent | Saved versions, newest first: `id`, `author`, `date(_gmt)`, `modified(_gmt)`, `parent`, `settings`, `styles`. `page`, `per_page`, `offset`; `X-WP-Total`, `X-WP-TotalPages`. |
+| POST                     | `/pressbase/v1/global-styles/preview`  | `edit_theme_options` | Renders a public page (`url`, default `/`) with unsaved `styles` / `settings` over the stored ones, sanitised as a save would be: `{ status, headers, html }` with `cache-control: no-store`. **Never stores anything.** |
 | GET / HEAD               | `/wp-content/themes/{theme}/{path}`, `/wp-includes/{path}` | public | Theme assets and WordPress's front-end CSS (outside `/wp-json`). |
 | POST                     | `/wp-login.php?action=postpass` | public | The post password form: sets the `wp-postpass` cookie and redirects back. |
 | GET / POST               | `/wp/v2/blocks`                        | read: `edit_posts` · create: `publish_posts` | Synced patterns (`wp_block`). Same parameters as posts. |
@@ -185,6 +191,11 @@ The shape matches WordPress:
 | `rest_cannot_manage_themes`        | 401 / 403 | Activating a theme without `switch_themes`.                                |
 | `rest_theme_not_found`             | 404       | No installed theme with that folder name.                                  |
 | `pressbase_theme_not_block_theme`  | 400       | Activating a theme without `templates/index.html`.                        |
+| `rest_cannot_read_global_styles`   | 401 / 403 | Theme global styles or variations without `edit_posts` / `edit_theme_options`. |
+| `rest_global_styles_not_found`     | 404       | No `wp_global_styles` post with that ID.                                   |
+| `rest_forbidden_context`, `rest_cannot_view` | 401 / 403 | Reading user global styles (`context=edit` needs `edit_post`).    |
+| `rest_custom_css_illegal_markup`, `rest_custom_css_invalid_type` | 400 | `styles.css` that could close the `<style>` element, or isn't a string. |
+| `rest_revision_invalid_page_number`, `rest_revision_invalid_offset_number` | 400 | Revisions past the last page or offset. |
 | `pressbase_db_*`                   | 400       | Installer database problems. `data.hint` holds the next step for the user. |
 | `pressbase_already_installed`      | 409       | Installer called on an installed site.                                     |
 

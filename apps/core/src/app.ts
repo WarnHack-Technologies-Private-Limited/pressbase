@@ -14,6 +14,7 @@ import { blockRoutes } from './routes/blocks';
 import { commentCountRoutes, commentsRoutes } from './routes/comments';
 import { commentsPostRoutes } from './routes/comments-post';
 import { dashboardRoutes, postCountRoutes } from './routes/dashboard';
+import { globalStylesRoutes } from './routes/global-styles';
 import { installRoutes } from './routes/install';
 import { mediaRoutes } from './routes/media';
 import { peopleRoutes } from './routes/people';
@@ -25,6 +26,7 @@ import { publicFileRoutes, themeRoutes } from './routes/themes';
 import { typeRoutes } from './routes/types';
 import { uploadsRoutes } from './routes/uploads';
 import { userRoutes } from './routes/users';
+import { siteIdentityIndex } from './themes/site-identity';
 import { PRESSBASE_VERSION } from './version';
 
 /**
@@ -67,6 +69,8 @@ export function createApp(kernel: Kernel) {
       url: ready ? await kernel.options.get<string>('home', '') : '',
       namespaces: ['pressbase/v1', 'wp/v2'],
       pressbase: { version: PRESSBASE_VERSION, state: kernel.state },
+      // site_logo, site_icon, site_icon_url, as WordPress's index has them.
+      ...(ready ? await siteIdentityIndex(kernel) : {}),
     });
   });
 
@@ -125,6 +129,11 @@ export function createApp(kernel: Kernel) {
   // password form outside /wp-json. See docs/architecture/themes.md, ADR 0007.
   installed.route('/', themeRoutes(kernel));
   app.route('/', publicFileRoutes(kernel));
+
+  // Global styles (v0.4): /wp/v2/global-styles (theme, variations, user styles,
+  // revisions) and the live preview, /pressbase/v1/global-styles/preview.
+  // See docs/architecture/themes.md#global-styles.
+  installed.route('/', globalStylesRoutes(kernel));
 
   api.route('/', installed);
 
