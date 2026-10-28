@@ -50,6 +50,9 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | `template-canvas.php`, `get_the_block_template_html()`, `wp_get_document_title()`, `get_body_class()` | `apps/core/src/frontend/render.ts` | |
 | `WP_REST_Themes_Controller` | `apps/core/src/routes/themes.ts` | Plus theme activation. |
 | `themes.php` | `/admin/appearance` | |
+| `register_post_type( 'wp_navigation' )`, `WP_Navigation_Fallback`, `WP_REST_Navigation_Fallback_Controller` | `apps/core/src/content/post-types.ts`, `content/navigation.ts`, `routes/navigation.ts` | The header's menu is chosen with the `pressbase_navigation_fallback` option. See [Navigation](navigation.md). |
+| `blocks/navigation.php`, `navigation-link.php`, `navigation-submenu.php`, `home-link.php`, `view.js` | `apps/core/src/blocks/library/navigation.ts` | A small inline script instead of the Interactivity API. |
+| Site editor → Navigation, `nav-menus.php` | `/admin/appearance/menus` | |
 | `wp-content/themes/twentytwentyfive` | `themes/twentytwentyfive` | Bundled, unchanged. |
 | `upload.php`, `options-media.php`, the media modal | `/admin/media`, `/admin/settings/media`, `MediaPicker` | |
 | `wp_insert_user`, `wp_update_user`, `wp_delete_user` (with reassign), `validate_username`, `is_email`, `count_users`, `count_many_users_posts` | `apps/core/src/people/users.ts`, `validation.ts` | See [People](people.md). |
@@ -70,7 +73,8 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | WordPress                                      | Pressbase (planned)                             | Release |
 | ---------------------------------------------- | ------------------------------------------- | ------- |
 | Autosave | Autosaves endpoint, with the block editor | v0.3 |
-| Site editor (`wp_template`, `wp_global_styles`, `wp_navigation`) | Admin site editor | later |
+| Site editor (`wp_template`, `wp_global_styles`) | Admin site editor | later |
+| Classic menus (`nav_menu`, `/wp/v2/menus`, `WP_Classic_To_Block_Menu_Converter`) | Converted to `wp_navigation` by the importer | v0.6 |
 | Plugins API, `activate_plugin`                 | Plugin loader + `plugin.json`               | v0.5    |
 | `wp-cron.php`                                  | pg-boss job queue                           | v0.5    |
 | Importer, wp-cli                               | Migration tool, `pressbase` CLI                 | v0.6    |

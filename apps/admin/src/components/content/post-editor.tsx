@@ -373,6 +373,8 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
       setBusy(label);
       setError(undefined);
       try {
+        // Menus edited through a Navigation block in the post are saved with it.
+        await editor.current?.saveMenus();
         // New tags are created first, so the post can reference their IDs.
         const tagIds: number[] = [];
         const tags: TagToken[] = [];

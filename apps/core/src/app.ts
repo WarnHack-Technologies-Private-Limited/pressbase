@@ -16,6 +16,7 @@ import { commentsPostRoutes } from './routes/comments-post';
 import { dashboardRoutes, postCountRoutes } from './routes/dashboard';
 import { installRoutes } from './routes/install';
 import { mediaRoutes } from './routes/media';
+import { navigationRoutes } from './routes/navigation';
 import { peopleRoutes } from './routes/people';
 import { postsRoutes } from './routes/posts';
 import { searchRoutes } from './routes/search';
@@ -119,6 +120,13 @@ export function createApp(kernel: Kernel) {
     app.use(path, requireInstalled, loadSessionUser);
     app.route(path, commentsPostRoutes());
   }
+
+  // Navigation menus (v0.4): the posts controller for wp_navigation at
+  // /wp/v2/navigation (saves go through kernel.posts, so save_post & co fire),
+  // plus the navigation fallback routes. See docs/architecture/navigation.md.
+  const navigation = kernel.postTypes.get('wp_navigation');
+  if (navigation) installed.route(`/wp/v2/${navigation.restBase}`, postsRoutes(navigation));
+  installed.route('/', navigationRoutes());
 
   // Themes and the public site (v0.4): /pressbase/v1/render, /wp/v2/themes and
   // theme activation, plus theme files, WordPress's front-end CSS and the post

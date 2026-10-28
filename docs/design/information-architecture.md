@@ -34,6 +34,7 @@ Items the user can't access are **hidden, not disabled**, as in WordPress. Items
 | `/admin/comments`        | Comments. Filters in the URL: `?comment_status=moderated&s=spam&paged=2`; `?c=12` opens one comment for editing (themes' "Edit" links) |
 | `/admin/{section}`       | Sections that aren't built yet show what's coming                  |
 | `/admin/settings/{page}` | Settings: general, writing, reading, discussion, media, permalinks |
+| `/admin/appearance`, `/admin/appearance/menus` | Themes; Menus (`edit_theme_options`), reached through the Appearance sub-navigation |
 
 URLs are nouns, lowercase and stable. The equivalent WordPress screens (`edit.php`, `options-general.php`) will redirect here once the public site exists.
 
@@ -47,3 +48,7 @@ The dashboard answers three questions, in this order:
 ## Settings
 
 Settings follow WordPress's screens one to one: General, Writing, Reading, Discussion, Media, Permalinks. Inside a screen, fields are grouped into cards by the question the user is answering (_Site identity_, _Address and contact_, _Date and time_), not by storage.
+
+## Appearance
+
+Appearance has a sub-navigation, like Posts: **Themes** (`switch_themes`) and **Menus** (`edit_theme_options`). Menus is WordPress's *Appearance → Menus*, rebuilt for block themes: it edits `wp_navigation` menus and chooses the one the theme's header shows, without opening a site editor. See [Navigation](../architecture/navigation.md).

@@ -92,7 +92,7 @@ Ported from `wp-includes/blocks/*.php`, with the same markup and class names so 
 | `core/categories` | `kernel.terms` | List (with hierarchy and counts) or dropdown; any taxonomy. |
 | `core/archives` | posts by month | Monthly or yearly, list or dropdown, with counts. |
 | `core/tag-cloud` | `kernel.terms` | Sizes scaled as `wp_generate_tag_cloud()` does. |
-| `core/page-list` | published pages | Nested; navigation classes when inside a Navigation block. |
+| `core/page-list` | published pages | Nested; navigation classes, the current page (`current-menu-item`, `aria-current`) and its ancestors, and overlay colours on submenus when inside a Navigation block. |
 | `core/search` | — | The search form; width, radius and custom colours. |
 | `core/site-title`, `core/site-tagline` | options | Escaped on output. |
 | `core/loginout` | current user | Links to the admin's login screen; "login as form" shows the link. |
@@ -108,7 +108,7 @@ Ported from `wp-includes/blocks/*.php`, with the same markup and class names so 
 
 | `core/template-part`, `core/pattern`, `core/post-content` | the active theme, patterns, the post | Theme templates. See [Themes](themes.md#template-blocks). |
 | `core/query`, `core/post-template`, `core/query-pagination` (+ `-previous`, `-next`, `-numbers`), `core/query-title`, `core/query-no-results`, `core/term-description` | the main query or `queryPosts` | `inherit` uses the page's main query. |
-| `core/navigation`, `core/navigation-link`, `core/navigation-submenu`, `core/home-link` | pages, `wp_navigation` | Page-list fallback, responsive overlay with a tiny script and a no-JS fallback. |
+| `core/navigation`, `core/navigation-link`, `core/navigation-submenu`, `core/home-link` | `wp_navigation`, pages | A menu by `ref`, its own items, or the fallback (chosen menu, newest menu, page list). Accessible submenus, current items, links to unpublished posts hidden, responsive overlay with a tiny script and a no-JS fallback. See [Navigation](navigation.md). |
 | `core/post-featured-image`, `core/post-navigation-link`, `core/read-more`, `core/post-author`, `core/avatar`, `core/site-logo` | media, adjacent posts, users | Avatars are initials, never Gravatar. |
 
 Comment block metadata lives in `apps/core/src/blocks/comment-metadata.ts`. Render calls can pass `query` (the page's query variables) for the comment blocks; see [Comments](comments.md#showing-comments-blocks).

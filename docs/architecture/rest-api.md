@@ -54,6 +54,11 @@ Everything is served under `/wp-json`, as in WordPress:
 | POST                     | `/pressbase/v1/themes/{stylesheet}/activate` | `switch_themes` | Activates a block theme (`switch_theme()`). |
 | GET / HEAD               | `/wp-content/themes/{theme}/{path}`, `/wp-includes/{path}` | public | Theme assets and WordPress's front-end CSS (outside `/wp-json`). |
 | POST                     | `/wp-login.php?action=postpass` | public | The post password form: sets the `wp-postpass` cookie and redirects back. |
+| GET / POST               | `/wp/v2/navigation`                    | read: public for published menus · create: `edit_theme_options` | Navigation menus (`wp_navigation`). The posts controller; same parameters as posts. `OPTIONS` answers with an `Allow` header. See [Navigation](navigation.md). |
+| GET / POST / PUT / PATCH / DELETE | `/wp/v2/navigation/{id}`      | `edit_theme_options` to write | One menu; `Allow` header, revisions at `…/revisions`. |
+| GET                      | `/wp-block-editor/v1/navigation-fallback` | `edit_theme_options` | The menu a Navigation block without one uses, created from the page list when there's none (`WP_REST_Navigation_Fallback_Controller`). `?_embed` embeds it. |
+| GET / PUT                | `/pressbase/v1/navigation-fallback`    | `edit_theme_options` | Which menu the header (ref-less Navigation blocks) shows: `{ id, current }`; `PUT { id }`. |
+| POST                     | `/pressbase/v1/navigation-preview`     | `edit_theme_options` | A public page rendered with unsaved menu markup in the header, for Appearance → Menus. |
 | GET / POST               | `/wp/v2/blocks`                        | read: `edit_posts` · create: `publish_posts` | Synced patterns (`wp_block`). Same parameters as posts. |
 | GET / POST / PUT / PATCH / DELETE | `/wp/v2/blocks/{id}`          | `edit_post` / `delete_post` | One synced pattern: `title.raw`, `content.raw`, `wp_pattern_sync_status`; write it with `meta.wp_pattern_sync_status`. |
 
@@ -63,7 +68,7 @@ Routes other than the index and installer return `503 pressbase_not_installed` u
 
 The same parameters as WordPress: `context`, `page`, `per_page` (max 100), `search`, `after`, `before`, `modified_after`, `modified_before`, `author`, `author_exclude`, `include`, `exclude`, `offset`, `order`, `orderby` (`date`, `modified`, `title`, `slug`, `id`, `include`, `author`, `parent`, `relevance`, plus `menu_order` for pages), `slug`, `status`, `sticky`, `parent`, `parent_exclude`, `menu_order`, and one filter per taxonomy (`categories`, `categories_exclude`, `tags`, `tags_exclude`). List parameters accept `a,b`, `a[]=x&a[]=y` or repeated keys.
 
-Responses carry `X-WP-Total`, `X-WP-TotalPages` and a `Link` header with `prev` and `next`.
+Responses carry `X-WP-Total`, `X-WP-TotalPages` and a `Link` header with `prev` and `next`. `OPTIONS` on a collection or an item answers with an `Allow` header listing the methods the current user may use (`rest_send_allow_header()`); single items send it with `GET` too, and edit-context items carry it as `_links.self[0].targetHints.allow`. core-data's `canUser()` reads both. The same controller serves `/wp/v2/navigation`.
 
 ### Media
 

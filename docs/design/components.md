@@ -108,6 +108,15 @@ toast('Could not save.', { tone: 'danger' });
 | `MediaDetails` | `<dialog>`: preview, file facts, URL with Copy, editable alt text / title / caption / description with an explicit Save, and *Delete permanently* behind a `ConfirmDialog`. Arrow keys page between items. Closing with unsaved changes asks first. Full screen on phones. |
 | `MediaPicker` | Choose one item or upload one (it's then selected). `allowedTypes` limits the kinds; `title` and `selectLabel` name the task ("Set featured image"). Double-click chooses at once. With `multiple`, several items are picked in order (numbered tiles, "N selected" footer with **Clear**, Shift+click for a range), and `multipleLabel(n)` names the button ("Create gallery (3)"). |
 
+## Appearance: `components/appearance/`
+
+| Component | Pattern |
+|---|---|
+| `AppearanceSubnav` | Themes · Menus tabs, each shown only with its capability. |
+| `MenuEditor` | One menu at a time: a select to switch (asks before discarding changes), **New menu**, the name, and **Use in the header** (or an "In the header" badge). The structure is a tree of item rows: a drag handle, then the label with its type ("Page", "Custom link · Opens in a new tab") as a disclosure button. The handle moves the item with the arrow keys (↑ ↓ among siblings, → into the submenu above, ← out), and the open panel has the same moves as labelled buttons ("Into submenu of “About”"), WordPress's classic menu pattern. Drop targets show a line (before, after) or an outline (inside). Moves are announced politely and focus stays on the control used. Removing an item offers Undo. Save bar as in Settings; **Delete menu** asks first. Empty state: **Create a menu from your pages**. |
+| *Add items* card | Segmented tabs (Pages, Posts, Categories, Link) with arrow-key navigation; search results as checkboxes and one **Add to menu** button; custom links validate the address (web, path, `mailto:`, `tel:`) next to the field. Sticky beside the menu on wide screens. |
+| `MenuPreview` | The site's header with the unsaved menu, in a sandboxed frame scaled from a 1280px (desktop) or 390px (mobile) viewport; a Desktop/Mobile segmented control (`aria-pressed`). Links are inert; the menu button works, so the overlay can be tried. |
+
 ## People: `components/people/`
 
 | Component | Pattern |

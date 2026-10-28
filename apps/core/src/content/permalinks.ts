@@ -72,6 +72,11 @@ export async function permalink(
   ctx: PermalinkContext,
 ): Promise<string> {
   const isPublic = post.status === 'publish';
+  // get_post_permalink() for types without public URLs (wp_navigation, wp_block).
+  const type = kernel.postTypes.get(post.type);
+  if (type && !type.public && !['post', 'page'].includes(type.name)) {
+    return `${ctx.home}/?post_type=${post.type}&p=${post.id}`;
+  }
   const plain = `${ctx.home}/?${post.type === 'page' ? 'page_id' : 'p'}=${post.id}`;
   if (!isPublic || !ctx.structure) return plain;
 

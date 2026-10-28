@@ -219,4 +219,34 @@ export function registerCorePostTypes(registry: PostTypeRegistry): void {
     },
     true,
   );
+  // Navigation menus (v0.4): block markup for core/navigation, edited in
+  // Appearance → Menus. WordPress's arguments: not public, served at
+  // /wp/v2/navigation, every capability but `read` mapped to edit_theme_options.
+  // See docs/architecture/navigation.md.
+  registry.register(
+    'wp_navigation',
+    {
+      label: 'Navigation Menus',
+      singularLabel: 'Navigation Menu',
+      description: 'Navigation menus that can be inserted into your site.',
+      public: false,
+      showInRest: true,
+      restBase: 'navigation',
+      capabilities: {
+        edit_others_posts: 'edit_theme_options',
+        delete_posts: 'edit_theme_options',
+        publish_posts: 'edit_theme_options',
+        create_posts: 'edit_theme_options',
+        read_private_posts: 'edit_theme_options',
+        delete_private_posts: 'edit_theme_options',
+        delete_published_posts: 'edit_theme_options',
+        delete_others_posts: 'edit_theme_options',
+        edit_private_posts: 'edit_theme_options',
+        edit_published_posts: 'edit_theme_options',
+        edit_posts: 'edit_theme_options',
+      },
+      supports: ['title', 'editor', 'revisions'],
+    },
+    true,
+  );
 }

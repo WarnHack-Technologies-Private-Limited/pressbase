@@ -180,7 +180,7 @@ With `/%postname%/`-style structures, pages are tried before posts ("verbose pag
 | `core/query`, `core/post-template` | `inherit: true` shows the main query; other queries run `build_query_vars_from_query_block()` and paginate with `?query-{id}-page=N`. Items get `get_post_class()`. |
 | `core/query-pagination` (+ `-previous`, `-next`, `-numbers`) | `paginate_links()` markup, arrows, `/page/N/` links. |
 | `core/query-title`, `core/query-no-results`, `core/term-description` | Archive titles with WordPress's prefixes (`Category: <span>…</span>`). |
-| `core/navigation`, `-link`, `-submenu`, `core/home-link` | WordPress's markup. Without items, the newest `wp_navigation` menu (once that post type exists) or a page list. The responsive overlay opens with a small inline script; a `<noscript>` style shows the items when JavaScript is off. Current items get `current-menu-item` and `aria-current`. |
+| `core/navigation`, `-link`, `-submenu`, `core/home-link`, `core/page-list` | WordPress's markup. A `wp_navigation` menu by `ref`; without a `ref` or items (Twenty Twenty-Five's header), the menu chosen in Appearance → Menus, else the newest menu, else a page list. Accessible submenu toggles (`aria-expanded`), the responsive overlay as a modal dialog, a small inline script instead of the Interactivity API, and a `<noscript>` style so menus work without JavaScript. Current items get `current-menu-item` and `aria-current`. See [Navigation](navigation.md). |
 | `core/post-featured-image` | `wp_get_attachment_image()` with `srcset`, aspect ratio, `fetchpriority="high"` on the first image, lazy loading after. |
 | `core/post-navigation-link` | Previous (older) and next (newer) posts, with arrows and labels. |
 | `core/read-more`, `core/post-author`, `core/avatar`, `core/site-logo` | Avatars are initials on a colour, as an inline SVG: no Gravatar request, so no reader's or author's email hash leaves the site. The site logo renders once a `site_logo` option exists. |
@@ -199,7 +199,7 @@ Anything a theme does in `functions.php` doesn't happen; keep styles in `theme.j
 
 ## Not yet
 
-- The site editor: editing templates, parts, global styles and navigation menus (`wp_template`, `wp_template_part`, `wp_global_styles`, `wp_navigation` post types).
+- The site editor: editing templates, parts and global styles (`wp_template`, `wp_template_part`, `wp_global_styles` post types). Navigation menus (`wp_navigation`) are edited in Appearance → Menus; see [Navigation](navigation.md).
 - Theme style variations (`styles/*.json`), responsive style states, duotone.
 - Comments blocks (being built separately; they render nothing until registered), RSS feeds, the admin bar, `wp_head` hooks for plugins, oEmbed.
 - Post formats, sticky-post styling beyond ordering, attachment pages, custom post type archives.
