@@ -165,7 +165,8 @@ const listArgs = z.object({
 
 const text = (max: number) => z.string().max(max, `Use ${max} characters or fewer.`);
 
-const writeBody = z.object({
+/** The fields a create or update accepts (also used by `pressbase user create|update`). */
+export const userWriteBody = z.object({
   username: z.string().optional(),
   name: text(250).optional(),
   first_name: text(250).optional(),
@@ -382,7 +383,7 @@ export function userRoutes() {
       );
     }
     const raw = await readJson(c);
-    const parsed = writeBody.safeParse(raw ?? {});
+    const parsed = userWriteBody.safeParse(raw ?? {});
     if (!parsed.success) return invalidParams(c, parsed.error);
     const body = parsed.data;
     if ((raw as { id?: unknown })?.id) {
@@ -439,7 +440,7 @@ export function userRoutes() {
     const existing = await findUser(kernel, id);
     if (!existing) return restError(c, 404, 'rest_user_invalid_id', 'Invalid user ID.');
 
-    const parsed = writeBody.safeParse((await readJson(c)) ?? {});
+    const parsed = userWriteBody.safeParse((await readJson(c)) ?? {});
     if (!parsed.success) return invalidParams(c, parsed.error);
     const { send_user_notification: _, meta: rawMeta, ...body } = parsed.data;
     const meta = parseUserMetaUpdate(rawMeta ?? {});

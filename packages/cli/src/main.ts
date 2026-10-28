@@ -149,9 +149,9 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
     kernel: options.kernel,
     config: options.kernel?.config,
     user: null,
+    purgeWarnings: [],
   };
   const ownsKernel = !options.kernel;
-  let stopNotifier: (() => Promise<void>) | undefined;
   const print = (text: string) => io.stdout.write(text.endsWith('\n') ? text : `${text}\n`);
 
   const loadConfig = async () => {
@@ -166,7 +166,16 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
       session.kernel = await bootKernel(await loadConfig());
       const revalidate = session.kernel.config.revalidate;
       // Changes made here purge the public site's page cache, as the server's do.
-      if (revalidate) stopNotifier = startRevalidationNotifier(session.kernel, revalidate);
+      if (revalidate) {
+        session.stopNotifier = startRevalidationNotifier(session.kernel, {
+          ...revalidate,
+          log: (message) => {
+            const text = message.replace(/^\[cache\] /, '');
+            session.purgeWarnings.push(text);
+            io.stderr.write(`Warning: ${text}\n`);
+          },
+        });
+      }
     }
     return session.kernel;
   };
@@ -233,6 +242,11 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
     }
 
     await spec.run(new Context(spec, args, assoc, session));
+    if (session.serverMayBeStale) {
+      io.stderr.write(
+        'Warning: A Pressbase server running on this database keeps settings, plugins and the theme in memory. Restart it to pick up this change.\n',
+      );
+    }
     return 0;
   } catch (error) {
     if (error instanceof CliError) {
@@ -248,7 +262,7 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
     }
     return 1;
   } finally {
-    await stopNotifier?.().catch(() => {});
+    await session.stopNotifier?.().catch(() => {});
     if (ownsKernel) await session.kernel?.shutdown().catch(() => {});
   }
 }

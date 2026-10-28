@@ -87,6 +87,12 @@ export interface Session {
   config?: Config;
   kernel?: Kernel;
   user: CurrentUser | null;
+  /** Sends pending page-cache purges and waits for them (see main.ts). */
+  stopNotifier?: () => Promise<void>;
+  /** Purges the public site refused or couldn't receive. */
+  purgeWarnings: string[];
+  /** Set when the command changed something a running server keeps in memory. */
+  serverMayBeStale?: boolean;
 }
 
 /**
@@ -300,6 +306,27 @@ export class Context {
     } finally {
       rl.close();
     }
+  }
+
+  /**
+   * Sends the page-cache purges this command caused now, rather than on
+   * exit, and returns the problems delivering them (empty when all arrived).
+   */
+  async flushPurges(): Promise<string[]> {
+    const stop = this.session.stopNotifier;
+    this.session.stopNotifier = undefined;
+    await stop?.();
+    return [...this.session.purgeWarnings];
+  }
+
+  /**
+   * Notes a change to settings, plugins or the theme. A server on the same
+   * PostgreSQL database keeps its own copy of those in memory, so the
+   * command ends with a reminder to restart it. (With the built-in
+   * database no server can be running: the lock guarantees it.)
+   */
+  changedServerState(): void {
+    if (this.session.kernel?.connection.driver === 'postgres') this.session.serverMayBeStale = true;
   }
 
   /* ------------------------------------------------------- permissions */
