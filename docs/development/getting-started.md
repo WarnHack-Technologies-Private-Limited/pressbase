@@ -52,6 +52,7 @@ With `DATABASE_URL` set, the installer skips the database step. Without it, you 
 | -------------------------------- | ------------------------------------------------------------ |
 | `pnpm dev`                       | Run everything in watch mode                                 |
 | `pnpm test`                      | All test suites                                              |
+| `pnpm e2e`                       | Browser tests against production builds (run `pnpm build` first; see [Testing](testing.md#end-to-end-tests)) |
 | `pnpm typecheck`                 | TypeScript across the workspace                              |
 | `pnpm lint` / `pnpm format`      | Check / fix formatting and lint (Biome)                      |
 | `pnpm db:generate`               | Create a migration after editing `packages/db/src/schema.ts` |

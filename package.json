@@ -30,6 +30,7 @@
     "build": "turbo run build",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
+    "e2e": "pnpm --filter @pressbase/e2e e2e",
     "lint": "biome check .",
     "format": "biome check --write .",
     "db:generate": "pnpm --filter @pressbase/db generate",
