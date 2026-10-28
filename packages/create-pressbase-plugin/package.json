@@ -1,0 +1,42 @@
+{
+  "name": "create-pressbase-plugin",
+  "version": "0.5.0",
+  "description": "Scaffolds a Pressbase plugin: plugin.json, TypeScript with @pressbase/plugin-sdk, a build and an installable .zip.",
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WarnHack-Technologies-Private-Limited/pressbase.git",
+    "directory": "packages/create-pressbase-plugin"
+  },
+  "keywords": [
+    "pressbase",
+    "plugin",
+    "scaffold",
+    "create"
+  ],
+  "bin": {
+    "create-pressbase-plugin": "./bin.mjs"
+  },
+  "files": [
+    "bin.mjs",
+    "src",
+    "template",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p ."
+  },
+  "devDependencies": {
+    "@pressbase/core": "workspace:*",
+    "@pressbase/plugin-sdk": "workspace:*",
+    "@types/node": "26.6.5",
+    "esbuild": "0.28.2",
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  }
+}

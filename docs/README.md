@@ -49,6 +49,7 @@ New here? The [README](../README.md#see-it-in-action) shows Pressbase in action:
 - [Getting started](development/getting-started.md): run Pressbase locally.
 - [Testing](development/testing.md): what to test and how.
 - [Conventions](development/conventions.md): code style and patterns.
+- [Writing plugins](development/writing-plugins.md): `create-pressbase-plugin`, the SDK, building and packing a plugin.
 
 ## Decisions
 

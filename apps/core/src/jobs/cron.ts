@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { schema } from '@pressbase/db';
-import { and, asc, between, eq, type SQL, sql } from 'drizzle-orm';
+import { and, asc, between, eq, or, type SQL, sql } from 'drizzle-orm';
 import type { Kernel } from '../kernel';
 import type { Job, JobContext } from './queue';
 
@@ -26,6 +26,21 @@ import type { Job, JobContext } from './queue';
  */
 
 export const CRON_JOB = 'cron';
+
+/**
+ * The job name of a plugin's cron events (`cron:{slug}`). They are stored
+ * and listed like core's, but run only while the plugin's runner is
+ * registered: a deactivated plugin's events wait, pending, until it is
+ * activated again (see docs/architecture/jobs.md#plugins).
+ */
+export function pluginCronJob(slug: string): string {
+  return `${CRON_JOB}:${slug}`;
+}
+
+export interface CronOptions {
+  /** A plugin's slug: its events are `cron:{slug}` jobs and its queries see only them. */
+  owner?: string;
+}
 
 /** wp_schedule_*()'s event object. */
 export interface CronEvent {
@@ -124,10 +139,34 @@ const singletonKey = (hook: string, key: string, timestamp: number) =>
   `cron:${hook}:${key}:${timestamp}`;
 
 export class Cron {
-  constructor(private readonly kernel: Kernel) {
-    kernel.jobs.register<CronJobData>(CRON_JOB, (data, context) => this.#run(data, context), {
-      maxAttempts: 1,
-    });
+  /** The job name events are stored under: `cron`, or `cron:{slug}` for a plugin. */
+  readonly jobName: string;
+  readonly #owner: string | undefined;
+
+  constructor(
+    private readonly kernel: Kernel,
+    options: CronOptions = {},
+  ) {
+    this.#owner = options.owner;
+    this.jobName = options.owner ? pluginCronJob(options.owner) : CRON_JOB;
+    // Core's runner is always there; a plugin's is registered while it is loaded.
+    if (!options.owner) this.registerRunner();
+  }
+
+  /** Registers the handler that runs this instance's events. Returns a function that removes it. */
+  registerRunner(): () => void {
+    return this.kernel.jobs.register<CronJobData>(
+      this.jobName,
+      (data, context) => this.#run(data, context),
+      { maxAttempts: 1 },
+    );
+  }
+
+  /** Core's cron sees every event, plugins' included; a plugin's sees only its own. */
+  #names(): SQL {
+    const name = schema.jobs.name;
+    if (this.#owner) return eq(name, this.jobName);
+    return or(eq(name, CRON_JOB), sql`left(${name}, 5) = 'cron:'`) as SQL;
   }
 
   /** wp_get_schedules(): the `cron_schedules` filter's additions, then the built-in ones. */
@@ -318,7 +357,7 @@ export class Cron {
       .delete(schema.jobs)
       .where(
         and(
-          eq(schema.jobs.name, CRON_JOB),
+          this.#names(),
           eq(schema.jobs.status, 'pending'),
           eq(schema.jobs.singletonKey, singletonKey(hook, cronArgsKey(args), ts)),
         ),
@@ -469,7 +508,7 @@ export class Cron {
       ...(event.interval ? { interval: event.interval } : {}),
     };
     // Same hook, arguments and time replace the stored event, as in WordPress's cron array.
-    await this.kernel.jobs.enqueue(CRON_JOB, data, {
+    await this.kernel.jobs.enqueue(this.jobName, data, {
       runAt: new Date(event.timestamp * 1000),
       singletonKey: singletonKey(event.hook, key, event.timestamp),
       replace: true,
@@ -491,7 +530,7 @@ export class Cron {
     return this.kernel.db
       .select()
       .from(schema.jobs)
-      .where(and(eq(schema.jobs.name, CRON_JOB), eq(schema.jobs.status, 'pending'), ...conditions))
+      .where(and(this.#names(), eq(schema.jobs.status, 'pending'), ...conditions))
       .orderBy(asc(schema.jobs.runAt), asc(schema.jobs.id))
       .$dynamic();
   }
@@ -499,7 +538,7 @@ export class Cron {
   async #delete(condition: SQL): Promise<number> {
     const deleted = await this.kernel.db
       .delete(schema.jobs)
-      .where(and(eq(schema.jobs.name, CRON_JOB), eq(schema.jobs.status, 'pending'), condition))
+      .where(and(this.#names(), eq(schema.jobs.status, 'pending'), condition))
       .returning({ id: schema.jobs.id });
     return deleted.length;
   }

@@ -133,6 +133,8 @@ export const manifestSchema = z
   });
 
 export type PluginManifest = z.infer<typeof manifestSchema>;
+/** plugin.json as written: optional fields may be left out. */
+export type PluginManifestInput = z.input<typeof manifestSchema>;
 
 export type ManifestResult =
   | { ok: true; manifest: PluginManifest }
