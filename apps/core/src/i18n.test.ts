@@ -78,7 +78,9 @@ describe('translating (l10n.php)', () => {
     expect(i18n.__('Posts')).toBe('Beiträge');
     expect(i18n._x('Paragraph', 'block title')).toBe('Absatz');
     expect(i18n.__('Paragraph')).toBe('Paragraph');
-    expect(i18n.esc_html__('General Settings')).toBe('Einstellungen &amp;rsaquo; Allgemein');
+    // esc_html() doesn't double-encode entities, as in WordPress.
+    expect(i18n.esc_html__('General Settings')).toBe('Einstellungen &rsaquo; Allgemein');
+    expect(i18n.esc_attr__('Skip to content')).toBe('Zum Inhalt springen');
     // A string a translation lacks stays English.
     expect(i18n.__('Untranslated text')).toBe('Untranslated text');
   });

@@ -31,6 +31,7 @@
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "e2e": "pnpm --filter @pressbase/e2e e2e",
+    "i18n:extract": "pnpm --filter @pressbase/core i18n:extract",
     "lint": "biome check .",
     "format": "biome check --write .",
     "db:generate": "pnpm --filter @pressbase/db generate",
