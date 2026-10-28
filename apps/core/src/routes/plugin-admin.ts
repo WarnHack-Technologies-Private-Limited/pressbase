@@ -4,6 +4,7 @@ import { userCan } from '../auth/users';
 import { type AppEnv, readJson, restError } from '../http';
 import type { Kernel } from '../kernel';
 import {
+  blockItem,
   fieldItem,
   moduleUrl,
   type PluginAdmin,
@@ -35,7 +36,9 @@ export function pluginAdminRoutes() {
     const kernel = c.get('kernel');
     const pages = [];
     const modules = [];
+    const blocks = [];
     for (const admin of kernel.plugins.adminRegistrations()) {
+      for (const [name, assets] of admin.blocks) blocks.push(blockItem(admin, name, assets));
       for (const page of admin.allPages()) {
         if (userCan(user, page.capability)) pages.push(pageItem(admin, page));
       }
@@ -47,7 +50,7 @@ export function pluginAdminRoutes() {
         });
       }
     }
-    return c.json({ pages, modules });
+    return c.json({ pages, modules, blocks });
   });
 
   /** The plugin's page, or an error response: 404 when missing, 401/403 without the capability. */
@@ -194,9 +197,12 @@ export function pluginModuleRoutes(kernel: Kernel) {
 export function servable(admin: PluginAdmin, file: string): boolean {
   const manifest = admin.plugin.manifest;
   if (file === path.posix.normalize(manifest.main)) return false;
-  const modules = [admin.module, ...admin.allPages().map((p) => p.entry)].filter((m): m is string =>
-    Boolean(m),
-  );
+  const modules = [
+    admin.module,
+    ...admin.allPages().map((p) => p.entry),
+    // Blocks' editor modules (api.blocks, plugins/blocks.ts).
+    ...[...admin.blocks.values()].map((b) => b.editorScript),
+  ].filter((m): m is string => Boolean(m));
   return modules.some((module) => {
     const dir = path.posix.dirname(module);
     // A module at the plugin's root is served alone; one in a folder shares it (chunks, CSS).

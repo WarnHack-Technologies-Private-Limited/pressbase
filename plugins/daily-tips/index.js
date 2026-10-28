@@ -100,6 +100,37 @@ export default function register(api) {
     handler: async () => ({ tip: pick(await tips()) }),
   });
 
+  // A block: "Daily tip", rendered on the server on every view (a dynamic block,
+  // like WordPress's render_callback). Its editor module, admin/tip.js, gives it
+  // a colour setting and a live preview. Its stylesheet loads only on pages that
+  // show it. Deactivating the plugin removes it from the site; the editor keeps
+  // the block in the post with a notice.
+  api.blocks.register('daily-tips/tip', {
+    title: 'Daily tip',
+    description: 'A writing tip that changes every day.',
+    category: 'widgets',
+    icon: 'lightbulb',
+    keywords: ['writing', 'advice'],
+    attributes: {
+      accent: { type: 'string', default: '#3858e9' },
+    },
+    supports: { align: ['wide', 'full'], anchor: true },
+    editorScript: 'admin/tip.js',
+    style: 'tip.css',
+    render: async (attributes, _content, block) => {
+      const list = await tips();
+      const tip = list[Math.floor(Date.now() / 86_400_000) % list.length];
+      // Attributes are checked against the schema above; the colour still needs its own check.
+      const accent = /^#[0-9a-f]{3,8}$/i.test(attributes.accent) ? attributes.accent : '#3858e9';
+      const wrapper = api.blocks.getBlockWrapperAttributes(block, {
+        style: `--daily-tip-accent: ${accent}`,
+      });
+      return `<aside ${wrapper}><p class="wp-block-daily-tips-tip__label">${api.blocks.escHtml(
+        api.i18n.__('Tip of the day'),
+      )}</p><p class="wp-block-daily-tips-tip__text">${api.blocks.escHtml(tip)}</p></aside>`;
+    },
+  });
+
   // What the dashboard widget shows: a tip and the widget's colour.
   api.rest.registerRoute('daily-tips/v1', '/widget', {
     permission: (c) => api.rest.userCan(c, 'read'),

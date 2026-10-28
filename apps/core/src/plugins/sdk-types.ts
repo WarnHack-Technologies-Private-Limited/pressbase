@@ -99,6 +99,7 @@ export type {
   Version,
 } from './assets';
 export type { PluginCron, PluginJobContext, PluginJobHandler, PluginJobs } from './background';
+export type { PluginBlockArgs, PluginBlockRender, PluginBlocks } from './blocks';
 export type {
   PluginCliAssocArgs,
   PluginCliCommandArgs,

@@ -21,55 +21,55 @@ msgid "That language isn’t installed. Install it first."
 msgstr ""
 
 #. translators: %s: the network error.
-#: apps/core/src/i18n/language-packs.ts:132
+#: apps/core/src/i18n/language-packs.ts:147
 #, js-format
 msgid "WordPress.org couldn’t be reached: %s"
 msgstr ""
 
-#: apps/core/src/i18n/language-packs.ts:142
+#: apps/core/src/i18n/language-packs.ts:157
 msgid "WordPress.org sent an unexpected answer. Try again later."
 msgstr ""
 
-#: apps/core/src/i18n/language-packs.ts:190
+#: apps/core/src/i18n/language-packs.ts:205
 msgid "The language pack’s address is invalid."
 msgstr ""
 
-#: apps/core/src/i18n/language-packs.ts:196
+#: apps/core/src/i18n/language-packs.ts:211
 msgid "Language packs are only downloaded from downloads.wordpress.org."
 msgstr ""
 
 #. translators: %s: the network error.
-#: apps/core/src/i18n/language-packs.ts:209
+#: apps/core/src/i18n/language-packs.ts:224
 #, js-format
 msgid "The language pack couldn’t be downloaded: %s"
 msgstr ""
 
 #. translators: %d: an HTTP status code.
-#: apps/core/src/i18n/language-packs.ts:219
+#: apps/core/src/i18n/language-packs.ts:234
 #, js-format
 msgid "The language pack couldn’t be downloaded (HTTP %d)."
 msgstr ""
 
-#: apps/core/src/i18n/language-packs.ts:229 apps/core/src/i18n/language-packs.ts:236
+#: apps/core/src/i18n/language-packs.ts:244 apps/core/src/i18n/language-packs.ts:251
 msgid "The language pack is too large."
 msgstr ""
 
-#: apps/core/src/i18n/language-packs.ts:247
+#: apps/core/src/i18n/language-packs.ts:262
 msgid "The language pack isn’t a valid .zip file."
 msgstr ""
 
-#: apps/core/src/i18n/language-packs.ts:264
+#: apps/core/src/i18n/language-packs.ts:279
 msgid "The language pack holds no translation files."
 msgstr ""
 
-#: apps/core/src/i18n/language-packs.ts:278 apps/core/src/people/users.ts:352
+#: apps/core/src/i18n/language-packs.ts:293 apps/core/src/people/users.ts:353
 msgid "Choose a language from the list."
 msgstr ""
 
-#: apps/core/src/i18n/language-packs.ts:288
+#: apps/core/src/i18n/language-packs.ts:303
 msgid "WordPress.org has no translation for that language."
 msgstr ""
 
-#: apps/core/src/i18n/language-packs.ts:307
+#: apps/core/src/i18n/language-packs.ts:322
 msgid "No translation for this language."
 msgstr ""

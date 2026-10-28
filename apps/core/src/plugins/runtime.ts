@@ -30,6 +30,7 @@ import {
 } from './admin';
 import { createAssets, type PluginAssets, type PluginScripts, type PluginStyles } from './assets';
 import { type Background, createBackground, type PluginCron, type PluginJobs } from './background';
+import { createPluginBlocks, type PluginBlocks } from './blocks';
 import type { PluginCliCommandArgs, PluginCliHandler } from './cli';
 import type { InstalledPlugin } from './discovery';
 import { createSubApp } from './dispatch';
@@ -238,6 +239,8 @@ export interface PluginApi {
   readonly styles: PluginStyles;
   /** URLs of the plugin's static files (its `public/` folder). */
   readonly assets: PluginAssets;
+  /** register_block_type(): blocks with a server render and an editor module. See plugins/blocks.ts. */
+  readonly blocks: PluginBlocks;
   /**
    * The Settings API: register_setting() with its field, and
    * add_settings_section(). The admin draws the plugin's settings page from
@@ -670,6 +673,14 @@ export class PluginRuntime {
       scripts,
       styles,
       assets,
+      blocks: createPluginBlocks({
+        kernel,
+        plugin,
+        admin: this.adminRegistrations,
+        track,
+        reportError: (during, error) => this.host.reportError(slug, during, error),
+        purge: (tags) => this.#purge(tags),
+      }),
       settings: Object.freeze({
         register: (name: string, args?: PluginSettingArgs) => {
           this.adminRegistrations.registerSetting(name, args);

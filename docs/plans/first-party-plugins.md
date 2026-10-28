@@ -167,7 +167,7 @@ Found by going through the SEO plugin feature by feature against `PluginApi` and
 | 1 | **Register meta** with `show_in_rest`, a schema and an auth callback (`register_post_meta`, `register_term_meta`) | SEO fields, Forms settings | S |
 | 2 | **Live editor data in UI modules:** `select('core/editor')`-style reads of the current title, content, slug, excerpt and featured image, and edits (`editPost`) through `window.pressbase` | The search preview and checks | M |
 | 3 | **More admin slots:** a plugin sidebar in the editor (`PluginSidebar`), pre-publish panel items, posts-list columns and filters, term edit fields, user profile fields, row actions | The SEO panel, columns and term fields | M |
-| 4 | **Plugin blocks:** `api.blocks.register()` with server render plus an editor module, loaded at runtime with no rebuild | Breadcrumbs, FAQ, and the Forms block | L |
+| 4 | **Plugin blocks:** `api.blocks.register()` with server render plus an editor module, loaded at runtime with no rebuild. Done: [Plugins](../architecture/plugins.md#blocks), [ADR 0020](../adr/0020-plugin-blocks.md) | Breadcrumbs, FAQ, and the Forms block | L |
 | 5 | **Early request hooks:** `template_redirect`, `pre_handle_404` and a 404 action, run before the page cache. Make sure redirects bypass or purge cached pages. | Redirects, the 404 log | M |
 | 6 | **Head and canonical filters:** `get_canonical_url` / `wp_get_canonical_url`, plus a way to remove core's own canonical and description output when a plugin takes over | SEO output | S |
 | 7 | **Cache purges from plugins:** `api.cache.purge(tags)` so settings changes refresh affected pages | Every plugin with public output | S |

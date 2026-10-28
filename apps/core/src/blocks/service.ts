@@ -6,11 +6,13 @@ import {
   type ParsedBlock,
   renderBlock,
   renderBlocks,
+  type WPBlock,
 } from '@pressbase/blocks';
 import { schema } from '@pressbase/db';
 import { and, eq } from 'drizzle-orm';
 import type { CurrentUser } from '../auth/users';
 import type { Post } from '../content/posts';
+import { currentPage } from '../frontend/page';
 import type { Kernel } from '../kernel';
 import type { BlockServices } from './helpers';
 import { registerCoreBlocks } from './library';
@@ -60,6 +62,22 @@ export class BlocksService {
     }
     for (const pattern of CORE_PATTERNS) this.registerBlockPattern(pattern.name, pattern);
     this.#registerSyncedPatternFields();
+    this.#enqueueBlockStyles();
+  }
+
+  /**
+   * WP_Block::render() enqueues the block type's `style_handles` when the
+   * block renders, so a block's stylesheet loads only on pages that show it.
+   * Only during a public page render: a REST render mustn't enqueue site-wide.
+   */
+  #enqueueBlockStyles(): void {
+    this.kernel.hooks.addFilter('render_block', (content, _parsed, block) => {
+      const handles = (block as WPBlock<unknown> | undefined)?.blockType?.styleHandles;
+      if (handles?.length && currentPage()) {
+        for (const handle of handles) this.kernel.styles.enqueue(handle);
+      }
+      return content;
+    });
   }
 
   /* ----------------------------------------------------------- block types */
