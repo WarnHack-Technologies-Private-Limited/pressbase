@@ -20,6 +20,11 @@ A user is a row in `users` plus `usermeta` entries under WordPress's keys:
 | `first_name`, `last_name`, `nickname`, `description`, `locale` | Profile fields. The nickname defaults to the username. |
 | `capabilities` | Roles and directly granted capabilities: `{ "editor": true }`. WordPress calls it `wp_capabilities`. |
 | `_application_passwords` | The user's application passwords (below). |
+| `pressbase_admin_color_scheme` | The admin theme: `system` (default), `light` or `dark`. Chosen in the user menu. |
+
+### Meta in the REST API
+
+Only **registered** user meta appears in the API's `meta` field: `registerUserMeta()` in `people/user-meta.ts` is `register_meta( 'user', … )` with `show_in_rest`. Registered meta shows in the edit context only (it's personal), with its default when unset, and is written through `POST /wp/v2/users/{id|me}` with `{ "meta": { "key": value } }`, which needs `edit_user` like any profile field. Values are validated (`rest_invalid_param`, reported as `meta.<key>`), unregistered keys are ignored as in WordPress, and `null` deletes the value so the default applies again.
 
 `display_name` (`name` in the REST API) defaults to "First Last", then the first or last name, then the username, as `wp_insert_user()` does. The nicename (`slug`) comes from the username and is made unique with `-2`, `-3`… Usernames can't be changed.
 
@@ -28,7 +33,7 @@ A user is a row in `users` plus `usermeta` entries under WordPress's keys:
 - **Usernames** follow `validate_username()`: letters, numbers, spaces and `. - _ @`, at most 60 characters. Plugins can forbid names with the `illegal_user_logins` filter.
 - **Emails** follow `is_email()`, WordPress's deliberately simple check.
 - **Uniqueness:** usernames and emails are unique regardless of case (enforced by the database too).
-- **Passwords** can't be empty or contain `\`, as in WordPress. They're hashed with scrypt ([ADR 0005](../adr/0005-password-hashing.md)).
+- **Passwords** can't be empty or contain `\`, as in WordPress. They're hashed with scrypt ([ADR 0005](../adr/0005-password-hashing.md)) Accounts imported from WordPress keep their WordPress hash (`$wp$2y$…`, `$2y$…`, `$P$…` or MD5) until the person's next login, which checks it as `wp_check_password()` does and replaces it with scrypt.
 - **Websites** keep only `http` and `https` addresses.
 - **Bios** are stored as plain text; HTML is kept as typed but never rendered by the admin.
 
@@ -131,4 +136,4 @@ Unlike WordPress, `password_reset` doesn't receive the new password: core never 
 - **Self-registration** (`users_can_register`) and email confirmation for email changes.
 - **Sessions screen:** logging out other sessions by hand ("Log out everywhere else").
 - **Multisite** user management.
-- **Per-user admin colour scheme and language** (the `locale` field is stored, but the admin is English only).
+- **Per-user admin language** (the `locale` field is stored, but the admin is English only). The admin colour scheme is per user (light, dark or system).

@@ -1,19 +1,50 @@
-# Development database. Start it with: pnpm db:up
+# Pressbase with PostgreSQL.
+#
+#   docker compose up -d          # the whole site on http://localhost:3000
+#   pnpm db:up                    # just PostgreSQL, for `pnpm dev`
+#
+# The app service uses the published image; `docker compose up --build` builds
+# it from this checkout instead.
 services:
+  pressbase:
+    image: ghcr.io/warnhack-technologies-private-limited/pressbase:latest
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://pressbase:pressbase@postgres:5432/pressbase
+      # Recommended for any server reachable from the internet: the installer
+      # asks for this code. Set it in a .env file next to this one.
+      PRESSBASE_SETUP_TOKEN: ${PRESSBASE_SETUP_TOKEN:-}
+      # Outgoing email; without it, messages are saved to /data/outbox.
+      PRESSBASE_SMTP_URL: ${PRESSBASE_SMTP_URL:-}
+      PRESSBASE_MAIL_FROM: ${PRESSBASE_MAIL_FROM:-}
+    ports:
+      - "3000:3000"
+    volumes:
+      # Uploads, themes, config.json and the mail outbox.
+      - pressbase-data:/data
+
   postgres:
     image: postgres:17-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: pressbase
       POSTGRES_PASSWORD: pressbase
       POSTGRES_DB: pressbase
     ports:
+      # For `pnpm dev` on the host. Remove it on a server.
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pressbase"]
+      test: ["CMD-SHELL", "pg_isready -U pressbase -d pressbase"]
       interval: 5s
+      timeout: 5s
       retries: 10
 
 volumes:
+  pressbase-data:
   postgres-data:

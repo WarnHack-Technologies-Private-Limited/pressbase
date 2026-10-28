@@ -40,11 +40,17 @@ function relativeTime(iso: string): string {
 }
 
 export default async function DashboardPage() {
-  const [{ data }, { data: me }, { data: site }] = await Promise.all([
+  const [dashboard, current, index] = await Promise.all([
     coreGet<Dashboard>('/pressbase/v1/dashboard'),
     coreGet<Me>('/wp/v2/users/me'),
     coreGet<SiteIndex>('/'),
   ]);
+  // Logged out or not installed: the admin layout is already redirecting, and
+  // the error bodies have none of the fields below.
+  if (dashboard.status !== 200 || current.status !== 200) return null;
+  const { data } = dashboard;
+  const { data: me } = current;
+  const { data: site } = index;
   const firstName = me.name.split(/\s+/)[0];
   const canManage = Boolean(me.capabilities.manage_options);
   const canModerate = Boolean(me.capabilities.moderate_comments);

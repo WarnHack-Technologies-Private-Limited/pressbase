@@ -340,6 +340,44 @@ describe('POST /wp/v2/users/{id}', () => {
     const [mail] = await outbox(dataDir);
     expect(mail?.subject).toBe('[Test Site] Password changed');
   });
+
+  it('stores registered meta such as the admin colour scheme, per user', async () => {
+    const { request, loginAs } = await installed();
+    const author = await loginAs('ava', 'author');
+    const key = 'pressbase_admin_color_scheme';
+
+    expect((await author.request('GET', '/wp/v2/users/me')).body.meta).toEqual({ [key]: 'system' });
+    const saved = await author.request('POST', '/wp/v2/users/me', {
+      meta: { [key]: 'dark', not_registered: 'ignored' },
+    });
+    expect(saved.status).toBe(200);
+    expect(saved.body.meta).toEqual({ [key]: 'dark' });
+    expect((await author.request('GET', '/wp/v2/users/me')).body.meta[key]).toBe('dark');
+    // Per user: the administrator still follows the system.
+    expect((await request('GET', '/wp/v2/users/me')).body.meta[key]).toBe('system');
+
+    const bad = await author.request('POST', '/wp/v2/users/me', { meta: { [key]: 'purple' } });
+    expect(bad.status).toBe(400);
+    expect(bad.body.code).toBe('rest_invalid_param');
+    expect(bad.body.data.params).toHaveProperty(`meta.${key}`);
+
+    // Edit context only: meta isn't shown to people viewing a public profile.
+    expect((await author.request('GET', '/wp/v2/users/1')).body.meta).toEqual([]);
+    // Writing someone else's meta needs edit_user, even alongside a role change.
+    const other = await author.request('POST', '/wp/v2/users/1', { meta: { [key]: 'light' } });
+    expect(other.status).toBe(403);
+    const editor = await loginAs('eli', 'editor');
+    const sneaky = await editor.request('POST', `/wp/v2/users/${author.id}`, {
+      roles: ['author'],
+      meta: { [key]: 'light' },
+    });
+    expect(sneaky.status).toBe(403);
+
+    // An administrator can, and null goes back to the default.
+    const reset = await request('POST', `/wp/v2/users/${author.id}`, { meta: { [key]: null } });
+    expect(reset.status).toBe(200);
+    expect(reset.body.meta[key]).toBe('system');
+  });
 });
 
 describe('DELETE /wp/v2/users/{id}', () => {
