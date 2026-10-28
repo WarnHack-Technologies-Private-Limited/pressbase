@@ -20,6 +20,32 @@ export type {
   FilterCallback,
   FilterRegistry,
 } from '@pressbase/hooks';
+export type { JsonSchema } from '../abilities/json-schema';
+export type {
+  Ability,
+  AbilityAnnotations,
+  AbilityArgs,
+  AbilityCategory,
+  AbilityCategoryArgs,
+  AbilityContext,
+  AbilityError,
+  AbilityMeta,
+  AbilityQuery,
+} from '../abilities/registry';
+export type { AiAttribution, AiRequestLogEntry, AiSettings } from '../ai/client';
+export type { AiPromptBuilder } from '../ai/prompt-builder';
+export type {
+  AiError,
+  AiFinishReason,
+  AiFunctionDeclaration,
+  AiMessage,
+  AiMessagePart,
+  AiProvider,
+  AiProviderContext,
+  AiResult,
+  AiTextRequest,
+  AiTokenUsage,
+} from '../ai/types';
 export type { CurrentUser } from '../auth/users';
 export type {} from '../cache/invalidation';
 export type {
@@ -90,6 +116,7 @@ export type {
   SettingControl,
   SettingType,
 } from './admin';
+export type { PluginAbilities, PluginAi } from './ai';
 export type {
   PluginAssets,
   PluginScripts,

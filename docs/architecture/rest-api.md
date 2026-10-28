@@ -74,6 +74,9 @@ Everything is served under `/wp-json`, as in WordPress:
 | GET                      | `/pressbase/v1/site-health`, `/pressbase/v1/site-health/info` | `view_site_health_checks` | Site Health: the direct tests' results and the async tests to run; the Info tab's sections and copy text. See [Site Health](site-health.md#rest-api). |
 | GET / POST               | `/pressbase/v1/site-health/result` | `view_site_health_checks` | The last check's counts and rating, for the Dashboard; `POST { counts }` saves them. |
 | GET                      | `/wp-site-health/v1/tests/{test}`, `/wp-site-health/v1/directory-sizes` | `view_site_health_checks` (`site_health_test_rest_capability_{check}`) | WordPress's Site Health routes: one async test's result; folder and database sizes. |
+| GET / POST               | `/pressbase/v1/ai/settings`, `POST /pressbase/v1/ai/test` | `manage_options` | Settings → AI: provider, model, daily limit, key status (never the key); test the connection. See [AI](ai.md#keys-and-settings--ai). |
+| GET                      | `/wp-abilities/v1/categories`, `/wp-abilities/v1/abilities`, `/wp-abilities/v1/abilities/{name}` | `read` | WordPress's Abilities API: categories and REST-visible abilities with their schemas. |
+| GET / POST / DELETE      | `/wp-abilities/v1/abilities/{name}/run` | the ability's permission callback | Runs an ability: GET for read-only ones, DELETE for destructive idempotent ones, POST otherwise. See [AI](ai.md#rest-wp-abilitiesv1). |
 
 `posts_per_rss` and `rss_use_excerpt` (Settings → Reading's feed settings) are Pressbase additions to `/wp/v2/settings`; WordPress keeps them out of the REST settings.
 

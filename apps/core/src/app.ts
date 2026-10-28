@@ -10,6 +10,8 @@ import type { Kernel } from './kernel';
 import { applicationPasswordAuth } from './people/application-passwords';
 import { pluginAssetRoutes } from './plugins/assets';
 import { pluginRoutes } from './plugins/dispatch';
+import { abilitiesRoutes } from './routes/abilities';
+import { aiRoutes } from './routes/ai';
 import { authRoutes } from './routes/auth';
 import { autosavesRoutes } from './routes/autosaves';
 import { blockRoutes } from './routes/blocks';
@@ -81,7 +83,7 @@ export function createApp(kernel: Kernel) {
       name: ready ? await kernel.options.get<string>('blogname', '') : '',
       description: ready ? await kernel.options.get<string>('blogdescription', '') : '',
       url: ready ? await kernel.options.get<string>('home', '') : '',
-      namespaces: ['pressbase/v1', 'wp/v2', ...kernel.plugins.namespaces()],
+      namespaces: ['pressbase/v1', 'wp/v2', 'wp-abilities/v1', ...kernel.plugins.namespaces()],
       pressbase: { version: PRESSBASE_VERSION, state: kernel.state },
       // site_logo, site_icon, site_icon_url, as WordPress's index has them.
       ...(ready ? await siteIdentityIndex(kernel) : {}),
@@ -170,6 +172,11 @@ export function createApp(kernel: Kernel) {
   // wp-site-health/v1 routes, before plugins' catch-all. See docs/architecture/site-health.md.
   installed.route('/pressbase/v1/site-health', siteHealthRoutes());
   installed.route('/wp-site-health/v1', wpSiteHealthRoutes());
+
+  // Abilities API and Settings → AI (v0.7): WordPress's /wp-abilities/v1 and
+  // /pressbase/v1/ai. See docs/architecture/ai.md.
+  installed.route('/wp-abilities/v1', abilitiesRoutes());
+  installed.route('/pressbase/v1/ai', aiRoutes());
 
   // Plugins (v0.5): /wp/v2/plugins, then — last, as a catch-all — the post
   // types, taxonomies and REST namespaces of active plugins, looked up per

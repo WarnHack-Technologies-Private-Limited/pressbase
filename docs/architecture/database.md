@@ -29,6 +29,7 @@ The schema lives in `packages/db/src/schema.ts`. Pressbase keeps WordPress's dat
 | `term_relationships` | `wp_term_relationships`       | Object ↔ term links.                                                              |
 | `termmeta`           | `wp_termmeta`                 | Per-term data.                                                                    |
 | `jobs`               | _(the `cron` option)_         | Background jobs and cron events. See [Jobs and cron](jobs.md).                    |
+| `ai_requests`        | _(none)_                      | One row per AI provider request, without content: the usage log and daily caps. See [AI](ai.md#caps-timeouts-and-the-usage-log). |
 | `comments`           | `wp_comments`                 | Comments. `approved` keeps WordPress's values: `'1'`, `'0'`, `'spam'`, `'trash'`. |
 | `commentmeta`        | `wp_commentmeta`              | Per-comment data.                                                                 |
 

@@ -1,4 +1,5 @@
 import type { CommandSpec } from '../command';
+import { abilityCommands } from './ability';
 import { commentCommands } from './comment';
 import { coreCommands } from './core';
 import { cronCommands } from './cron';
@@ -16,6 +17,7 @@ import { userCommands } from './user';
 
 /** Every built-in command. Plugins add theirs through api.cli (kernel.cli). */
 export const COMMANDS: CommandSpec[] = [
+  ...abilityCommands,
   ...cacheCommands,
   ...commentCommands,
   ...coreCommands,
@@ -36,6 +38,9 @@ export const COMMANDS: CommandSpec[] = [
 
 /** Command groups, for `pressbase help` and `pressbase <group>`. */
 export const GROUPS: [string, string][] = [
+  ['ability', 'Lists, shows and runs abilities (the Abilities API).'],
+  ['ability category', 'Lists ability categories.'],
+  ['ai', 'Checks the AI provider set in Settings → AI.'],
   ['cache', 'Empties the public site’s page cache.'],
   ['comment', 'Lists and moderates comments.'],
   ['core', 'Shows the version and installs Pressbase.'],

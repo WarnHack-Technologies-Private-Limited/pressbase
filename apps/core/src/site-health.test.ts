@@ -254,7 +254,7 @@ describe('GET /pressbase/v1/site-health', () => {
     const { direct } = await status(ctx);
     const result = find(direct, 'database_migrations');
     expect(result.status).toBe('critical');
-    expect(result.description).toContain('0001_job_queue');
+    expect(result.description).toContain('0002_ai_requests');
   });
 
   it('recommends removing inactive plugins and themes from the data directory', async () => {
