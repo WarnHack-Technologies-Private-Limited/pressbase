@@ -102,8 +102,6 @@ export const SECTION_GROUPS: SectionGroup[] = [
         label: 'Tools',
         icon: Wrench,
         capability: 'edit_posts',
-        release: 'v0.6',
-        summary: 'Import from WordPress, export your content and check your site’s health.',
       },
       { slug: 'settings', label: 'Settings', icon: Settings, capability: 'manage_options' },
     ],

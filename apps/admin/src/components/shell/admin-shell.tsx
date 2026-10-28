@@ -194,7 +194,6 @@ export function AdminShell({
 
   const role = user.roles[0] ? user.roles[0][0]?.toUpperCase() + user.roles[0].slice(1) : '';
   const topPages = pagesUnder(extensions, null);
-  const toolPages = pagesUnder(extensions, 'tools');
 
   return (
     <ExtensionsProvider extensions={extensions}>
@@ -241,9 +240,7 @@ export function AdminShell({
                   {group.items
                     .filter((item) => user.capabilities[item.capability])
                     .map((item) => {
-                      // Tools is built once a plugin adds a page to it (add_management_page).
-                      const release =
-                        item.slug === 'tools' && toolPages.length ? undefined : item.release;
+                      const release = item.release;
                       return (
                         <li key={item.slug}>
                           <Link

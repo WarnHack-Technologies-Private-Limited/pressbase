@@ -380,7 +380,7 @@ or `api.admin.addPage({ slug, title, parent, capability, description, entry })`.
 | `parent` | Where it shows | URL | WordPress |
 | --- | --- | --- | --- |
 | `settings` | Settings' sub-navigation, after core's screens | `/admin/settings/{plugin}[/{page}]` | `add_options_page()` |
-| `tools` | listed on **Tools** (which stops saying "coming in v0.6" once a plugin adds a page) | `/admin/tools/{plugin}[/{page}]` | `add_management_page()` |
+| `tools` | listed on **Tools**, under Pressbase's own tools (`apps/admin/src/lib/tools.ts`) | `/admin/tools/{plugin}[/{page}]` | `add_management_page()` |
 | none | the sidebar's **Extend** group, after Plugins | `/admin/plugin/{plugin}[/{page}]` | `add_menu_page()` |
 
 The `/{page}` segment is left out when the page's slug is the plugin's. A page shows its `entry` module's UI, then the settings registered with `page: slug`, or both. `capability` (default `manage_options`) is checked by core: pages a user can't open are left out of their navigation and answer 403. At most 20 pages per plugin.
