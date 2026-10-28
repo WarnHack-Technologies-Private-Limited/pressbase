@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 import { schema } from '@pressbase/db';
 import { and, eq, inArray, or, sql } from 'drizzle-orm';
+import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import { type CurrentUser, userCan } from '../auth/users';
 import { siteInfo, termLink } from '../blocks/helpers';
 import { ksesComment, relUgc } from '../comments/format';
@@ -242,6 +243,15 @@ export function emptyReport(): ImportReport {
     startedAt: new Date().toISOString(),
     finishedAt: null,
   };
+}
+
+/**
+ * Dates match to the second: WXR (MySQL's DATETIME) has no fractions, so a
+ * Pressbase post saved at 10:00:00.123 comes back from its own export as 10:00:00.
+ */
+function sameSecond(column: AnyPgColumn, date: Date) {
+  const second = new Date(Math.floor(date.getTime() / 1000) * 1000).toISOString();
+  return sql`date_trunc('second', ${column}) = ${second}::timestamptz`;
 }
 
 function describe(error: unknown): string {
@@ -620,7 +630,7 @@ export class ImportWriter {
       .where(
         and(
           eq(p.type, post.post_type),
-          eq(p.date, date),
+          sameSecond(p.date, date),
           post.guid
             ? or(eq(p.title, post.post_title), eq(p.guid, post.guid))
             : eq(p.title, post.post_title),
@@ -813,7 +823,7 @@ export class ImportWriter {
       const [found] = await this.kernel.db
         .select({ id: c.id })
         .from(c)
-        .where(and(eq(c.postId, target.id), eq(c.author, comment.comment_author), eq(c.date, date)))
+        .where(and(eq(c.postId, target.id), eq(c.author, comment.comment_author), sameSecond(c.date, date)))
         .limit(1);
       if (found) {
         inserted.set(comment.comment_id, found.id);
@@ -883,7 +893,7 @@ export class ImportWriter {
       if (key === '_edit_last') {
         const mapped = this.#authorsById.get(Number(meta.value));
         if (!mapped) continue;
-        value = String(mapped);
+        value = mapped;
       }
       rows.push({ postId, key, value });
     }

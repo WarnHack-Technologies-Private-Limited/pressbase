@@ -57,7 +57,9 @@ const SIZE_SUFFIX = /^(.*?)((?:-\d+x\d+|-scaled|-rotated|-e\d{10,})*)(\.[a-z0-9]
 /** Builds the rewriter for one import. Returns content unchanged when there's nothing to map. */
 export function createRewriter(maps: RewriteMaps): (content: string) => string {
   const newBase = maps.newBase.replace(/\/+$/, '');
-  const swapBases = baseVariants(maps.oldBases).filter((b) => b !== newBase);
+  // The new address is kept in the list even when it's the old one (a site
+  // re-imported into itself): its `?p=` links still need the new IDs.
+  const swapBases = baseVariants(maps.oldBases);
   const scanOrigins = new Set(swapBases);
   for (const url of [...maps.urls.keys(), ...maps.sizePrefixes.keys()]) {
     try {

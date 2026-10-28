@@ -48,7 +48,7 @@ export function menuItemFromPost(post: ImportPost): ClassicMenuItem | undefined 
     menu,
     order: post.menu_order,
     title: post.post_title,
-    description: post.post_content,
+    description: post.post_content.trim(),
     attrTitle: post.post_excerpt,
     type: meta.get('_menu_item_type') ?? 'custom',
     object: meta.get('_menu_item_object') ?? 'custom',
