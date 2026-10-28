@@ -196,6 +196,21 @@ export default definePlugin((api) => {
 
 `args` are the positional arguments and `assoc` the `--key=value` ones (`--flag` is `true`). `io` has `log`, `success`, `warning`, `error` (stops with exit code 1), `formatItems(rows, fields)` (honours `--format`, `--fields`), `confirm(question)` and `user` (the `--user`, or null). A `synopsis` in wp-cli's syntax is checked before the handler runs and shown in `--help`. Plugin commands are listed in `pressbase help`.
 
-## Coming: import and export
+## import and export
 
-`pressbase import <file.xml>` and `pressbase export` (WXR, as `wp import`/`wp export`) arrive with the WXR importer. They'll be thin commands over core's `importWxr()` and `exportWxr()`, registered in `packages/cli/src/commands/` like the others; the names are already reserved.
+`pressbase import` and `pressbase export` move content in WordPress's export format (WXR), as `wp import` and `wp export` do. They run core's `importWxr()` and `exportWxr()` in this process, without the job queue, so a big import doesn't depend on the server ([Import and export](../architecture/import-export.md)).
+
+```bash
+pressbase import site.xml --user=admin                       # authors become users with the same username; media is downloaded
+pressbase import site.xml --user=admin --authors=current --skip=attachment
+pressbase export                                             # everything, to <site>.wordpress.<date>.xml here
+pressbase export --post_type=page --start_date=2026-01 --dir=backups
+pressbase export --stdout > site.xml
+```
+
+| Command | Options |
+| --- | --- |
+| `import <file>...` | `--user` (required, needs `import`), `--authors=create\|current`, `--skip=attachment` |
+| `export` | `--dir`, `--stdout`, `--post_type`, `--post_author`, `--category`, `--start_date`, `--end_date`, `--post_status` |
+
+Posts already on the site are skipped, so an import can be run again. Attachments are downloaded from the original site unless `--skip=attachment`; private network addresses are refused unless `PRESSBASE_IMPORT_ALLOW_PRIVATE_HOSTS=1`.

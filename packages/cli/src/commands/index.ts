@@ -3,6 +3,7 @@ import { commentCommands } from './comment';
 import { coreCommands } from './core';
 import { cronCommands } from './cron';
 import { dbCommands } from './db';
+import { importExportCommands } from './import-export';
 import { mediaCommands } from './media';
 import { optionCommands } from './option';
 import { pluginCommands } from './plugin';
@@ -19,6 +20,7 @@ export const COMMANDS: CommandSpec[] = [
   ...coreCommands,
   ...cronCommands,
   ...dbCommands,
+  ...importExportCommands,
   ...mediaCommands,
   ...optionCommands,
   ...pluginCommands,
@@ -39,6 +41,8 @@ export const GROUPS: [string, string][] = [
   ['cron event', 'Lists, runs and deletes scheduled events.'],
   ['cron schedule', 'Lists the recurrences events can use.'],
   ['db', 'Checks the database and applies migrations.'],
+  ['export', 'Exports content to a WordPress export (WXR) file.'],
+  ['import', 'Imports content from WordPress export (WXR) files.'],
   ['media', 'Regenerates image sizes.'],
   ['option', 'Reads and changes options.'],
   ['plugin', 'Installs, activates, deactivates and deletes plugins.'],
