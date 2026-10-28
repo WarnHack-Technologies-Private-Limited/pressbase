@@ -12,202 +12,202 @@ msgstr ""
 "X-Generator: pressbase i18n:extract\n"
 "X-Domain: pressbase-admin\n"
 
-#: apps/admin/src/app/admin/page.tsx:15 apps/admin/src/lib/sections.ts:41
+#: apps/admin/src/app/admin/page.tsx:16 apps/admin/src/lib/sections.ts:41
 msgid "Dashboard"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:57
+#: apps/admin/src/app/admin/page.tsx:58
 msgid "just now"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:80
+#: apps/admin/src/app/admin/page.tsx:81
 msgid "Install Pressbase"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:82
+#: apps/admin/src/app/admin/page.tsx:83
 msgid "Give your site a name"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:88
+#: apps/admin/src/app/admin/page.tsx:89
 msgid "Add a tagline"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:95
+#: apps/admin/src/app/admin/page.tsx:96
 msgid "Write your first post"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:101
+#: apps/admin/src/app/admin/page.tsx:102
 msgid "Invite your team"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:107
+#: apps/admin/src/app/admin/page.tsx:108
 msgid "Make the site look like yours"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:116
+#: apps/admin/src/app/admin/page.tsx:117
 msgid "Published posts"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:117
+#: apps/admin/src/app/admin/page.tsx:118
 msgid "Drafts"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:118 apps/admin/src/lib/sections.ts:54
+#: apps/admin/src/app/admin/page.tsx:119 apps/admin/src/lib/sections.ts:54
 msgid "Pages"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:120 apps/admin/src/lib/sections.ts:66
+#: apps/admin/src/app/admin/page.tsx:121 apps/admin/src/lib/sections.ts:66
 msgid "Comments"
 msgstr ""
 
 #. translators: %s: a number of comments.
-#: apps/admin/src/app/admin/page.tsx:125
+#: apps/admin/src/app/admin/page.tsx:126
 #, js-format
 msgid "%s awaiting moderation"
 msgid_plural "%s awaiting moderation"
 msgstr[0] ""
 msgstr[1] ""
 
-#: apps/admin/src/app/admin/page.tsx:139
+#: apps/admin/src/app/admin/page.tsx:140
 msgid " · "
 msgstr ""
 
 #. translators: %s: the user's first name.
-#: apps/admin/src/app/admin/page.tsx:146
+#: apps/admin/src/app/admin/page.tsx:147
 #, js-format
 msgid "Welcome, %s"
 msgstr ""
 
 #. translators: %s: the site's title.
-#: apps/admin/src/app/admin/page.tsx:150
+#: apps/admin/src/app/admin/page.tsx:151
 #, js-format
 msgid "Here’s what’s happening on %s."
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:151
+#: apps/admin/src/app/admin/page.tsx:152
 msgid "your site"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:160
+#: apps/admin/src/app/admin/page.tsx:161
 msgid "Search engines are asked not to index this site"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:162
+#: apps/admin/src/app/admin/page.tsx:163
 msgid "That’s useful while you build. Remember to change it before you launch."
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:171
+#: apps/admin/src/app/admin/page.tsx:172
 msgid "At a glance"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:191
+#: apps/admin/src/app/admin/page.tsx:192
 msgid "Get your site ready"
 msgstr ""
 
 #. translators: 1: steps done, 2: all steps.
-#: apps/admin/src/app/admin/page.tsx:194
+#: apps/admin/src/app/admin/page.tsx:195
 #, js-format
 msgid "%1$s of %2$s done"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:211
+#: apps/admin/src/app/admin/page.tsx:212
 msgid "Done"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:217
+#: apps/admin/src/app/admin/page.tsx:218
 msgid "To do"
 msgstr ""
 
 #. translators: %s: a version number.
-#: apps/admin/src/app/admin/page.tsx:234
+#: apps/admin/src/app/admin/page.tsx:235
 #, js-format
 msgid "Coming in %s"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:245
+#: apps/admin/src/app/admin/page.tsx:246
 msgid "Site health"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:252
+#: apps/admin/src/app/admin/page.tsx:255
 msgid "Database"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:256
+#: apps/admin/src/app/admin/page.tsx:259
 msgctxt "database"
 msgid "Built-in"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:264
+#: apps/admin/src/app/admin/page.tsx:267
 msgid "Search engines"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:267
+#: apps/admin/src/app/admin/page.tsx:270
 msgctxt "search engines"
 msgid "Allowed"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:271
+#: apps/admin/src/app/admin/page.tsx:274
 msgctxt "search engines"
 msgid "Discouraged"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:285
+#: apps/admin/src/app/admin/page.tsx:288
 msgid "The built-in database is for trying Pressbase. Use PostgreSQL for a live site."
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:295
+#: apps/admin/src/app/admin/page.tsx:298
 msgid "Recently edited"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:298
+#: apps/admin/src/app/admin/page.tsx:301
 msgid "Nothing yet. Your latest posts and pages will show here."
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:308
+#: apps/admin/src/app/admin/page.tsx:311
 msgid "(no title)"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:313
+#: apps/admin/src/app/admin/page.tsx:316
 msgctxt "post type singular name"
 msgid "Page"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:314
+#: apps/admin/src/app/admin/page.tsx:317
 msgctxt "post type singular name"
 msgid "Post"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:316
+#: apps/admin/src/app/admin/page.tsx:319
 msgctxt "post status"
 msgid "Draft"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:331
+#: apps/admin/src/app/admin/page.tsx:334
 msgid "Recent comments"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:334
+#: apps/admin/src/app/admin/page.tsx:337
 msgid "View all"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:340
+#: apps/admin/src/app/admin/page.tsx:343
 msgid "No comments yet. When readers comment, they’ll show here."
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:351
+#: apps/admin/src/app/admin/page.tsx:354
 msgid "(empty)"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:355
+#: apps/admin/src/app/admin/page.tsx:358
 msgid "Anonymous"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:357
+#: apps/admin/src/app/admin/page.tsx:360
 msgctxt "comment status"
 msgid "Pending"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:360
+#: apps/admin/src/app/admin/page.tsx:363
 msgctxt "comment status"
 msgid "Spam"
 msgstr ""
@@ -216,7 +216,7 @@ msgstr ""
 msgid "General Settings"
 msgstr ""
 
-#: apps/admin/src/app/admin/settings/layout.tsx:12 apps/admin/src/components/settings/settings-nav.tsx:30 apps/admin/src/lib/sections.ts:110
+#: apps/admin/src/app/admin/settings/layout.tsx:12 apps/admin/src/components/settings/settings-nav.tsx:32 apps/admin/src/lib/sections.ts:110
 msgid "Settings"
 msgstr ""
 
@@ -282,6 +282,139 @@ msgstr ""
 msgid "Site default"
 msgstr ""
 
+#: apps/admin/src/components/settings/ai-settings.tsx:87
+msgid "AI settings saved."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:89 apps/admin/src/components/settings/general-settings-form.tsx:324 apps/admin/src/components/settings/settings-form.tsx:79
+msgid "Could not save your changes."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:100
+msgid "API key removed."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:102
+msgid "Could not remove the key."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:118
+#, js-format
+msgid "Connected. %1$s answered with %2$s."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:128
+msgid "Could not reach the AI provider."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:138
+#, js-format
+msgid "Set by the %1$s environment variable, ends in …%2$s"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:143
+#, js-format
+msgid "Saved, ends in …%s"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:144
+msgid "No key saved."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:150
+msgid "AI features"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:151
+msgid "Plugins such as Pressbase SEO can suggest titles, descriptions and alt text. Nothing is sent to a provider until someone asks for a suggestion, and suggestions are never applied without a person choosing them."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:157
+msgid "Turn on AI features"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:158
+msgid "Requests are sent from this server, never from visitors’ browsers."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:168 apps/admin/src/components/settings/ai-settings.tsx:173
+msgid "Provider"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:169
+msgid "The service that answers AI requests, and the model it uses."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:188
+msgid "Model"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:194
+#, js-format
+msgid "Default (%s)"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:207 apps/admin/src/components/settings/ai-settings.tsx:221
+msgid "API key"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:212 apps/admin/src/components/settings/ai-settings.tsx:279
+msgid "Remove key"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:222
+msgid "Replace the key"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:233
+msgid "The environment variable wins over a saved key."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:234
+msgid "Stored on this server and never shown again."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:241
+msgid "Daily limit"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:243
+#, js-format
+msgid "%d requests sent today. The count resets at midnight UTC."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:249
+msgid "Requests per day"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:256
+msgid "For the whole site, all plugins together."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:263 apps/admin/src/components/settings/general-settings-form.tsx:484 apps/admin/src/components/settings/settings-form.tsx:98
+msgid "Saving…"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:263 apps/admin/src/components/settings/general-settings-form.tsx:484 apps/admin/src/components/settings/settings-form.tsx:98
+msgid "Save changes"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:271
+msgid "Testing…"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:272
+msgid "Test connection"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:278
+msgid "Remove the API key?"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:285
+msgid "AI features stop working until a new key is saved."
+msgstr ""
+
 #: apps/admin/src/components/settings/general-settings-form.tsx:90
 #, js-format
 msgid "Custom: %s"
@@ -335,10 +468,6 @@ msgstr ""
 
 #: apps/admin/src/components/settings/general-settings-form.tsx:242
 msgid "Install"
-msgstr ""
-
-#: apps/admin/src/components/settings/general-settings-form.tsx:324 apps/admin/src/components/settings/settings-form.tsx:79
-msgid "Could not save your changes."
 msgstr ""
 
 #: apps/admin/src/components/settings/general-settings-form.tsx:336
@@ -438,14 +567,6 @@ msgstr ""
 msgid "Discard"
 msgstr ""
 
-#: apps/admin/src/components/settings/general-settings-form.tsx:484 apps/admin/src/components/settings/settings-form.tsx:98
-msgid "Saving…"
-msgstr ""
-
-#: apps/admin/src/components/settings/general-settings-form.tsx:484 apps/admin/src/components/settings/settings-form.tsx:98
-msgid "Save changes"
-msgstr ""
-
 #: apps/admin/src/components/settings/general-settings-form.tsx:494
 msgid "Settings saved"
 msgstr ""
@@ -478,11 +599,15 @@ msgstr ""
 msgid "Permalinks"
 msgstr ""
 
-#: apps/admin/src/components/settings/settings-nav.tsx:22
+#: apps/admin/src/components/settings/settings-nav.tsx:20
+msgid "AI"
+msgstr ""
+
+#: apps/admin/src/components/settings/settings-nav.tsx:24
 msgid "Scheduled tasks"
 msgstr ""
 
-#: apps/admin/src/components/settings/settings-nav.tsx:38 apps/admin/src/components/shell/admin-shell.tsx:265
+#: apps/admin/src/components/settings/settings-nav.tsx:40 apps/admin/src/components/shell/admin-shell.tsx:265
 msgid ", coming in "
 msgstr ""
 

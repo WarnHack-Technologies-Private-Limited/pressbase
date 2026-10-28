@@ -16,6 +16,8 @@ const PAGES: { slug: string; label: string; release?: string }[] = [
   { slug: 'discussion', label: msgid('Discussion') },
   { slug: 'media', label: msgid('Media') },
   { slug: 'permalinks', label: msgid('Permalinks') },
+  // Pressbase 0.7: WordPress 7 keeps AI provider keys in Settings → Connectors.
+  { slug: 'ai', label: msgid('AI') },
 ];
 
 /** Pressbase's own screens after WordPress's (WordPress has no cron screen). */
