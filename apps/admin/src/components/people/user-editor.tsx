@@ -15,6 +15,9 @@ import { PasswordField, SelectField, TextAreaField, TextField } from '../ui/fiel
 import { Card, EmptyState, Notice } from '../ui/surface';
 import { useToast } from '../ui/toast';
 import { ApplicationPasswords } from './application-passwords';
+import { mergeMeta, metaChanges } from '@/lib/extensions/editor';
+import { SLOTS } from '@/lib/extensions/registry';
+import { Slot } from '../extensions/host';
 import { Avatar } from './avatar';
 import { DeleteUsersDialog } from './delete-users-dialog';
 import styles from './people.module.css';
@@ -60,6 +63,8 @@ export function UserEditor({ id, self = false }: { id: number; self?: boolean })
   const [loadError, setLoadError] = useState<string>();
   const [values, setValues] = useState<Values | null>(null);
   const [password, setPassword] = useState<string | null>(null);
+  /** The user's meta with plugins' edits (UserProfileFields). */
+  const [meta, setMeta] = useState<Record<string, unknown>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [problem, setProblem] = useState<string>();
   const [busy, setBusy] = useState(false);
@@ -75,6 +80,7 @@ export function UserEditor({ id, self = false }: { id: number; self?: boolean })
       const data = await api<EditUser>(`${path}?context=edit`);
       setUser(data);
       setValues(valuesOf(data));
+      setMeta(data.meta ?? {});
     } catch (error) {
       setLoadError(error instanceof ApiError ? error.message : 'Could not load this user.');
     }
@@ -102,8 +108,10 @@ export function UserEditor({ id, self = false }: { id: number; self?: boolean })
       else out[key] = values[key];
     }
     if (password) out.password = password;
+    const metaEdits = metaChanges(user?.meta, meta);
+    if (Object.keys(metaEdits).length) out.meta = metaEdits;
     return out;
-  }, [values, saved, password]);
+  }, [values, saved, password, user, meta]);
   const dirty = Object.keys(changed).length > 0;
 
   useEffect(() => {
@@ -127,6 +135,7 @@ export function UserEditor({ id, self = false }: { id: number; self?: boolean })
       const updated = await api<EditUser>(path, { method: 'POST', body: changed });
       setUser(updated);
       setValues(valuesOf(updated));
+      setMeta(updated.meta ?? {});
       setPassword(null);
       setErrors({});
       toast(self ? 'Profile updated.' : 'User updated.');
@@ -449,6 +458,28 @@ export function UserEditor({ id, self = false }: { id: number; self?: boolean })
               )}
             </div>
           </Card>
+
+          {/* Plugins' fields (show_user_profile / edit_user_profile). */}
+          <Slot
+            name={SLOTS.userProfileFields}
+            place="profile fields"
+            fillProps={{
+              user,
+              isSelf: isMe,
+              meta,
+              editMeta: (edits: Record<string, unknown>) => setMeta((m) => mergeMeta(m, edits)),
+            }}
+            wrap={(fill, content) => (
+              <Card
+                title={typeof fill.props.title === 'string' ? fill.props.title : undefined}
+                description={
+                  typeof fill.props.description === 'string' ? fill.props.description : undefined
+                }
+              >
+                <div className={styles.fields}>{content}</div>
+              </Card>
+            )}
+          />
         </form>
 
         <ApplicationPasswords userId={user.id} username={user.username} isSelf={isMe} />
@@ -476,6 +507,7 @@ export function UserEditor({ id, self = false }: { id: number; self?: boolean })
                 variant="ghost"
                 onClick={() => {
                   setValues(saved);
+                  setMeta(user.meta ?? {});
                   setPassword(null);
                   setErrors({});
                 }}

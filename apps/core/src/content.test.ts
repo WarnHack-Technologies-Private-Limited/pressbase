@@ -89,6 +89,28 @@ describe('GET /wp/v2/posts', () => {
     expect(beyond.status).toBe(400);
     expect(beyond.body.code).toBe('rest_post_invalid_page_number');
   });
+
+  it('lets plugins read their own parameters through rest_{post_type}_query', async () => {
+    const { request, install, kernel } = await setup();
+    await install();
+    await request('POST', '/wp/v2/posts', { title: 'Short note', status: 'publish' });
+    const seen: unknown[] = [];
+    kernel.hooks.addFilter('rest_post_query', (args, params) => {
+      seen.push((params as Record<string, unknown>)['daily-tips-length']);
+      return (params as Record<string, unknown>)['daily-tips-length'] === 'note'
+        ? { ...(args as object), s: 'note' }
+        : args;
+    });
+    const res = await request('GET', '/wp/v2/posts?daily-tips-length=note');
+    expect(res.status).toBe(200);
+    expect(res.body.map((p: { title: { rendered: string } }) => p.title.rendered)).toEqual([
+      'Short note',
+    ]);
+    expect(seen).toEqual(['note']);
+    // Pages fire their own hook.
+    await request('GET', '/wp/v2/pages?daily-tips-length=note');
+    expect(seen).toEqual(['note']);
+  });
 });
 
 describe('writing posts', () => {
