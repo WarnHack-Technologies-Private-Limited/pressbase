@@ -82,6 +82,7 @@ Plugins see the same declarations through `@pressbase/plugin-sdk`, whose types a
 | `delete_term`    | action | `termId, taxonomy, term`   | after a term is deleted                            |
 | `content_query_args` | filter | `args`                 | before every `ContentQuery` runs (like `pre_get_posts`) |
 | `rest_prepare_{type}` | filter | `item, post, context`  | each post or page in a REST response               |
+| `rest_{type}_query` | filter | `args, params`         | before `GET /wp/v2/{posts\|pages\|…}` queries; `params` are all the request's parameters, so plugins can add their own (a posts-list filter's) |
 | `rest_insert_{type}` | action | `post, body, creating`   | after a post is created or updated through the REST API, before the response is prepared |
 | `pre_render_block` | filter | `preRender, parsedBlock, parentBlock` | before each block renders; return a string to short-circuit (see [Blocks](blocks.md)) |
 | `render_block_data` | filter | `parsedBlock, sourceBlock, parentBlock` | before each block renders; change its attributes or inner blocks |

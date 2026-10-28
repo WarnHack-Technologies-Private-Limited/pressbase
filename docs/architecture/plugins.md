@@ -316,7 +316,7 @@ The admin is a prebuilt Next.js app and plugins arrive at runtime, so nothing a 
 1. **Declarative settings** (most plugins): the plugin describes its settings on the server and the admin draws the page. No admin JavaScript.
 2. **UI modules** (the rest): a browser ES module the admin imports at runtime, which renders React into named **slots**: a page body, dashboard widgets, editor panels.
 
-Code: `apps/core/src/plugins/admin.ts` (registrations, validation), `apps/core/src/routes/plugin-admin.ts` (REST and module serving); in the admin, `src/lib/extensions/` (registry, pages, settings helpers) and `src/components/extensions/` (host API, slots, the generic settings form). The example plugin uses all of it: [`plugins/daily-tips`](../../plugins/daily-tips) has a settings page, a dashboard widget and an editor panel.
+Code: `apps/core/src/plugins/admin.ts` (registrations, validation), `apps/core/src/routes/plugin-admin.ts` (REST and module serving); in the admin, `src/lib/extensions/` (registry, pages, settings helpers) and `src/components/extensions/` (host API, slots, the generic settings form). The example plugin uses all of it: [`plugins/daily-tips`](../../plugins/daily-tips) has a settings page, a dashboard widget, an editor panel, a Writing sidebar that follows the post as it's typed, and a Words column in the posts list.
 
 ### Settings
 
@@ -423,6 +423,10 @@ Modules must use the admin's React through `window.pressbase`, not bundle their 
 | `registerPlugin(name, { render })`, `unregisterPlugin`, `getPlugins`, `usePluginContext` | `@wordpress/plugins`: `render` is a component that renders Fills |
 | `Fill`, `Slot`, `slots` | SlotFill: `<Fill name="dashboard">…</Fill>`; `slots` lists the names |
 | `DashboardWidget`, `PluginDocumentSettingPanel` | Fills for the two built-in places |
+| `PluginSidebar`, `PluginSidebarMoreMenuItem`, `PluginPrePublishPanel` | Fills for the post editor: a sidebar tab, a top-bar button that opens it, a panel before publishing ([Slots](#slots)) |
+| `PostsListColumn`, `PostsListRowAction`, `PostsListFilter` | Fills for the posts and pages lists ([Slots](#slots)) |
+| `TermEditFields`, `UserProfileFields` | Fills for the category and tag edit form, and the profile and user edit screens ([Slots](#slots)) |
+| `editor` | the post being edited, live: `usePost(selector?)`, `getPost()`, `getEditedPostAttribute(name)`, `editPost(edits)`, `subscribe(listener)` ([Live editor data](#live-editor-data)) |
 | `components` | the admin's UI kit: `Button`, `Spinner`, `Card`, `Notice`, `Badge`, `EmptyState`, `TextField`, `TextAreaField`, `SelectField`, `Checkbox` |
 | `useToast()`, `useCurrentUser()` | the admin's toast (`toast('Saved.')`) and the user, with `capabilities` |
 
@@ -435,10 +439,90 @@ Each `registerPlugin()` is attributed to the plugin whose module was loading (mo
 | `dashboard` (`DashboardWidget`) | a card on the Dashboard, after core's | `title`, `size` (`small`: a third of the width, `large`: two thirds), `order` | — |
 | `editor.document-settings` (`PluginDocumentSettingPanel`) | a panel in the post and page editor's Post tab, before Revisions | `title`, `order` | `{ postId, postType }` (`postId` is null for a new post) |
 | `plugin-page/{plugin}/{page}` (`slots.page(plugin, page)`) | a plugin page's body, after its `entry`'s component | `order` | `{ plugin, page }` |
+| `editor.sidebar` (`PluginSidebar`) | a tab in the post and page editor's sidebar, after Post and Block, shown as its icon (named by `title`); its panel has the title as a heading and renders only while open | `name` (unique in the plugin), `title`, `icon`, `order` | `{ postId, postType }` |
+| `editor.sidebar-more-menu` (`PluginSidebarMoreMenuItem`) | a button in the editor's top bar that opens (or closes) the sidebar `target`; the children are its label | `target`, `icon`, `order` | — |
+| `editor.pre-publish` (`PluginPrePublishPanel`) | a panel in "Ready to publish?", which opens before a first publish (or schedule) only when there are such panels; the Publish button there always works | `title`, `initialOpen` (default true), `order` | `{ postId, postType }` |
+| `posts-list.columns` (`PostsListColumn`) | a column after Date in the posts and pages lists (hidden on narrow screens), as `manage_posts_columns` | `title`, `postTypes`, `order` | the child is a function of `{ post, postType }`, called per row |
+| `posts-list.row-actions` (`PostsListRowAction`) | a link or button among a row's actions (not in the Trash), as `post_row_actions` | `label` (or a function of the post), `href(post)` or `onClick(post, { reload })`, `isVisible(post)`, `postTypes`, `order` | — |
+| `posts-list.filters` (`PostsListFilter`) | a select beside the category filter, as `restrict_manage_posts` | `id`, `label` (the "all" option), `options` (`[{ value, label }]`), `query(value)`, `postTypes`, `order` | — |
+| `term.edit-fields` (`TermEditFields`) | fields in a category's or tag's edit form, after Description, as `{taxonomy}_edit_form_fields` | `taxonomies` (`category`, `post_tag`), `order` | `{ taxonomy, term, meta, editMeta }` |
+| `user.profile-fields` (`UserProfileFields`) | a card on Profile and on a user's edit screen, after Account, as `show_user_profile` / `edit_user_profile` | `title`, `description`, `order` | `{ user, isSelf, meta, editMeta }` |
 
-Fills are ordered by `order` (default 10), then by registration. A fill's children can be elements or a function of the slot's props.
+Fills are ordered by `order` (default 10), then by registration. A fill's children can be elements or a function of the slot's props. `postTypes` and `taxonomies` take a name or a list; without them a fill shows everywhere its slot is.
+
+**Posts lists.** The lists load posts with `context=edit`, so a column's `post` is the whole REST post: `content.raw`, `meta` (registered with `show_in_rest`), the terms. No extra request is needed. A filter's chosen value goes in the URL as `?{id}=value` (so it survives reloads and links), and `query(value)` returns REST parameters for `/wp/v2/{type}`. The list's own parameters (`status`, `search`, `page`, `categories`…) can't be used, and ids that clash with them are ignored. On the server, read the parameters with the `rest_{post_type}_query` filter (as in WordPress) and return query arguments, e.g. a `meta_query`:
+
+```js
+// index.js (server)
+api.hooks.addFilter('rest_post_query', (args, params) =>
+  params['my-seo-description'] === 'missing'
+    ? { ...args, meta_query: [{ key: '_yoast_wpseo_metadesc', compare: 'NOT EXISTS' }] }
+    : args,
+);
+```
+
+```js
+// admin/index.js
+h(PostsListFilter, {
+  id: 'my-seo-description',
+  label: 'All descriptions',
+  options: [{ value: 'missing', label: 'Missing a description' }],
+  query: (value) => ({ 'my-seo-description': value }),
+});
+```
+
+**Term and profile fields** get the object's `meta` with unsaved edits and `editMeta(edits)`, which merges edits key by key. The edits save with the form (only the keys that changed are sent, as `meta` in the REST request); Discard and Cancel drop them. Register the meta on the server with `show_in_rest` so REST accepts it.
 
 **Errors are contained.** Every fill, page component and plugin `render` runs inside an error boundary. A fill that throws is replaced by "The {plugin} plugin ran into a problem, so this part can’t be shown." with the error under *Details*; the rest of the screen works. A module that fails to import, or a `render` that throws, shows a warning naming the plugin above the screen's content.
+
+### Live editor data
+
+`window.pressbase.editor` is the post being edited, live, for editor fills: Gutenberg's `select('core/editor')` and `editPost()` with Pressbase names ([ADR 0018](../adr/0018-editor-data-for-plugins.md)).
+
+| Member | What | Gutenberg |
+| --- | --- | --- |
+| `usePost()` | the post (below), re-rendering on every change; `null` outside the editor | `useSelect(select => select('core/editor').getCurrentPost())` |
+| `usePost(selector)` | one part, e.g. `usePost((post) => post.meta.my_key)`; re-renders only when it changes. Return primitives or stable references | `useSelect(select => …getEditedPostAttribute('meta'))` |
+| `getPost()`, `getEditedPostAttribute(name)` | the same, outside React | `select('core/editor').getEditedPostAttribute(name)` |
+| `editPost({ meta, slug, excerpt })` | changes the post; `meta` merges key by key. Returns false outside the editor; other keys throw | `dispatch('core/editor').editPost()` |
+| `subscribe(listener)` | called on every change; returns the unsubscribe | `subscribe()` |
+
+The post has REST field names, with the edits not yet saved:
+
+| Field | What |
+| --- | --- |
+| `id`, `type`, `status` | `id` is null and `status` is `auto-draft` until a new post is saved |
+| `title`, `excerpt`, `slug` | as typed |
+| `content` | serialised block markup; follows typing within about 300 ms |
+| `blocks` | the parsed blocks (`name`, `attributes`, `innerBlocks`), parsed from `content` when first read |
+| `featured_media` | attachment ID, 0 for none |
+| `categories`, `tags`, `terms` | term IDs, and `terms.categories` / `terms.tags` as `{ id, name }` (a tag typed but not yet created has `id` 0) |
+| `meta` | registered post meta (`show_in_rest`), with edits |
+| `link`, `permalink` | the saved permalink, and the one the edited slug gives (where pretty permalinks make that knowable) |
+| `isDirty`, `isSaving` | unsaved changes; a save in progress |
+
+Edits through `editPost()` are unsaved changes like any other: the editor shows "Unsaved changes", warns before leaving, keeps them in the browser copy, and saves them with the post (only the meta keys that changed). The minute autosave stores the title, content and excerpt, as WordPress's does, so meta edits stay unsaved after it until the next save; the browser copy protects them meanwhile, and restoring it brings them back.
+
+```js
+const { element: { createElement: h }, editor, PluginSidebar, components: { TextAreaField } } = window.pressbase;
+
+function SearchPreview() {
+  const title = editor.usePost((post) => post.title);
+  const description = editor.usePost((post) => post.meta.my_seo_description ?? '');
+  return h('div', null,
+    h('p', null, title),
+    h(TextAreaField, {
+      label: 'Meta description',
+      value: description,
+      onChange: (e) => editor.editPost({ meta: { my_seo_description: e.target.value } }),
+    }),
+  );
+}
+
+registerPlugin('my-seo', {
+  render: () => h(PluginSidebar, { name: 'seo', title: 'SEO', icon: SeoIcon }, h(SearchPreview)),
+});
+```
 
 The editor panel is Pressbase's own sidebar, not Gutenberg's `@wordpress/edit-post` (the admin embeds the block editor, not the edit-post screen), so `PluginDocumentSettingPanel` here is a look-alike with the same purpose and props; `window.wp` is not provided.
 
