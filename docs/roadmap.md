@@ -87,7 +87,7 @@ Twenty Twenty-Five renders the home page, posts, pages, archives, search, commen
 - [ ] Direct WordPress (MySQL) migration: users and password hashes, media, SEO meta.
 - [ ] `pressbase` CLI (similar to wp-cli).
 - [ ] Internationalisation: `.po`/`.mo` files, `@wordpress/i18n`.
-- [ ] Site Health.
+- [x] Site Health: Tools → Site Health (Status and Info), the Dashboard rating, `site_status_tests` and `debug_information`. See [Site Health](architecture/site-health.md).
 
 ## v1.0: Stable
 

@@ -36,6 +36,7 @@ Items the user can't access are **hidden, not disabled**, as in WordPress. Items
 | `/admin/appearance/styles` | Styles: style variations, colours, type and layout with a live preview, and revisions (`edit_theme_options`). Reached from the Appearance tabs and the active theme's *Edit styles* button |
 | `/admin/{section}`       | Sections that aren't built yet show what's coming                  |
 | `/admin/settings/{plugin}[/{page}]`, `/admin/tools/{plugin}[/{page}]`, `/admin/plugin/{plugin}[/{page}]` | Plugins' pages: under Settings (after core's screens, set apart by a rule), listed on Tools (which stops showing "coming soon" once it has one), or top level in the Extend group. See [Plugins](../architecture/plugins.md#admin-pages) |
+| `/admin/tools`, `/admin/tools/site-health`, `/admin/tools/site-health/info` | Tools; Site Health's Status and Info tabs (`view_site_health_checks`) |
 | `/admin/settings/{page}` | Settings: general, writing, reading, discussion, media, permalinks |
 | `/admin/appearance`, `/admin/appearance/menus` | Themes; Menus (`edit_theme_options`), reached through the Appearance sub-navigation |
 

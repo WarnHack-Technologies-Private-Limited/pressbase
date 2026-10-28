@@ -108,7 +108,7 @@ Open <http://localhost:3000> and follow the installer. Configuration, SMTP and h
 | Path                  | What it is                                                                                                          |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `apps/core`           | The core server (Hono on Node.js): REST API at `/wp-json`, content, media, people, comments, themes and rendering.   |
-| `apps/admin`          | The admin app (Next.js): installer, dashboard, block editor, media, comments, users, appearance and settings.       |
+| `apps/admin`          | The admin app (Next.js): installer, dashboard, block editor, media, comments, users, appearance, tools (Site Health) and settings. |
 | `apps/web`            | The public site (Next.js): serves pages rendered by core, with a tagged page cache.                                 |
 | `packages/db`         | PostgreSQL schema (Drizzle ORM), migrations and the connection factory. Also runs on the built-in database (PGlite). |
 | `packages/hooks`      | Actions and filters: the extension system, modelled on `WP_Hook`.                                                   |

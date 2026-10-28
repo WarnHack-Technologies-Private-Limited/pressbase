@@ -31,6 +31,7 @@ New here? The [README](../README.md#see-it-in-action) shows Pressbase in action:
 - [Public page hooks, scripts and styles](architecture/scripts-and-styles.md): `wp_head`, `wp_body_open`, `wp_footer`, `kernel.scripts` and `kernel.styles`.
 - [Plugins](architecture/plugins.md): writing a plugin, plugin.json, the lifecycle, installing, the security model and its limits.
 - [REST API](architecture/rest-api.md): endpoints, errors, authentication.
+- [Site Health](architecture/site-health.md): Tools → Site Health's tests, the Info tab, the Dashboard rating and how plugins extend them.
 - [Block editor](architecture/block-editor.md): how Gutenberg runs in the admin, api-fetch, hidden blocks, autosave.
 - [Installer](architecture/installer.md): site states, the install flow, configuration.
 - [Security](architecture/security.md): threat model and protections.

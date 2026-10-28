@@ -48,6 +48,28 @@ export interface StoredResult extends SiteHealthCounts {
   time: string;
 }
 
+/**
+ * The parts of fetch() Site Health uses. Spelled out, rather than the DOM's
+ * Response, so the plugin SDK's type build (which has no DOM types) can follow
+ * the kernel's types here.
+ */
+export interface HealthResponse {
+  ok: boolean;
+  status: number;
+  json(): Promise<unknown>;
+  text(): Promise<string>;
+}
+
+export interface HealthRequestInit {
+  method?: string;
+  headers?: Record<string, string>;
+  body?: string;
+  redirect?: 'follow' | 'manual' | 'error';
+  signal?: AbortSignal;
+}
+
+export type HealthFetch = (url: string, init?: HealthRequestInit) => Promise<HealthResponse>;
+
 export type ReleaseCheck =
   | { state: 'ok'; version: string; url: string }
   | { state: 'error'; error: string }
@@ -92,7 +114,8 @@ const slugOf = (id: string) => id.replace(/_/g, '-');
 
 export class SiteHealth {
   /** Outgoing HTTP for the async tests. Tests replace it; nothing else should. */
-  fetch: typeof fetch = (...args) => globalThis.fetch(...args);
+  fetch: HealthFetch = (url, init) =>
+    globalThis.fetch(url, init) as unknown as Promise<HealthResponse>;
   /** How long one outgoing request may take. */
   requestTimeoutMs = 5000;
 
@@ -256,7 +279,7 @@ export class SiteHealth {
   }
 
   /** An outgoing request that never throws: the Response, or the Error that stopped it. */
-  async request(url: string, init: RequestInit = {}): Promise<Response | Error> {
+  async request(url: string, init: HealthRequestInit = {}): Promise<HealthResponse | Error> {
     try {
       return await this.fetch(url, {
         redirect: 'manual',

@@ -88,6 +88,7 @@ apps/
     routes/              one file per REST resource
     themes/              theme discovery, PHP pattern loader, theme block supports, assets
     plugins/             plugin.json, discovery, the plugin manager and runtime, dynamic routing, zip reader
+    site-health/         kernel.siteHealth: Site Health tests, debug information, the weekly check
     frontend/            request routing, main query, template hierarchy, page rendering
   admin/src/
     app/                 Next.js routes (install, login, admin/…)

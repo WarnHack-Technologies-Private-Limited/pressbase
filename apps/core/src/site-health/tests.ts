@@ -8,7 +8,7 @@ import { compareVersions, parseVersion } from '../plugins/semver';
 import { DEFAULT_THEME } from '../themes/service';
 import { DB_VERSION, PRESSBASE_VERSION } from '../version';
 import { actionLink, esc, paragraphs, sizeFormat } from './html';
-import type { SiteHealth } from './service';
+import type { HealthResponse, SiteHealth } from './service';
 import type { SiteHealthTestResult, SiteStatusTests } from './types';
 
 /**
@@ -528,7 +528,7 @@ async function loopbackTest(health: SiteHealth): Promise<SiteHealthTestResult> {
       'The admin and the public site reach core over HTTP. If they can’t, pages and admin screens fail to load for visitors even though core is running.',
     ),
   );
-  const checks: { what: string; url: string; ok: (res: Response, body: string) => boolean }[] = [
+  const checks: { what: string; url: string; ok: (res: HealthResponse, body: string) => boolean }[] = [
     {
       what: 'the site address',
       url: `${home}/wp-json/`,
@@ -537,7 +537,7 @@ async function loopbackTest(health: SiteHealth): Promise<SiteHealthTestResult> {
     ...health.webUrls().map((web) => ({
       what: 'the public site',
       url: `${web.replace(/\/+$/, '')}/robots.txt`,
-      ok: (res: Response, body: string) => res.ok && /user-agent/i.test(body),
+      ok: (res: HealthResponse, body: string) => res.ok && /user-agent/i.test(body),
     })),
   ];
   const problems: string[] = [];
