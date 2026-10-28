@@ -5,6 +5,7 @@ import { POSTPASS_COOKIE, postPasswordHash } from '../blocks/library/template';
 import { renderPublicPage } from '../frontend/render';
 import { type AppEnv, isSecureRequest, restError } from '../http';
 import type { Kernel } from '../kernel';
+import { userGlobalStylesPost } from '../themes/global-styles';
 import { THEMES_URL_PATH, type ThemeInfo } from '../themes/service';
 import { notFoundResponse, safeSegments, serveStaticFile } from '../themes/static-files';
 
@@ -49,8 +50,26 @@ async function themeItem(kernel: Kernel, theme: ThemeInfo, active: string) {
     _links: {
       self: [{ href: `${home}/wp-json/wp/v2/themes/${theme.stylesheet}` }],
       collection: [{ href: `${home}/wp-json/wp/v2/themes` }],
+      ...(await userGlobalStylesLink(kernel, theme, active, home)),
     },
   };
+}
+
+/**
+ * prepare_links(): the theme's user global styles, created for the active
+ * theme if missing (get_user_global_styles_post_id()).
+ */
+async function userGlobalStylesLink(
+  kernel: Kernel,
+  theme: ThemeInfo,
+  active: string,
+  home: string,
+) {
+  if (!theme.isBlockTheme) return {};
+  const post = await userGlobalStylesPost(kernel, theme.stylesheet, theme.stylesheet === active);
+  return post
+    ? { 'wp:user-global-styles': [{ href: `${home}/wp-json/wp/v2/global-styles/${post.id}` }] }
+    : {};
 }
 
 /** Routes under /wp-json that need an installed site. */

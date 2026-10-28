@@ -112,10 +112,21 @@ toast('Could not save.', { tone: 'danger' });
 
 | Component | Pattern |
 |---|---|
-| `AppearanceSubnav` | Themes · Menus tabs, each shown only with its capability. |
+| `AppearanceSubnav` | Themes · Styles · Menus tabs (`aria-current="page"`), each shown only with its capability. |
 | `MenuEditor` | One menu at a time: a select to switch (asks before discarding changes), **New menu**, the name, and **Use in the header** (or an "In the header" badge). The structure is a tree of item rows: a drag handle, then the label with its type ("Page", "Custom link · Opens in a new tab") as a disclosure button. The handle moves the item with the arrow keys (↑ ↓ among siblings, → into the submenu above, ← out), and the open panel has the same moves as labelled buttons ("Into submenu of “About”"), WordPress's classic menu pattern. Drop targets show a line (before, after) or an outline (inside). Moves are announced politely and focus stays on the control used. Removing an item offers Undo. Save bar as in Settings; **Delete menu** asks first. Empty state: **Create a menu from your pages**. |
 | *Add items* card | Segmented tabs (Pages, Posts, Categories, Link) with arrow-key navigation; search results as checkboxes and one **Add to menu** button; custom links validate the address (web, path, `mailto:`, `tel:`) next to the field. Sticky beside the menu on wide screens. |
 | `MenuPreview` | The site's header with the unsaved menu, in a sandboxed frame scaled from a 1280px (desktop) or 390px (mobile) viewport; a Desktop/Mobile segmented control (`aria-pressed`). Links are inert; the menu button works, so the overlay can be tried. |
+| `ThemeList` | Theme cards; the active block theme offers **Edit styles**. |
+| `StylesEditor` | A controls panel (23rem) beside the preview, wider than the usual 1080px column. The panel's head shows the save state ("Unsaved changes" with a dot, or "Saved" with a check, in a polite live region) with *Discard* and the one primary button, **Save**. Below, an ARIA tablist (arrow keys, Home, End): **Styles**, **Colours**, **Type**, **Layout**, **History**. The footer holds *Reset to theme defaults* and a link to the logo and icon. A warning before leaving with unsaved changes. Below 900px the preview sits on top and the tabs stick under the top bar. |
+| Variation cards | Toggle buttons (`aria-pressed`) drawn like the site editor's style previews: the variation's background, a large "Aa" in its heading font and text colour, and up to three accent dots. The selected card gets an accent ring and a check badge — never colour alone. Palettes are strips of five colours; font pairings show "Aa Aa" in the heading and body fonts. The theme's fonts are loaded for the cards from the theme folder. |
+| Colour roles | Background, Text and Accent: a `<fieldset>` each, with the current colour's swatch, name and hex as its legend, palette swatches as real radio inputs, and a native colour picker for any other colour. Choosing an accent also picks the button text colour that reads best on it. A contrast line under the roles ("Text on background: 12.6:1 — easy to read" or a warning icon with "hard to read (aim for 4.5:1 or more)"). The palette list edits each theme colour in place. |
+| Type and layout | Heading and body font selects with a live sample; base size as a segmented control of the theme's sizes plus a slider; content and wide widths as sliders with "Use the theme's 645px" to undo. |
+| History | Saved versions, newest first, with date, author and "Theme defaults" / "Custom styles"; **Preview** loads one into the preview, and Save restores it. |
+| `StylePreview` | The real public page rendered with the unsaved styles (core's preview endpoint), debounced. Two frames take turns so updates never flash; the scroll position is kept. Desktop / Tablet / Phone sizes (scaled to fit); links and search stay inside the preview; "Open page" opens the live page. |
+
+## Settings: site identity
+
+`SiteLogoField` and `SiteIconField` (`components/settings/site-identity-fields.tsx`) sit in General → *Site identity*: a `<fieldset>` each, choosing an image with `MediaPicker`. The logo shows on a sunken, dashed-when-empty well; the icon previews at real size in a browser-tab mock and as a phone home-screen tile, and notes images that aren't square (the centre is used) or are smaller than 512 px. Both save with the rest of the form.
 
 ## People: `components/people/`
 

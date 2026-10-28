@@ -9,6 +9,7 @@ import { Button } from '../ui/button';
 import { SelectField, TextField } from '../ui/field';
 import { Card, Notice } from '../ui/surface';
 import styles from './settings.module.css';
+import { SiteIconField, SiteLogoField } from './site-identity-fields';
 
 export interface GeneralSettings {
   title: string;
@@ -19,6 +20,9 @@ export interface GeneralSettings {
   date_format: string;
   time_format: string;
   start_of_week: number;
+  /** Attachment IDs (0 for none), as WordPress registers them. */
+  site_logo: number;
+  site_icon: number;
 }
 
 const DATE_FORMATS = ['F j, Y', 'Y-m-d', 'm/d/Y', 'd/m/Y'];
@@ -158,7 +162,7 @@ export function GeneralSettingsForm({
 
       <Card
         title="Site identity"
-        description="How your site introduces itself to visitors and search engines."
+        description="How your site introduces itself to visitors, search engines and browsers."
       >
         <div className={styles.fields}>
           <TextField
@@ -175,6 +179,16 @@ export function GeneralSettingsForm({
             error={errors.description}
             hint="In a few words, explain what this site is about."
             placeholder="e.g. Notes on design, code and coffee"
+          />
+          <SiteLogoField
+            value={values.site_logo}
+            onChange={(id) => set('site_logo', id)}
+            siteName={values.title}
+          />
+          <SiteIconField
+            value={values.site_icon}
+            onChange={(id) => set('site_icon', id)}
+            siteName={values.title}
           />
         </div>
       </Card>
@@ -282,7 +296,28 @@ export function GeneralSettingsForm({
 }
 
 function pick(result: GeneralSettings): GeneralSettings {
-  const { title, description, url, email, timezone, date_format, time_format, start_of_week } =
-    result;
-  return { title, description, url, email, timezone, date_format, time_format, start_of_week };
+  const {
+    title,
+    description,
+    url,
+    email,
+    timezone,
+    date_format,
+    time_format,
+    start_of_week,
+    site_logo,
+    site_icon,
+  } = result;
+  return {
+    title,
+    description,
+    url,
+    email,
+    timezone,
+    date_format,
+    time_format,
+    start_of_week,
+    site_logo: site_logo ?? 0,
+    site_icon: site_icon ?? 0,
+  };
 }

@@ -7,6 +7,8 @@ import { theTitle } from '../blocks/helpers';
 import { NAVIGATION_NOSCRIPT } from '../blocks/library/navigation';
 import { permalink, permalinkContext } from '../content/permalinks';
 import type { Kernel } from '../kernel';
+import type { ActiveTheme } from '../themes/service';
+import { siteIconTags } from '../themes/site-identity';
 import { PRESSBASE_VERSION } from '../version';
 import { templateHierarchy } from './hierarchy';
 import { PageRender, withPage } from './page';
@@ -32,6 +34,8 @@ export interface RenderRequest {
   user: CurrentUser | null;
   cookies?: Map<string, string>;
   ifNoneMatch?: string;
+  /** Render with this theme instead of the active one (the global styles preview). */
+  theme?: ActiveTheme;
 }
 
 /** The URL of WordPress's front-end block styles, served by core (routes/frontend.ts). */
@@ -183,7 +187,7 @@ export async function renderPublicPage(
       html: '',
     };
   }
-  const theme = await kernel.themes.active();
+  const theme = request.theme ?? (await kernel.themes.active());
   const candidates = templateHierarchy(main, await pageTemplateOf(kernel, main));
   const slug = candidates.find((c) => theme.templates.has(c)) ?? 'index';
   const template = theme.templates.get(slug);
@@ -240,6 +244,8 @@ export async function renderPublicPage(
   if (theme.css.fontFaces)
     head.push(`<style class='wp-fonts-local'>\n${theme.css.fontFaces}\n</style>`);
   if (page.scripts.size) head.push(NAVIGATION_NOSCRIPT);
+  // wp_site_icon() (wp_head, priority 99).
+  head.push(await siteIconTags(kernel));
 
   const scripts = [...page.scripts]
     .map((js) => `<script>${js.replaceAll('</script', '<\\/script')}</script>`)

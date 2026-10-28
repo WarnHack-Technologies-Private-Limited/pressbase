@@ -33,6 +33,7 @@ export function AdminShell({
   user,
   siteName,
   siteUrl,
+  siteIcon,
   version,
   children,
 }: {
@@ -40,6 +41,8 @@ export function AdminShell({
   siteName: string;
   /** The public site's address (the `home` option). */
   siteUrl: string;
+  /** The site icon's URL (get_site_icon_url()), shown instead of the initial. */
+  siteIcon?: string;
   version: string;
   children: ReactNode;
 }) {
@@ -101,8 +104,12 @@ export function AdminShell({
         aria-label="Admin"
       >
         <div className={styles.site}>
-          <span className={styles.siteIcon} aria-hidden="true">
-            {initials(siteName || 'Pressbase').slice(0, 1)}
+          <span className={styles.siteIcon} aria-hidden="true" data-image={Boolean(siteIcon)}>
+            {siteIcon ? (
+              <img src={siteIcon} alt="" />
+            ) : (
+              initials(siteName || 'Pressbase').slice(0, 1)
+            )}
           </span>
           <div style={{ minWidth: 0 }}>
             <div className={styles.siteName}>{siteName || 'Untitled site'}</div>

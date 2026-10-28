@@ -672,7 +672,8 @@ describe('lost and reset password', () => {
     await visitor.request('POST', '/pressbase/v1/auth/lost-password', { login: 'admin' });
     const { key, login } = linkIn((await outbox(dataDir))[0] as OutboxMail);
     const wrong = await visitor.request('POST', '/pressbase/v1/auth/reset-password', {
-      key: `${key.slice(0, -1)}X`,
+      // Change the last character to one it isn't (a fixed 'X' was flaky: 1 key in 64 ends in X).
+      key: `${key.slice(0, -1)}${key.endsWith('X') ? 'Y' : 'X'}`,
       login,
       password: 'whatever it is',
     });

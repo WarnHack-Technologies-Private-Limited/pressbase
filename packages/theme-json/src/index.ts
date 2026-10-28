@@ -33,12 +33,38 @@ export {
   type ThemeJsonPartial,
 } from './resolver';
 export {
+  type CustomCssResult,
+  encodeGlobalStylesJson,
+  isSafeCssDeclaration,
+  type RemoveInsecureOptions,
+  removeInsecureProperties,
+  validateCustomCss,
+} from './sanitize';
+export {
   appendToSelector,
   blockStyleVariationSelector,
   prependToSelector,
   scopeSelector,
   splitSelectorList,
 } from './selectors';
+export {
+  applyStyleVariation,
+  areGlobalStyleConfigsEqual,
+  filterObjectByProperties,
+  type GlobalStylesConfig,
+  isStyleVariationApplied,
+  isVariationWithProperties,
+  jsonEqual,
+  keyPresetsByOrigin,
+  mergeGlobalStylesConfigs,
+  removePropertiesFromObject,
+  resolvedThemeUris,
+  type StyleVariation,
+  type StyleVariationKind,
+  styleVariationKind,
+  styleVariationScope,
+  VARIATION_PROPERTIES,
+} from './style-variations';
 export { computeSpacingSizes, supportsLayout, ThemeJson } from './theme-json';
 export type * from './types';
 export {

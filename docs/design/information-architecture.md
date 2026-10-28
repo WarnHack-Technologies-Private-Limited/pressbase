@@ -32,6 +32,8 @@ Items the user can't access are **hidden, not disabled**, as in WordPress. Items
 | `/admin/profile`         | Your profile and application passwords (from the user menu)        |
 | `/lost-password`, `/reset-password?key=…&login=…` | Forgot your password, choose a new one (linked from `/login`) |
 | `/admin/comments`        | Comments. Filters in the URL: `?comment_status=moderated&s=spam&paged=2`; `?c=12` opens one comment for editing (themes' "Edit" links) |
+| `/admin/appearance`      | Themes (WordPress's `themes.php`)                                  |
+| `/admin/appearance/styles` | Styles: style variations, colours, type and layout with a live preview, and revisions (`edit_theme_options`). Reached from the Appearance tabs and the active theme's *Edit styles* button |
 | `/admin/{section}`       | Sections that aren't built yet show what's coming                  |
 | `/admin/settings/{page}` | Settings: general, writing, reading, discussion, media, permalinks |
 | `/admin/appearance`, `/admin/appearance/menus` | Themes; Menus (`edit_theme_options`), reached through the Appearance sub-navigation |
@@ -51,4 +53,8 @@ Settings follow WordPress's screens one to one: General, Writing, Reading, Discu
 
 ## Appearance
 
-Appearance has a sub-navigation, like Posts: **Themes** (`switch_themes`) and **Menus** (`edit_theme_options`). Menus is WordPress's *Appearance → Menus*, rebuilt for block themes: it edits `wp_navigation` menus and chooses the one the theme's header shows, without opening a site editor. See [Navigation](../architecture/navigation.md).
+Appearance has tabs, like Posts: **Themes** (`switch_themes`), **Styles** and **Menus** (both `edit_theme_options`). Themes is where you choose a theme; Styles is where you tune the one you have; Menus is WordPress's *Appearance → Menus*, rebuilt for block themes: it edits `wp_navigation` menus and chooses the one the theme's header shows, without opening a site editor. See [Navigation](../architecture/navigation.md).
+
+**Styles** answers "how does my site look?" in WordPress's own vocabulary (style variations, palette, typography, layout), but on one screen instead of the site editor's drill-down panels: a controls panel beside a preview of the real public site. The panel has five tabs, ordered from the broadest choice to the finest: _Styles_ (complete looks), _Colours_, _Type_, _Layout_, _History_. Nothing goes live until **Save**; _Discard_ returns to what's live, _Reset to theme defaults_ to the theme's own styles, and _History_ brings back any saved version (into the preview first, then Save).
+
+**Where site identity lives.** The logo and site icon are in **Settings → General**, in the _Site identity_ card beside the site title and tagline. They describe the site, not the theme: they survive a theme switch, the icon also shows in the admin and in browser tabs, and WordPress puts the site icon on its General settings screen too (the logo lived in the Customizer's "Site Identity" panel, next to title and tagline). They need `manage_options`, like the rest of General. The Styles screen links there from its footer, so someone tuning the look finds them in one step.
