@@ -2,8 +2,8 @@ import { schema } from '@pressbase/db';
 import { and, count, desc, eq, inArray } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { userCan } from '../auth/users';
-import { decodeGlobalStyles, userGlobalStylesPost } from '../themes/global-styles';
 import { type AppEnv, requireCapability, restError } from '../http';
+import { decodeGlobalStyles, userGlobalStylesPost } from '../themes/global-styles';
 import { PRESSBASE_VERSION } from '../version';
 
 /** Everything the dashboard home screen shows, in one request. */

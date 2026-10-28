@@ -49,7 +49,7 @@ The dashboard answers three questions, in this order:
 
 ## Settings
 
-Settings follow WordPress's screens one to one: General, Writing, Reading, Discussion, Media, Permalinks. Inside a screen, fields are grouped into cards by the question the user is answering (_Site identity_, _Address and contact_, _Date and time_), not by storage.
+Settings follow WordPress's screens one to one: General, Writing, Reading, Discussion, Media, Permalinks. After them, **Scheduled tasks** (Pressbase's own, read-only) lists the cron events waiting to run and recent failed jobs; it sits in Settings because it needs `manage_options` and Tools isn't built yet. Inside a screen, fields are grouped into cards by the question the user is answering (_Site identity_, _Address and contact_, _Date and time_), not by storage.
 
 ## Appearance
 

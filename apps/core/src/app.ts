@@ -13,6 +13,7 @@ import { autosavesRoutes } from './routes/autosaves';
 import { blockRoutes } from './routes/blocks';
 import { commentCountRoutes, commentsRoutes } from './routes/comments';
 import { commentsPostRoutes } from './routes/comments-post';
+import { cronRoutes } from './routes/cron';
 import { dashboardRoutes, postCountRoutes } from './routes/dashboard';
 import { globalStylesRoutes } from './routes/global-styles';
 import { installRoutes } from './routes/install';
@@ -82,6 +83,8 @@ export function createApp(kernel: Kernel) {
   installed.route('/pressbase/v1/auth', authRoutes());
   installed.route('/pressbase/v1/dashboard', dashboardRoutes());
   installed.route('/pressbase/v1/post-counts', postCountRoutes());
+  // Scheduled cron events and failed jobs (v0.5). See docs/architecture/jobs.md.
+  installed.route('/pressbase/v1/cron', cronRoutes());
   installed.route('/wp/v2/users', userRoutes());
   installed.route('/wp/v2/settings', settingsRoutes());
   installed.route('/wp/v2', typeRoutes());

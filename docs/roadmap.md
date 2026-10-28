@@ -75,7 +75,7 @@ Twenty Twenty-Five renders the home page, posts, pages, archives, search, commen
 - [ ] `plugin.json` manifest and runtime loader (no rebuild).
 - [ ] Lifecycle: activate, deactivate, uninstall, plugin migrations.
 - [ ] Admin extension points (SlotFill), admin pages, Settings API for plugins.
-- [ ] Job queue and cron (pg-boss).
+- [x] Job queue and cron: a table-backed queue instead of pg-boss ([ADR 0010](adr/0010-job-queue.md)).
 - [ ] `create-pressbase-plugin` scaffolding and the plugin SDK.
 - [ ] Plugin permissions (network, filesystem, database scopes).
 - [ ] `wp_head` / `wp_footer`-style hooks so plugins can add to public pages.
