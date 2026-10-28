@@ -14,10 +14,26 @@ export default async function ReadingSettingsPage() {
   ]);
   if (status === 401) redirect('/login');
   if (status === 403) redirect('/admin');
-  const { show_on_front, page_on_front, page_for_posts, posts_per_page, blog_public } = data;
+  const {
+    show_on_front,
+    page_on_front,
+    page_for_posts,
+    posts_per_page,
+    blog_public,
+    posts_per_rss,
+    rss_use_excerpt,
+  } = data;
   return (
     <ReadingSettingsForm
-      initial={{ show_on_front, page_on_front, page_for_posts, posts_per_page, blog_public }}
+      initial={{
+        show_on_front,
+        page_on_front,
+        page_for_posts,
+        posts_per_page,
+        blog_public,
+        posts_per_rss,
+        rss_use_excerpt,
+      }}
       pages={(pages.status === 200 ? pages.data : []).map((p) => ({
         id: p.id,
         title: p.title.rendered || '(no title)',

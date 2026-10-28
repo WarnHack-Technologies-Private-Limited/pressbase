@@ -12,6 +12,7 @@ import {
   type SQL,
   sql,
 } from 'drizzle-orm';
+import { addCacheTags, CacheTag } from '../cache/tags';
 import type { Kernel } from '../kernel';
 import { sanitizeSlug, stripTags } from './sanitize';
 
@@ -93,6 +94,7 @@ export class TermsService {
     const [term] = await this.#select().where(
       and(eq(schema.terms.id, id), eq(schema.termTaxonomy.taxonomy, taxonomy)),
     );
+    if (term) addCacheTags(CacheTag.term(term.id));
     return term;
   }
 
@@ -156,6 +158,13 @@ export class TermsService {
         .innerJoin(termTaxonomy, eq(termTaxonomy.termId, terms.id))
         .where(condition),
     ]);
+    // A page showing these terms depends on them; one listing the taxonomy, on all of it.
+    addCacheTags(
+      ...rows.map((t) => CacheTag.term(t.id)),
+      args.post === undefined && !args.slug?.length && !args.include?.length
+        ? CacheTag.terms(taxonomy)
+        : undefined,
+    );
     return { terms: rows, total: totals?.n ?? 0 };
   }
 
@@ -403,6 +412,16 @@ export class TermsService {
       }
     });
     await this.recount([...touched]);
+    // set_object_terms ($object_id, $terms, $tt_ids, $taxonomy, $append, $old_tt_ids)
+    await this.kernel.hooks.doAction(
+      'set_object_terms',
+      objectId,
+      termIds,
+      wanted.map((w) => w.ttId),
+      taxonomy,
+      false,
+      current.map((r) => r.ttId),
+    );
   }
 
   /** Removes every relationship of an object (on permanent post deletion). */

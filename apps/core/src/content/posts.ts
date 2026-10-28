@@ -1,5 +1,6 @@
 import { schema } from '@pressbase/db';
 import { and, eq, inArray, lte, sql } from 'drizzle-orm';
+import { addCacheTags, CacheTag } from '../cache/tags';
 import type { Kernel } from '../kernel';
 import { sanitizePostContent, sanitizePostTitle, sanitizeSlug } from './sanitize';
 
@@ -11,7 +12,8 @@ import { sanitizePostContent, sanitizePostTitle, sanitizeSlug } from './sanitize
  * Hooks fired, with WordPress's names:
  * transition_post_status (new, old, post) · save_post (id, post, update) ·
  * wp_insert_post (id, post, update) · wp_trash_post / trashed_post (id) ·
- * untrashed_post (id) · before_delete_post / deleted_post (id).
+ * untrashed_post (id) · before_delete_post / deleted_post (id) ·
+ * post_updated (id, postAfter, postBefore).
  */
 
 export type Post = typeof schema.posts.$inferSelect;
@@ -58,6 +60,8 @@ export class PostsService {
 
   async get(id: number): Promise<Post | undefined> {
     const [post] = await this.#db.select().from(schema.posts).where(eq(schema.posts.id, id));
+    // A page that shows this post depends on it (see cache/tags.ts).
+    if (post) addCacheTags(CacheTag.post(post.id));
     return post;
   }
 
@@ -200,6 +204,8 @@ export class PostsService {
     if (input.terms) await this.#setTerms(id, input.terms);
 
     const post = (await this.get(id)) as Post;
+    // post_updated (wp_update_post() → wp_insert_post()): the post before and after.
+    await this.kernel.hooks.doAction('post_updated', id, post, current);
     const contentChanged =
       post.title !== current.title ||
       post.content !== current.content ||

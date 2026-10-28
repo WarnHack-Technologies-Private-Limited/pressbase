@@ -120,6 +120,18 @@ export function registerCoreSettings(registry: SettingsRegistry): void {
     schema: z.boolean(),
     default: true,
   });
+  // Settings → Reading's feed settings (options-reading.php). Not in WordPress's
+  // /wp/v2/settings; exposed for the admin. Read by frontend/feeds.ts.
+  registry.register('posts_per_rss', {
+    option: 'posts_per_rss',
+    schema: z.number().int().min(1).max(100),
+    default: 10,
+  });
+  registry.register('rss_use_excerpt', {
+    option: 'rss_use_excerpt',
+    schema: z.boolean(),
+    default: false,
+  });
   registry.register('default_category', {
     option: 'default_category',
     schema: postId,

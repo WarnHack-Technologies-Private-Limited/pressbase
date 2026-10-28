@@ -31,6 +31,8 @@ Browser ── GET /2026/10/27/hello/ ──▶ apps/web   :3001 ◀────
 
 `/wp-json/*`, `/wp-content/*`, `/wp-includes/*` and `/wp-login.php` are proxied straight to core by both Next.js apps.
 
+The same endpoint answers feeds, sitemaps and `robots.txt`, and `apps/web` caches anonymous answers by the cache tags core returns with each render. See [The public site](public-site.md).
+
 ## The theme.json engine
 
 `@pressbase/theme-json` is pure: it never touches the file system. Callers pass the parsed files in.
@@ -168,7 +170,8 @@ With `/%postname%/`-style structures, pages are tried before posts ("verbose pag
 1. Runs the main query; a redirect answers immediately.
 2. Picks the template and renders it with `kernel.blocks.render()`, inside a `PageRender` (`frontend/page.ts`) that travels with the render through `AsyncLocalStorage`: the main query (for `core/query` with `inherit`, pagination, titles), unique IDs, the collected CSS and scripts, the request's path and cookies. Singular views render with the post as context.
 3. Wraps the result in `<div class="wp-site-blocks">`, adds the skip link (`#wp--skip-link--target` on the first `<main>`), and builds the head: `<title>` (`wp_get_document_title()`), robots meta, canonical link, the block library CSS (`/wp-includes/css/dist/block-library/style.min.css`, WordPress 7.1.3's), global styles, variation and block support CSS, the theme's stylesheets and `@font-face` rules. `<body>` gets `get_body_class()`'s classes.
-4. Answers `404` for 404s, with `Cache-Control: public, max-age=0, must-revalidate` (private for logged-in visitors) and an `ETag`; a matching `If-None-Match` gives 304.
+4. Answers `404` for 404s, with `Cache-Control: public, max-age=0, must-revalidate` (private for logged-in visitors, unlocked protected posts and held-comment previews) and an `ETag`; a matching `If-None-Match` gives 304. The head links the site's feeds (`feed_links()`, `feed_links_extra()`).
+5. Returns the cache tags of everything the render read (`tags`), for `apps/web`'s page cache ([ADR 0008](../adr/0008-public-page-caching.md)).
 
 ### Template blocks
 
@@ -201,6 +204,5 @@ Anything a theme does in `functions.php` doesn't happen; keep styles in `theme.j
 
 - The site editor: editing templates, parts, global styles and navigation menus (`wp_template`, `wp_template_part`, `wp_global_styles`, `wp_navigation` post types).
 - Theme style variations (`styles/*.json`), responsive style states, duotone.
-- Comments blocks (being built separately; they render nothing until registered), RSS feeds, the admin bar, `wp_head` hooks for plugins, oEmbed.
+- The admin bar, `wp_head` hooks for plugins, oEmbed.
 - Post formats, sticky-post styling beyond ordering, attachment pages, custom post type archives.
-- Caching rendered pages in `apps/web` with revalidation on content changes.

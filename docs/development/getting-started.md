@@ -71,6 +71,8 @@ See `.env.example`. Core reads the repo-root `.env` in development.
 | `CORE_URL`          | `http://localhost:4000`       | Where the admin and public apps reach core       |
 | `WEB_URL`           | `http://localhost:3001`       | Where the admin forwards public pages            |
 | `ADMIN_URL`         | `http://localhost:3000`       | Where the public app sends visitors to install   |
+| `PRESSBASE_REVALIDATE_SECRET` | — | Turns on the public page cache: a secret (16+ characters) shared by core and `apps/web`, which core uses to purge cached pages at `WEB_URL` (comma-separated for several instances). Without it, nothing is cached. See [ADR 0008](../adr/0008-public-page-caching.md). |
+| `PRESSBASE_PAGE_CACHE_MB` | `64` | Memory `apps/web`'s page cache may use |
 | `PRESSBASE_SMTP_URL` | —                            | SMTP server as a URL, e.g. `smtps://user:pass@smtp.example.com:465`. Wins over the fields below. |
 | `PRESSBASE_SMTP_HOST`, `PRESSBASE_SMTP_PORT`, `PRESSBASE_SMTP_USER`, `PRESSBASE_SMTP_PASS`, `PRESSBASE_SMTP_SECURE` | — · `587` (`465` when secure) | SMTP server as separate settings. `SECURE=true` uses TLS from the start. |
 | `PRESSBASE_MAIL_FROM` | site title + `pressbase@<site host>` | Sender, e.g. `"The Morning Paper <hello@example.com>"` |
@@ -90,5 +92,6 @@ That's enough to finish password resets and welcome emails locally: open the new
 - **"Something went wrong" page in the admin.** Core isn't running or isn't reachable at `CORE_URL`. Check the `@pressbase/core:dev` logs.
 - **Port in use.** Set `PORT` for core (and `CORE_URL` to match), or run `next dev --port` for the admin or the public site (and set `WEB_URL` / `ADMIN_URL` to match).
 - **"The site can't be reached right now" from the public site.** Core isn't reachable at `CORE_URL`.
+- **An edit doesn't show on the public site.** Check the `x-pressbase-cache` response header. If core logs `[cache] … refused the purge`, `PRESSBASE_REVALIDATE_SECRET` differs between core and `apps/web`; if `[cache] Couldn't reach …`, core's `WEB_URL` doesn't point at `apps/web`. Logged-in visitors always bypass the cache.
 - **Theme files changed but the site didn't.** The active theme is cached; restart core (or call `kernel.themes.reload()`).
 - **`Unable to find package manager binary`** from Turborepo. Run `corepack enable` so `pnpm` is on your `PATH`.

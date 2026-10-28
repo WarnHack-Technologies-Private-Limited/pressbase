@@ -5,12 +5,12 @@
     "dev": {
       "cache": false,
       "persistent": true,
-      "passThroughEnv": ["CORE_URL", "PORT", "DATABASE_URL", "PRESSBASE_*"]
+      "passThroughEnv": ["CORE_URL", "WEB_URL", "ADMIN_URL", "PORT", "DATABASE_URL", "PRESSBASE_*"]
     },
     "build": {
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
-      "env": ["CORE_URL"]
+      "env": ["CORE_URL", "WEB_URL", "ADMIN_URL"]
     },
     "test": {
       "outputs": []

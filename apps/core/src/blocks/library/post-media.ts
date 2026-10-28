@@ -9,6 +9,7 @@ import {
 } from '@pressbase/blocks';
 import { schema } from '@pressbase/db';
 import { and, asc, desc, eq, gt, lt } from 'drizzle-orm';
+import { addCacheTags, CacheTag } from '../../cache/tags';
 import { permalink, permalinkContext } from '../../content/permalinks';
 import type { Post } from '../../content/posts';
 import { sanitizePostTitle } from '../../content/sanitize';
@@ -206,6 +207,8 @@ async function adjacentPost(
     )
     .orderBy(next ? asc(posts.date) : desc(posts.date))
     .limit(1);
+  // The neighbour changes when a post of this type is published or unpublished.
+  addCacheTags(CacheTag.posts(post.type), row && CacheTag.post(row.id));
   return row;
 }
 

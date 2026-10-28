@@ -17,6 +17,13 @@ export interface Config {
   maxUploadMb?: number;
   /** Outgoing email (see mail/mailer.ts). Without SMTP, mail goes to <dataDir>/outbox. */
   mail?: MailConfig;
+  /**
+   * Public page cache purges (docs/adr/0008-public-page-caching.md): the
+   * public app's URLs (WEB_URL, comma-separated for several instances) and
+   * the shared secret (PRESSBASE_REVALIDATE_SECRET). Without a secret, core
+   * sends no purges and apps/web doesn't cache.
+   */
+  revalidate?: { urls: string[]; secret: string };
 }
 
 export interface MailConfig {
@@ -48,6 +55,15 @@ export async function loadConfig(env: NodeJS.ProcessEnv = process.env): Promise<
     databaseFromEnv: Boolean(env.DATABASE_URL),
     setupToken: env.PRESSBASE_SETUP_TOKEN || undefined,
     maxUploadMb: Number(env.PRESSBASE_MAX_UPLOAD_MB) > 0 ? Number(env.PRESSBASE_MAX_UPLOAD_MB) : 64,
+    revalidate: env.PRESSBASE_REVALIDATE_SECRET
+      ? {
+          secret: env.PRESSBASE_REVALIDATE_SECRET,
+          urls: (env.WEB_URL || 'http://localhost:3001')
+            .split(',')
+            .map((u) => u.trim())
+            .filter(Boolean),
+        }
+      : undefined,
     mail: {
       smtpUrl: env.PRESSBASE_SMTP_URL || undefined,
       host: env.PRESSBASE_SMTP_HOST || undefined,

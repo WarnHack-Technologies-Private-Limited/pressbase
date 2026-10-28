@@ -9,7 +9,10 @@
 export interface RenderResult {
   status: number;
   headers: Record<string, string>;
+  /** The body: HTML, or XML / text for feeds, sitemaps and robots.txt. */
   html: string;
+  /** Cache tags: what the response depends on (see page-cache.ts). */
+  tags?: string[];
 }
 
 /** Headers from core that may reach the visitor. Anything else is dropped. */
@@ -52,7 +55,7 @@ export function pickHeaders(source: Record<string, string> | undefined): Headers
 /** Statuses that never carry a body. */
 const BODYLESS = new Set([204, 304]);
 
-function isRenderResult(value: unknown): value is RenderResult {
+export function isRenderResult(value: unknown): value is RenderResult {
   if (!value || typeof value !== 'object') return false;
   const v = value as Record<string, unknown>;
   return (

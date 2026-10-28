@@ -2,6 +2,7 @@ import { schema } from '@pressbase/db';
 import { and, eq, isNull } from 'drizzle-orm';
 import { currentUserCan } from '../auth/meta-caps';
 import type { CurrentUser } from '../auth/users';
+import { addCacheTags, CacheTag } from '../cache/tags';
 import { permalink, permalinkContext } from '../content/permalinks';
 import type { Post } from '../content/posts';
 import { type QueryArgs, queryPosts } from '../content/query';
@@ -310,6 +311,7 @@ async function authorBy(
     .from(schema.users)
     .where(where);
   if (!row) return undefined;
+  addCacheTags(CacheTag.author(row.id));
   const [meta] = await kernel.db
     .select({ value: schema.usermeta.value })
     .from(schema.usermeta)
@@ -364,13 +366,21 @@ function dateRange(timeZone: string, year: number, month?: number, day?: number)
 
 export interface ResolveOptions {
   user: CurrentUser | null;
+  /**
+   * The request is a feed (WP_Query's is_feed): `posts_per_rss` replaces
+   * `posts_per_page`, canonical redirects don't apply, and `/` is always the
+   * latest posts, even with a static front page.
+   */
+  feed?: { perPage: number };
+  /** Answer 404 whatever the URL (a sitemap URL while sitemaps are off). */
+  notFound?: boolean;
 }
 
 /** Runs the main query for a URL: what WordPress's wp() does. */
 export async function resolveMainQuery(
   kernel: Kernel,
   url: URL,
-  { user }: ResolveOptions,
+  { user, feed, notFound: forceNotFound }: ResolveOptions,
 ): Promise<MainQuery> {
   const get = <T>(name: string, fallback: T) => kernel.options.get<T>(name, fallback);
   const structure = await get('permalink_structure', '');
@@ -379,7 +389,7 @@ export async function resolveMainQuery(
   const showOnFront = await get('show_on_front', 'posts');
   const pageOnFront = Number(await get('page_on_front', 0));
   const pageForPosts = Number(await get('page_for_posts', 0));
-  const perPage = Number(await get('posts_per_page', 10)) || 10;
+  const perPage = feed?.perPage ?? (Number(await get('posts_per_page', 10)) || 10);
   const main = emptyQuery();
   main.perPage = perPage;
   const notFound = () => {
@@ -388,9 +398,10 @@ export async function resolveMainQuery(
     q.perPage = perPage;
     return q;
   };
+  if (forceNotFound) return notFound();
 
   // redirect_canonical(): pretty URLs end with a slash.
-  if (structure.endsWith('/') && url.pathname !== '/' && !url.pathname.endsWith('/')) {
+  if (!feed && structure.endsWith('/') && url.pathname !== '/' && !url.pathname.endsWith('/')) {
     const last = url.pathname.slice(url.pathname.lastIndexOf('/') + 1);
     if (!last.includes('.')) {
       main.redirect = { location: `${home}${url.pathname}/${url.search}`, status: 301 };
@@ -407,7 +418,7 @@ export async function resolveMainQuery(
 
   // A post or page by ID (?p=, ?page_id=) redirects to its pretty permalink.
   const canonical = async (post: Post): Promise<MainQuery | undefined> => {
-    if (!structure || post.status !== 'publish') return undefined;
+    if (feed || !structure || post.status !== 'publish') return undefined;
     const link = await permalink(kernel, post, links);
     const expected = new URL(link, 'http://x');
     if (
@@ -576,7 +587,7 @@ export async function resolveMainQuery(
     url.pathname === '' ||
     (structure && /^\/page\/\d+\/?$/.test(url.pathname))
   ) {
-    if (showOnFront === 'page' && pageOnFront) {
+    if (showOnFront === 'page' && pageOnFront && !feed) {
       const page = await kernel.posts.get(pageOnFront);
       if (page?.type === 'page' && page.status === 'publish') {
         main.posts = [page];
