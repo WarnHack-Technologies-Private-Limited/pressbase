@@ -24,6 +24,7 @@ import {
 } from './admin';
 import { createAssets, type PluginAssets, type PluginScripts, type PluginStyles } from './assets';
 import { type Background, createBackground, type PluginCron, type PluginJobs } from './background';
+import type { PluginCliCommandArgs, PluginCliHandler } from './cli';
 import type { InstalledPlugin } from './discovery';
 import { createSubApp } from './dispatch';
 import type { PluginPermission } from './manifest';
@@ -173,6 +174,14 @@ export interface PluginApi {
   /** Admin menu pages: add_menu_page(), add_options_page(), add_management_page(). */
   readonly admin: {
     addPage(args: PluginPageArgs): void;
+  };
+  /**
+   * Commands for the `pressbase` CLI: WP_CLI::add_command(). The name is the
+   * plugin's slug, then optional subcommand words (`daily-tips rotate`).
+   * Returns a function that removes the command. See plugins/cli.ts.
+   */
+  readonly cli: {
+    addCommand(name: string, handler: PluginCliHandler, args?: PluginCliCommandArgs): () => void;
   };
 }
 
@@ -525,6 +534,26 @@ export class PluginRuntime {
       }),
       admin: Object.freeze({
         addPage: (args: PluginPageArgs) => this.adminRegistrations.addPage(args),
+      }),
+      cli: Object.freeze({
+        addCommand: (name: string, handler: PluginCliHandler, args: PluginCliCommandArgs = {}) => {
+          const off = kernel.cli.add({
+            name,
+            handler,
+            plugin: slug,
+            shortdesc: args.shortdesc,
+            synopsis: args.synopsis,
+            longdesc: args.longdesc,
+          });
+          let removed = false;
+          const remove = () => {
+            if (removed) return;
+            removed = true;
+            off();
+          };
+          this.#track(remove);
+          return remove;
+        },
       }),
     };
     return Object.freeze(api);

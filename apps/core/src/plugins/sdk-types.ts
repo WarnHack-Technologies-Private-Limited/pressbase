@@ -57,6 +57,12 @@ export type {
   Version,
 } from './assets';
 export type { PluginCron, PluginJobContext, PluginJobHandler, PluginJobs } from './background';
+export type {
+  PluginCliAssocArgs,
+  PluginCliCommandArgs,
+  PluginCliHandler,
+  PluginCliIo,
+} from './cli';
 export type {} from './manager';
 export type { PluginManifest, PluginManifestInput, PluginPermission } from './manifest';
 export type {
