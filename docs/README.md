@@ -13,6 +13,7 @@ New here? The [README](../README.md#see-it-in-action) shows Pressbase in action:
 
 - [Vision and principles](vision.md): why Pressbase exists, who it's for, and what it won't do.
 - [Roadmap](roadmap.md): what ships in each release and what's next.
+- [Plan: Pressbase SEO and the first-party plugins](plans/first-party-plugins.md): proposed next step after v0.6 (for review).
 
 ## Architecture
 
