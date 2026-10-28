@@ -50,6 +50,22 @@
   font-size: var(--text-xs);
 }
 
+/* Plugins' settings pages, after core's, set apart by a rule. */
+.subnav li:not(.pluginPage) + .pluginPage {
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 860px) {
+  .subnav li:not(.pluginPage) + .pluginPage {
+    margin: 0 0 0 var(--space-2);
+    padding: 0 0 0 var(--space-2);
+    border-top: 0;
+    border-left: 1px solid var(--color-border);
+  }
+}
+
 .form {
   display: flex;
   flex-direction: column;

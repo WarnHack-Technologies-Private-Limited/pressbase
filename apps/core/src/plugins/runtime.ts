@@ -16,6 +16,12 @@ import type { TermsService } from '../content/terms';
 import { type AppEnv, restError } from '../http';
 import type { Kernel } from '../kernel';
 import { PRESSBASE_VERSION } from '../version';
+import {
+  PluginAdmin,
+  type PluginPageArgs,
+  type PluginSectionArgs,
+  type PluginSettingArgs,
+} from './admin';
 import { createAssets, type PluginAssets, type PluginScripts, type PluginStyles } from './assets';
 import { type Background, createBackground, type PluginCron, type PluginJobs } from './background';
 import type { InstalledPlugin } from './discovery';
@@ -151,6 +157,23 @@ export interface PluginApi {
   readonly styles: PluginStyles;
   /** URLs of the plugin's static files (its `public/` folder). */
   readonly assets: PluginAssets;
+  /**
+   * The Settings API: register_setting() with its field, and
+   * add_settings_section(). The admin draws the plugin's settings page from
+   * them; no admin JavaScript needed. See plugins/admin.ts.
+   */
+  readonly settings: {
+    register(name: string, args?: PluginSettingArgs): void;
+    addSection(id: string, args?: PluginSectionArgs): void;
+    /** The stored value, or the registered default. */
+    get<T = unknown>(name: string): Promise<T>;
+    /** Validates and sanitises like a save from the admin; throws with the field's message. */
+    set(name: string, value: unknown): Promise<void>;
+  };
+  /** Admin menu pages: add_menu_page(), add_options_page(), add_management_page(). */
+  readonly admin: {
+    addPage(args: PluginPageArgs): void;
+  };
 }
 
 /** What a plugin's main module exports. */
@@ -244,8 +267,14 @@ export class PluginRuntime {
       warn: (...args) => console.warn(tag, ...args),
       error: (...args) => console.error(tag, ...args),
     };
+    this.adminRegistrations = new PluginAdmin(kernel, plugin, permissions, (dispose) =>
+      this.#track(dispose),
+    );
     this.api = this.#createApi();
   }
+
+  /** The plugin's settings, sections and admin pages (plugins/admin.ts). */
+  readonly adminRegistrations: PluginAdmin;
 
   get slug(): string {
     return this.plugin.slug;
@@ -483,6 +512,20 @@ export class PluginRuntime {
       scripts,
       styles,
       assets,
+      settings: Object.freeze({
+        register: (name: string, args?: PluginSettingArgs) => {
+          this.adminRegistrations.registerSetting(name, args);
+        },
+        addSection: (id: string, args?: PluginSectionArgs) =>
+          this.adminRegistrations.addSection(id, args),
+        get: <T>(name: string) => this.adminRegistrations.get<T>(name),
+        set: async (name: string, value: unknown) => {
+          await this.adminRegistrations.set(name, value);
+        },
+      }),
+      admin: Object.freeze({
+        addPage: (args: PluginPageArgs) => this.adminRegistrations.addPage(args),
+      }),
     };
     return Object.freeze(api);
   }

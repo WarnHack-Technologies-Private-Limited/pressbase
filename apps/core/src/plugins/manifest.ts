@@ -47,6 +47,12 @@ const relativePath = z
     'Use a path inside the plugin folder, like "dist/index.js".',
   );
 
+/** A browser module inside the plugin folder; served to the admin, so no dot-folders. */
+const browserModule = relativePath.refine(
+  (p) => /\.m?js$/.test(p) && !p.split('/').some((s) => s.startsWith('.')),
+  'Use a .js or .mjs file inside the plugin folder, like "admin/index.js".',
+);
+
 const url = z
   .string()
   .max(500)
@@ -59,9 +65,9 @@ const url = z
   }, 'Use an http:// or https:// URL.');
 
 /**
- * Admin pages and settings a plugin declares. Validated and exposed through
- * /wp/v2/plugins now; the SlotFill admin runtime and the Settings API screens
- * that render them come in a later milestone.
+ * Admin pages, settings and the browser module a plugin declares. Registered
+ * when the plugin loads, as if `register(api)` had called `api.admin.addPage`,
+ * `api.settings.addSection` and `api.settings.register` (plugins/admin.ts).
  */
 const adminSchema = z.object({
   pages: z
@@ -69,30 +75,84 @@ const adminSchema = z.object({
       z.object({
         slug: z.string().regex(SLUG, 'Use lowercase letters, numbers and dashes.'),
         title: z.string().min(1).max(100),
-        /** Admin section to appear under (settings, tools, appearance…), or a top-level page. */
-        parent: z.string().regex(SLUG).optional(),
+        /** Under Settings or Tools; omitted, a top-level page. */
+        parent: z.enum(['settings', 'tools']).optional(),
         capability: z
           .string()
           .regex(/^[a-z0-9_]+$/)
           .default('manage_options'),
-        /** Browser module the admin will load for the page (ESM, compiled). */
-        entry: relativePath.optional(),
+        description: z.string().max(300).optional(),
+        /** Browser module whose default export renders the page body (ESM, compiled). */
+        entry: browserModule.optional(),
       }),
     )
     .max(20)
     .default([]),
+  /** add_settings_section(): titled groups of settings on a page. */
+  sections: z
+    .array(
+      z.object({
+        id: z
+          .string()
+          .regex(/^[a-z0-9_-]+$/, 'Use lowercase letters, numbers, dashes and underscores.'),
+        title: z.string().max(100).optional(),
+        description: z.string().max(500).optional(),
+        page: z.string().regex(SLUG).optional(),
+      }),
+    )
+    .max(50)
+    .default([]),
+  /** register_setting() with its field. See plugins/admin.ts for the rules. */
   settings: z
     .array(
       z.object({
         name: z.string().regex(/^[a-z0-9_]+$/, 'Use lowercase letters, numbers and underscores.'),
-        type: z.enum(['string', 'boolean', 'integer', 'number', 'array', 'object']),
+        type: z.enum(['string', 'boolean', 'integer', 'number', 'array', 'object']).optional(),
+        control: z
+          .enum([
+            'text',
+            'textarea',
+            'number',
+            'toggle',
+            'select',
+            'radio',
+            'url',
+            'email',
+            'color',
+          ])
+          .optional(),
         label: z.string().max(100).optional(),
         description: z.string().max(500).optional(),
         default: z.unknown().optional(),
+        options: z
+          .array(z.object({ value: z.union([z.string(), z.number()]), label: z.string().max(100) }))
+          .max(100)
+          .optional(),
+        min: z.number().optional(),
+        max: z.number().optional(),
+        step: z.number().positive().optional(),
+        maxLength: z.number().int().positive().optional(),
+        placeholder: z.string().max(200).optional(),
+        required: z.boolean().optional(),
+        section: z
+          .string()
+          .regex(/^[a-z0-9_-]+$/)
+          .optional(),
+        page: z.string().regex(SLUG).optional(),
+        capability: z
+          .string()
+          .regex(/^[a-z0-9_]+$/)
+          .optional(),
+        showInRest: z.boolean().optional(),
       }),
     )
     .max(100)
     .default([]),
+  /**
+   * Browser module (ESM, compiled) the admin imports on every screen, to
+   * register fills: dashboard widgets, editor panels. See plugins.md#ui-modules.
+   */
+  module: browserModule.optional(),
 });
 
 export const manifestSchema = z

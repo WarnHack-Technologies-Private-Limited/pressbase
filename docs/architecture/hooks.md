@@ -168,5 +168,8 @@ Plugins see the same declarations through `@pressbase/plugin-sdk`, whose types a
 | `pre_uninstall_plugin` | action | `slug, manifest` | before an inactive plugin's `uninstall` runs and its folder is deleted |
 | `deleted_plugin` | action | `slug, deleted` | after a plugin was deleted (`deleted` is false if its files couldn't be removed) |
 | `pressbase_plugin_error` | action | `slug, error` | a plugin failed to load or activate, or one of its hooks or routes threw; `error` is `{ message, during, time }` |
+| `register_setting` / `unregister_setting` | action | `optionGroup, optionName[, args]` | a plugin registered a setting (the group is the plugin's slug) / it was removed on deactivation. See [Plugins](plugins.md#settings) |
+| `sanitize_option_{option}` | filter | `value, option, originalValue` | a setting's value after its validation and `sanitize` callback, before it's stored (settings pages, `/wp/v2/settings`, `api.settings.set`) |
+| `pre_update_option_{option}`, `pre_update_option` | filter | `value, oldValue, option` / `value, option, oldValue` | the value a settings save is about to store, as `update_option()` filters it |
 
 **When you add a hook to core,** use WordPress's name if WordPress has an equivalent. Add it to this table and declare its types.

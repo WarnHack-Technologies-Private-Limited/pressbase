@@ -1,11 +1,14 @@
+import type { HookBus } from '@pressbase/hooks';
 import { z } from 'zod';
+import type { Options } from './store';
 
 /**
  * Settings exposed through the REST API — WordPress's register_setting().
  *
  * Each setting maps a public REST field name (as used by /wp/v2/settings) to
  * an option, with a schema that validates writes and a default for reads.
- * Plugins will register their own settings through this same registry.
+ * Plugins register theirs through this same registry when they ask for
+ * `showInRest` (see plugins/admin.ts).
  */
 export interface SettingDefinition {
   /** Option name in the options table. */
@@ -14,6 +17,46 @@ export interface SettingDefinition {
   default: unknown;
   /** Capability required to read or change the setting. */
   capability: string;
+  /**
+   * register_setting()'s sanitize_callback: runs after the schema, before
+   * the `sanitize_option_{option}` filter. Throwing refuses the value.
+   */
+  sanitize?: (value: unknown, option: string) => unknown;
+}
+
+/** A value refused by a setting's schema or sanitize callback; the message is shown on the field. */
+export class SettingSanitizeError extends Error {}
+
+/**
+ * What update_option() does to a value before storing it
+ * (wordpress/wp-includes/option.php): sanitize_option() — the setting's
+ * sanitize callback, then the `sanitize_option_{option}` filter — and the
+ * `pre_update_option_{option}` and `pre_update_option` filters. The value is
+ * validated by the setting's schema first. Throws SettingSanitizeError.
+ */
+export async function sanitizeSettingValue(
+  kernel: { hooks: HookBus; options: Options },
+  setting: SettingDefinition,
+  value: unknown,
+): Promise<unknown> {
+  const parsed = setting.schema.safeParse(value);
+  if (!parsed.success) {
+    throw new SettingSanitizeError(parsed.error.issues[0]?.message ?? 'Invalid value.');
+  }
+  let next: unknown = parsed.data;
+  if (setting.sanitize) {
+    try {
+      next = await setting.sanitize(next, setting.option);
+    } catch (error) {
+      throw new SettingSanitizeError(error instanceof Error ? error.message : String(error));
+    }
+  }
+  const { option } = setting;
+  next = await kernel.hooks.applyFilters(`sanitize_option_${option}`, next, option, value);
+  const old = await kernel.options.get(option, setting.default);
+  next = await kernel.hooks.applyFilters(`pre_update_option_${option}`, next, old, option);
+  next = await kernel.hooks.applyFilters('pre_update_option', next, option, old);
+  return next;
 }
 
 export class SettingsRegistry {
@@ -25,6 +68,11 @@ export class SettingsRegistry {
   ): void {
     if (this.#settings.has(name)) throw new Error(`Setting "${name}" is already registered.`);
     this.#settings.set(name, { capability: 'manage_options', ...definition });
+  }
+
+  /** unregister_setting(): a plugin's settings go when it's deactivated. */
+  unregister(name: string): boolean {
+    return this.#settings.delete(name);
   }
 
   get(name: string): SettingDefinition | undefined {

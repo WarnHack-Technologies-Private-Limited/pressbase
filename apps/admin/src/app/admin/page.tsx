@@ -1,6 +1,7 @@
 import { Circle, CircleCheck, EyeOff } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { DashboardWidgets } from '@/components/extensions/dashboard-widgets';
 import styles from '@/components/shell/page.module.css';
 import { PageHeader } from '@/components/shell/page-header';
 import { Badge, Card, Notice } from '@/components/ui/surface';
@@ -291,6 +292,9 @@ export default async function DashboardPage() {
             </Card>
           </div>
         )}
+
+        {/* Plugins' dashboard widgets (the `dashboard` slot). */}
+        <DashboardWidgets />
       </div>
     </>
   );

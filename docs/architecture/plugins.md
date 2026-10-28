@@ -2,7 +2,7 @@
 
 A plugin is a folder with a `plugin.json` and compiled JavaScript. Pressbase finds it, and an administrator activates it from **Plugins** (or `/wp/v2/plugins`). Activation, deactivation and installing from a `.zip` all take effect at once: no rebuild, no restart. The design is in [ADR 0009](../adr/0009-plugin-runtime.md).
 
-Code: `apps/core/src/plugins/` (manifest, discovery, manager, runtime, dynamic routing, zip reader), `apps/core/src/routes/plugins.ts`, the admin screen in `apps/admin/src/app/admin/plugins/`. The example, [`plugins/daily-tips`](../../plugins/daily-tips), uses a filter, a REST route and a custom post type.
+Code: `apps/core/src/plugins/` (manifest, discovery, manager, runtime, dynamic routing, zip reader), `apps/core/src/routes/plugins.ts`, the admin screen in `apps/admin/src/app/admin/plugins/`. The example, [`plugins/daily-tips`](../../plugins/daily-tips), uses a filter, REST routes, a custom post type, settings and an admin module.
 
 ## Writing a plugin
 
@@ -69,6 +69,8 @@ Plugins ship compiled JavaScript (`.js` or `.mjs`, ESM). Write TypeScript with [
 | `logger.debug / info / warn / error` | console output prefixed with `[plugin:slug]` | |
 | `cron.*`, `jobs.*` | scheduled events and background jobs, scoped to the plugin ([below](#background-work-cron-and-jobs)) | `wp_schedule_event` & co. |
 | `scripts.*`, `styles.*`, `assets.url(file)` | scripts and stylesheets on public pages, and the plugin's `public/` files ([below](#scripts-styles-and-static-files)) | `wp_enqueue_script`, `wp_enqueue_style`, `plugins_url` |
+| `settings.register(name, args) / addSection(id, args) / get / set` | a setting with its admin field; sections of a settings page. See [Settings](#settings) | `register_setting`, `add_settings_field`, `add_settings_section` |
+| `admin.addPage({ slug, title, parent, capability, entry })` | an admin page, top level or under Settings or Tools. See [Admin pages](#admin-pages) | `add_menu_page`, `add_options_page`, `add_management_page` |
 
 A route's `handler` receives Hono's context (`c.req.query()`, `await c.req.json()`, `c.json()`…) and returns a `Response` or any JSON value. `permission` is required, as WordPress requires `permission_callback`; returning anything but `true` answers 401 (logged out) or 403.
 
@@ -105,7 +107,7 @@ A route's `handler` receives Hono's context (`c.req.query()`, `await c.req.json(
 | `main` | no | the ES module to import, inside the folder (default `index.js`) | the main PHP file |
 | `permissions` | no | `network`, `filesystem`, `database`, `options` (see below) | — |
 | `migrations` | no | folder of `.sql` files. Needs the `database` permission | — |
-| `admin` | no | declared admin `pages` and `settings`. Validated and returned by `/wp/v2/plugins`; the admin doesn't render them yet (see [Not yet](#not-yet)) | `add_menu_page`, `register_setting` |
+| `admin` | no | `pages`, `sections`, `settings` and `module`, registered when the plugin loads. See [Admin pages and settings](#admin-pages-and-settings) | `add_menu_page`, `register_setting` |
 
 ## Where plugins live
 
@@ -303,11 +305,150 @@ export default definePlugin((api) => {
 ```
 
 The types are generated from core when the SDK is built, so they never drift from `runtime.ts` ([ADR 0012](../adr/0012-plugin-sdk-types.md)). Core's runtime never reaches a plugin's bundle: the SDK's `.d.ts` refers to Hono, Drizzle and zod by type only.
+## Admin pages and settings
+
+The admin is a prebuilt Next.js app and plugins arrive at runtime, so nothing a plugin adds to the admin may need a rebuild. Two mechanisms cover it ([ADR 0011](../adr/0011-plugin-admin-extensions.md)):
+
+1. **Declarative settings** (most plugins): the plugin describes its settings on the server and the admin draws the page. No admin JavaScript.
+2. **UI modules** (the rest): a browser ES module the admin imports at runtime, which renders React into named **slots**: a page body, dashboard widgets, editor panels.
+
+Code: `apps/core/src/plugins/admin.ts` (registrations, validation), `apps/core/src/routes/plugin-admin.ts` (REST and module serving); in the admin, `src/lib/extensions/` (registry, pages, settings helpers) and `src/components/extensions/` (host API, slots, the generic settings form). The example plugin uses all of it: [`plugins/daily-tips`](../../plugins/daily-tips) has a settings page, a dashboard widget and an editor panel.
+
+### Settings
+
+A setting is WordPress's `register_setting()` and its `add_settings_field()` in one: the stored value's rules and the field that edits it. Declare it in `plugin.json` or register it in code (needed for a `sanitize` callback):
+
+```jsonc
+// plugin.json
+"admin": {
+  "sections": [{ "id": "look", "title": "Look", "description": "How tips appear." }],
+  "settings": [
+    { "name": "accent", "control": "color", "label": "Widget colour", "default": "#3858e9", "section": "look" },
+    { "name": "show_in_posts", "control": "toggle", "label": "Add a tip to posts", "default": true, "showInRest": true }
+  ]
+}
+```
+
+```js
+// index.js
+api.settings.register('own_tips', {
+  control: 'textarea',
+  label: 'Your tips',
+  section: 'look',
+  sanitize: (value) => {
+    const tips = value.split('\n').map((t) => t.trim()).filter(Boolean);
+    if (tips.length > 20) throw new Error('Keep it to 20 tips.'); // shown on the field
+    return tips.join('\n');
+  },
+});
+const tips = await api.settings.get('own_tips'); // stored value or the default
+```
+
+| Argument | Notes | WordPress |
+| --- | --- | --- |
+| `control` | `text`, `textarea`, `number`, `toggle`, `select`, `radio`, `url`, `email`, `color` | the field callback |
+| `type` | `string`, `boolean`, `integer`, `number`, `array`, `object`; derived from `control` when left out (and the other way round). `array` and `object` have no field: REST only | `type` |
+| `label`, `description`, `placeholder` | shown on the field | `label`, `description` |
+| `default` | returned while nothing is stored; validated on registration | `default` |
+| `options` | `[{ value, label }]` for `select` and `radio` (strings, or numbers for an integer) | |
+| `min`, `max`, `step`, `maxLength`, `required` | validation, also used by the field | |
+| `section`, `page` | the section (default: an untitled first one) and the page (default: the plugin's settings page) | `add_settings_field( …, $page, $section )` |
+| `capability` | to see and change it; default `manage_options` | |
+| `showInRest` | also at `/wp/v2/settings`, under its option name | `show_in_rest` |
+| `option` | where it's stored: default `{prefix}{name}` (`daily_tips_accent`), as `api.options`. Another option needs the `options` permission | `$option_name` |
+| `sanitize(value, option)` | runs after validation; return what to store, or throw to refuse the value | `sanitize_callback` |
+
+Saving a setting (from its page, `/wp/v2/settings` or `api.settings.set`) runs what `update_option()` runs: the field's validation, the `sanitize` callback, the `sanitize_option_{option}` filter, then `pre_update_option_{option}` and `pre_update_option`. A page saves all or nothing: if any field is refused, nothing is stored and each message is shown on its field. `api.options.set` writes without any of this, like writing the option directly.
+
+Settings of a plugin that doesn't name a page show on its **settings page**: titled after the plugin, under **Settings** (`add_options_page()`), at `/admin/settings/{plugin}`. The page uses the same cards, save bar, "Settings saved." toast and field errors as core's settings screens. Sections become cards, in registration order.
+
+### Admin pages
+
+```jsonc
+"admin": {
+  "pages": [
+    { "slug": "reports", "title": "Reports", "parent": "tools", "entry": "admin/reports.js" },
+    { "slug": "advanced", "title": "Advanced", "parent": "settings" }
+  ]
+}
+```
+
+or `api.admin.addPage({ slug, title, parent, capability, description, entry })`.
+
+| `parent` | Where it shows | URL | WordPress |
+| --- | --- | --- | --- |
+| `settings` | Settings' sub-navigation, after core's screens | `/admin/settings/{plugin}[/{page}]` | `add_options_page()` |
+| `tools` | listed on **Tools** (which stops saying "coming in v0.6" once a plugin adds a page) | `/admin/tools/{plugin}[/{page}]` | `add_management_page()` |
+| none | the sidebar's **Extend** group, after Plugins | `/admin/plugin/{plugin}[/{page}]` | `add_menu_page()` |
+
+The `/{page}` segment is left out when the page's slug is the plugin's. A page shows its `entry` module's UI, then the settings registered with `page: slug`, or both. `capability` (default `manage_options`) is checked by core: pages a user can't open are left out of their navigation and answer 403. At most 20 pages per plugin.
+
+### REST
+
+| Request | What | Errors |
+| --- | --- | --- |
+| `GET /pressbase/v1/admin-extensions` | `{ pages, modules }`: the plugin pages the current user may open, and active plugins' UI modules. Any logged-in user | `rest_not_logged_in` |
+| `GET /pressbase/v1/plugin-pages/{plugin}/{page}` | the page, its `sections` with their `fields` (keyed by option name) and the current `values` | `rest_plugin_page_not_found`, `rest_forbidden` |
+| `POST/PUT/PATCH /pressbase/v1/plugin-pages/{plugin}/{page}` | saves `{ option: value }`; settings not on the page, or that the user can't change, are ignored | `rest_invalid_param` (`data.params` by option) |
+
+### UI modules
+
+A UI module is a compiled ES module in the plugin folder, declared as `admin.module` (imported on every admin screen, to add dashboard widgets and editor panels) or as a page's `entry` (imported when the page opens; its default export is the page's component). Core serves both at `/wp-content/plugins/{plugin}/{file}?ver={version}` and the admin imports them with `import()`.
+
+```js
+// admin/index.js — no build step needed
+const { element: { createElement: h, useState }, api, registerPlugin, DashboardWidget } = window.pressbase;
+
+function Tip() {
+  const [tip, setTip] = useState('');
+  return h('div', null, tip, h('button', { onClick: async () => setTip((await api('/my-plugin/v1/tip')).tip) }, 'Another tip'));
+}
+
+registerPlugin('my-plugin', { render: () => h(DashboardWidget, { title: 'Writing tip' }, h(Tip)) });
+```
+
+Modules must use the admin's React through `window.pressbase`, not bundle their own (two Reacts can't share hooks). With a bundler, write JSX, mark `react`, `react-dom` and `react/jsx-runtime` as externals and map them to `window.pressbase.React`, `.ReactDOM` and `.jsxRuntime`.
+
+**The host API, `window.pressbase`** (`apiVersion: 1`; additions keep the version, removals bump it):
+
+| Member | What |
+| --- | --- |
+| `React`, `ReactDOM`, `jsxRuntime` | the admin's own copies |
+| `element` | `@wordpress/element`'s shape: `createElement`, `Fragment`, `createContext`, `createPortal`, `memo`, `forwardRef`, `lazy`, `Suspense`, and the hooks (`useState`, `useEffect`, `useMemo`, `useCallback`, `useRef`, `useReducer`, `useContext`, `useId`, `useSyncExternalStore`…) |
+| `api(path, { method, body })`, `ApiError` | `fetch` for `/wp-json`, with the session cookie and the `X-Pressbase-Request` header writes need; throws `ApiError` (`status`, `code`, `message`, `data`) |
+| `registerPlugin(name, { render })`, `unregisterPlugin`, `getPlugins`, `usePluginContext` | `@wordpress/plugins`: `render` is a component that renders Fills |
+| `Fill`, `Slot`, `slots` | SlotFill: `<Fill name="dashboard">…</Fill>`; `slots` lists the names |
+| `DashboardWidget`, `PluginDocumentSettingPanel` | Fills for the two built-in places |
+| `components` | the admin's UI kit: `Button`, `Spinner`, `Card`, `Notice`, `Badge`, `EmptyState`, `TextField`, `TextAreaField`, `SelectField`, `Checkbox` |
+| `useToast()`, `useCurrentUser()` | the admin's toast (`toast('Saved.')`) and the user, with `capabilities` |
+
+Each `registerPlugin()` is attributed to the plugin whose module was loading (modules load one at a time). When the plugin is deactivated its plugins and fills disappear at the next navigation; a module can't be unloaded, so it reappears without a re-import if the plugin is reactivated. A new `version` gives a new URL and a fresh import.
+
+### Slots
+
+| Slot | Where | Fill props | Fill function receives |
+| --- | --- | --- | --- |
+| `dashboard` (`DashboardWidget`) | a card on the Dashboard, after core's | `title`, `size` (`small`: a third of the width, `large`: two thirds), `order` | — |
+| `editor.document-settings` (`PluginDocumentSettingPanel`) | a panel in the post and page editor's Post tab, before Revisions | `title`, `order` | `{ postId, postType }` (`postId` is null for a new post) |
+| `plugin-page/{plugin}/{page}` (`slots.page(plugin, page)`) | a plugin page's body, after its `entry`'s component | `order` | `{ plugin, page }` |
+
+Fills are ordered by `order` (default 10), then by registration. A fill's children can be elements or a function of the slot's props.
+
+**Errors are contained.** Every fill, page component and plugin `render` runs inside an error boundary. A fill that throws is replaced by "The {plugin} plugin ran into a problem, so this part can’t be shown." with the error under *Details*; the rest of the screen works. A module that fails to import, or a `render` that throws, shows a warning naming the plugin above the screen's content.
+
+The editor panel is Pressbase's own sidebar, not Gutenberg's `@wordpress/edit-post` (the admin embeds the block editor, not the edit-post screen), so `PluginDocumentSettingPanel` here is a look-alike with the same purpose and props; `window.wp` is not provided.
+
+### Security of UI modules
+
+- **Admin JavaScript runs with the privileges of whoever is looking at the admin.** A UI module can call any REST route the current administrator can, read the page and change it. It's as trusted as the plugin's server code, which already runs with full access to the server (see [Security model](#security-model-and-limits)). Only administrators install plugins (`install_plugins`), and activating one is a decision to trust it in both places.
+- Modules are served **only while the plugin is active**, only from the folders that hold declared modules (a module at the plugin's root is served alone), never the server `main` file, and only with allowed extensions (`.js`, `.mjs`, `.css`, images, fonts). Paths are decoded and checked segment by segment (`..`, encoded slashes, dot-files and symlinks out of the folder answer 404). Responses carry `X-Content-Type-Options: nosniff` and no CORS header. **Don't put secrets in a module's folder**: anything there is downloadable while the plugin is active.
+- **CSP.** Module URLs are same-origin (the admin proxies `/wp-content/plugins/*` to core, like `/wp-json`), loaded with `import()`: no inline scripts, `eval` or third-party origins. The admin doesn't send a Content-Security-Policy yet; when it does, `script-src 'self'` covers plugin modules.
+- **Caching.** With `?ver=` matching the plugin's version, modules are `Cache-Control: public, max-age=31536000, immutable`; otherwise `no-cache`. Bump the version when a module changes.
 
 ## Not yet
 
-These are later v0.5 steps; the seams are in place:
+`PluginApi` in `runtime.ts` is the SDK's surface; keep it narrow and add to it rather than handing plugins the kernel. It is frozen with semantic versioning at 1.0.
 
-- **Admin extension points (SlotFill), plugin admin pages and the Settings API UI.** `admin.pages` and `admin.settings` are validated and returned by `/wp/v2/plugins` but not rendered. The admin will load `entry` modules into named slots and render settings from their schema.
-- `PluginApi` in `runtime.ts` is the SDK's surface; keep it narrow and add to it rather than handing plugins the kernel. It is frozen with semantic versioning at 1.0.
+Later work; the seams are in place:
+
 - In-place plugin updates, a plugin directory, multisite (`network-active`).
