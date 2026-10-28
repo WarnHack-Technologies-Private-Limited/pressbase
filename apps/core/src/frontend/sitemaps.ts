@@ -3,7 +3,9 @@ import { and, asc, countDistinct, eq, inArray } from 'drizzle-orm';
 import { authorPostsUrl, type SiteInfo, siteInfo, termLink } from '../blocks/helpers';
 import { addCacheTags, CacheTag } from '../cache/tags';
 import { permalink, permalinkContext } from '../content/permalinks';
+import type { Post } from '../content/posts';
 import { type QueryArgs, queryPosts } from '../content/query';
+import type { Term, TermListArgs } from '../content/terms';
 import type { Kernel } from '../kernel';
 import { w3cDate, xmlText } from './xml';
 
@@ -25,6 +27,29 @@ import { w3cDate, xmlText } from './xml';
 
 /** wp_sitemaps_get_max_urls() */
 export const SITEMAP_MAX_URLS = 2000;
+
+/** A user in the authors sitemap. */
+export interface SitemapUser {
+  id: number;
+  nicename: string;
+  login: string;
+}
+
+declare module '@pressbase/hooks' {
+  interface FilterRegistry {
+    wp_sitemaps_enabled: [enabled: boolean];
+    wp_sitemaps_max_urls: [max: number, objectType: 'post' | 'term' | 'user'];
+    /** A provider (`posts`, `taxonomies`, `users`), or false to leave it out. */
+    wp_sitemaps_add_provider: [provider: SitemapProvider | false, name: string];
+    wp_sitemaps_post_types: [postTypes: string[]];
+    wp_sitemaps_posts_query_args: [args: QueryArgs, postType: string];
+    wp_sitemaps_posts_entry: [entry: SitemapEntry, post: Post, postType: string];
+    wp_sitemaps_taxonomies: [taxonomies: string[]];
+    wp_sitemaps_taxonomies_query_args: [args: TermListArgs, taxonomy: string];
+    wp_sitemaps_taxonomies_entry: [entry: SitemapEntry, term: Term, taxonomy: string];
+    wp_sitemaps_users_entry: [entry: SitemapEntry, user: SitemapUser];
+  }
+}
 
 export type SitemapRequest =
   | { kind: 'index' }
@@ -68,12 +93,17 @@ export function parseSitemapRequest(url: URL, pretty: boolean): SitemapRequest |
   return undefined;
 }
 
-interface SitemapEntry {
+/** One `<url>`: WordPress's sitemap entry array. */
+export interface SitemapEntry {
   loc: string;
+  /** W3C date-time. */
   lastmod?: string;
+  changefreq?: string;
+  priority?: number;
 }
 
-interface Provider {
+/** WP_Sitemaps_Provider */
+export interface SitemapProvider {
   name: string;
   /** Object subtypes ('' for providers without, like users). */
   subtypes(): Promise<string[]>;
@@ -111,7 +141,7 @@ async function maxUrls(kernel: Kernel, objectType: 'post' | 'term' | 'user'): Pr
   return Number.isInteger(value) && value > 0 ? value : SITEMAP_MAX_URLS;
 }
 
-async function providers(kernel: Kernel, site: SiteInfo): Promise<Provider[]> {
+async function providers(kernel: Kernel, site: SiteInfo): Promise<SitemapProvider[]> {
   const maxPosts = await maxUrls(kernel, 'post');
   const maxTerms = await maxUrls(kernel, 'term');
   const maxUsers = await maxUrls(kernel, 'user');
@@ -142,7 +172,7 @@ async function providers(kernel: Kernel, site: SiteInfo): Promise<Provider[]> {
   const showOnFrontPosts = async () =>
     (await kernel.options.get<string>('show_on_front', 'posts')) === 'posts';
 
-  const posts: Provider = {
+  const posts: SitemapProvider = {
     name: 'posts',
     subtypes: postTypes,
     async maxPages(type) {
@@ -174,10 +204,11 @@ async function providers(kernel: Kernel, site: SiteInfo): Promise<Provider[]> {
       }
       const links = await permalinkContext(kernel);
       for (const post of rows) {
-        list.push({
+        const entry: SitemapEntry = {
           loc: await permalink(kernel, post, links),
           lastmod: w3cDate(post.modified, site.timeZone),
-        });
+        };
+        list.push(await kernel.hooks.applyFilters('wp_sitemaps_posts_entry', entry, post, type));
       }
       return list;
     },
@@ -192,23 +223,40 @@ async function providers(kernel: Kernel, site: SiteInfo): Promise<Provider[]> {
         .filter((t) => t.public && ['category', 'post_tag'].includes(t.name))
         .map((t) => t.name),
     )) as string[];
-  const terms: Provider = {
+  // WP_Sitemaps_Taxonomies::get_taxonomies_query_args()
+  const termArgs = async (taxonomy: string, page: number): Promise<TermListArgs> =>
+    kernel.hooks.applyFilters(
+      'wp_sitemaps_taxonomies_query_args',
+      { hideEmpty: true, orderby: 'id', perPage: maxTerms, page },
+      taxonomy,
+    );
+  const terms: SitemapProvider = {
     name: 'taxonomies',
     subtypes: taxonomies,
     async maxPages(taxonomy) {
       if (!(await taxonomies()).includes(taxonomy)) return 0;
-      const { total } = await kernel.terms.list(taxonomy, { hideEmpty: true, perPage: 1 });
+      const { total } = await kernel.terms.list(taxonomy, {
+        ...(await termArgs(taxonomy, 1)),
+        perPage: 1,
+        page: 1,
+      });
       return Math.ceil(total / maxTerms);
     },
     async urls(page, taxonomy) {
       if (!(await taxonomies()).includes(taxonomy)) return [];
-      const { terms: rows } = await kernel.terms.list(taxonomy, {
-        hideEmpty: true,
-        orderby: 'id',
-        perPage: maxTerms,
-        page,
-      });
-      return rows.map((term) => ({ loc: termLink(site, term) }));
+      const { terms: rows } = await kernel.terms.list(taxonomy, await termArgs(taxonomy, page));
+      const list: SitemapEntry[] = [];
+      for (const term of rows) {
+        list.push(
+          await kernel.hooks.applyFilters(
+            'wp_sitemaps_taxonomies_entry',
+            { loc: termLink(site, term) },
+            term,
+            taxonomy,
+          ),
+        );
+      }
+      return list;
     },
   };
 
@@ -216,7 +264,7 @@ async function providers(kernel: Kernel, site: SiteInfo): Promise<Provider[]> {
   const authorTypes = async () => (await postTypes()).filter((t) => t !== 'page');
   const authorsWhere = async () =>
     and(eq(schema.posts.status, 'publish'), inArray(schema.posts.type, await authorTypes()));
-  const users: Provider = {
+  const users: SitemapProvider = {
     name: 'users',
     subtypes: async () => [''],
     async maxPages() {
@@ -244,10 +292,30 @@ async function providers(kernel: Kernel, site: SiteInfo): Promise<Provider[]> {
         .limit(maxUsers)
         .offset((page - 1) * maxUsers);
       addCacheTags(CacheTag.posts('post'), ...rows.map((u) => CacheTag.author(u.id)));
-      return rows.map((user) => ({ loc: authorPostsUrl(site, user) }));
+      const list: SitemapEntry[] = [];
+      for (const user of rows) {
+        list.push(
+          await kernel.hooks.applyFilters(
+            'wp_sitemaps_users_entry',
+            { loc: authorPostsUrl(site, user) },
+            user,
+          ),
+        );
+      }
+      return list;
     },
   };
-  return [posts, terms, users];
+  // WP_Sitemaps::register_sitemaps(): each core provider through `wp_sitemaps_add_provider`.
+  const added: SitemapProvider[] = [];
+  for (const provider of [posts, terms, users]) {
+    const kept = await kernel.hooks.applyFilters(
+      'wp_sitemaps_add_provider',
+      provider,
+      provider.name,
+    );
+    if (kept) added.push(kept);
+  }
+  return added;
 }
 
 export interface SitemapDocument {
@@ -308,15 +376,19 @@ ${locs.map((loc) => `\t<sitemap><loc>${xmlText(loc)}</loc></sitemap>`).join('\n'
   const body = `<?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="${xmlText(stylesheet('sitemap'))}" ?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls
-  .map(
-    (u) =>
-      `\t<url><loc>${xmlText(u.loc)}</loc>${u.lastmod ? `<lastmod>${xmlText(u.lastmod)}</lastmod>` : ''}</url>`,
-  )
-  .join('\n')}
+${urls.map(urlElement).join('\n')}
 </urlset>
 `;
   return { status: 200, headers: { ...XML_HEADERS }, body };
+}
+
+/** WP_Sitemaps_Renderer::get_sitemap_xml(): loc, then the optional tags the protocol knows. */
+function urlElement(entry: SitemapEntry): string {
+  let xml = `<loc>${xmlText(entry.loc)}</loc>`;
+  if (entry.lastmod) xml += `<lastmod>${xmlText(entry.lastmod)}</lastmod>`;
+  if (entry.changefreq) xml += `<changefreq>${xmlText(entry.changefreq)}</changefreq>`;
+  if (typeof entry.priority === 'number') xml += `<priority>${entry.priority}</priority>`;
+  return `\t<url>${xml}</url>`;
 }
 
 /**

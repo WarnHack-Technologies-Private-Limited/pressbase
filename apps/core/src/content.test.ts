@@ -374,6 +374,20 @@ describe('categories and tags', () => {
     expect((await request('GET', `/wp/v2/categories/${child.body.id}`)).body.parent).toBe(0);
   });
 
+  it('runs rest_prepare_{taxonomy} on each term', async () => {
+    const ctx = await installed();
+    ctx.kernel.hooks.addFilter('rest_prepare_post_tag', (item, term, context) => ({
+      ...(item as object),
+      extra: `${(term as { slug: string }).slug}:${context}`,
+    }));
+    const created = await ctx.request('POST', '/wp/v2/tags', { name: 'Green tea' });
+    expect(created.body.extra).toBe('green-tea:edit');
+    const list = await ctx.request('GET', '/wp/v2/tags');
+    expect(list.body[0].extra).toBe('green-tea:view');
+    const categories = await ctx.request('GET', '/wp/v2/categories');
+    expect(categories.body[0].extra).toBeUndefined();
+  });
+
   it('protects the default category and re-homes orphaned posts', async () => {
     const { request } = await installed();
     expect((await request('DELETE', '/wp/v2/categories/1?force=true')).status).toBe(403);

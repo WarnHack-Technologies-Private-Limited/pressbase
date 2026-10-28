@@ -23,9 +23,10 @@ import {
 /**
  * /wp/v2/categories, /wp/v2/tags — a port of WP_REST_Terms_Controller
  * (wordpress/wp-includes/rest-api/endpoints/class-wp-rest-terms-controller.php).
+ * Filter `rest_prepare_{taxonomy}` (response, term, context) can change each item.
  */
 
-function prepare(
+function prepareItem(
   term: Term,
   taxonomy: Taxonomy,
   site: SiteInfo,
@@ -54,6 +55,28 @@ function prepare(
     return { id, link, name, slug, taxonomy: t, _links };
   }
   return item;
+}
+
+/**
+ * The response item through `rest_prepare_{taxonomy}` (response, term,
+ * context), as WP_REST_Terms_Controller::prepare_item_for_response() filters it.
+ */
+async function prepare(
+  c: Context<AppEnv>,
+  term: Term,
+  taxonomy: Taxonomy,
+  site: SiteInfo,
+  context: string,
+  meta?: Map<number, Record<string, unknown>>,
+): Promise<Record<string, unknown>> {
+  const item = prepareItem(term, taxonomy, site, context, meta);
+  if (context === 'embed') return item;
+  return (await c
+    .get('kernel')
+    .hooks.applyFilters(`rest_prepare_${taxonomy.name}`, item, term, context)) as Record<
+    string,
+    unknown
+  >;
 }
 
 const listArgs = z.object({
@@ -127,14 +150,18 @@ export function termsRoutes(taxonomy: Taxonomy) {
       c,
       terms.map((t) => t.id),
     );
-    return c.json(terms.map((t) => prepare(t, taxonomy, base, q.context, meta)));
+    return c.json(
+      await Promise.all(terms.map((t) => prepare(c, t, taxonomy, base, q.context, meta))),
+    );
   });
 
   app.get('/:id{[0-9]+}', async (c) => {
     const term = await c.get('kernel').terms.get(taxonomy.name, Number(c.req.param('id')));
     if (!term) return restError(c, 404, 'rest_term_invalid', 'Term does not exist.');
     const meta = await termMeta(c, [term.id]);
-    return c.json(prepare(term, taxonomy, await home(c), c.req.query('context') ?? 'view', meta));
+    return c.json(
+      await prepare(c, term, taxonomy, await home(c), c.req.query('context') ?? 'view', meta),
+    );
   });
 
   app.post('/', async (c) => {
@@ -170,7 +197,7 @@ export function termsRoutes(taxonomy: Taxonomy) {
       await writeRestMeta(kernel, 'term', term.id, metaWrites);
       c.header('Location', `/wp-json/wp/v2/${taxonomy.restBase}/${term.id}`);
       const meta = await termMeta(c, [term.id]);
-      return c.json(prepare(term, taxonomy, await home(c), 'edit', meta), 201);
+      return c.json(await prepare(c, term, taxonomy, await home(c), 'edit', meta), 201);
     } catch (error) {
       return serviceError(c, error);
     }
@@ -200,7 +227,7 @@ export function termsRoutes(taxonomy: Taxonomy) {
       const term = await kernel.terms.update(taxonomy.name, id, parsed.data);
       await writeRestMeta(kernel, 'term', id, metaWrites);
       const meta = await termMeta(c, [term.id]);
-      return c.json(prepare(term, taxonomy, await home(c), 'edit', meta));
+      return c.json(await prepare(c, term, taxonomy, await home(c), 'edit', meta));
     } catch (error) {
       return serviceError(c, error);
     }
@@ -233,7 +260,10 @@ export function termsRoutes(taxonomy: Taxonomy) {
     }
     try {
       const term = await kernel.terms.delete(taxonomy.name, id);
-      return c.json({ deleted: true, previous: prepare(term, taxonomy, await home(c), 'edit') });
+      return c.json({
+        deleted: true,
+        previous: await prepare(c, term, taxonomy, await home(c), 'edit'),
+      });
     } catch (error) {
       return serviceError(c, error);
     }

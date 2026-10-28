@@ -76,6 +76,8 @@ Plugins ship compiled JavaScript (`.js` or `.mjs`, ESM). Write TypeScript with [
 | `meta.register / registerPostMeta / registerTermMeta`, `meta.get / add / update / delete` | registered meta, shown under `meta` in REST with `showInRest`. See [Registered meta](#registered-meta) | `register_meta()`, `register_post_meta()`, `get_metadata()` & co. |
 | `hooks.removeAction('wp_head', 'rel_canonical')` | removes one of core's named callbacks; restored on deactivation. See [Head output](#head-output-and-canonical-urls) | `remove_action()` with a function name |
 | `content.permalink(post)`, `content.canonicalUrl(post)` | a post's URL, and its canonical URL after `get_canonical_url` | `get_permalink()`, `wp_get_canonical_url()` |
+| `content.mainQuery()` | the main query of the public page being rendered (`isSingular`, `queriedObject`, `paged`…), for block renders and hooks; `undefined` outside a render | the global `$wp_query` |
+| `content.termLink(term)`, `content.author(id)`, `content.attachmentImage(id, size?)` | a term's archive URL; an author's public fields (`name`, `nicename`, `description`, `url`); an image's `{ url, width, height, alt, mimeType }` (`full` or a sub-size), `false` for anything else | `get_term_link()`, `get_userdata()` + `get_author_posts_url()`, `wp_get_attachment_image_src()` |
 | `cache.purge(tags) / purgePaths(paths) / addTags(...) / pathTag(path)` | purge cached public pages. See [api.cache](#the-page-cache-apicache) | caching plugins' purge functions |
 | `public.addFile(path, handler, options)` | a file at a fixed root path (`/llms.txt`). See [Plugin files](#plugin-files-at-the-site-root) | a rewrite rule and a `template_redirect` callback |
 | `db.query(sql)` | one query's rows, on PostgreSQL and PGlite. See [Plugin tables](#plugin-tables-at-scale) | `$wpdb->get_results()` |
@@ -125,7 +127,7 @@ A route's `handler` receives Hono's context (`c.req.query()`, `await c.req.json(
 `get_plugins()` looks in two places:
 
 - `<dataDir>/plugins/<name>/` (default `.pressbase/plugins`): uploads land here, and these can be deleted;
-- the repository's `plugins/` folder: plugins bundled with Pressbase (the example). They can be activated but not deleted.
+- the repository's `plugins/` folder: plugins bundled with Pressbase (the example, and [Pressbase SEO](seo-plugin.md)). They can be activated but not deleted.
 
 A folder in the data directory wins over a bundled one with the same name. Folders that are symlinks are skipped. A folder with an invalid `plugin.json` is listed (with its error) so it can be deleted.
 
@@ -614,7 +616,7 @@ Modules must use the admin's React through `window.pressbase`, not bundle their 
 | `TermEditFields`, `UserProfileFields` | Fills for the category and tag edit form, and the profile and user edit screens ([Slots](#slots)) |
 | `editor` | the post being edited, live: `usePost(selector?)`, `getPost()`, `getEditedPostAttribute(name)`, `editPost(edits)`, `subscribe(listener)` ([Live editor data](#live-editor-data)) |
 | `blocks` | Gutenberg's `registerBlockType` and what a block's edit function needs, for blocks' editor modules ([Blocks](#blocks)) |
-| `components` | the admin's UI kit: `Button`, `Spinner`, `Card`, `Notice`, `Badge`, `EmptyState`, `TextField`, `TextAreaField`, `SelectField`, `Checkbox` |
+| `components` | the admin's UI kit: `Button`, `Spinner`, `Card`, `Notice`, `Badge`, `EmptyState`, `TextField`, `TextAreaField`, `SelectField`, `Checkbox`, and `MediaPicker` (the media library dialog: `open`, `onClose`, `onSelect(media)` with the REST attachment, `allowedTypes: ['image']`, `title`, `selectLabel`, `selectedId`) |
 | `useToast()`, `useCurrentUser()` | the admin's toast (`toast('Saved.')`) and the user, with `capabilities` |
 
 Each `registerPlugin()` is attributed to the plugin whose module was loading (modules load one at a time). When the plugin is deactivated its plugins and fills disappear at the next navigation; a module can't be unloaded, so it reappears without a re-import if the plugin is reactivated. A new `version` gives a new URL and a fresh import.

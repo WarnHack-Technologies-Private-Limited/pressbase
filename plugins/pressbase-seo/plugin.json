@@ -1,0 +1,18 @@
+{
+  "name": "pressbase-seo",
+  "title": "Pressbase SEO",
+  "version": "1.0.0",
+  "description": "Search titles and descriptions, canonicals, robots, Open Graph and X cards, one schema graph, sitemaps, redirects with a 404 log, breadcrumbs, IndexNow and llms.txt, plus a calm content analysis in the editor. Reads and writes Yoast SEO’s data, so sites moved from WordPress keep their search appearance.",
+  "author": {
+    "name": "The Pressbase contributors",
+    "url": "https://github.com/WarnHack-Technologies-Private-Limited/pressbase"
+  },
+  "homepage": "https://github.com/WarnHack-Technologies-Private-Limited/pressbase/tree/main/plugins/pressbase-seo",
+  "requires": ">=0.1.0",
+  "main": "dist/index.js",
+  "permissions": ["database", "options", "network"],
+  "migrations": "migrations",
+  "admin": {
+    "module": "dist/admin/index.js"
+  }
+}

@@ -33,6 +33,7 @@ import { EditorStore } from '@/lib/extensions/editor';
 import type { ListFilterOption, QueryValue } from '@/lib/extensions/lists';
 import { type AdminExtensions, activeOwners, NO_EXTENSIONS } from '@/lib/extensions/pages';
 import { ExtensionStore, type FillEntry, pageSlot, SLOTS } from '@/lib/extensions/registry';
+import { MediaPicker } from '../media/media-picker';
 import { useCurrentUser } from '../shell/current-user';
 import { Button, Spinner } from '../ui/button';
 import { Checkbox, SelectField, TextAreaField, TextField } from '../ui/field';
@@ -685,6 +686,8 @@ export const HOST_API = Object.freeze({
     TextAreaField,
     SelectField,
     Checkbox,
+    /** The media library's picker dialog: `open`, `onClose`, `onSelect(media)`, `allowedTypes`, `title`, `selectLabel`. */
+    MediaPicker,
   }),
   /** Hooks for the admin's state. */
   useToast,

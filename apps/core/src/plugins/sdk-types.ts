@@ -59,6 +59,7 @@ export type { PostType, PostTypeArgs } from '../content/post-types';
 export type { Post, PostInput } from '../content/posts';
 export type { QueryArgs, QueryResult } from '../content/query';
 export type { Taxonomy, TaxonomyArgs } from '../content/taxonomies';
+export type { Term, TermListArgs } from '../content/terms';
 export type {} from '../frontend/dependencies';
 export type { HtmlOutput } from '../frontend/head';
 export type { PageRender } from '../frontend/page';
@@ -71,6 +72,7 @@ export type {
 } from '../frontend/public-files';
 export type { MainQuery } from '../frontend/query';
 export type {} from '../frontend/render';
+export type { SitemapEntry, SitemapProvider, SitemapUser } from '../frontend/sitemaps';
 export type {
   NotFoundRequest,
   TemplateRedirectAnswer,
@@ -133,6 +135,7 @@ export type {
   PluginCliHandler,
   PluginCliIo,
 } from './cli';
+export type { AttachmentImage, ContentAuthor } from './content-links';
 export type { PluginI18n } from './i18n';
 export type {} from './manager';
 export type { PluginManifest, PluginManifestInput, PluginPermission } from './manifest';

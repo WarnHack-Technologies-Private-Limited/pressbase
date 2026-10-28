@@ -29,6 +29,7 @@ describe('migrations', () => {
       // PGlite returns { rows }, postgres-js returns the rows array itself.
       const rows = ((result as { rows?: unknown }).rows ?? result) as { table_name: string }[];
       expect(rows.map((r) => r.table_name)).toEqual([
+        'ai_requests',
         'commentmeta',
         'comments',
         'jobs',

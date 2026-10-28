@@ -31,6 +31,18 @@
       "dependsOn": ["build"],
       "outputs": []
     },
+    "pressbase-seo#typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "pressbase-seo#test": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "@pressbase/cli#test": {
+      "dependsOn": ["^build", "pressbase-seo#build"],
+      "outputs": []
+    },
     "create-pressbase-plugin#test": {
       "dependsOn": ["^build"],
       "outputs": []

@@ -16,9 +16,11 @@ import type { PostType, PostTypeArgs } from '../content/post-types';
 import type { Post, PostsService } from '../content/posts';
 import { type QueryArgs, type QueryResult, queryPosts } from '../content/query';
 import type { Taxonomy, TaxonomyArgs } from '../content/taxonomies';
-import type { TermsService } from '../content/terms';
+import type { Term, TermsService } from '../content/terms';
 import { wpGetCanonicalUrl } from '../frontend/head';
+import { currentPage } from '../frontend/page';
 import type { PublicFileHandler, PublicFileOptions } from '../frontend/public-files';
+import type { MainQuery } from '../frontend/query';
 import { type AppEnv, restError } from '../http';
 import type { Kernel } from '../kernel';
 import { PRESSBASE_VERSION } from '../version';
@@ -33,6 +35,13 @@ import { createAssets, type PluginAssets, type PluginScripts, type PluginStyles 
 import { type Background, createBackground, type PluginCron, type PluginJobs } from './background';
 import { createPluginBlocks, type PluginBlocks } from './blocks';
 import type { PluginCliCommandArgs, PluginCliHandler } from './cli';
+import {
+  type AttachmentImage,
+  type ContentAuthor,
+  contentAttachmentImage,
+  contentAuthor,
+  contentTermLink,
+} from './content-links';
 import type { InstalledPlugin } from './discovery';
 import { createSubApp } from './dispatch';
 import { createPluginI18n, type PluginI18n } from './i18n';
@@ -151,6 +160,17 @@ export interface PluginApi {
     permalink(post: Post | number): Promise<string | false>;
     /** wp_get_canonical_url(): the canonical URL of a published post, after `get_canonical_url`. */
     canonicalUrl(post: Post | number): Promise<string | false>;
+    /**
+     * The main query of the public page being rendered (WordPress's global
+     * `$wp_query`), for block renders and hooks; undefined outside a page render.
+     */
+    mainQuery(): MainQuery | undefined;
+    /** get_term_link() */
+    termLink(term: Pick<Term, 'id' | 'slug' | 'taxonomy'>): Promise<string>;
+    /** get_userdata()'s public fields with get_author_posts_url(), or undefined. */
+    author(id: number): Promise<ContentAuthor | undefined>;
+    /** wp_get_attachment_image_src() with the alt text; false for anything but an image. */
+    attachmentImage(id: number, size?: string): Promise<AttachmentImage | false>;
   };
   /**
    * register_meta() and the metadata API (content/meta.ts). Registered keys
@@ -629,6 +649,10 @@ export class PluginRuntime {
           return p ? permalink(kernel, p, await permalinkContext(kernel)) : false;
         },
         canonicalUrl: (post: Post | number) => wpGetCanonicalUrl(kernel, post),
+        mainQuery: () => currentPage()?.main,
+        termLink: (term: Pick<Term, 'id' | 'slug' | 'taxonomy'>) => contentTermLink(kernel, term),
+        author: (id: number) => contentAuthor(kernel, id),
+        attachmentImage: (id: number, size?: string) => contentAttachmentImage(kernel, id, size),
       }),
       meta: Object.freeze({
         register: (objectType: MetaObjectType, metaKey: string, args?: RegisterMetaArgs) =>

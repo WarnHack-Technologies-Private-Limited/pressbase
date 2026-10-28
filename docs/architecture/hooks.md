@@ -82,6 +82,7 @@ Plugins see the same declarations through `@pressbase/plugin-sdk`, whose types a
 | `delete_term`    | action | `termId, taxonomy, term`   | after a term is deleted                            |
 | `content_query_args` | filter | `args`                 | before every `ContentQuery` runs (like `pre_get_posts`) |
 | `rest_prepare_{type}` | filter | `item, post, context`  | each post or page in a REST response               |
+| `rest_prepare_{taxonomy}` | filter | `item, term, context` | each category, tag or term in a REST response (not for `embed`) |
 | `rest_{type}_query` | filter | `args, params`         | before `GET /wp/v2/{posts\|pages\|…}` queries; `params` are all the request's parameters, so plugins can add their own (a posts-list filter's) |
 | `rest_insert_{type}` | action | `post, body, creating`   | after a post is created or updated through the REST API, before the response is prepared |
 | `pre_render_block` | filter | `preRender, parsedBlock, parentBlock` | before each block renders; return a string to short-circuit (see [Blocks](blocks.md)) |
@@ -154,6 +155,9 @@ Plugins see the same declarations through `@pressbase/plugin-sdk`, whose types a
 | `wp_sitemaps_max_urls` | filter | `max, objectType` | URLs per sitemap page (2,000) |
 | `wp_sitemaps_post_types`, `wp_sitemaps_taxonomies` | filter | `names` | which post types and taxonomies get sitemaps |
 | `wp_sitemaps_posts_query_args` | filter | `args, postType` | the query of a posts sitemap |
+| `wp_sitemaps_taxonomies_query_args` | filter | `args, taxonomy` | the term query of a taxonomy sitemap (`TermListArgs`: `exclude`, `include`…) |
+| `wp_sitemaps_add_provider` | filter | `provider, name` | each provider (`posts`, `taxonomies`, `users`); `false` leaves it out |
+| `wp_sitemaps_posts_entry`, `wp_sitemaps_taxonomies_entry`, `wp_sitemaps_users_entry` | filter | `entry, post, postType` / `entry, term, taxonomy` / `entry, user` | one `<url>`: `{ loc, lastmod?, changefreq?, priority? }` |
 | _any cron hook_, e.g. `publish_future_post` | action | the event's `args` | the job queue worker, when a scheduled event is due (see [Jobs and cron](jobs.md)) |
 | `cron_schedules` | filter | `schedules` | add recurrences to `hourly`, `twicedaily`, `daily`, `weekly` |
 | `pre_schedule_event`, `schedule_event`, `pre_reschedule_event`, `pre_unschedule_event`, `pre_clear_scheduled_hook`, `pre_unschedule_hook`, `pre_get_scheduled_event` | filter | as in WordPress | short-circuit or change `kernel.cron` calls |
@@ -164,8 +168,8 @@ Plugins see the same declarations through `@pressbase/plugin-sdk`, whose types a
 | `wp_head`, `wp_body_open`, `wp_footer` | action | `out, page` | print into the head, the start of `<body>`, the footer with `out.print(html)`; part of the cached page, so nothing per-visitor |
 | `script_loader_src`, `style_loader_src` | filter | `src, handle` | an enqueued script's / stylesheet's URL |
 | `script_loader_tag` / `style_loader_tag` | filter | `tag, handle, src` / `tag, handle, href, media` | the printed tag |
-| `wp_robots` | filter | `robots` | the robots meta directives |
-| `pre_get_document_title`, `document_title_separator`, `document_title_parts`, `document_title` | filter | `title` / `separator` / `parts` / `title` | the `<title>` |
+| `wp_robots` | filter | `robots`, `main` | the robots meta directives; `main` is the page's main query (Pressbase's addition: WordPress plugins read `$wp_query`) |
+| `pre_get_document_title`, `document_title_separator`, `document_title_parts`, `document_title` | filter | `title` / `separator` / `parts` / `title`, then `main` | the `<title>`; `main` is the main query being rendered (Pressbase's addition, as for `wp_robots`) |
 | `the_generator` | filter | `html, type` | the generator meta tag |
 | `get_canonical_url` | filter | `url, post` | `wp_get_canonical_url()`: the canonical URL `rel_canonical` prints (v0.7) |
 | `template_redirect` | action | `request` | before a public URL is served (robots.txt, sitemaps, feeds, plugin files, pages); `request.redirect(location, status)` or `request.notFound(404 \| 410)` answers instead. See [Plugins](plugins.md#early-request-hooks-template_redirect-and-404s), [ADR 0017](../adr/0017-early-request-hooks-and-the-page-cache.md) |

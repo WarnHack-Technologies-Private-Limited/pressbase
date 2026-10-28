@@ -32,6 +32,8 @@ ENV PRESSBASE_STANDALONE=1 \
     WEB_URL=http://127.0.0.1:3001
 RUN pnpm --filter @pressbase/web build
 RUN pnpm --filter @pressbase/admin build
+# Bundled plugins with a build step (Pressbase SEO: TypeScript → dist/).
+RUN pnpm --filter "./plugins/*" build
 
 # The standalone servers, with the static files they serve next to them.
 RUN mkdir -p /out \
@@ -50,7 +52,8 @@ RUN mkdir -p /out/core \
  && pnpm install --frozen-lockfile --prod --filter "@pressbase/core..." --filter "@pressbase/cli..." \
  && cd /repo \
  && cp -a --parents apps/core/src apps/core/static packages/*/src packages/db/migrations \
-      packages/cli/bin themes languages /out/core/
+      packages/cli/bin themes languages plugins /out/core/ \
+ && rm -rf /out/core/plugins/*/node_modules /out/core/plugins/*/src /out/core/plugins/*/test
 
 # ---------------------------------------------------------------------------
 # Runtime: Node.js, the three apps, and nothing else.
