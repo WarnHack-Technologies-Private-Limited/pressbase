@@ -96,6 +96,8 @@ export default defineConfig({
         PRESSBASE_SETUP_TOKEN: '',
         PRESSBASE_SMTP_URL: '',
         PRESSBASE_SMTP_HOST: '',
+        // Site Health's release check stays off GitHub, so runs don't depend on the network.
+        PRESSBASE_UPDATE_CHECK: 'off',
       },
       reuseExistingServer: false,
       timeout: 120_000,

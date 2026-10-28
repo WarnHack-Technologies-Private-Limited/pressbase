@@ -69,6 +69,7 @@ Also `rescheduleEvent`, `unscheduleHook`, `getScheduledEvent`, `getSchedule`, `g
 | `publish_future_post` | once per scheduled post, at its date | Publishes it (`check_and_publish_future_post()`). Scheduled when a `future` post is saved, moved when its date changes, cleared when it leaves `future` or is deleted. |
 | `pressbase_delete_expired_sessions` | daily | Deletes expired login sessions. |
 | `pressbase_prune_jobs` | daily | Deletes finished jobs older than the retention. |
+| `wp_site_health_scheduled_check` | weekly, from a day after boot | Runs Site Health's checks and saves the counts the Dashboard shows. See [Site Health](site-health.md#the-weekly-check). |
 
 The daily events are scheduled on `init` when missing, at midnight UTC. `init` also schedules events for `future` posts that lack one (posts scheduled before the queue existed). `kernel.posts.publishDue()` still runs before content queries as a safety net, so a scheduled post is never late when no worker is running. See [Content](content.md#scheduling).
 

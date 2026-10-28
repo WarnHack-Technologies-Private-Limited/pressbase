@@ -40,6 +40,17 @@ export type {} from '../people/password-reset';
 export type {} from '../people/users';
 export type {} from '../routes/users';
 export type {
+  DebugField,
+  DebugInfo,
+  DebugSection,
+  DebugValue,
+  SiteHealthAsyncTest,
+  SiteHealthDirectTest,
+  SiteHealthStatus,
+  SiteHealthTestResult,
+  SiteStatusTests,
+} from '../site-health/types';
+export type {
   PageParent,
   PluginPageArgs,
   PluginSectionArgs,

@@ -137,6 +137,11 @@ Plugins see the same declarations through `@pressbase/plugin-sdk`, whose types a
 | `rest_prepare_comment` | filter | `item, comment, context` | each comment in a REST response |
 | `rest_insert_comment`, `rest_after_insert_comment` | action | `comment, body, creating` | after a REST create or update |
 | `rest_delete_comment` | action | `comment, response` | after a REST delete |
+| `site_status_tests` | filter | `tests` | which Site Health tests run: `{ direct, async }` (see [Site Health](site-health.md#extending-it)) |
+| `site_status_test_result` | filter | `result` | each finished Site Health test |
+| `debug_information` | filter | `info` | Site Health's Info sections |
+| `site_health_test_rest_capability_{check}` | filter | `capability, check` | the capability a `wp-site-health/v1` route needs |
+| `wp_site_health_scheduled_check` | action | — | the weekly Site Health check (a cron event) |
 | `save_post_wp_global_styles` | action | `postId, post, update` | user global styles saved (REST, a restored revision, or code); core re-resolves the active theme's styles on it |
 | `pressbase_global_styles_updated` | action | `stylesheet, post, config` | **after** a theme's user global styles changed and the active theme's stylesheet was rebuilt. Pressbase's own hook (WordPress only cleans its theme.json caches here): the one to listen to for invalidating cached pages after a style change. `switch_theme` and `updated_option` (`site_logo`, `site_icon`, `blogname`…) cover the other appearance changes. |
 | `site_icon_meta_tags` | filter | `tags` | the icon tags `wp_site_icon()` prints in the public page head |

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { DashboardWidgets } from '@/components/extensions/dashboard-widgets';
 import styles from '@/components/shell/page.module.css';
 import { PageHeader } from '@/components/shell/page-header';
+import { SiteHealthSummary } from '@/components/site-health/site-health-summary';
 import { Badge, Card, Notice } from '@/components/ui/surface';
 import { commentPlainText, type RestComment } from '@/lib/comments';
 import { coreGet, type Me, type SiteIndex } from '@/lib/core';
@@ -191,6 +192,8 @@ export default async function DashboardPage() {
 
         <div className={styles.span4}>
           <Card title="Site health">
+            {/* Site Health (v0.6): the last check's rating, and a link to the screen. */}
+            <SiteHealthSummary />
             <dl className={styles.facts}>
               <div>
                 <dt>Pressbase</dt>

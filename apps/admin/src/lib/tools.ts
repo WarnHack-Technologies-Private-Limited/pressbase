@@ -13,7 +13,14 @@ export interface CoreTool {
   capability: string;
 }
 
-export const CORE_TOOLS: CoreTool[] = [];
+export const CORE_TOOLS: CoreTool[] = [
+  {
+    slug: 'site-health',
+    title: 'Site health',
+    description: 'Check your site’s security and performance, and copy its details for support.',
+    capability: 'view_site_health_checks',
+  },
+];
 
 /** The core tools a user with these capabilities may open. */
 export function toolsFor(capabilities: Record<string, boolean>): CoreTool[] {

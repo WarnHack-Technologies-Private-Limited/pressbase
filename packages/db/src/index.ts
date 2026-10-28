@@ -1,4 +1,4 @@
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sql } from 'drizzle-orm';
@@ -103,4 +103,34 @@ export async function testConnection(url: string): Promise<void> {
   } finally {
     await connection.close();
   }
+}
+
+/** Rows of a raw `execute()` result: PGlite returns `{ rows }`, postgres-js the array itself. */
+export function resultRows<T>(result: unknown): T[] {
+  return ((result as { rows?: unknown }).rows ?? result) as T[];
+}
+
+/**
+ * Schema migrations that this database hasn't applied yet, by tag. It uses
+ * the migrator's own rule: a journal entry is pending when it is newer than
+ * the last row of `drizzle.__drizzle_migrations`. `connection.migrate()` runs
+ * on every boot, so anything listed here means a migration failed or the code
+ * changed under a running process. Used by Site Health.
+ */
+export async function pendingMigrations(db: Database): Promise<string[]> {
+  const journal = JSON.parse(
+    await readFile(path.join(MIGRATIONS_FOLDER, 'meta', '_journal.json'), 'utf8'),
+  ) as { entries: { tag: string; when: number }[] };
+  let last = 0;
+  try {
+    const [row] = resultRows<{ created_at: string | number }>(
+      await db.execute(
+        sql`select created_at from drizzle.__drizzle_migrations order by created_at desc limit 1`,
+      ),
+    );
+    last = Number(row?.created_at ?? 0);
+  } catch {
+    // No migrations table: nothing has been applied.
+  }
+  return journal.entries.filter((entry) => last < entry.when).map((entry) => entry.tag);
 }
