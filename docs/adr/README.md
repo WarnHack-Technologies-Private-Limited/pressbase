@@ -15,3 +15,4 @@ To write one, copy [template.md](template.md) to `NNNN-short-title.md` and open 
 | [0005](0005-password-hashing.md)          | scrypt from the Node standard library                     | Accepted |
 | [0006](0006-wordpress-compatible-rest.md) | WordPress-compatible REST surface under /wp-json          | Accepted |
 | [0007](0007-public-rendering.md)          | Core renders the public site; apps/web serves it          | Accepted |
+| [0008](0008-public-page-caching.md)       | Tag-indexed page cache in apps/web, purged by core        | Accepted |

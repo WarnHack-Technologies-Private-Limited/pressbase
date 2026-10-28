@@ -14,6 +14,7 @@
  * internal ports here must match them. No dependencies: plain Node.js.
  */
 import { spawn } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 
 const APP = process.env.PRESSBASE_APP_DIR ?? '/app';
@@ -21,6 +22,15 @@ const CORE_PORT = process.env.PRESSBASE_CORE_PORT ?? '4000';
 const WEB_PORT = process.env.PRESSBASE_WEB_PORT ?? '3001';
 const ADMIN_PORT = process.env.PORT ?? '3000';
 const CORE_URL = `http://127.0.0.1:${CORE_PORT}`;
+const WEB_URL = `http://127.0.0.1:${WEB_PORT}`;
+/**
+ * Core tells the public site which cached pages went stale; the shared secret
+ * authenticates those calls (docs/adr/0008-public-page-caching.md). All three
+ * processes live in this container, so a random per-container secret turns
+ * caching on with nothing to configure. Set it yourself to keep it stable.
+ */
+const REVALIDATE_SECRET =
+  process.env.PRESSBASE_REVALIDATE_SECRET || randomBytes(32).toString('hex');
 /** How long to wait for the processes to stop before killing them. */
 const STOP_TIMEOUT_MS = 10_000;
 
@@ -32,6 +42,8 @@ const services = [
     env: {
       PORT: CORE_PORT,
       PRESSBASE_DATA_DIR: process.env.PRESSBASE_DATA_DIR ?? '/data',
+      WEB_URL,
+      PRESSBASE_REVALIDATE_SECRET: REVALIDATE_SECRET,
     },
   },
   {
@@ -42,6 +54,7 @@ const services = [
       PORT: WEB_PORT,
       HOSTNAME: '127.0.0.1',
       CORE_URL,
+      PRESSBASE_REVALIDATE_SECRET: REVALIDATE_SECRET,
       // Empty: the installer redirect stays relative, so it works on any public address.
       ADMIN_URL: process.env.ADMIN_URL ?? '',
     },
@@ -55,7 +68,7 @@ const services = [
       // Docker sets HOSTNAME to the container ID; Next.js would listen on that address only.
       HOSTNAME: '0.0.0.0',
       CORE_URL,
-      WEB_URL: `http://127.0.0.1:${WEB_PORT}`,
+      WEB_URL,
     },
   },
 ];

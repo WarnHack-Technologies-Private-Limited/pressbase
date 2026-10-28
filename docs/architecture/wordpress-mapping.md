@@ -49,6 +49,12 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | `template-loader.php`, `get_*_template()` | `apps/core/src/frontend/hierarchy.ts` | |
 | `template-canvas.php`, `get_the_block_template_html()`, `wp_get_document_title()`, `get_body_class()` | `apps/core/src/frontend/render.ts` | |
 | `WP_REST_Themes_Controller` | `apps/core/src/routes/themes.ts` | Plus theme activation. |
+| `feed-rss2.php`, `feed-rss2-comments.php`, `feed-atom.php`, `feed-atom-comments.php`, `do_feed()`, `feed_links()`, `feed_links_extra()` | `apps/core/src/frontend/feeds.ts` | RSS 2.0 and Atom; `rss` and `rdf` answer RSS 2.0. See [The public site](public-site.md). |
+| `WP_Sitemaps` and its providers, `WP_Sitemaps_Stylesheet` | `apps/core/src/frontend/sitemaps.ts` | Same URLs and 2,000-URL pages; password-protected posts are left out. |
+| `do_robots()` | `apps/core/src/frontend/robots.ts` | Disallows `/admin/`. |
+| `esc_xml()`, `ent2ncr()` | `apps/core/src/frontend/xml.ts` | |
+| Caching plugins (`clean_post_cache`, page caches) | `apps/core/src/cache/`, `apps/web/src/lib/page-cache.ts` | Tag-based purges. See [ADR 0008](../adr/0008-public-page-caching.md). |
+| `publish_future_post` (wp-cron) | a one-minute timer in `apps/core/src/server.ts` | Until the job queue arrives. |
 | `themes.php` | `/admin/appearance` | |
 | `register_post_type( 'wp_navigation' )`, `WP_Navigation_Fallback`, `WP_REST_Navigation_Fallback_Controller` | `apps/core/src/content/post-types.ts`, `content/navigation.ts`, `routes/navigation.ts` | The header's menu is chosen with the `pressbase_navigation_fallback` option. See [Navigation](navigation.md). |
 | `blocks/navigation.php`, `navigation-link.php`, `navigation-submenu.php`, `home-link.php`, `view.js` | `apps/core/src/blocks/library/navigation.ts` | A small inline script instead of the Interactivity API. |

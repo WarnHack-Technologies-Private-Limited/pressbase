@@ -20,6 +20,7 @@ import {
 } from 'drizzle-orm';
 import { currentUserCan } from '../auth/meta-caps';
 import { type CurrentUser, loadUser, userCan } from '../auth/users';
+import { addCacheTags, CacheTag } from '../cache/tags';
 import type { Post } from '../content/posts';
 import type { Kernel } from '../kernel';
 import { ksesComment, plainText, relUgc } from './format';
@@ -275,6 +276,9 @@ export class CommentsService {
       .orderBy(...order)
       .$dynamic();
     if (args.number && args.number > 0) q = q.limit(args.number).offset(args.offset ?? 0);
+    // A comment list across posts (latest comments, the comments feed); a
+    // post's own comments are covered by its post:{id} tag.
+    if (!args.post__in?.length) addCacheTags(CacheTag.comments);
     const [comments, [total]] = await Promise.all([
       q,
       this.#db.select({ n: count() }).from(c).where(where),

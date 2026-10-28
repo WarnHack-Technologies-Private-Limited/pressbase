@@ -1,6 +1,7 @@
 import { connect, type DatabaseConnection } from '@pressbase/db';
 import { HookBus } from '@pressbase/hooks';
 import { BlocksService } from './blocks/service';
+import { registerCacheInvalidation } from './cache/invalidation';
 import { registerCommentNotifications } from './comments/notify';
 import { CommentsService } from './comments/service';
 import type { Config } from './config';
@@ -63,6 +64,8 @@ export class Kernel {
     registerGlobalStylesHooks(this);
     registerSiteIdentitySettings(this.settings);
     registerSiteIdentityHooks(this);
+    // Public page caching: content changes announce the cache tags they make stale.
+    registerCacheInvalidation(this);
   }
 
   get state(): SiteState {

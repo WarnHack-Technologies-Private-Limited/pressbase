@@ -1,5 +1,11 @@
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import type { NextConfig } from 'next';
+
+// Read the repository's .env as core does (variables already set win), so
+// PRESSBASE_REVALIDATE_SECRET reaches both apps from one place in development.
+const rootEnv = path.resolve(process.cwd(), '../../.env');
+if (existsSync(rootEnv)) process.loadEnvFile(rootEnv);
 
 const CORE_URL = process.env.CORE_URL ?? 'http://localhost:4000';
 

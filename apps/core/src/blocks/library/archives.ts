@@ -7,6 +7,7 @@ import {
 } from '@pressbase/blocks';
 import { schema } from '@pressbase/db';
 import { and, count, eq, sql } from 'drizzle-orm';
+import { addCacheTags, CacheTag } from '../../cache/tags';
 import { type CoreBlock, monthLink, type SiteInfo, siteInfo } from '../helpers';
 import { monthName } from '../php-date';
 import { dropdownScript } from './terms';
@@ -32,6 +33,7 @@ async function archiveRows(
   const { kernel } = block.services;
   const { posts } = schema;
   await kernel.posts.publishDue();
+  addCacheTags(CacheTag.posts('post'));
   // post_date is the site's local time in WordPress; group on the local calendar.
   const local = sql`(${posts.date} at time zone ${site.timeZone})`;
   return kernel.db

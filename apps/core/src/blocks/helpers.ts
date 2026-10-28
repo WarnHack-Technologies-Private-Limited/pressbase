@@ -2,6 +2,7 @@ import type { WPBlock } from '@pressbase/blocks';
 import { schema } from '@pressbase/db';
 import { eq } from 'drizzle-orm';
 import type { CurrentUser } from '../auth/users';
+import { addCacheTags, CacheTag } from '../cache/tags';
 import type { Post } from '../content/posts';
 import { sanitizePostTitle } from '../content/sanitize';
 import type { Term } from '../content/terms';
@@ -148,6 +149,7 @@ export async function authorOf(
     })
     .from(schema.users)
     .where(eq(schema.users.id, id));
+  if (user) addCacheTags(CacheTag.author(user.id));
   return user;
 }
 

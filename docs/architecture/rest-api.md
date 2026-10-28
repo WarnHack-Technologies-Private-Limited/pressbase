@@ -49,7 +49,7 @@ Everything is served under `/wp-json`, as in WordPress:
 | GET / POST / PUT / PATCH / DELETE | `/wp/v2/comments/{id}`    | read: as the post · write: `edit_comment` | One comment. `DELETE` trashes; `?force=true` deletes permanently. |
 | GET                      | `/pressbase/v1/comment-counts`     | `moderate_comments` | Comments per status (`wp_count_comments()`) plus `mine`, for the admin's tabs. |
 | POST                     | `/wp-comments-post` (outside `/wp-json`) | anyone | The classic comment form, `application/x-www-form-urlencoded`. Redirects back, or shows an error page. See [Comments](comments.md#the-form-endpoint-post-wp-comments-post). |
-| GET                      | `/pressbase/v1/render?url=/path/`      | public (drafts and private posts need the right capability) | A page of the public site: `{ status, headers, html }`. Used by `apps/web`. See [Themes](themes.md). |
+| GET                      | `/pressbase/v1/render?url=/path/`      | public (drafts and private posts need the right capability) | A page of the public site, a feed, a sitemap or `robots.txt`: `{ status, headers, html, tags }`. `html` is the body whatever its `content-type`; `tags` are the cache tags it depends on. Used by `apps/web`. See [Themes](themes.md) and [The public site](public-site.md). |
 | GET                      | `/wp/v2/themes`, `/wp/v2/themes/{stylesheet}` | `switch_themes`; `edit_posts` for the active theme (`?status=active`) | Installed themes (`WP_REST_Themes_Controller` fields: `stylesheet`, `template`, `name`, `version`, `screenshot`, `status`, `is_block_theme`…). |
 | POST                     | `/pressbase/v1/themes/{stylesheet}/activate` | `switch_themes` | Activates a block theme (`switch_theme()`). |
 | GET                      | `/wp/v2/global-styles/themes/{stylesheet}` | `edit_posts` (any type) or `edit_theme_options` | The active theme's `settings` (presets keyed by origin) and `styles`, with `_links["wp:theme-file"]` for `file:./` URLs. Other themes: `404 rest_theme_not_found`. |
@@ -67,6 +67,10 @@ Everything is served under `/wp-json`, as in WordPress:
 | POST                     | `/pressbase/v1/navigation-preview`     | `edit_theme_options` | A public page rendered with unsaved menu markup in the header, for Appearance → Menus. |
 | GET / POST               | `/wp/v2/blocks`                        | read: `edit_posts` · create: `publish_posts` | Synced patterns (`wp_block`). Same parameters as posts. |
 | GET / POST / PUT / PATCH / DELETE | `/wp/v2/blocks/{id}`          | `edit_post` / `delete_post` | One synced pattern: `title.raw`, `content.raw`, `wp_pattern_sync_status`; write it with `meta.wp_pattern_sync_status`. |
+
+`posts_per_rss` and `rss_use_excerpt` (Settings → Reading's feed settings) are Pressbase additions to `/wp/v2/settings`; WordPress keeps them out of the REST settings.
+
+`apps/web` also answers `POST /_pressbase/revalidate` (outside `/wp-json`, not part of core): core's cache purges, `{ "tags": [...] }` with `Authorization: Bearer <PRESSBASE_REVALIDATE_SECRET>`. It answers `401 pressbase_invalid_secret`, `400 rest_invalid_param` without tags, `404 pressbase_cache_disabled` when caching is off, and `{ purged, tags }` otherwise. See [ADR 0008](../adr/0008-public-page-caching.md).
 
 Routes other than the index and installer return `503 pressbase_not_installed` until the site is installed.
 
