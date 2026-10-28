@@ -66,15 +66,16 @@ async function uploadFile(file: File): Promise<UploadedSession> {
 }
 
 function StepHeading({ children }: { children: string }) {
-  const ref = useRef<HTMLHeadingElement>(null);
+  const ref = useRef<HTMLSpanElement>(null);
   // Multi-step flows move focus to the new step's heading (docs/design/accessibility.md).
+  // Rendered inside the Card's <h2>, so it is focusable text, not a second heading.
   useEffect(() => {
     ref.current?.focus();
   }, []);
   return (
-    <h2 ref={ref} tabIndex={-1} className={styles.stepHeading}>
+    <span ref={ref} tabIndex={-1} className={styles.stepHeading}>
       {children}
-    </h2>
+    </span>
   );
 }
 

@@ -254,11 +254,15 @@ export async function startImportSession(
   });
   if (!job)
     throw new ImportSessionError('import_already_started', 'This import has already started.', 409);
-  session.jobId = job.id;
-  session.startedAt = new Date().toISOString();
-  session.options = { authors: data.authors, fetchAttachments: data.fetchAttachments };
-  await saveSession(kernel, session);
-  return session;
+  // The worker may already be running (or have finished) the job: keep what it wrote.
+  const latest: ImportSession = {
+    ...(await getSession(kernel, id)),
+    jobId: job.id,
+    startedAt: new Date().toISOString(),
+    options: { authors: data.authors, fetchAttachments: data.fetchAttachments },
+  };
+  await saveSession(kernel, latest);
+  return latest;
 }
 
 export interface SessionStatus {
@@ -275,6 +279,7 @@ export async function sessionStatus(
   session: ImportSession,
 ): Promise<SessionStatus> {
   if (!session.jobId) {
+    if (session.report) return { status: 'completed', progress: null, report: session.report, error: null };
     return { status: 'uploaded', progress: null, report: null, error: null };
   }
   const job = await kernel.jobs.get(session.jobId);
@@ -356,7 +361,8 @@ export function registerImportJobs(kernel: Kernel): void {
       const user = await loadUser(kernel, data.userId);
       if (!user) throw new Error('The user who started this import no longer exists.');
       const { xml } = paths(kernel, data.importId);
-      const session = await getSession(kernel, data.importId);
+      // Fails early if the import was deleted meanwhile.
+      await getSession(kernel, data.importId);
       try {
         await stat(xml);
       } catch {
@@ -372,7 +378,9 @@ export function registerImportJobs(kernel: Kernel): void {
         onProgress: (progress) => patchJobData(kernel, job.id, { progress }),
       });
       await patchJobData(kernel, job.id, { report });
-      await saveSession(kernel, { ...session, report });
+      // Read it again: the job can start before startImportSession() has saved its jobId.
+      const session = await getSession(kernel, data.importId);
+      await saveSession(kernel, { ...session, jobId: job.id, report });
       // wp_import_cleanup(): the uploaded file isn't needed any more.
       await rm(xml, { force: true });
     },

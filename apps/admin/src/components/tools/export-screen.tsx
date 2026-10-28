@@ -153,12 +153,12 @@ export function ExportScreen({ choices }: { choices: ExportChoices }) {
                     aria-describedby={HINTS[option.name] ? `hint-${option.name}` : undefined}
                   />
                   <span>{option.label}</span>
-                  {HINTS[option.name] && (
-                    <span id={`hint-${option.name}`} className={styles.choiceHint}>
-                      {HINTS[option.name]}
-                    </span>
-                  )}
                 </label>
+                {HINTS[option.name] && (
+                  <p id={`hint-${option.name}`} className={styles.choiceHint}>
+                    {HINTS[option.name]}
+                  </p>
+                )}
                 {filters.content === option.name && filterFields(option.name)}
               </div>
             ))}

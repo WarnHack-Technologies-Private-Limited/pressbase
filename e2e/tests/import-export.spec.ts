@@ -60,7 +60,7 @@ test('Tools → Import: upload, assign authors, import in the background, see th
   await page.getByRole('button', { name: 'Upload file' }).click();
   await expect(page.getByText('Export file read.')).toBeVisible();
 
-  await expect(page.getByRole('heading', { name: 'Check what will be imported' })).toBeFocused();
+  await expect(page.getByText('Check what will be imported')).toBeFocused();
   await expect(page.getByText('1 post · 1 category or tag')).toBeVisible();
   const authorSelect = page.getByLabel('Posts by Priya Shah');
   await expect(authorSelect).toHaveValue('new');
@@ -83,9 +83,9 @@ test('Tools → Export: choose pages and download a WXR file', async ({ page }) 
   await logInAsAdmin(page);
   await page.goto('/admin/tools/export');
   await expect(page.getByRole('heading', { level: 1, name: 'Export' })).toBeVisible();
-  await expect(page.getByLabel('All content')).toBeChecked();
+  await expect(page.getByLabel('All content', { exact: true })).toBeChecked();
 
-  await page.getByLabel('Pages').check();
+  await page.getByLabel('Pages', { exact: true }).check();
   await expect(page.getByLabel('Status')).toBeVisible();
   await expect(page.getByLabel('Category')).toBeHidden();
 
