@@ -938,15 +938,13 @@ export class ImportWriter {
         inserted.set(comment.comment_id, row.id);
         this.report.imported.comments += 1;
         if (comment.commentmeta.length) {
-          await this.kernel.db
-            .insert(schema.commentmeta)
-            .values(
-              comment.commentmeta.map((m) => ({
-                commentId: row.id,
-                key: m.key,
-                value: maybeUnserialize(m.value),
-              })),
-            );
+          await this.kernel.db.insert(schema.commentmeta).values(
+            comment.commentmeta.map((m) => ({
+              commentId: row.id,
+              key: m.key,
+              value: maybeUnserialize(m.value),
+            })),
+          );
         }
         await this.kernel.hooks.doAction(
           'wp_import_insert_comment',

@@ -279,7 +279,8 @@ export async function sessionStatus(
   session: ImportSession,
 ): Promise<SessionStatus> {
   if (!session.jobId) {
-    if (session.report) return { status: 'completed', progress: null, report: session.report, error: null };
+    if (session.report)
+      return { status: 'completed', progress: null, report: session.report, error: null };
     return { status: 'uploaded', progress: null, report: null, error: null };
   }
   const job = await kernel.jobs.get(session.jobId);
