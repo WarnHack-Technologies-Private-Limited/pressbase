@@ -49,6 +49,11 @@ function valuesOf(user: EditUser): Values {
   };
 }
 
+/** Registered user meta (edit context); REST gives `[]` when there's none, as WordPress does. */
+function metaOf(user: EditUser): Record<string, unknown> {
+  return user.meta && !Array.isArray(user.meta) ? user.meta : {};
+}
+
 /**
  * Edit a user (wp-admin/user-edit.php) or your own profile (profile.php):
  * role, name, contact, bio, password, application passwords. Changes are
@@ -80,7 +85,7 @@ export function UserEditor({ id, self = false }: { id: number; self?: boolean })
       const data = await api<EditUser>(`${path}?context=edit`);
       setUser(data);
       setValues(valuesOf(data));
-      setMeta(data.meta ?? {});
+      setMeta(metaOf(data));
     } catch (error) {
       setLoadError(error instanceof ApiError ? error.message : 'Could not load this user.');
     }
@@ -108,7 +113,7 @@ export function UserEditor({ id, self = false }: { id: number; self?: boolean })
       else out[key] = values[key];
     }
     if (password) out.password = password;
-    const metaEdits = metaChanges(user?.meta, meta);
+    const metaEdits = metaChanges(user ? metaOf(user) : {}, meta);
     if (Object.keys(metaEdits).length) out.meta = metaEdits;
     return out;
   }, [values, saved, password, user, meta]);
@@ -135,7 +140,7 @@ export function UserEditor({ id, self = false }: { id: number; self?: boolean })
       const updated = await api<EditUser>(path, { method: 'POST', body: changed });
       setUser(updated);
       setValues(valuesOf(updated));
-      setMeta(updated.meta ?? {});
+      setMeta(metaOf(updated));
       setPassword(null);
       setErrors({});
       toast(self ? 'Profile updated.' : 'User updated.');
@@ -507,7 +512,7 @@ export function UserEditor({ id, self = false }: { id: number; self?: boolean })
                 variant="ghost"
                 onClick={() => {
                   setValues(saved);
-                  setMeta(user.meta ?? {});
+                  setMeta(metaOf(user));
                   setPassword(null);
                   setErrors({});
                 }}
