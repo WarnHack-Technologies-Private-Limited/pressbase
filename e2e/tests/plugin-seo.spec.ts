@@ -40,20 +40,29 @@ test('Pressbase SEO: edit the SEO tab, publish, see the head tags, redirect, see
   await panel.getByLabel('Meta description').fill(description);
   await expect(panel.locator('[data-seo-preview-description]')).toHaveText(description);
   await panel.getByLabel('Focus keyphrase').fill('green tea');
-  await expect(panel.locator('[data-seo-check="keyphrase-title"]')).toHaveAttribute('data-status', 'good');
+  await expect(panel.locator('[data-seo-check="keyphrase-title"]')).toHaveAttribute(
+    'data-status',
+    'good',
+  );
   await panel.getByRole('button', { name: 'Mobile' }).click();
   await expect(panel.locator('[data-seo-preview="mobile"]')).toBeVisible();
-  await expect(panel.locator('[data-seo-image-note]')).toHaveText('No image: add a featured image or choose one here.');
+  await expect(panel.locator('[data-seo-image-note]')).toHaveText(
+    'No image: add a featured image or choose one here.',
+  );
 
   // Publishing shows the SEO item in "Ready to publish?", which never blocks.
   await page.getByRole('button', { name: 'Publish', exact: true }).click();
   const ready = page.getByRole('dialog', { name: 'Ready to publish?' });
-  await expect(ready.getByText('You can publish now and improve these later in the SEO tab.')).toBeAttached();
+  await expect(
+    ready.getByText('You can publish now and improve these later in the SEO tab.'),
+  ).toBeAttached();
   await ready.getByRole('button', { name: 'Publish', exact: true }).click();
   await expect(page.getByText('Post published.')).toBeVisible();
   await expect(page).toHaveURL(/\/admin\/posts\/\d+$/);
   const id = Number(/\/admin\/posts\/(\d+)$/.exec(page.url())?.[1]);
-  const post = (await (await page.request.get(`/wp-json/wp/v2/posts/${id}`)).json()) as { link: string };
+  const post = (await (await page.request.get(`/wp-json/wp/v2/posts/${id}`)).json()) as {
+    link: string;
+  };
   const path = new URL(post.link).pathname;
 
   // The public page's <head>.
@@ -67,7 +76,9 @@ test('Pressbase SEO: edit the SEO tab, publish, see the head tags, redirect, see
   // Tools → SEO: add a redirect, then follow it.
   await page.goto('/admin/tools/pressbase-seo/seo-tools');
   const form = page.locator('[data-seo-redirect-form]');
-  const from = `/${unique('old-tea').toLowerCase().replace(/[^a-z0-9-]/g, '-')}/`;
+  const from = `/${unique('old-tea')
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '-')}/`;
   await form.getByLabel('From').fill(from);
   await form.getByLabel('To').fill(path);
   await form.getByRole('button', { name: 'Add redirect' }).click();
