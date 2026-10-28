@@ -17,6 +17,7 @@ import { registerPublicPageHooks, ScriptsApi, StylesApi } from './frontend/head'
 import { Mailer } from './mail/mailer';
 import { registerCoreSettings, SettingsRegistry } from './options/settings';
 import { Options } from './options/store';
+import { PluginManager } from './plugins/manager';
 import { registerGlobalStylesHooks, registerGlobalStylesPostType } from './themes/global-styles';
 import { ThemesService } from './themes/service';
 import { registerSiteIdentityHooks, registerSiteIdentitySettings } from './themes/site-identity';
@@ -34,7 +35,7 @@ export type SiteState = 'needs-database' | 'needs-install' | 'ready';
  * for the globals WordPress sets up in wp-settings.php.
  *
  * Boot order: config → registries (settings, post types, taxonomies) →
- * database (+ migrations) → options → `init` action.
+ * database (+ migrations) → options → active plugins → `init` action.
  */
 export class Kernel {
   readonly hooks = new HookBus();
@@ -60,6 +61,8 @@ export class Kernel {
   readonly scripts = new ScriptsApi(this.hooks);
   /** wp_enqueue_style() and friends for public pages. */
   readonly styles = new StylesApi(this.hooks);
+  /** Installed plugins, loading and the plugin lifecycle (see docs/architecture/plugins.md). */
+  readonly plugins = new PluginManager(this);
   #connection: DatabaseConnection | undefined;
   #options: Options | undefined;
   #state: SiteState = 'needs-database';
@@ -136,6 +139,8 @@ export class Kernel {
         // Data upgrades will run here (WordPress's wp_upgrade()). None exist yet.
         await this.#options.set('pressbase_db_version', DB_VERSION);
       }
+      // Active plugins load before `init`, as wp-settings.php includes them.
+      await this.plugins.loadActive();
       await this.hooks.doAction('init');
     }
     return this.#state;
@@ -143,6 +148,7 @@ export class Kernel {
 
   async shutdown(): Promise<void> {
     await this.jobs.stop();
+    this.plugins.unloadAll();
     await this.#connection?.close();
     this.#connection = undefined;
   }

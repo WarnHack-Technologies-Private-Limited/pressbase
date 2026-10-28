@@ -84,7 +84,6 @@ export const SECTION_GROUPS: SectionGroup[] = [
         label: 'Plugins',
         icon: Plug,
         capability: 'activate_plugins',
-        release: 'v0.5',
         summary: 'Add features with plugins that install at runtime — no rebuild required.',
       },
     ],

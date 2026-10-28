@@ -58,6 +58,9 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | Caching plugins (`clean_post_cache`, page caches) | `apps/core/src/cache/`, `apps/web/src/lib/page-cache.ts` | Tag-based purges. See [ADR 0008](../adr/0008-public-page-caching.md). |
 | `wp-cron.php`, `wp_schedule_event()` and the rest of `cron.php` | `apps/core/src/jobs/` (`kernel.jobs`, `kernel.cron`) | Events are rows in the `jobs` table, run on time by a worker. See [Jobs and cron](jobs.md). |
 | `publish_future_post`, `_future_post_hook()` | `apps/core/src/jobs/core-events.ts` | One event per scheduled post; `publishDue()` is the safety net. |
+| `get_plugins()`, `activate_plugin()`, `deactivate_plugins()`, `delete_plugins()`, `uninstall_plugin()`, plugin file headers | `apps/core/src/plugins/` (`kernel.plugins`), `plugin.json` | ES modules; tracked registrations instead of a fresh process per request. See [Plugins](plugins.md). |
+| `WP_REST_Plugins_Controller`, `Plugin_Upgrader` (upload) | `apps/core/src/routes/plugins.ts` | `plugin` is the folder name; installs from an uploaded .zip only. |
+| `plugins.php`, `plugin-install.php?tab=upload` | `/admin/plugins` | |
 | `themes.php` | `/admin/appearance` | |
 | `register_post_type( 'wp_navigation' )`, `WP_Navigation_Fallback`, `WP_REST_Navigation_Fallback_Controller` | `apps/core/src/content/post-types.ts`, `content/navigation.ts`, `routes/navigation.ts` | The header's menu is chosen with the `pressbase_navigation_fallback` option. See [Navigation](navigation.md). |
 | `blocks/navigation.php`, `navigation-link.php`, `navigation-submenu.php`, `home-link.php`, `view.js` | `apps/core/src/blocks/library/navigation.ts` | A small inline script instead of the Interactivity API. |
@@ -91,7 +94,6 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | Autosave | Autosaves endpoint, with the block editor | v0.3 |
 | Site editor (`wp_template`, `wp_global_styles`) | Admin site editor | later |
 | Classic menus (`nav_menu`, `/wp/v2/menus`, `WP_Classic_To_Block_Menu_Converter`) | Converted to `wp_navigation` by the importer | v0.6 |
-| Plugins API, `activate_plugin`                 | Plugin loader + `plugin.json`               | v0.5    |
 | Importer, wp-cli                               | Migration tool, `pressbase` CLI                 | v0.6    |
 | `__()`, text domains                           | `@wordpress/i18n`, `.po`/`.mo`              | v0.6    |
 | Abilities API (WordPress 7)                    | Abilities registry + MCP server             | later   |

@@ -122,6 +122,13 @@ export class PostTypeRegistry {
     return this.#types.get(name);
   }
 
+  /** unregister_post_type(): built-in types can't be removed. Posts of the type stay in the database. */
+  unregister(name: string): boolean {
+    const type = this.#types.get(name);
+    if (!type || type.builtin) return false;
+    return this.#types.delete(name);
+  }
+
   all(): PostType[] {
     return [...this.#types.values()];
   }

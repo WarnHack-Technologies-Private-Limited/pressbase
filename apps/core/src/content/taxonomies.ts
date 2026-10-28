@@ -73,6 +73,13 @@ export class TaxonomyRegistry {
     return this.#taxonomies.get(name);
   }
 
+  /** unregister_taxonomy(): built-in taxonomies can't be removed. Terms stay in the database. */
+  unregister(name: string): boolean {
+    const taxonomy = this.#taxonomies.get(name);
+    if (!taxonomy || taxonomy.builtin) return false;
+    return this.#taxonomies.delete(name);
+  }
+
   all(): Taxonomy[] {
     return [...this.#taxonomies.values()];
   }
