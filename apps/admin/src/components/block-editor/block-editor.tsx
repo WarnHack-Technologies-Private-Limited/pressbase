@@ -48,6 +48,7 @@ import {
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { type AdminBlock, useAdminExtensions } from '../extensions/host';
 import { Button } from '../ui/button';
 import { configureApiFetch } from './api-fetch';
 import { assetUrl, CANVAS_STYLESHEETS, directional, UI_STYLESHEETS } from './assets';
@@ -65,7 +66,6 @@ import { registerMediaLibrary } from './media-library';
 import { createMediaUpload } from './media-upload';
 import { preparePluginBlocks } from './server-blocks';
 import { EditorSkeleton } from './skeleton';
-import { type AdminBlock, useAdminExtensions } from '../extensions/host';
 
 /* ------------------------------------------------------------- one-time setup */
 
@@ -147,7 +147,7 @@ export default function BlockEditor(props: BlockEditorProps) {
   const { blocks = [] } = useAdminExtensions();
   const [ready, setReady] = useState(false);
   const key = JSON.stringify(blocks);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: once per editor, with the blocks known then.
+  // Once per editor, with the blocks known then.
   useEffect(() => {
     let live = true;
     preparePluginBlocks(JSON.parse(key) as AdminBlock[])

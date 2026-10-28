@@ -710,6 +710,6 @@ export function installHostApi() {
   });
 }
 
-export { pageSlot, SLOTS };
-export { blockBridge } from './blocks-host';
 export type { AdminBlock } from '@/lib/extensions/pages';
+export { blockBridge } from './blocks-host';
+export { pageSlot, SLOTS };

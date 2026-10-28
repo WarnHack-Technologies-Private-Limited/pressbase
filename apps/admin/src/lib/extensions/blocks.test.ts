@@ -27,7 +27,7 @@ describe('blockSettings()', () => {
       usesContext: ['postType', 'postId'],
       edit,
     });
-    expect((settings?.save as () => unknown)()).toBeNull();
+    expect((settings?.save as (() => unknown) | undefined)?.()).toBeNull();
   });
 
   it('keeps the server’s attributes and context, whatever the module passes', () => {
@@ -83,9 +83,9 @@ describe('BlockBridge', () => {
     expect(() => bridge.registerBlockType('core/tip', {}, 'daily-tips')).toThrow(
       /only register blocks named "daily-tips\/…"/,
     );
-    expect(() =>
-      bridge.registerBlockType('daily-tips/tip', { edit: 'x' }, 'daily-tips'),
-    ).toThrow(/`edit` must be a function/);
+    expect(() => bridge.registerBlockType('daily-tips/tip', { edit: 'x' }, 'daily-tips')).toThrow(
+      /`edit` must be a function/,
+    );
   });
 
   it('contains a registration Gutenberg rejects', () => {

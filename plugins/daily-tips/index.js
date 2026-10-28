@@ -117,7 +117,7 @@ export default function register(api) {
     supports: { align: ['wide', 'full'], anchor: true },
     editorScript: 'admin/tip.js',
     style: 'tip.css',
-    render: async (attributes, content, block) => {
+    render: async (attributes, _content, block) => {
       const list = await tips();
       const tip = list[Math.floor(Date.now() / 86_400_000) % list.length];
       // Attributes are checked against the schema above; the colour still needs its own check.

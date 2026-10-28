@@ -117,7 +117,9 @@ export class BlockBridge {
       );
     }
     if (owner && !name.startsWith(`${owner}/`)) {
-      throw new Error(`The ${owner} plugin can only register blocks named "${owner}/…": "${name}".`);
+      throw new Error(
+        `The ${owner} plugin can only register blocks named "${owner}/…": "${name}".`,
+      );
     }
     if (!settings || typeof settings !== 'object') {
       throw new Error(`The "${name}" block needs its settings: { edit, save }.`);
@@ -143,7 +145,11 @@ export class BlockBridge {
    * its module's settings. Blocks a module registers later register at once.
    * Returns the names registered.
    */
-  connect(types: readonly ServerBlockType[], registrar: Registrar, fallbackEdit: unknown): string[] {
+  connect(
+    types: readonly ServerBlockType[],
+    registrar: Registrar,
+    fallbackEdit: unknown,
+  ): string[] {
     this.#registrar = registrar;
     this.#fallbackEdit = fallbackEdit;
     const added: string[] = [];

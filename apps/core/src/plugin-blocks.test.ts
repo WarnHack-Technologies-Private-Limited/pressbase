@@ -113,7 +113,9 @@ describe('api.blocks.register()', () => {
     await plugin(ctx, 'notes', {
       'index.js': `export default (api) => api.blocks.register('core/notice', { title: 'x' });`,
     });
-    await expect(ctx.kernel.plugins.activate('notes')).rejects.toThrow(/start with the plugin's name/);
+    await expect(ctx.kernel.plugins.activate('notes')).rejects.toThrow(
+      /start with the plugin's name/,
+    );
     await plugin(ctx, 'twice', {
       'index.js': `export default (api) => { api.blocks.register('twice/a'); api.blocks.register('twice/a'); };`,
     });
@@ -121,9 +123,9 @@ describe('api.blocks.register()', () => {
     expect(ctx.kernel.blocks.registry.isRegistered('twice/a')).toBe(false);
 
     expect(() => validateBlockArgs('a/b', { attributes: { x: {} } })).toThrow(/needs a `type`/);
-    expect(() => validateBlockArgs('a/b', { attributes: { x: { type: 'text' as never } } })).toThrow(
-      /unknown type/,
-    );
+    expect(() =>
+      validateBlockArgs('a/b', { attributes: { x: { type: 'text' as never } } }),
+    ).toThrow(/unknown type/);
     expect(() =>
       validateBlockArgs('a/b', { attributes: { x: { type: 'number', default: 'no' } } }),
     ).toThrow(/default doesn't match/);
@@ -232,7 +234,11 @@ describe('plugin blocks in REST and on the page', () => {
     await plugin(ctx, 'notes', NOTICE_FILES);
     await ctx.kernel.plugins.activate('notes');
     const withBlock = await publish(ctx, 'With', '<!-- wp:notes/notice /-->');
-    const without = await publish(ctx, 'Without', '<!-- wp:paragraph --><p>Hi</p><!-- /wp:paragraph -->');
+    const without = await publish(
+      ctx,
+      'Without',
+      '<!-- wp:paragraph --><p>Hi</p><!-- /wp:paragraph -->',
+    );
 
     const shown = (await render(ctx, new URL(withBlock.link).pathname)).html;
     expect(shown).toMatch(
@@ -265,7 +271,7 @@ describe('api.blocks.registerFromMetadata()', () => {
         render: 'file:./render.js',
       }),
       'blocks/item/render.js':
-        'export default (attributes) => `<details><summary>${attributes.question}</summary></details>`;',
+        "export default (attributes) => '<details><summary>' + attributes.question + '</summary></details>';",
       'admin/item.js': 'export {};',
       'public/item.css': 'details{}',
     });

@@ -218,11 +218,13 @@ export function createPluginBlocks(host: BlocksHost): PluginBlocks {
   const disposers = new Map<string, () => void>();
 
   // Registering or removing a block changes how cached pages render: purge once per tick.
-  let purging: Promise<void> | undefined;
+  let purgeQueued = false;
   const schedulePurge = () => {
-    purging ??= Promise.resolve().then(() => {
-      purging = undefined;
-      return host.purge(['site']).catch((error) => host.reportError('cache purge', error));
+    if (purgeQueued) return;
+    purgeQueued = true;
+    queueMicrotask(() => {
+      purgeQueued = false;
+      host.purge(['site']).catch((error) => host.reportError('cache purge', error));
     });
   };
 
@@ -375,7 +377,9 @@ export function createPluginBlocks(host: BlocksHost): PluginBlocks {
       if (!value.startsWith('file:')) return value;
       const file = await fromFile(value, field);
       if (!file.startsWith(`${PUBLIC_DIR}/`)) {
-        throw new Error(`Block "${name}": \`${field}\` files must be in the plugin's public/ folder.`);
+        throw new Error(
+          `Block "${name}": \`${field}\` files must be in the plugin's public/ folder.`,
+        );
       }
       return file.slice(PUBLIC_DIR.length + 1);
     };
@@ -395,7 +399,11 @@ export function createPluginBlocks(host: BlocksHost): PluginBlocks {
         settings[field] = await Promise.all(list.map((value) => publicFile(value, field)));
       }
     }
-    if (typeof metadata.render === 'string' && metadata.render.startsWith('file:') && !args.render) {
+    if (
+      typeof metadata.render === 'string' &&
+      metadata.render.startsWith('file:') &&
+      !args.render
+    ) {
       const module = (await import(
         pathToFileURL(path.join(root, await fromFile(metadata.render, 'render'))).href
       )) as { default?: unknown; render?: unknown };

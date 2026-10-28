@@ -66,7 +66,9 @@ test('a plugin block is inserted, published, shown on the site, and gone when th
     await page.goto(`/admin/posts/${id}`);
     await expect(canvas.getByLabel('Add title')).toBeVisible({ timeout: 30_000 });
     await expect(canvas.getByText('This block’s plugin is inactive')).toBeVisible();
-    await expect(canvas.getByText(/“daily-tips\/tip” comes from a plugin that isn’t active/)).toBeVisible();
+    await expect(
+      canvas.getByText(/“daily-tips\/tip” comes from a plugin that isn’t active/),
+    ).toBeVisible();
     await page.getByRole('button', { name: 'Code', exact: true }).click();
     await expect(page.getByRole('textbox', { name: 'Block markup' })).toHaveValue(
       /<!-- wp:daily-tips\/tip \/-->/,

@@ -18,8 +18,8 @@ import { createHigherOrderComponent } from '@wordpress/compose';
 import { addFilter } from '@wordpress/hooks';
 import { ServerSideRender } from '@wordpress/server-side-render';
 import type { ComponentType } from 'react';
-import { useI18n } from '@/lib/i18n/context';
 import { isPluginBlockName } from '@/lib/extensions/blocks';
+import { useI18n } from '@/lib/i18n/context';
 import { type AdminBlock, blockBridge, extensionStore, loadPluginModule } from '../extensions/host';
 import { loadEditorFeatures, type RestBlockType } from './features';
 
@@ -139,7 +139,8 @@ export async function preparePluginBlocks(blocks: readonly AdminBlock[]): Promis
   configure();
   const scripts = new Map<string, string>();
   for (const block of blocks) {
-    if (block.editor_script && !extensionStore.isImported(block.editor_script)) scripts.set(block.editor_script, block.plugin);
+    if (block.editor_script && !extensionStore.isImported(block.editor_script))
+      scripts.set(block.editor_script, block.plugin);
   }
   await Promise.all(
     [...scripts].map(([url, plugin]) =>
