@@ -92,6 +92,8 @@ const MEDIA_CATEGORIES = createInserterMediaCategories();
 export interface BlockEditorHandle {
   /** The current content as block markup (serialize()). */
   getContent(): string;
+  /** Parses block markup (`@wordpress/blocks` parse()), for plugins reading the blocks. */
+  parse(markup: string): BlockInstance[];
   /** The initial content after one parse/serialize pass, to compare against. */
   baseline: string;
   /**
@@ -161,6 +163,7 @@ export default function BlockEditor(props: BlockEditorProps) {
   useEffect(() => {
     onReady({
       getContent: () => serialize(blocksRef.current),
+      parse: (markup: string) => parse(markup),
       baseline: initial.baseline,
       saveMenus: () => saveEditedMenus(registry),
     });

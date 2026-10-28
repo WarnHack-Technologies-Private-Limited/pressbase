@@ -7,6 +7,7 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -35,9 +36,10 @@ import {
   type RestTerm,
   STATUS_LABELS,
 } from '@/lib/content';
+import { editorSnapshot, mergeMeta, metaChanges, permalinkFor } from '@/lib/extensions/editor';
 import { SLOTS } from '@/lib/extensions/registry';
 import { BlockEditor, type BlockEditorHandle, lightScope } from '../block-editor';
-import { Slot } from '../extensions/host';
+import { editorStore, PluginIcon, RenderFill, Slot, useFills } from '../extensions/host';
 import { useCurrentUser } from '../shell/current-user';
 import { Button, ButtonLink } from '../ui/button';
 import { ConfirmDialog } from '../ui/dialog';
@@ -49,7 +51,8 @@ import { TagInput, type TagToken } from './tag-input';
 
 type Mode = 'visual' | 'code';
 type Visibility = 'public' | 'password' | 'private';
-type SidebarTab = 'post' | 'block';
+/** Post, Block, or a plugin sidebar's id (`{plugin}/{name}`). */
+type SidebarTab = string;
 /** Revisions include autosaves (as in WordPress); the history panel leaves those out. */
 type Revision = RestRevision & { slug?: string };
 
@@ -70,6 +73,8 @@ interface Form {
   parent: number;
   menuOrder: number;
   featuredMedia: number;
+  /** Registered meta, with plugins' edits (window.pressbase.editor.editPost). */
+  meta: Record<string, unknown>;
 }
 
 const EMPTY: Form = {
@@ -87,6 +92,7 @@ const EMPTY: Form = {
   parent: 0,
   menuOrder: 0,
   featuredMedia: 0,
+  meta: {},
 };
 
 function formFrom(post: RestPost, tags: TagToken[]): Form {
@@ -105,6 +111,7 @@ function formFrom(post: RestPost, tags: TagToken[]): Form {
     parent: post.parent ?? 0,
     menuOrder: post.menu_order ?? 0,
     featuredMedia: post.featured_media ?? 0,
+    meta: post.meta ?? {},
   };
 }
 
@@ -171,7 +178,7 @@ const timeOf = (local: string) => formatLocalDate(local).split(' at ')[1] ?? loc
 /** A restore offer shown above the editor: an autosave or the browser's copy. */
 type RestoreOffer =
   | { kind: 'autosave'; fields: EditableFields; when: string }
-  | { kind: 'backup'; fields: EditableFields; when: string };
+  | { kind: 'backup'; fields: LocalBackup; when: string };
 
 export function PostEditor({ config, id }: { config: ContentType; id?: number }) {
   const router = useRouter();
@@ -191,7 +198,9 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
   const [newCategory, setNewCategory] = useState<string | null>(null);
   const [pages, setPages] = useState<RestPost[]>([]);
   const [revisions, setRevisions] = useState<Revision[]>([]);
-  const [confirm, setConfirm] = useState<'unpublish' | 'trash' | 'leave' | null>(null);
+  const [confirm, setConfirm] = useState<
+    'unpublish' | 'trash' | 'leave' | 'prepublish' | null
+  >(null);
 
   // Content. In the visual editor the blocks live inside BlockEditor; `content`
   // is what it was mounted with (or the code view's text), `current` the
@@ -202,6 +211,8 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
   const [savedContent, setSavedContent] = useState('');
   const [editorKey, setEditorKey] = useState(0);
   const editor = useRef<BlockEditorHandle | null>(null);
+  /** Parses markup into blocks for plugins; kept after switching to Code. */
+  const parser = useRef<((markup: string) => unknown[]) | null>(null);
   const savedContentRef = useRef('');
   savedContentRef.current = savedContent;
 
@@ -363,10 +374,76 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
         content: current,
         savedAt: Date.now(),
       };
+      const meta = metaChanges(saved.meta, form.meta);
+      if (Object.keys(meta).length) backup.meta = meta;
       writeBackup(storage, storageKey, backup);
     }, 500);
     return () => clearTimeout(timer);
-  }, [backupReady, offer, dirty, form.title, form.excerpt, current, storageKey]);
+  }, [
+    backupReady,
+    offer,
+    dirty,
+    form.title,
+    form.excerpt,
+    form.meta,
+    saved.meta,
+    current,
+    storageKey,
+  ]);
+
+  /* ------------------------------------------------ plugins' live data */
+
+  // window.pressbase.editor: plugins read this snapshot and edit through the
+  // handler, so their edits are form state like any field (dirty, saved, backed up).
+  useEffect(
+    () =>
+      editorStore.connect((edits) =>
+        setForm((f) => ({
+          ...f,
+          ...(edits.slug !== undefined ? { slug: edits.slug } : {}),
+          ...(edits.excerpt !== undefined ? { excerpt: edits.excerpt } : {}),
+          meta: mergeMeta(f.meta, edits.meta),
+        })),
+      ),
+    [],
+  );
+  const snapshotTerms = useMemo(
+    () => ({
+      categories: form.categories.map((id) => ({
+        id,
+        name: categories.find((c) => c.id === id)?.name ?? '',
+      })),
+      tags: form.tags.map((t) => ({ id: t.id ?? 0, name: t.name })),
+    }),
+    [form.categories, form.tags, categories],
+  );
+  useLayoutEffect(() => {
+    if (loading) return;
+    const link = post?.link ?? '';
+    editorStore.publish(
+      editorSnapshot(
+        {
+          id: post?.id ?? null,
+          type: config.type,
+          status: post?.status ?? 'auto-draft',
+          title: form.title,
+          content: current,
+          slug: form.slug,
+          excerpt: form.excerpt,
+          featured_media: form.featuredMedia,
+          categories: form.categories,
+          tags: form.tags.flatMap((t) => (t.id ? [t.id] : [])),
+          terms: snapshotTerms,
+          meta: form.meta,
+          link,
+          permalink: permalinkFor(post?.permalink_template ?? link, post?.slug ?? '', form.slug),
+          isDirty: dirty,
+          isSaving: Boolean(busy),
+        },
+        () => parser.current,
+      ),
+    );
+  }, [loading, post, config.type, form, current, snapshotTerms, dirty, busy]);
 
   /* ------------------------------------------------------------- saving */
 
@@ -433,6 +510,9 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
           body.tags = tagIds;
         }
         if (canUpload) body.featured_media = form.featuredMedia;
+        // Only meta that changed, as Gutenberg sends edits: unchanged keys may not be writable.
+        const meta = metaChanges(saved.meta, form.meta);
+        if (Object.keys(meta).length) body.meta = meta;
         if (canSticky) body.sticky = form.sticky;
         if (config.hierarchical) {
           body.parent = form.parent;
@@ -483,6 +563,7 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
     },
     [
       form,
+      saved.meta,
       post,
       status,
       isLive,
@@ -553,7 +634,13 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
 
   const restore = () => {
     if (!offer) return;
-    setForm((f) => ({ ...f, title: offer.fields.title, excerpt: offer.fields.excerpt }));
+    const backupMeta = offer.kind === 'backup' ? offer.fields.meta : undefined;
+    setForm((f) => ({
+      ...f,
+      title: offer.fields.title,
+      excerpt: offer.fields.excerpt,
+      meta: mergeMeta(f.meta, backupMeta),
+    }));
     replaceContent(offer.fields.content);
     setOffer(null);
     toast(
@@ -614,6 +701,7 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
   const onEditorReady = useCallback(
     (handle: BlockEditorHandle) => {
       editor.current = handle;
+      parser.current = handle.parse;
       // Untouched content: compare against the editor's own serialization,
       // so a first parse/serialize pass doesn't count as a change.
       setSavedContent((s) => (s === content ? handle.baseline : s));
@@ -625,16 +713,49 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
     (message: string, tone: 'success' | 'danger') => toast(message, { tone }),
     [toast],
   );
+  // A plugin's sidebar stays open while blocks are selected, as in WordPress.
   const onSelectionChange = useCallback((selected: boolean) => {
-    setTab(selected ? 'block' : 'post');
+    setTab((current) =>
+      current === 'post' || current === 'block' ? (selected ? 'block' : 'post') : current,
+    );
   }, []);
 
+  // Plugins' sidebars (PluginSidebar) are tabs after Post and Block.
+  const sidebarFills = useFills(SLOTS.editorSidebar);
+  const pluginSidebars = sidebarFills.filter(
+    (fill, i) =>
+      typeof fill.props.sidebar === 'string' &&
+      sidebarFills.findIndex((f) => f.props.sidebar === fill.props.sidebar) === i,
+  );
+  const tabs: SidebarTab[] = ['post', 'block', ...pluginSidebars.map((f) => String(f.props.sidebar))];
+  const activeTab = tabs.includes(tab) ? tab : 'post';
+  const moreMenuFills = useFills(SLOTS.editorSidebarMoreMenu).filter((f) =>
+    tabs.includes(String(f.props.target)),
+  );
+  const prePublishFills = useFills(SLOTS.editorPrePublish);
+
   const onTabKey = (event: ReactKeyboardEvent) => {
-    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+    const keys: Record<string, number> = { ArrowRight: 1, ArrowLeft: -1 };
+    const index = tabs.indexOf(activeTab);
+    let next: number;
+    if (event.key in keys) next = (index + (keys[event.key] ?? 0) + tabs.length) % tabs.length;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = tabs.length - 1;
+    else return;
     event.preventDefault();
-    const next = tab === 'post' ? 'block' : 'post';
-    setTab(next);
-    document.getElementById(`editor-tab-${next}`)?.focus();
+    const value = tabs[next] ?? 'post';
+    setTab(value);
+    document.getElementById(tabDomId(value))?.focus();
+  };
+
+  /** Opens a plugin's sidebar from the top bar, or closes it when it's showing. */
+  const togglePluginSidebar = (sidebar: string) => {
+    if (sidebarOpen && activeTab === sidebar) {
+      setSidebarOpen(false);
+      return;
+    }
+    setTab(sidebar);
+    setSidebarOpen(true);
   };
 
   /* ------------------------------------------------------------ render */
@@ -677,7 +798,10 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
       : form.visibility === 'private'
         ? 'Publish privately'
         : 'Publish';
-    primaryAction = () => save('publish', 'primary');
+    // Plugins' pre-publish panels (PluginPrePublishPanel) get a look first; they never block.
+    primaryAction = prePublishFills.length
+      ? () => setConfirm('prepublish')
+      : () => save('publish', 'primary');
   }
 
   const editableParents = pages.filter((p) => {
@@ -780,6 +904,29 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
         >
           {primaryLabel}
         </Button>
+        {moreMenuFills.map((fill) => {
+          const target = String(fill.props.target);
+          const sidebar = pluginSidebars.find((f) => f.props.sidebar === target);
+          const label =
+            typeof fill.children === 'string'
+              ? fill.children
+              : typeof sidebar?.props.title === 'string'
+                ? sidebar.props.title
+                : 'Plugin';
+          return (
+            <Button
+              key={fill.id}
+              size="sm"
+              variant="ghost"
+              icon={<PluginIcon icon={fill.props.icon ?? sidebar?.props.icon} size={18} />}
+              aria-label={label}
+              title={label}
+              aria-pressed={sidebarOpen && activeTab === target}
+              data-active={(sidebarOpen && activeTab === target) || undefined}
+              onClick={() => togglePluginSidebar(target)}
+            />
+          );
+        })}
         <Button
           size="sm"
           variant="ghost"
@@ -897,21 +1044,32 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
         >
           <div className={styles.tabsRow}>
             <div className={styles.tabs} role="tablist" aria-label="Settings" onKeyDown={onTabKey}>
-              {(['post', 'block'] as const).map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  role="tab"
-                  id={`editor-tab-${value}`}
-                  aria-controls={`editor-tabpanel-${value}`}
-                  aria-selected={tab === value}
-                  tabIndex={tab === value ? 0 : -1}
-                  className={styles.tab}
-                  onClick={() => setTab(value)}
-                >
-                  {value === 'post' ? config.singular : 'Block'}
-                </button>
-              ))}
+              {tabs.map((value) => {
+                const plugin = pluginSidebars.find((f) => f.props.sidebar === value);
+                const label = plugin
+                  ? String(plugin.props.title ?? 'Plugin')
+                  : value === 'post'
+                    ? config.singular
+                    : 'Block';
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    role="tab"
+                    id={tabDomId(value)}
+                    aria-controls={tabPanelId(value)}
+                    aria-selected={activeTab === value}
+                    aria-label={plugin ? label : undefined}
+                    title={plugin ? label : undefined}
+                    tabIndex={activeTab === value ? 0 : -1}
+                    className={styles.tab}
+                    data-icon={plugin ? '' : undefined}
+                    onClick={() => setTab(value)}
+                  >
+                    {plugin ? <PluginIcon icon={plugin.props.icon} /> : label}
+                  </button>
+                );
+              })}
             </div>
             <Button
               size="sm"
@@ -925,9 +1083,9 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
 
           <div
             role="tabpanel"
-            id="editor-tabpanel-post"
-            aria-labelledby="editor-tab-post"
-            hidden={tab !== 'post'}
+            id={tabPanelId('post')}
+            aria-labelledby={tabDomId('post')}
+            hidden={activeTab !== 'post'}
             className={styles.tabPanel}
           >
             <Panel title="Publishing">
@@ -1224,9 +1382,9 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
 
           <div
             role="tabpanel"
-            id="editor-tabpanel-block"
-            aria-labelledby="editor-tab-block"
-            hidden={tab !== 'block'}
+            id={tabPanelId('block')}
+            aria-labelledby={tabDomId('block')}
+            hidden={activeTab !== 'block'}
             className={`${styles.tabPanel} ${styles.inspector} ${lightScope}`}
           >
             {mode === 'code' ? (
@@ -1237,6 +1395,32 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
               <div ref={setInspector} />
             )}
           </div>
+
+          {pluginSidebars.map((fill) => {
+            const value = String(fill.props.sidebar);
+            return (
+              <div
+                key={fill.id}
+                role="tabpanel"
+                id={tabPanelId(value)}
+                aria-labelledby={tabDomId(value)}
+                hidden={activeTab !== value}
+                className={styles.tabPanel}
+              >
+                <h2 className={styles.pluginSidebarTitle}>{String(fill.props.title ?? '')}</h2>
+                <div className={styles.pluginSidebarBody}>
+                  {/* Rendered only while open, like Gutenberg's complementary areas. */}
+                  {activeTab === value && (
+                    <RenderFill
+                      fill={fill}
+                      place="editor sidebar"
+                      fillProps={{ postId: post?.id ?? id ?? null, postType: config.type }}
+                    />
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </aside>
       </div>
 
@@ -1253,6 +1437,33 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
         }}
       >
         It will no longer be visible on your site until you publish it again.
+      </ConfirmDialog>
+      <ConfirmDialog
+        open={confirm === 'prepublish'}
+        title="Ready to publish?"
+        tone="primary"
+        confirmLabel={primaryLabel}
+        busy={busy === 'primary'}
+        onCancel={() => setConfirm(null)}
+        onConfirm={async () => {
+          await save('publish', 'primary');
+          setConfirm(null);
+        }}
+      >
+        <p>Have a last look before it goes live.</p>
+        <Slot
+          name={SLOTS.editorPrePublish}
+          place="pre-publish panel"
+          fillProps={{ postId: post?.id ?? id ?? null, postType: config.type }}
+          wrap={(fill, content) => (
+            <Panel
+              title={typeof fill.props.title === 'string' ? fill.props.title : 'Plugin'}
+              defaultOpen={fill.props.initialOpen !== false}
+            >
+              {content}
+            </Panel>
+          )}
+        />
       </ConfirmDialog>
       <ConfirmDialog
         open={confirm === 'trash'}
@@ -1280,6 +1491,15 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
       </ConfirmDialog>
     </>
   );
+}
+
+/** A tab's element id: `editor-tab-post`, or `editor-tab-daily-tips-writing` for a plugin's. */
+function tabDomId(tab: SidebarTab): string {
+  return `editor-tab-${tab.replace(/[^a-z0-9-]+/gi, '-')}`;
+}
+
+function tabPanelId(tab: SidebarTab): string {
+  return `editor-tabpanel-${tab.replace(/[^a-z0-9-]+/gi, '-')}`;
 }
 
 /** "3:04 PM" from a timestamp, in the browser's time zone. */

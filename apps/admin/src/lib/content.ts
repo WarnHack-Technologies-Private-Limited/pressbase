@@ -26,6 +26,10 @@ export interface RestPost {
   tags?: number[];
   parent?: number;
   menu_order?: number;
+  /** Registered meta (`show_in_rest`), by key. */
+  meta?: Record<string, unknown>;
+  /** Edit context: the permalink, with %postname% for drafts where WordPress gives it. */
+  permalink_template?: string;
 }
 
 export interface RestTerm {
@@ -37,6 +41,8 @@ export interface RestTerm {
   taxonomy: string;
   link: string;
   parent?: number;
+  /** Registered term meta (`show_in_rest`), by key. */
+  meta?: Record<string, unknown>;
 }
 
 export interface RestRevision {
