@@ -22,6 +22,38 @@ jobs:
       - run: pnpm test
       - run: pnpm build
 
+  # The WordPress database migration against a real MySQL (ADR 0016). The test
+  # loads the fixture into MySQL and is skipped wherever PRESSBASE_TEST_MYSQL_URL isn't set.
+  wordpress-mysql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wordpress
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Migrate the fixture site from MySQL
+        working-directory: apps/core
+        run: pnpm exec vitest run src/wordpress-db.mysql.test.ts
+        env:
+          PRESSBASE_TEST_MYSQL_URL: mysql://root:root@127.0.0.1:3306/wordpress
+
   # Browser tests against production builds of core, admin and web (see e2e/).
   e2e:
     needs: check

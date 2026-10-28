@@ -84,7 +84,7 @@ Twenty Twenty-Five renders the home page, posts, pages, archives, search, commen
 ## v0.6: Migration and tooling
 
 - [x] WXR importer and exporter (Tools → Import, Tools → Export). See [Import and export](architecture/import-export.md), [ADR 0013](adr/0013-wxr-import-export.md).
-- [ ] Direct WordPress (MySQL) migration: users and password hashes, media, SEO meta.
+- [x] Direct WordPress (MySQL) migration: users and password hashes, media, SEO meta. See [Migrating from a WordPress database](architecture/import-export.md#migrating-from-a-wordpress-database), [ADR 0016](adr/0016-wordpress-database-migration.md).
 - [x] `pressbase` CLI (similar to wp-cli). See [The pressbase CLI](development/cli.md), [ADR 0014](adr/0014-pressbase-cli.md).
 - [x] Internationalisation: `.po`/`.mo` files, `@wordpress/i18n`. See [Internationalisation](architecture/i18n.md), [ADR 0015](adr/0015-internationalisation.md).
 - [x] Site Health: Tools → Site Health (Status and Info), the Dashboard rating, `site_status_tests` and `debug_information`. See [Site Health](architecture/site-health.md).

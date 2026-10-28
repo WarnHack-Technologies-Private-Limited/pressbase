@@ -214,3 +214,30 @@ pressbase export --stdout > site.xml
 | `export` | `--dir`, `--stdout`, `--post_type`, `--post_author`, `--category`, `--start_date`, `--end_date`, `--post_status` |
 
 Posts already on the site are skipped, so an import can be run again. Attachments are downloaded from the original site unless `--skip=attachment`; private network addresses are refused unless `PRESSBASE_IMPORT_ALLOW_PRIVATE_HOSTS=1`.
+
+## migrate wordpress
+
+`pressbase migrate wordpress` moves a WordPress site straight from its MySQL or MariaDB database: users with their passwords and roles, every post type, media, comments, menus, SEO meta and settings. It runs core's `migrateFromWordPressDatabase()` in this process ([Migrating from a WordPress database](../architecture/import-export.md#migrating-from-a-wordpress-database), [ADR 0016](../adr/0016-wordpress-database-migration.md)).
+
+```bash
+# Count what would be migrated; change nothing
+pressbase migrate wordpress --db-url=mysql://reader:secret@localhost/wordpress --dry-run --user=admin
+# Migrate, reading files from a local copy of wp-content/uploads
+pressbase migrate wordpress --db-url=mysql://reader:secret@localhost/wordpress \
+  --uploads=/srv/old-site/wp-content/uploads --user=admin
+# The URL from the environment, over TLS; another prefix; no files or comments
+PRESSBASE_WP_DB_URL='mysql://reader:secret@db.example:3306/wp?ssl-mode=VERIFY_IDENTITY' \
+  pressbase migrate wordpress --prefix=blog_ --skip=attachment,comments --user=admin
+```
+
+| Option | What it does |
+| --- | --- |
+| `--db-url=<url>` | `mysql://user:password@host:3306/database`. TLS with `?ssl-mode=VERIFY_IDENTITY`, `VERIFY_CA` or `REQUIRED` (and `ssl-ca=<file>`). Default: the `PRESSBASE_WP_DB_URL` environment variable, which keeps the password out of shell history. |
+| `--prefix=<prefix>` | The table prefix (`$table_prefix` in wp-config.php). Default `wp_`. |
+| `--uploads=<path>` | A copy of the old `wp-content/uploads`. Files are read from it instead of downloaded. |
+| `--uploads-url=<url>` | Where the old site served uploads from, when it isn't `<siteurl>/wp-content/uploads` (a CDN, a custom `WP_CONTENT_URL`). |
+| `--skip=<list>` | Comma-separated: `attachment` (no files), `comments`, `options` (keep this site's settings), or any post type. |
+| `--dry-run` | Count users, terms, posts per type and comments, and change nothing. |
+| `--user` | Required. Needs `import`, plus `create_users`, `upload_files` and `promote_users` to bring users, files and roles. |
+
+The password is never printed (`mysql://reader:***@localhost/wordpress`), and only `SELECT`s run, in a read-only transaction, so a MySQL user with just `SELECT` is enough. Multisite networks are refused. The report lists what was migrated per post type, the settings carried and refused, post types this site doesn't have, and every error; the exit code is 1 if anything failed. Running it again skips everything already here (users by username or email address, posts, terms, comments, menus).
