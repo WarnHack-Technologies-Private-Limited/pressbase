@@ -81,7 +81,7 @@ export function cleanOptions(raw: unknown, max: number): string[] {
   for (const item of list) {
     if (typeof item !== 'string') continue;
     const text = trimText(
-      plainText(item)
+      plainText(item.replace(/<[^>]*>/g, ''))
         .replace(/^["'“”‘’]+|["'“”‘’]+$/g, '')
         .trim(),
       max,
@@ -120,6 +120,25 @@ async function postText(
   };
 }
 
+/** AI client errors as ability errors, so REST answers with their code and status. */
+async function viaAi<T>(api: PluginApi, run: () => Promise<T>): Promise<T> {
+  if (!(await api.ai.supportsAi())) {
+    throw api.abilities.error('prompt_prevented', 'AI is turned off. An administrator can turn it on in Settings → AI.', 503);
+  }
+  try {
+    return await run();
+  } catch (error) {
+    const e = error as { code?: unknown; status?: unknown; message?: unknown };
+    if (typeof e?.code === 'string' && e.code.startsWith('prompt_')) {
+      throw api.abilities.error(e.code, String(e.message), typeof e.status === 'number' ? e.status : 502);
+    }
+    if (typeof e?.code === 'string' && e.code === 'ai_daily_limit_reached') {
+      throw api.abilities.error(e.code, String(e.message), 429);
+    }
+    throw error;
+  }
+}
+
 async function ask(
   api: PluginApi,
   ability: string,
@@ -128,7 +147,7 @@ async function ask(
   prompt: string,
   max: number,
 ): Promise<Suggestions> {
-  const result = await api.ai
+  const result = await viaAi(api, () => api.ai
     .prompt(prompt)
     .usingSystemInstruction(
       `${system} Reply with JSON: {"options": [two or three different options]}. English, plain text only.`,
@@ -137,7 +156,7 @@ async function ask(
     .asJsonResponse(OPTIONS_SCHEMA)
     .forUser(context.user)
     .forAbility(ability)
-    .generateTextResult();
+    .generateTextResult());
   const text = result.message.parts
     .map((p) => (p.type === 'text' ? p.text : ''))
     .join('')
@@ -217,7 +236,8 @@ export function registerAbilities(api: PluginApi): void {
         LIMITS[input.field],
       );
     },
-    meta: { annotations: { readonly: true, destructive: false, idempotent: false }, showInRest: true },
+    // Not read-only: each run is a logged AI request (so it's run with POST).
+    meta: { annotations: { readonly: false, destructive: false, idempotent: false }, showInRest: true },
   });
 
   api.abilities.register<
@@ -274,7 +294,8 @@ export function registerAbilities(api: PluginApi): void {
         LIMITS.alt,
       );
     },
-    meta: { annotations: { readonly: true, destructive: false, idempotent: false }, showInRest: true },
+    // Not read-only: each run is a logged AI request (so it's run with POST).
+    meta: { annotations: { readonly: false, destructive: false, idempotent: false }, showInRest: true },
   });
 
   api.abilities.register<
@@ -322,7 +343,7 @@ export function registerAbilities(api: PluginApi): void {
       const summary = summarize(results, (s) => api.i18n.__(s));
       if (!input.explain || !(await api.ai.supportsAi())) return { postId: post.id, summary, checks };
       const todo = checks.filter((c) => c.status === 'improve').map((c) => `- ${c.label}: ${c.message}`);
-      const result = await api.ai
+      const result = await viaAi(api, () => api.ai
         .prompt(
           `Post title: ${plainText(post.title)}\n\nSuggestions from the checks:\n${todo.join('\n') || '- none'}`,
         )
@@ -332,7 +353,7 @@ export function registerAbilities(api: PluginApi): void {
         .usingMaxTokens(600)
         .forUser(context.user)
         .forAbility('pressbase-seo/audit-post')
-        .generateTextResult();
+        .generateTextResult());
       const advice = trimText(
         plainText(result.message.parts.map((p) => (p.type === 'text' ? p.text : '')).join(' ')),
         600,
