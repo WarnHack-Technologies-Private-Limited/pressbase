@@ -26,3 +26,4 @@ To write one, copy [template.md](template.md) to `NNNN-short-title.md` and open 
 | [0016](0016-wordpress-database-migration.md) | Migrating from a WordPress database with mysql2, behind a query interface | Accepted |
 | [0017](0017-early-request-hooks-and-the-page-cache.md) | Early request hooks run inside the cached render; redirects win by purging the path | Accepted |
 | [0018](0018-editor-data-for-plugins.md) | Live editor data for plugins: a small store on window.pressbase, not a @wordpress/data store | Accepted |
+| [0019](0019-ai-client-and-abilities.md) | The AI client and the Abilities API in core: keys on the server, a usage table for caps | Accepted |

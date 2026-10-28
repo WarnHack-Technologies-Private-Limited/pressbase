@@ -79,6 +79,8 @@ Plugins ship compiled JavaScript (`.js` or `.mjs`, ESM). Write TypeScript with [
 | `cache.purge(tags) / purgePaths(paths) / addTags(...) / pathTag(path)` | purge cached public pages. See [api.cache](#the-page-cache-apicache) | caching plugins' purge functions |
 | `public.addFile(path, handler, options)` | a file at a fixed root path (`/llms.txt`). See [Plugin files](#plugin-files-at-the-site-root) | a rewrite rule and a `template_redirect` callback |
 | `db.query(sql)` | one query's rows, on PostgreSQL and PGlite. See [Plugin tables](#plugin-tables-at-scale) | `$wpdb->get_results()` |
+| `ai.supportsAi()`, `ai.prompt(input)`, `ai.registerProvider(provider)` | the AI client, with requests logged under the plugin and held to its daily limit; off until Settings → AI turns it on. See [AI](ai.md#plugins) | `wp_supports_ai()`, `wp_ai_client_prompt()` |
+| `abilities.register(name, args)`, `abilities.registerCategory(slug, args)`, `abilities.get / all / execute / context / error` | abilities named `{slug}/{name}`, with a required `permissionCallback`; served at `/wp-abilities/v1` and usable as AI tools; removed on deactivation. See [AI](ai.md#the-abilities-api) | `wp_register_ability()`, `wp_register_ability_category()` |
 
 A route's `handler` receives Hono's context (`c.req.query()`, `await c.req.json()`, `c.json()`…) and returns a `Response` or any JSON value. `permission` is required, as WordPress requires `permission_callback`; returning anything but `true` answers 401 (logged out) or 403.
 
@@ -105,7 +107,7 @@ A route's `handler` receives Hono's context (`c.req.query()`, `await c.req.json(
 
 | Field | Required | Notes | WordPress header |
 | --- | --- | --- | --- |
-| `name` | yes | the slug: lowercase letters, numbers, dashes, at most 64. Must match the folder name. `wp`, `pressbase`, `oembed`, `wp-site-health`, `wp-block-editor` are reserved | folder name |
+| `name` | yes | the slug: lowercase letters, numbers, dashes, at most 64. Must match the folder name. `wp`, `pressbase`, `oembed`, `wp-site-health`, `wp-abilities`, `wp-block-editor` are reserved | folder name |
 | `title` | yes | shown in the admin | `Plugin Name` |
 | `version` | yes | semantic version | `Version` |
 | `description` | no | plain text | `Description` |
