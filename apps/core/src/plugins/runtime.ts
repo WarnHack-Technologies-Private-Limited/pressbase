@@ -27,6 +27,7 @@ import { type Background, createBackground, type PluginCron, type PluginJobs } f
 import type { PluginCliCommandArgs, PluginCliHandler } from './cli';
 import type { InstalledPlugin } from './discovery';
 import { createSubApp } from './dispatch';
+import { createPluginI18n, type PluginI18n } from './i18n';
 import type { PluginPermission } from './manifest';
 
 /**
@@ -183,6 +184,11 @@ export interface PluginApi {
   readonly cli: {
     addCommand(name: string, handler: PluginCliHandler, args?: PluginCliCommandArgs): () => void;
   };
+  /**
+   * Translations in the plugin's text domain (its slug), loaded from its
+   * `languages/` folder: `api.i18n.__('Daily tip')`. See plugins/i18n.ts.
+   */
+  readonly i18n: PluginI18n;
 }
 
 /** What a plugin's main module exports. */
@@ -555,6 +561,7 @@ export class PluginRuntime {
           return remove;
         },
       }),
+      i18n: createPluginI18n({ kernel, slug, dir: plugin.dir, track }),
     };
     return Object.freeze(api);
   }

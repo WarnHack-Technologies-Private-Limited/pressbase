@@ -23,6 +23,7 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | `X-WP-Nonce` (REST CSRF)                                            | `X-Pressbase-Request` header                                                             | See [Security](security.md).                                       |
 | `wp-admin/` menu                                                    | `apps/admin/src/lib/sections.ts`                                                     | Same order, grouped.                                               |
 | `date_i18n()` formats                                               | `apps/admin/src/lib/php-date.ts`                                                     | PHP date format characters.                                        |
+| `l10n.php` (`__()`, `_x()`, `_n()`, text domains, `determine_locale()`), `pomo/`, `WP_Translation_Controller`, `WP_Locale` | `apps/core/src/i18n/` (`kernel.i18n`); the admin uses `@wordpress/i18n` | `.mo`, `.po` and JSON files; see [Internationalisation](i18n.md). |
 | `register_post_type`, `create_initial_post_types` | `apps/core/src/content/post-types.ts` | `kernel.postTypes.register(name, args)`. |
 | `register_post_status` | `apps/core/src/content/post-statuses.ts` | Same core statuses and flags. |
 | `register_taxonomy`, `create_initial_taxonomies` | `apps/core/src/content/taxonomies.ts` | `category` and `post_tag`. |

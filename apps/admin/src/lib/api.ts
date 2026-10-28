@@ -23,13 +23,22 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Adds `_locale=user`, so core answers (messages, errors) in the user's
+ * language, as WordPress's api-fetch does with its userLocaleMiddleware.
+ */
+export function withUserLocale(path: string): string {
+  if (/[?&]_locale=/.test(path)) return path;
+  return `${path}${path.includes('?') ? '&' : '?'}_locale=user`;
+}
+
 export async function api<T>(
   path: string,
   { method = 'GET', body }: { method?: string; body?: unknown } = {},
 ): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(`/wp-json${path}`, {
+    res = await fetch(`/wp-json${withUserLocale(path)}`, {
       method,
       credentials: 'same-origin',
       headers: {

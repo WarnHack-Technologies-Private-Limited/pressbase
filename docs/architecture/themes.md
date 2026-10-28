@@ -167,7 +167,7 @@ Theme patterns are `patterns/*.php`: a header comment and block markup with smal
 - expressions: quoted strings (no variable interpolation), `.` concatenation, and calls to `__()`, `_x()`, `esc_html__()`, `esc_attr__()`, `esc_html_x()`, `esc_attr_x()`, `esc_html()`, `esc_attr()`, `esc_url()`, `wp_kses_post()`, `sprintf()`, `get_template_directory_uri()`, `get_stylesheet_directory_uri()`, `get_theme_file_uri()`, `get_parent_theme_file_uri()`;
 - comments, and PHP's rule that a newline right after `?>` is swallowed.
 
-Translation functions return the English text until i18n arrives (v0.6). Anything else — a variable, another function, `include`, backticks, `<?=` — makes the loader skip the whole pattern with a warning in the log. All 98 Twenty Twenty-Five patterns load.
+Translation functions translate through the theme's text domain in the site's language, and pattern titles and descriptions are translated as WordPress translates them (see [Internationalisation](i18n.md#themes)). Anything else — a variable, another function, `include`, backticks, `<?=` — makes the loader skip the whole pattern with a warning in the log. All 98 Twenty Twenty-Five patterns load.
 
 Theme URLs in patterns and font faces are root-relative (`/wp-content/themes/…`), so they work on every origin that proxies core.
 

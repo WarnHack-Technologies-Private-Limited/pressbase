@@ -9,6 +9,7 @@ import {
   useId,
   useState,
 } from 'react';
+import { useI18n } from '@/lib/i18n/context';
 import { generatePassword, passwordStrength, STRENGTH_LABELS } from '@/lib/password';
 import styles from './field.module.css';
 
@@ -31,11 +32,12 @@ function FieldShell({
   optional,
   children,
 }: ShellProps & { id: string; children: ReactNode }) {
+  const { __ } = useI18n();
   return (
     <div className={styles.field}>
       <label htmlFor={id} className={styles.label}>
         {label}
-        {optional && <span className={styles.optional}>(optional)</span>}
+        {optional && <span className={styles.optional}>{__('(optional)', 'pressbase-admin')}</span>}
       </label>
       {children}
       {hint && (

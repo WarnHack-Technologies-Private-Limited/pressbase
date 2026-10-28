@@ -21,7 +21,8 @@ import { PATTERN_HEADERS, readFileHeaders } from './file-headers';
  *   functions below;
  * - comments: `//`, `#` and `/* … *\/`.
  *
- * Functions — translation is the identity until i18n arrives (v0.6):
+ * Functions — translation goes through the context's `gettext` (kernel.i18n
+ * in the site's language, see themes/service.ts):
  * - output: `_e`, `esc_html_e`, `esc_attr_e`, `printf`;
  * - values: `__`, `_x`, `esc_html__`, `esc_attr__`, `esc_html_x`,
  *   `esc_attr_x`, `esc_html`, `esc_attr`, `esc_url`, `wp_kses_post`,
@@ -34,6 +35,10 @@ export interface PhpPatternContext {
   templateUri: string;
   /** get_stylesheet_directory_uri(): the active (child) theme's URL. */
   stylesheetUri: string;
+  /** translate(): `__()`, `_e()`, `esc_html__()`… Without it, the English text is kept. */
+  gettext?: (text: string, domain: string) => string;
+  /** translate_with_gettext_context(): `_x()`, `esc_html_x()`, `esc_attr_x()`. */
+  gettextWithContext?: (text: string, context: string, domain: string) => string;
 }
 
 export interface LoadedPattern {
@@ -279,20 +284,29 @@ class Interpreter {
     const [first = ''] = args;
     const { templateUri, stylesheetUri } = this.context;
     const themeFile = (base: string) => (first ? `${base}/${first.replace(/^\/+/, '')}` : base);
+    // translate() / translate_with_gettext_context(): the domain is the last argument.
+    const gettext = () => this.context.gettext?.(first, args[1] || 'default') ?? first;
+    const withContext = () =>
+      this.context.gettextWithContext?.(first, args[1] ?? '', args[2] || 'default') ?? first;
     switch (name) {
       case '__':
-      case '_x':
       case '_e':
-        return first;
+        return gettext();
+      case '_x':
+        return withContext();
       case 'esc_html__':
-      case 'esc_html_x':
-      case 'esc_html':
       case 'esc_html_e':
+        return escHtml(gettext());
+      case 'esc_html_x':
+        return escHtml(withContext());
+      case 'esc_html':
         return escHtml(first);
       case 'esc_attr__':
-      case 'esc_attr_x':
-      case 'esc_attr':
       case 'esc_attr_e':
+        return escAttr(gettext());
+      case 'esc_attr_x':
+        return escAttr(withContext());
+      case 'esc_attr':
         return escAttr(first);
       case 'esc_url':
         return escUrl(first);

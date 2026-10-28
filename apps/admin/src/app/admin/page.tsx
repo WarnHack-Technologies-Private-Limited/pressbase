@@ -8,8 +8,13 @@ import { SiteHealthSummary } from '@/components/site-health/site-health-summary'
 import { Badge, Card, Notice } from '@/components/ui/surface';
 import { commentPlainText, type RestComment } from '@/lib/comments';
 import { coreGet, type Me, type SiteIndex } from '@/lib/core';
+import { formatNumber } from '@/lib/i18n/locale';
+import { getI18n } from '@/lib/i18n/server';
 
-export const metadata: Metadata = { title: 'Dashboard' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { __ } = await getI18n();
+  return { title: __('Dashboard', 'pressbase-admin') };
+}
 
 interface Dashboard {
   site: { title: string; url: string; public: boolean };
@@ -26,9 +31,9 @@ interface Dashboard {
   system: { version: string; database: 'postgres' | 'pglite'; node: string };
 }
 
-function relativeTime(iso: string): string {
+function relativeTime(iso: string, lang: string, justNow: string): string {
   const seconds = Math.round((new Date(iso).getTime() - Date.now()) / 1000);
-  const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+  const rtf = new Intl.RelativeTimeFormat(lang, { numeric: 'auto' });
   const units: [Intl.RelativeTimeFormatUnit, number][] = [
     ['year', 31_536_000],
     ['month', 2_592_000],
@@ -40,15 +45,17 @@ function relativeTime(iso: string): string {
   for (const [unit, size] of units) {
     if (Math.abs(seconds) >= size) return rtf.format(Math.round(seconds / size), unit);
   }
-  return 'just now';
+  return justNow;
 }
 
 export default async function DashboardPage() {
-  const [dashboard, current, index] = await Promise.all([
+  const [dashboard, current, index, { __, _x, _n, sprintf, lang }] = await Promise.all([
     coreGet<Dashboard>('/pressbase/v1/dashboard'),
     coreGet<Me>('/wp/v2/users/me'),
     coreGet<SiteIndex>('/'),
+    getI18n(),
   ]);
+  const ago = (iso: string) => relativeTime(iso, lang, __('just now', 'pressbase-admin'));
   // Logged out or not installed: the admin layout is already redirecting, and
   // the error bodies have none of the fields below.
   if (dashboard.status !== 200 || current.status !== 200) return null;
@@ -71,34 +78,34 @@ export default async function DashboardPage() {
     capability?: string;
     release?: string;
   }[] = [
-    { label: 'Install Pressbase', done: true },
+    { label: __('Install Pressbase', 'pressbase-admin'), done: true },
     {
-      label: 'Give your site a name',
+      label: __('Give your site a name', 'pressbase-admin'),
       done: Boolean(site.name),
       href: '/admin/settings/general',
       capability: 'manage_options',
     },
     {
-      label: 'Add a tagline',
+      label: __('Add a tagline', 'pressbase-admin'),
       done: Boolean(site.description),
       href: '/admin/settings/general',
       capability: 'manage_options',
     },
     {
       // The installer's "Hello world!" doesn't count.
-      label: 'Write your first post',
+      label: __('Write your first post', 'pressbase-admin'),
       done: data.counts.posts + data.counts.drafts > 1,
       href: '/admin/posts/new',
       capability: 'edit_posts',
     },
     {
-      label: 'Invite your team',
+      label: __('Invite your team', 'pressbase-admin'),
       done: data.counts.users > 1,
       href: '/admin/users/new',
       capability: 'create_users',
     },
     {
-      label: 'Make the site look like yours',
+      label: __('Make the site look like yours', 'pressbase-admin'),
       done: data.appearance.customized,
       href: '/admin/appearance/styles',
       capability: 'edit_theme_options',
@@ -107,40 +114,65 @@ export default async function DashboardPage() {
   const completed = steps.filter((s) => s.done).length;
 
   const stats: { label: string; value: number; meta?: string; href?: string }[] = [
-    { label: 'Published posts', value: data.counts.posts },
-    { label: 'Drafts', value: data.counts.drafts },
-    { label: 'Pages', value: data.counts.pages },
+    { label: __('Published posts', 'pressbase-admin'), value: data.counts.posts },
+    { label: __('Drafts', 'pressbase-admin'), value: data.counts.drafts },
+    { label: __('Pages', 'pressbase-admin'), value: data.counts.pages },
     {
-      label: 'Comments',
+      label: __('Comments', 'pressbase-admin'),
       value: data.counts.comments,
       meta: data.counts.pendingComments
-        ? `${data.counts.pendingComments} awaiting moderation`
+        ? sprintf(
+            // translators: %s: a number of comments.
+            _n(
+              '%s awaiting moderation',
+              '%s awaiting moderation',
+              data.counts.pendingComments,
+              'pressbase-admin',
+            ),
+            formatNumber(data.counts.pendingComments, lang),
+          )
         : undefined,
       href: canModerate ? '/admin/comments?comment_status=moderated' : undefined,
     },
   ];
 
+  // " · " between list details, as in "Post · Draft · 2 hours ago".
+  const details = (...parts: string[]) => parts.filter(Boolean).join(__(' · ', 'pressbase-admin'));
+
   return (
     <>
       <PageHeader
-        title={`Welcome, ${firstName}`}
-        description={`Here’s what’s happening on ${data.site.title || 'your site'}.`}
+        title={
+          // translators: %s: the user's first name.
+          sprintf(__('Welcome, %s', 'pressbase-admin'), firstName ?? '')
+        }
+        description={sprintf(
+          // translators: %s: the site's title.
+          __('Here’s what’s happening on %s.', 'pressbase-admin'),
+          data.site.title || __('your site', 'pressbase-admin'),
+        )}
       />
 
       <div className={styles.grid}>
         {!data.site.public && canManage && (
           <div className={styles.span12}>
-            <Notice tone="warning" title="Search engines are asked not to index this site">
-              That’s useful while you build. Remember to change it before you launch.
+            <Notice
+              tone="warning"
+              title={__('Search engines are asked not to index this site', 'pressbase-admin')}
+            >
+              {__(
+                'That’s useful while you build. Remember to change it before you launch.',
+                'pressbase-admin',
+              )}
             </Notice>
           </div>
         )}
 
         <div className={styles.span12}>
-          <section aria-label="At a glance" className={styles.stats}>
+          <section aria-label={__('At a glance', 'pressbase-admin')} className={styles.stats}>
             {stats.map((stat) => (
               <div key={stat.label} className={styles.stat}>
-                <span className={styles.statValue}>{stat.value.toLocaleString('en')}</span>
+                <span className={styles.statValue}>{formatNumber(stat.value, lang)}</span>
                 <span className={styles.statLabel}>{stat.label}</span>
                 {stat.meta &&
                   (stat.href ? (
@@ -157,8 +189,13 @@ export default async function DashboardPage() {
 
         <div className={styles.span8}>
           <Card
-            title="Get your site ready"
-            description={`${completed} of ${steps.length} done`}
+            title={__('Get your site ready', 'pressbase-admin')}
+            description={sprintf(
+              // translators: 1: steps done, 2: all steps.
+              __('%1$s of %2$s done', 'pressbase-admin'),
+              formatNumber(completed, lang),
+              formatNumber(steps.length, lang),
+            )}
             actions={
               <Badge tone={completed === steps.length ? 'success' : 'accent'}>
                 {Math.round((completed / steps.length) * 100)}%
@@ -169,9 +206,17 @@ export default async function DashboardPage() {
               {steps.map((step) => (
                 <li key={step.label}>
                   {step.done ? (
-                    <CircleCheck size={20} className={styles.checkDone} aria-label="Done" />
+                    <CircleCheck
+                      size={20}
+                      className={styles.checkDone}
+                      aria-label={__('Done', 'pressbase-admin')}
+                    />
                   ) : (
-                    <Circle size={20} className={styles.checkTodo} aria-label="To do" />
+                    <Circle
+                      size={20}
+                      className={styles.checkTodo}
+                      aria-label={__('To do', 'pressbase-admin')}
+                    />
                   )}
                   <span className={styles.checkLabel} data-done={step.done}>
                     {!step.done &&
@@ -183,7 +228,14 @@ export default async function DashboardPage() {
                       step.label
                     )}
                   </span>
-                  {!step.done && step.release && <Badge>Coming in {step.release}</Badge>}
+                  {!step.done && step.release && (
+                    <Badge>
+                      {
+                        // translators: %s: a version number.
+                        sprintf(__('Coming in %s', 'pressbase-admin'), step.release)
+                      }
+                    </Badge>
+                  )}
                 </li>
               ))}
             </ul>
@@ -191,7 +243,7 @@ export default async function DashboardPage() {
         </div>
 
         <div className={styles.span4}>
-          <Card title="Site health">
+          <Card title={__('Site health', 'pressbase-admin')}>
             {/* Site Health (v0.6): the last check's rating, and a link to the screen. */}
             <SiteHealthSummary />
             <dl className={styles.facts}>
@@ -200,21 +252,26 @@ export default async function DashboardPage() {
                 <dd>{data.system.version}</dd>
               </div>
               <div>
-                <dt>Database</dt>
-                <dd>{data.system.database === 'postgres' ? 'PostgreSQL' : 'Built-in'}</dd>
+                <dt>{__('Database', 'pressbase-admin')}</dt>
+                <dd>
+                  {data.system.database === 'postgres'
+                    ? 'PostgreSQL'
+                    : _x('Built-in', 'database', 'pressbase-admin')}
+                </dd>
               </div>
               <div>
                 <dt>Node.js</dt>
                 <dd>{data.system.node}</dd>
               </div>
               <div>
-                <dt>Search engines</dt>
+                <dt>{__('Search engines', 'pressbase-admin')}</dt>
                 <dd>
                   {data.site.public ? (
-                    'Allowed'
+                    _x('Allowed', 'search engines', 'pressbase-admin')
                   ) : (
                     <Badge tone="warning">
-                      <EyeOff size={12} aria-hidden="true" /> Discouraged
+                      <EyeOff size={12} aria-hidden="true" />{' '}
+                      {_x('Discouraged', 'search engines', 'pressbase-admin')}
                     </Badge>
                   )}
                 </dd>
@@ -228,17 +285,20 @@ export default async function DashboardPage() {
                   color: 'var(--color-text-muted)',
                 }}
               >
-                The built-in database is for trying Pressbase. Use PostgreSQL for a live site.
+                {__(
+                  'The built-in database is for trying Pressbase. Use PostgreSQL for a live site.',
+                  'pressbase-admin',
+                )}
               </p>
             )}
           </Card>
         </div>
 
         <div className={canModerate ? styles.span8 : styles.span12}>
-          <Card title="Recently edited">
+          <Card title={__('Recently edited', 'pressbase-admin')}>
             {data.recent.length === 0 ? (
               <p style={{ color: 'var(--color-text-muted)' }}>
-                Nothing yet. Your latest posts and pages will show here.
+                {__('Nothing yet. Your latest posts and pages will show here.', 'pressbase-admin')}
               </p>
             ) : (
               <ul className={styles.list}>
@@ -248,11 +308,18 @@ export default async function DashboardPage() {
                       href={`/admin/${item.type === 'page' ? 'pages' : 'posts'}/${item.id}`}
                       className={styles.listTitle}
                     >
-                      {item.title || '(no title)'}
+                      {item.title || __('(no title)', 'pressbase-admin')}
                     </Link>
                     <span className={styles.listMeta}>
-                      {item.type === 'page' ? 'Page' : 'Post'}
-                      {item.status === 'draft' ? ' · Draft' : ''} · {relativeTime(item.modified)}
+                      {details(
+                        item.type === 'page'
+                          ? _x('Page', 'post type singular name', 'pressbase-admin')
+                          : _x('Post', 'post type singular name', 'pressbase-admin'),
+                        item.status === 'draft'
+                          ? _x('Draft', 'post status', 'pressbase-admin')
+                          : '',
+                        ago(item.modified),
+                      )}
                     </span>
                   </li>
                 ))}
@@ -264,29 +331,39 @@ export default async function DashboardPage() {
         {canModerate && (
           <div className={styles.span4}>
             <Card
-              title="Recent comments"
+              title={__('Recent comments', 'pressbase-admin')}
               actions={
                 <Link href="/admin/comments" className={styles.cardLink}>
-                  View all
+                  {__('View all', 'pressbase-admin')}
                 </Link>
               }
             >
               {recentComments.length === 0 ? (
                 <p style={{ color: 'var(--color-text-muted)' }}>
-                  No comments yet. When readers comment, they’ll show here.
+                  {__(
+                    'No comments yet. When readers comment, they’ll show here.',
+                    'pressbase-admin',
+                  )}
                 </p>
               ) : (
                 <ul className={styles.list}>
                   {recentComments.map((comment) => (
                     <li key={comment.id} className={styles.commentItem}>
                       <Link href={`/admin/comments?c=${comment.id}`} className={styles.listTitle}>
-                        {commentPlainText(comment.content.rendered) || '(empty)'}
+                        {commentPlainText(comment.content.rendered) ||
+                          __('(empty)', 'pressbase-admin')}
                       </Link>
                       <span className={styles.listMeta}>
-                        {comment.author_name || 'Anonymous'}
-                        {comment.status === 'hold' ? ' · Pending' : ''}
-                        {comment.status === 'spam' ? ' · Spam' : ''} ·{' '}
-                        {relativeTime(`${comment.date_gmt}Z`)}
+                        {details(
+                          comment.author_name || __('Anonymous', 'pressbase-admin'),
+                          comment.status === 'hold'
+                            ? _x('Pending', 'comment status', 'pressbase-admin')
+                            : '',
+                          comment.status === 'spam'
+                            ? _x('Spam', 'comment status', 'pressbase-admin')
+                            : '',
+                          ago(`${comment.date_gmt}Z`),
+                        )}
                       </span>
                     </li>
                   ))}

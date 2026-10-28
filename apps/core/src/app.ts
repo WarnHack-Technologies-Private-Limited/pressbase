@@ -19,6 +19,7 @@ import { cronRoutes } from './routes/cron';
 import { dashboardRoutes, postCountRoutes } from './routes/dashboard';
 import { globalStylesRoutes } from './routes/global-styles';
 import { installRoutes } from './routes/install';
+import { i18nRoutes, languagesRoutes, requestLocale } from './routes/languages';
 import { mediaRoutes } from './routes/media';
 import { navigationRoutes } from './routes/navigation';
 import { peopleRoutes } from './routes/people';
@@ -67,6 +68,10 @@ export function createApp(kernel: Kernel) {
   // `Authorization: Basic`, after the cookie check; then the application
   // password, user count and password reset routes. See docs/architecture/people.md.
   api.use(applicationPasswordAuth());
+  // i18n (v0.6): each request runs in its locale (determine_locale()), and the
+  // admin's and block editor's translations are public. See docs/architecture/i18n.md.
+  api.use(requestLocale);
+  api.route('/pressbase/v1/i18n', i18nRoutes());
   api.route('/', peopleRoutes());
 
   api.get('/', async (c) => {
@@ -95,6 +100,8 @@ export function createApp(kernel: Kernel) {
   installed.route('/wp/v2/settings', settingsRoutes());
   // Settings → Permalinks (v0.5). See routes/permalinks.ts.
   installed.route('/pressbase/v1/permalinks', permalinksRoutes());
+  // Installed languages and WordPress.org language packs (v0.6).
+  installed.route('/pressbase/v1/languages', languagesRoutes());
   installed.route('/wp/v2', typeRoutes());
   // One controller per core type and taxonomy, at its rest_base. Types and
   // taxonomies plugins register are routed per request (pluginRoutes, below).

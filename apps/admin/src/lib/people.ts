@@ -3,6 +3,8 @@
  * here (not in .tsx files) so they can be unit-tested.
  */
 
+import { msgid } from './i18n/locale';
+
 /** A user from /wp/v2/users?context=edit. */
 export interface EditUser {
   id: number;
@@ -16,6 +18,8 @@ export interface EditUser {
   description: string;
   slug: string;
   locale: string;
+  /** The stored choice: '' for the site's language (Pressbase's `locale_setting`). */
+  locale_setting?: string;
   roles: string[];
   registered_date: string;
   capabilities: Record<string, boolean>;
@@ -42,17 +46,29 @@ export interface AppPassword {
 export const ROLES: { id: string; label: string; summary: string }[] = [
   {
     id: 'administrator',
-    label: 'Administrator',
+    label: msgid('Administrator', 'User role'),
     summary: 'Everything, including settings and people.',
   },
-  { id: 'editor', label: 'Editor', summary: 'Publishes and manages everyone’s posts and pages.' },
-  { id: 'author', label: 'Author', summary: 'Publishes and manages their own posts.' },
+  {
+    id: 'editor',
+    label: msgid('Editor', 'User role'),
+    summary: 'Publishes and manages everyone’s posts and pages.',
+  },
+  {
+    id: 'author',
+    label: msgid('Author', 'User role'),
+    summary: 'Publishes and manages their own posts.',
+  },
   {
     id: 'contributor',
-    label: 'Contributor',
+    label: msgid('Contributor', 'User role'),
     summary: 'Writes posts for review, but can’t publish.',
   },
-  { id: 'subscriber', label: 'Subscriber', summary: 'Can only read and manage their profile.' },
+  {
+    id: 'subscriber',
+    label: msgid('Subscriber', 'User role'),
+    summary: 'Can only read and manage their profile.',
+  },
 ];
 
 export function roleLabel(role: string | undefined): string {

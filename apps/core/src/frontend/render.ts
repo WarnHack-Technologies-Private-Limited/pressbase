@@ -5,6 +5,7 @@ import { and, eq } from 'drizzle-orm';
 import type { CurrentUser } from '../auth/users';
 import { POSTPASS_COOKIE } from '../blocks/library/template';
 import { addCacheTags, CacheTag, collectCacheTags } from '../cache/tags';
+import { localeToLang } from '../i18n/locale';
 import type { Kernel } from '../kernel';
 import type { ActiveTheme } from '../themes/service';
 import { parseFeedRequest, renderFeed } from './feeds';
@@ -113,6 +114,7 @@ async function bodyClasses(
                 : 'archive';
     classes.push(`paged-${main.paged}`, `${kind}-paged-${main.paged}`);
   }
+  if (kernel.i18n.isRtl()) classes.push('rtl');
   if (user) classes.push('logged-in');
   classes.push(`wp-theme-${(await kernel.themes.active()).info.stylesheet}`, 'wp-embed-responsive');
   if (template) classes.push(`wp-block-template-${template}`);
@@ -172,7 +174,10 @@ export async function renderPublicPage(
   kernel: Kernel,
   request: RenderRequest,
 ): Promise<RenderedPage> {
-  const { result, tags } = await collectCacheTags(() => route(kernel, request));
+  // Public pages are in the site's language, whoever asks (get_locale(), not the user's).
+  const { result, tags } = await kernel.i18n.withLocale(kernel.i18n.getLocale(), () =>
+    collectCacheTags(() => route(kernel, request)),
+  );
   const headers = { ...result.headers };
   if (result.status === 200 && !headers.etag) {
     headers.etag = `W/"${createHash('sha1').update(result.html).digest('base64url').slice(0, 27)}"`;
@@ -310,16 +315,17 @@ async function renderPage(
     await kernel.hooks.doAction('wp_footer', footer, page);
   });
 
-  const lang = ((await kernel.options.get<string>('locale', 'en_US')) || 'en_US').replace('_', '-');
-  // get_language_attributes(): printed as filtered, like WordPress.
+  // get_language_attributes(): `dir="rtl"` for right-to-left languages
+  // (is_rtl()), then `lang`; printed as filtered, like WordPress.
+  const lang = localeToLang(kernel.i18n.getLocale());
   const languageAttributes = await kernel.hooks.applyFilters(
     'language_attributes',
-    `lang="${escAttr(lang)}"`,
+    `${kernel.i18n.isRtl() ? 'dir="rtl" ' : ''}lang="${escAttr(lang)}"`,
     'html',
   );
   const blogPublic = await kernel.options.get<boolean>('blog_public', true);
   const skipLink = skip.target
-    ? `<a class="skip-link screen-reader-text" id="wp-skip-link" href="#${escAttr(skip.target)}">Skip to content</a>\n`
+    ? `<a class="skip-link screen-reader-text" id="wp-skip-link" href="#${escAttr(skip.target)}">${kernel.i18n.esc_html__('Skip to content')}</a>\n`
     : '';
   const html = `<!DOCTYPE html>
 <html${languageAttributes ? ` ${languageAttributes}` : ''}>

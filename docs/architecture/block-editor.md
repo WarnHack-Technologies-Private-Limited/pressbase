@@ -35,6 +35,12 @@ WordPress's CSS is served by `app/editor-assets/[name]/route.ts`, which reads th
 - **Admin page** (`UI_STYLESHEETS`): components, block-editor UI, block-library editor styles, format-library. They're rendered as React 19 `<link rel="stylesheet" precedence>` elements, so they load with the editor and never on other pages.
 - **Canvas iframe** (`CANVAS_STYLESHEETS`): components, block-library front-end and theme styles, block-editor content styles, block-library editor styles, and `canvas.css`. They're passed as `__unstableResolvedAssets`, as WordPress does in `_wp_get_iframed_editor_assets()`.
 
+For right-to-left languages, `directional()` swaps each file for its `-rtl` copy (WordPress's `wp_style_add_data( …, 'rtl', 'replace' )`), and the editor gets `isRTL: true`.
+
+### Translations
+
+Before `block-editor.tsx` loads, `translations.ts` fetches `/pressbase/v1/i18n/editor?_locale=user` and calls `setLocaleData(data, 'default')` on `@wordpress/i18n`'s shared instance, as `wp_set_script_translations()` arranges in WordPress; `registerCoreBlocks()` translates block titles as it registers them, so the order matters. The data is the installed core language pack's script translations for `wp-includes/js/dist/*` plus the block metadata strings from its `.mo`. The editor's toolbar ("Add block", "Undo", "Add title") uses the same instance. See [Internationalisation](i18n.md#the-block-editor).
+
 `canvas.css` stands in for a theme until themes arrive in v0.4. It provides serif typography, a 680px content column (1000px wide), the title field, and the layout rules WordPress's global stylesheet would emit (`is-layout-flow`, `-constrained`, `-flex`, `-grid`).
 
 ## The editor component

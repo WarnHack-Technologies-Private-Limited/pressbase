@@ -1,0 +1,37 @@
+# A tiny stand-in for WordPress's German core translation (default domain),
+# for Pressbase's end-to-end tests. Real sites install the full pack from
+# WordPress.org (Settings → General → Add a language).
+msgid ""
+msgstr ""
+"Project-Id-Version: Pressbase e2e fixture\n"
+"Language: de_DE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+msgctxt "text direction"
+msgid "ltr"
+msgstr "ltr"
+
+msgid "Posts"
+msgstr "Beiträge"
+
+msgid "Pages"
+msgstr "Seiten"
+
+msgid "Comments"
+msgstr "Kommentare"
+
+msgid "Settings"
+msgstr "Einstellungen"
+
+msgid "Skip to content"
+msgstr "Zum Inhalt springen"
+
+msgid "October"
+msgstr "Oktober"
+
+msgctxt "block title"
+msgid "Paragraph"
+msgstr "Absatz"

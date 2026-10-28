@@ -7,6 +7,7 @@ import { type PermalinkBases, permalinkBases } from '../content/permalinks';
 import type { Post } from '../content/posts';
 import { sanitizePostTitle } from '../content/sanitize';
 import type { Term } from '../content/terms';
+import type { DateWords } from '../i18n/locale';
 import type { Kernel } from '../kernel';
 import { formatPhpDate } from './php-date';
 
@@ -38,6 +39,8 @@ export interface SiteInfo {
   bases: PermalinkBases;
   timeZone: string;
   dateFormat: string;
+  /** Month and weekday names in the language being rendered (WP_Locale). */
+  dateWords?: DateWords;
 }
 
 /** The options most render callbacks read (get_bloginfo(), home_url(), date_format…). */
@@ -53,6 +56,7 @@ export async function siteInfo(kernel: Kernel): Promise<SiteInfo> {
     bases: await permalinkBases(kernel),
     timeZone: await get('timezone_string', 'UTC'),
     dateFormat: await get('date_format', 'F j, Y'),
+    dateWords: kernel.i18n.dateWords(),
   };
 }
 
@@ -115,9 +119,9 @@ export function theTitle(post: Pick<Post, 'title' | 'password' | 'status'>): str
   return title;
 }
 
-/** get_the_date() */
+/** get_the_date(), with month and weekday names in the site's language (wp_date()). */
 export function theDate(site: SiteInfo, date: Date, format = ''): string {
-  return formatPhpDate(format || site.dateFormat, date, site.timeZone);
+  return formatPhpDate(format || site.dateFormat, date, site.timeZone, site.dateWords);
 }
 
 /** wp_trim_words(): the first `count` words, with `more` when anything was cut. */

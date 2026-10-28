@@ -249,6 +249,9 @@ importers:
       "@wordpress/hooks":
         specifier: 5.0.0
         version: 5.0.0
+      "@wordpress/i18n":
+        specifier: 7.0.0
+        version: 7.0.0
       "@wordpress/keyboard-shortcuts":
         specifier: 6.0.0
         version: 6.0.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)

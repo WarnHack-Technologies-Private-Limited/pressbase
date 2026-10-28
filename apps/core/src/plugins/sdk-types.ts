@@ -31,6 +31,8 @@ export type { HtmlOutput } from '../frontend/head';
 export type { PageRender } from '../frontend/page';
 export type {} from '../frontend/render';
 export type {} from '../frontend/title';
+export type {} from '../i18n/l10n';
+export type {} from '../i18n/language-packs';
 export type {} from '../jobs/core-events';
 export type { CronEvent, CronSchedule } from '../jobs/cron';
 export type { EnqueueOptions, HandlerOptions, Job, JobContext } from '../jobs/queue';
@@ -74,6 +76,7 @@ export type {
   PluginCliHandler,
   PluginCliIo,
 } from './cli';
+export type { PluginI18n } from './i18n';
 export type {} from './manager';
 export type { PluginManifest, PluginManifestInput, PluginPermission } from './manifest';
 export type {

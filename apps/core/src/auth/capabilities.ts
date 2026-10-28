@@ -106,6 +106,11 @@ export function resolveCapabilities(
   const userRoles = Object.keys(grants).filter((key) => grants[key] && roles[key]);
   const capabilities: Record<string, boolean> = {};
   for (const role of userRoles) Object.assign(capabilities, roles[role]?.capabilities);
+  // wp_maybe_grant_install_languages_cap() (wp-includes/capabilities.php): whoever
+  // can update core or install plugins or themes can install languages.
+  if (capabilities.update_core || capabilities.install_plugins || capabilities.install_themes) {
+    capabilities.install_languages = true;
+  }
   for (const [key, granted] of Object.entries(grants)) {
     if (!roles[key]) capabilities[key] = granted;
   }

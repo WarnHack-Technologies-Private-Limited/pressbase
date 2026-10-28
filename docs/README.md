@@ -33,6 +33,7 @@ New here? The [README](../README.md#see-it-in-action) shows Pressbase in action:
 - [REST API](architecture/rest-api.md): endpoints, errors, authentication.
 - [Site Health](architecture/site-health.md): Tools → Site Health's tests, the Info tab, the Dashboard rating and how plugins extend them.
 - [Block editor](architecture/block-editor.md): how Gutenberg runs in the admin, api-fetch, hidden blocks, autosave.
+- [Internationalisation](architecture/i18n.md): text domains, `.mo`/`.po`/JSON files, the site's and users' languages, language packs, RTL, translating the admin and the block editor.
 - [Installer](architecture/installer.md): site states, the install flow, configuration.
 - [Security](architecture/security.md): threat model and protections.
 
@@ -52,6 +53,7 @@ New here? The [README](../README.md#see-it-in-action) shows Pressbase in action:
 - [Conventions](development/conventions.md): code style and patterns.
 - [Writing plugins](development/writing-plugins.md): `create-pressbase-plugin`, the SDK, building and packing a plugin.
 - [The pressbase CLI](development/cli.md): every command, its flags and examples (like wp-cli).
+- [Translating Pressbase](development/translating.md): contributing a translation, `pnpm i18n:extract`, making strings translatable.
 
 ## Decisions
 

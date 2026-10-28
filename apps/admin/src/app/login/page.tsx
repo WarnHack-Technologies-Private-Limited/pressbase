@@ -3,8 +3,12 @@ import { redirect } from 'next/navigation';
 import { AuthLayout } from '@/components/install/auth-layout';
 import { LoginForm } from '@/components/install/login-form';
 import { coreGet, type SiteIndex } from '@/lib/core';
+import { getI18n } from '@/lib/i18n/server';
 
-export const metadata: Metadata = { title: 'Log in' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { __ } = await getI18n();
+  return { title: __('Log in', 'pressbase-admin') };
+}
 
 export default async function LoginPage({
   searchParams,

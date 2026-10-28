@@ -228,7 +228,13 @@ function enqueueThemeStyles(kernel: Kernel, page: PageRender): void {
     styles.addInline(handle, css);
     styles.enqueue(handle);
   };
-  styles.enqueue('wp-block-library', BLOCK_LIBRARY_CSS);
+  // wp_style_add_data( 'wp-block-library', 'rtl', 'replace' ): the RTL copy for right-to-left languages.
+  styles.enqueue(
+    'wp-block-library',
+    kernel.i18n.isRtl()
+      ? BLOCK_LIBRARY_CSS.replace(/\.min\.css$/, '-rtl.min.css')
+      : BLOCK_LIBRARY_CSS,
+  );
   if (page.skipLinkTarget) inline('wp-block-template-skip-link', SKIP_LINK_CSS);
   inline('global-styles', theme.css.global + theme.css.custom);
   inline('block-style-variation-styles', page.variationStyles.join(''));

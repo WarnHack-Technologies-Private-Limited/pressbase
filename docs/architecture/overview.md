@@ -87,6 +87,7 @@ apps/
     options/             Options API and the settings registry
     routes/              one file per REST resource
     themes/              theme discovery, PHP pattern loader, theme block supports, assets
+    i18n/                kernel.i18n (l10n.php): translation files, text domains, locales, language packs
     plugins/             plugin.json, discovery, the plugin manager and runtime, dynamic routing, zip reader
     site-health/         kernel.siteHealth: Site Health tests, debug information, the weekly check
     frontend/            request routing, main query, template hierarchy, page rendering
