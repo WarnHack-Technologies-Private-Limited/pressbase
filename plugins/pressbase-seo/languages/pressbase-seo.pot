@@ -32,59 +32,59 @@ msgstr ""
 msgid "1 suggestion"
 msgstr ""
 
-#: src/admin/settings.tsx:124
+#: src/admin/settings.tsx:173
 msgid "1. Is this site for an organisation or a person?"
 msgstr ""
 
-#: src/admin/settings.tsx:134
+#: src/admin/settings.tsx:193
 msgid "2. The organisation’s name"
 msgstr ""
 
-#: src/admin/settings.tsx:141
+#: src/admin/settings.tsx:211
 msgid "3. Is the site ready to be indexed by search engines?"
 msgstr ""
 
-#: src/admin/tools.tsx:60
+#: src/admin/tools.tsx:98
 msgid "301 Moved permanently"
 msgstr ""
 
-#: src/admin/tools.tsx:61
+#: src/admin/tools.tsx:99
 msgid "302 Found (temporary)"
 msgstr ""
 
-#: src/admin/tools.tsx:62
+#: src/admin/tools.tsx:100
 msgid "307 Temporary redirect"
 msgstr ""
 
-#: src/admin/tools.tsx:201 src/admin/tools.tsx:299
+#: src/admin/tools.tsx:304 src/admin/tools.tsx:431
 msgid "404 log"
 msgstr ""
 
-#: src/admin/tools.tsx:211
+#: src/admin/tools.tsx:316
 msgid "404 log cleared."
 msgstr ""
 
-#: src/admin/tools.tsx:63
+#: src/admin/tools.tsx:101
 msgid "410 Gone (removed for good)"
 msgstr ""
 
-#: src/admin/index.tsx:209
+#: src/admin/index.tsx:228
 msgid "a description"
 msgstr ""
 
-#: src/admin/settings.tsx:319
+#: src/admin/settings.tsx:625
 msgid "A Markdown summary of the site and its main pages for AI tools, at /llms.txt."
 msgstr ""
 
-#: src/admin/tools.tsx:57
+#: src/admin/tools.tsx:83
 msgid "A path on this site."
 msgstr ""
 
-#: src/admin/settings.tsx:128 src/admin/settings.tsx:263
+#: src/admin/settings.tsx:186 src/admin/settings.tsx:397
 msgid "A person"
 msgstr ""
 
-#: src/admin/tools.tsx:57
+#: src/admin/tools.tsx:82
 msgid "A regular expression matched against the path, e.g. ^/blog/(.*)$"
 msgstr ""
 
@@ -92,35 +92,35 @@ msgstr ""
 msgid "A slug that matches the topic is a small signal and makes the link easier to trust. Changing it on a published post changes the address, so add a redirect if you do."
 msgstr ""
 
-#: src/admin/index.tsx:382
+#: src/admin/index.tsx:418
 msgid "a social description"
 msgstr ""
 
-#: src/admin/index.tsx:366
+#: src/admin/index.tsx:402
 msgid "a social title"
 msgstr ""
 
-#: src/admin/index.tsx:187
+#: src/admin/index.tsx:206
 msgid "a title"
 msgstr ""
 
-#: src/admin/tools.tsx:158 src/admin/tools.tsx:231
+#: src/admin/tools.tsx:240 src/admin/tools.tsx:347
 msgid "Actions"
 msgstr ""
 
-#: src/admin/tools.tsx:128
+#: src/admin/tools.tsx:187
 msgid "Add a redirect"
 msgstr ""
 
-#: src/admin/tools.tsx:148
+#: src/admin/tools.tsx:220
 msgid "Add one above, or import a CSV with source, target, status and regex columns."
 msgstr ""
 
-#: src/admin/settings.tsx:310
+#: src/admin/settings.tsx:584
 msgid "Add Open Graph tags (Facebook, LinkedIn and others)"
 msgstr ""
 
-#: src/admin/tools.tsx:71
+#: src/admin/tools.tsx:123
 msgid "Add redirect"
 msgstr ""
 
@@ -132,35 +132,35 @@ msgstr ""
 msgid "Add the keyphrase to the title, near the start if it reads naturally."
 msgstr ""
 
-#: src/admin/settings.tsx:311
+#: src/admin/settings.tsx:591
 msgid "Add X card tags"
 msgstr ""
 
-#: src/admin/settings.tsx:318
+#: src/admin/settings.tsx:617
 msgid "Added after Pressbase’s own rules, for example rules for one crawler."
 msgstr ""
 
-#: src/admin/settings.tsx:318
+#: src/admin/settings.tsx:614
 msgid "Additions to robots.txt"
 msgstr ""
 
-#: src/admin/tools.tsx:202
+#: src/admin/tools.tsx:305
 msgid "Addresses visitors asked for that don’t exist: the path, the last referrer and how often. No IP addresses are kept; entries are pruned after 90 days."
 msgstr ""
 
-#: src/admin/index.tsx:572
+#: src/admin/index.tsx:650
 msgid "Advanced"
 msgstr ""
 
-#: src/admin/index.tsx:765
+#: src/admin/index.tsx:868
 msgid "All descriptions"
 msgstr ""
 
-#: src/admin/index.tsx:541
+#: src/admin/index.tsx:614
 msgid "alt text"
 msgstr ""
 
-#: src/admin/index.tsx:548
+#: src/admin/index.tsx:626
 msgid "Alt text copied. Paste it into the image block’s Alternative text."
 msgstr ""
 
@@ -168,43 +168,43 @@ msgstr ""
 msgid "Alt text is how people using screen readers know what an image shows; search engines use it to understand images too."
 msgstr ""
 
-#: src/admin/index.tsx:534
+#: src/admin/index.tsx:605
 msgid "Alt text lives on each image block. The model sees the file name and the post, not the image, so check a suggestion against the picture."
 msgstr ""
 
-#: src/admin/settings.tsx:128 src/admin/settings.tsx:262
+#: src/admin/settings.tsx:186 src/admin/settings.tsx:396
 msgid "An organisation"
 msgstr ""
 
-#: src/admin/index.tsx:583
+#: src/admin/index.tsx:661
 msgid "Ask search engines not to follow links on this page (nofollow)"
 msgstr ""
 
-#: src/admin/settings.tsx:298
+#: src/admin/settings.tsx:516
 msgid "Author archives"
 msgstr ""
 
-#: src/admin/settings.tsx:241
+#: src/admin/settings.tsx:360
 msgid "Author name"
 msgstr ""
 
-#: src/admin/index.tsx:596 src/admin/index.tsx:728
+#: src/admin/index.tsx:676 src/admin/index.tsx:831
 msgid "Breadcrumb title"
 msgstr ""
 
-#: src/index.ts:246 src/index.ts:264
+#: src/index.ts:283 src/index.ts:306
 msgid "Breadcrumbs"
 msgstr ""
 
-#: src/admin/tools.tsx:75
+#: src/admin/tools.tsx:127
 msgid "Cancel"
 msgstr ""
 
-#: src/admin/index.tsx:588 src/admin/index.tsx:721
+#: src/admin/index.tsx:668 src/admin/index.tsx:822
 msgid "Canonical URL"
 msgstr ""
 
-#: src/admin/settings.tsx:241 src/admin/settings.tsx:241
+#: src/admin/settings.tsx:357 src/admin/settings.tsx:358
 msgid "Category"
 msgstr ""
 
@@ -216,31 +216,31 @@ msgstr ""
 msgid "Check the crawling settings"
 msgstr ""
 
-#: src/admin/ui.tsx:213
+#: src/admin/ui.tsx:243
 msgid "Check them before you use one."
 msgstr ""
 
-#: src/admin/settings.tsx:102
+#: src/admin/settings.tsx:139
 msgid "Choose a logo"
 msgstr ""
 
-#: src/admin/index.tsx:346
+#: src/admin/index.tsx:380
 msgid "Choose a share image"
 msgstr ""
 
-#: src/admin/settings.tsx:171
+#: src/admin/settings.tsx:260
 msgid "Choose a user"
 msgstr ""
 
-#: src/admin/index.tsx:325
+#: src/admin/index.tsx:359
 msgid "Choose image"
 msgstr ""
 
-#: src/admin/settings.tsx:89
+#: src/admin/settings.tsx:126
 msgid "Choose logo"
 msgstr ""
 
-#: src/admin/tools.tsx:215
+#: src/admin/tools.tsx:320
 msgid "Clear log"
 msgstr ""
 
@@ -248,63 +248,63 @@ msgstr ""
 msgid "Consider using the keyphrase in the slug, for example “%s”."
 msgstr ""
 
-#: src/admin/tools.tsx:274
+#: src/admin/tools.tsx:403
 msgid "Copies titles, descriptions, keyphrases, canonicals, robots settings and social texts into the fields Pressbase SEO uses. Values already set are kept. Yoast SEO’s data needs no import."
 msgstr ""
 
-#: src/admin/index.tsx:616
+#: src/admin/index.tsx:696
 msgid "Cornerstone content"
 msgstr ""
 
-#: src/admin/index.tsx:450
+#: src/admin/index.tsx:501
 msgid "Could be better"
 msgstr ""
 
-#: src/admin/settings.tsx:315
+#: src/admin/settings.tsx:601
 msgid "Crawling"
 msgstr ""
 
-#: src/admin/tools.tsx:245 src/admin/tools.tsx:246
+#: src/admin/tools.tsx:366 src/admin/tools.tsx:368
 msgid "Create redirect"
 msgstr ""
 
-#: src/admin/settings.tsx:299
+#: src/admin/settings.tsx:525
 msgid "Date archives"
 msgstr ""
 
-#: src/admin/settings.tsx:306
+#: src/admin/settings.tsx:546
 msgid "Default share image URL"
 msgstr ""
 
-#: src/admin/tools.tsx:176 src/admin/tools.tsx:177
+#: src/admin/tools.tsx:278 src/admin/tools.tsx:280
 msgid "Delete"
 msgstr ""
 
-#: src/admin/index.tsx:683
+#: src/admin/index.tsx:777
 msgid "Description set"
 msgstr ""
 
-#: src/admin/settings.tsx:65
+#: src/admin/settings.tsx:86
 msgid "Description template"
 msgstr ""
 
-#: src/admin/index.tsx:140
+#: src/admin/index.tsx:148
 msgid "Desktop"
 msgstr ""
 
-#: src/admin/settings.tsx:334
+#: src/admin/settings.tsx:678
 msgid "Discard"
 msgstr ""
 
-#: src/admin/ui.tsx:219
+#: src/admin/ui.tsx:257
 msgid "Dismiss"
 msgstr ""
 
-#: src/admin/tools.tsx:173 src/admin/tools.tsx:174
+#: src/admin/tools.tsx:269 src/admin/tools.tsx:271
 msgid "Edit"
 msgstr ""
 
-#: src/admin/tools.tsx:128
+#: src/admin/tools.tsx:187
 msgid "Edit redirect"
 msgstr ""
 
@@ -316,35 +316,35 @@ msgstr ""
 msgid "Every page asks search engines not to index it, so the site won’t appear in search results. That’s right while you build the site, not once it’s live."
 msgstr ""
 
-#: src/admin/tools.tsx:136
+#: src/admin/tools.tsx:195
 msgid "Export CSV"
 msgstr ""
 
-#: src/admin/settings.tsx:307
+#: src/admin/settings.tsx:556
 msgid "Facebook page"
 msgstr ""
 
-#: src/admin/settings.tsx:153
+#: src/admin/settings.tsx:234
 msgid "Finish setup"
 msgstr ""
 
-#: src/admin/index.tsx:495
+#: src/admin/index.tsx:562
 msgid "Focus keyphrase"
 msgstr ""
 
-#: src/admin/index.tsx:493
+#: src/admin/index.tsx:560
 msgid "Focus keyphrase and checks"
 msgstr ""
 
-#: src/admin/tools.tsx:57 src/admin/tools.tsx:153
+#: src/admin/tools.tsx:77 src/admin/tools.tsx:226
 msgid "From"
 msgstr ""
 
-#: src/admin/index.tsx:478
+#: src/admin/index.tsx:545
 msgid "Go to the field"
 msgstr ""
 
-#: src/admin/index.tsx:450
+#: src/admin/index.tsx:499
 msgid "Good"
 msgstr ""
 
@@ -356,15 +356,15 @@ msgstr ""
 msgid "Heading levels follow in order."
 msgstr ""
 
-#: src/admin/tools.tsx:156 src/admin/tools.tsx:228
+#: src/admin/tools.tsx:229 src/admin/tools.tsx:335
 msgid "Hits"
 msgstr ""
 
-#: src/admin/settings.tsx:291
+#: src/admin/settings.tsx:482
 msgid "Home page"
 msgstr ""
 
-#: src/index.ts:337
+#: src/index.ts:390
 msgid "How the site appears in search results and when shared."
 msgstr ""
 
@@ -372,35 +372,35 @@ msgstr ""
 msgid "Image alt text"
 msgstr ""
 
-#: src/admin/tools.tsx:300
+#: src/admin/tools.tsx:432
 msgid "Import"
 msgstr ""
 
-#: src/admin/tools.tsx:139 src/admin/tools.tsx:141
+#: src/admin/tools.tsx:198 src/admin/tools.tsx:205
 msgid "Import CSV"
 msgstr ""
 
-#: src/admin/tools.tsx:266
+#: src/admin/tools.tsx:392
 msgid "Import finished:"
 msgstr ""
 
-#: src/admin/tools.tsx:280
+#: src/admin/tools.tsx:412
 msgid "Import from All in One SEO"
 msgstr ""
 
-#: src/admin/tools.tsx:274
+#: src/admin/tools.tsx:402
 msgid "Import from another SEO plugin"
 msgstr ""
 
-#: src/admin/tools.tsx:277
+#: src/admin/tools.tsx:409
 msgid "Import from Rank Math"
 msgstr ""
 
-#: src/admin/settings.tsx:321
+#: src/admin/settings.tsx:634
 msgid "IndexNow"
 msgstr ""
 
-#: src/admin/ui.tsx:114
+#: src/admin/ui.tsx:135
 msgid "Insert variable"
 msgstr ""
 
@@ -408,15 +408,15 @@ msgstr ""
 msgid "Internal links"
 msgstr ""
 
-#: src/admin/settings.tsx:300
+#: src/admin/settings.tsx:531
 msgid "Keep media attachment pages out of search results (noindex)"
 msgstr ""
 
-#: src/index.ts:375
+#: src/index.ts:443
 msgid "Keep the robots.txt additions under 5,000 characters."
 msgstr ""
 
-#: src/admin/settings.tsx:69
+#: src/admin/settings.tsx:94
 msgid "Keep these out of search results (noindex)"
 msgstr ""
 
@@ -436,15 +436,15 @@ msgstr ""
 msgid "Keyphrase in title"
 msgstr ""
 
-#: src/admin/tools.tsx:227
+#: src/admin/tools.tsx:334
 msgid "Last referrer"
 msgstr ""
 
-#: src/admin/tools.tsx:229
+#: src/admin/tools.tsx:336
 msgid "Last seen"
 msgstr ""
 
-#: src/admin/index.tsx:175
+#: src/admin/index.tsx:191
 msgid "Leave empty to use the title template from Settings → SEO."
 msgstr ""
 
@@ -456,15 +456,15 @@ msgstr ""
 msgid "Links to your other pages help readers keep going and help search engines find and understand those pages."
 msgstr ""
 
-#: src/admin/settings.tsx:319
+#: src/admin/settings.tsx:624
 msgid "llms.txt"
 msgstr ""
 
-#: src/admin/settings.tsx:202
+#: src/admin/settings.tsx:302
 msgid "Loading…"
 msgstr ""
 
-#: src/admin/settings.tsx:84
+#: src/admin/settings.tsx:117
 msgid "Logo"
 msgstr ""
 
@@ -472,7 +472,7 @@ msgstr ""
 msgid "Mention the keyphrase in the first paragraph, if it fits the way you open."
 msgstr ""
 
-#: src/admin/index.tsx:193 src/admin/index.tsx:705
+#: src/admin/index.tsx:212 src/admin/index.tsx:806
 msgid "Meta description"
 msgstr ""
 
@@ -480,11 +480,11 @@ msgstr ""
 msgid "Meta description length"
 msgstr ""
 
-#: src/admin/index.tsx:766
+#: src/admin/index.tsx:869
 msgid "Missing description"
 msgstr ""
 
-#: src/admin/index.tsx:141
+#: src/admin/index.tsx:149
 msgid "Mobile"
 msgstr ""
 
@@ -492,27 +492,27 @@ msgstr ""
 msgid "Naming the organisation or person behind the site helps search engines show it correctly, for example in knowledge panels."
 msgstr ""
 
-#: src/admin/index.tsx:580 src/admin/index.tsx:718
+#: src/admin/index.tsx:658 src/admin/index.tsx:819
 msgid "No (noindex)"
 msgstr ""
 
-#: src/admin/tools.tsx:221
+#: src/admin/tools.tsx:326
 msgid "No 404s logged"
 msgstr ""
 
-#: src/admin/index.tsx:683
+#: src/admin/index.tsx:777
 msgid "No description"
 msgstr ""
 
-#: src/admin/index.tsx:165
+#: src/admin/index.tsx:181
 msgid "No description: search engines will choose text from the page."
 msgstr ""
 
-#: src/admin/index.tsx:263
+#: src/admin/index.tsx:282
 msgid "No image: add a featured image or choose one here."
 msgstr ""
 
-#: src/admin/settings.tsx:85
+#: src/admin/settings.tsx:121
 msgid "No logo yet."
 msgstr ""
 
@@ -524,11 +524,11 @@ msgstr ""
 msgid "No other published post uses this title."
 msgstr ""
 
-#: src/admin/tools.tsx:148
+#: src/admin/tools.tsx:219
 msgid "No redirects yet"
 msgstr ""
 
-#: src/admin/index.tsx:305
+#: src/admin/index.tsx:331
 msgid "No share image"
 msgstr ""
 
@@ -536,27 +536,27 @@ msgstr ""
 msgid "No suggestions"
 msgstr ""
 
-#: src/admin/index.tsx:682
+#: src/admin/index.tsx:776
 msgid "noindex"
 msgstr ""
 
-#: src/admin/index.tsx:450
+#: src/admin/index.tsx:502
 msgid "Not applicable"
 msgstr ""
 
-#: src/admin/index.tsx:513
+#: src/admin/index.tsx:582
 msgid "Not checked yet:"
 msgstr ""
 
-#: src/admin/settings.tsx:148
+#: src/admin/settings.tsx:229
 msgid "Not yet: I’m still building it"
 msgstr ""
 
-#: src/admin/ui.tsx:92
+#: src/admin/ui.tsx:113
 msgid "of"
 msgstr ""
 
-#: src/admin/settings.tsx:309
+#: src/admin/settings.tsx:576
 msgid "One address per line: LinkedIn, Instagram, YouTube…"
 msgstr ""
 
@@ -564,19 +564,19 @@ msgstr ""
 msgid "One main heading keeps the page outline clear for screen reader users and search engines. Extra H1s are a minor issue, not a penalty."
 msgstr ""
 
-#: src/admin/index.tsx:617
+#: src/admin/index.tsx:697
 msgid "One of the site’s most important pages, worth linking to from related posts."
 msgstr ""
 
-#: src/admin/index.tsx:592
+#: src/admin/index.tsx:672
 msgid "Only when this content’s main copy lives at another address."
 msgstr ""
 
-#: src/admin/settings.tsx:267
+#: src/admin/settings.tsx:402
 msgid "Organisation name"
 msgstr ""
 
-#: src/admin/settings.tsx:309
+#: src/admin/settings.tsx:574
 msgid "Other profiles"
 msgstr ""
 
@@ -584,91 +584,91 @@ msgstr ""
 msgid "Other titles weren’t checked."
 msgstr ""
 
-#: src/admin/settings.tsx:250
+#: src/admin/settings.tsx:371
 msgid "Pages carry noindex and sitemaps are off. Change it in Settings → Reading when the site is ready."
 msgstr ""
 
-#: src/admin/tools.tsx:226
+#: src/admin/tools.tsx:333
 msgid "Path"
 msgstr ""
 
-#: src/admin/tools.tsx:266
+#: src/admin/tools.tsx:392
 msgid "posts and"
 msgstr ""
 
-#: src/admin/index.tsx:136
+#: src/admin/index.tsx:144
 msgid "Preview as"
 msgstr ""
 
-#: src/admin/index.tsx:280
+#: src/admin/index.tsx:304
 msgid "Preview for"
 msgstr ""
 
-#: src/admin/index.tsx:603
+#: src/admin/index.tsx:683
 msgid "Primary category"
 msgstr ""
 
-#: src/admin/tools.tsx:44
+#: src/admin/tools.tsx:63
 msgid "Redirect added."
 msgstr ""
 
-#: src/admin/tools.tsx:102
+#: src/admin/tools.tsx:156
 msgid "Redirect deleted."
 msgstr ""
 
-#: src/admin/settings.tsx:326
+#: src/admin/settings.tsx:644
 msgid "Redirect old addresses when a published post’s slug changes"
 msgstr ""
 
-#: src/admin/tools.tsx:44
+#: src/admin/tools.tsx:63
 msgid "Redirect updated."
 msgstr ""
 
-#: src/admin/tools.tsx:132 src/admin/tools.tsx:298
+#: src/admin/tools.tsx:191 src/admin/tools.tsx:430
 msgid "Redirects"
 msgstr ""
 
-#: src/admin/tools.tsx:118
+#: src/admin/tools.tsx:176
 msgid "redirects imported."
 msgstr ""
 
-#: src/index.ts:345
+#: src/index.ts:398
 msgid "Redirects, the 404 log, and importing from other SEO plugins."
 msgstr ""
 
-#: src/admin/tools.tsx:167
+#: src/admin/tools.tsx:250
 msgid "regex"
 msgstr ""
 
-#: src/admin/tools.tsx:68
+#: src/admin/tools.tsx:115
 msgid "Regular expression"
 msgstr ""
 
-#: src/admin/index.tsx:338
+#: src/admin/index.tsx:372
 msgid "Remove image"
 msgstr ""
 
-#: src/admin/settings.tsx:94
+#: src/admin/settings.tsx:131
 msgid "Remove logo"
 msgstr ""
 
-#: src/admin/index.tsx:325
+#: src/admin/index.tsx:359
 msgid "Replace image"
 msgstr ""
 
-#: src/admin/settings.tsx:89
+#: src/admin/settings.tsx:126
 msgid "Replace logo"
 msgstr ""
 
-#: src/admin/tools.tsx:118
+#: src/admin/tools.tsx:176
 msgid "rows were skipped."
 msgstr ""
 
-#: src/admin/settings.tsx:338
+#: src/admin/settings.tsx:688
 msgid "Save changes"
 msgstr ""
 
-#: src/admin/settings.tsx:338
+#: src/admin/settings.tsx:688
 msgid "Saving…"
 msgstr ""
 
@@ -684,7 +684,7 @@ msgstr ""
 msgid "Search"
 msgstr ""
 
-#: src/admin/settings.tsx:277
+#: src/admin/settings.tsx:430
 msgid "Search appearance"
 msgstr ""
 
@@ -692,7 +692,7 @@ msgstr ""
 msgid "Search engines are allowed to show the site in their results."
 msgstr ""
 
-#: src/admin/settings.tsx:249
+#: src/admin/settings.tsx:370
 msgid "Search engines are asked not to index this site."
 msgstr ""
 
@@ -712,31 +712,27 @@ msgstr ""
 msgid "Search engines often highlight the words that match a search, which helps people see the page is relevant. It isn’t a ranking factor."
 msgstr ""
 
-#: src/admin/index.tsx:134
+#: src/admin/index.tsx:142
 msgid "Search preview"
 msgstr ""
 
-#: src/admin/tools.tsx:146
+#: src/admin/tools.tsx:213
 msgid "Search redirects"
-msgstr ""
-
-#: src/admin/settings.tsx:22
-msgid "Search result preview"
 msgstr ""
 
 #: src/analysis/index.ts:272
 msgid "Search results often show the description under the title, and a clear one helps people decide to visit. It isn’t a ranking factor in itself."
 msgstr ""
 
-#: src/admin/index.tsx:696 src/admin/index.tsx:751 src/admin/index.tsx:755 src/admin/index.tsx:757 src/admin/index.tsx:760 src/index.ts:335 src/index.ts:342
+#: src/admin/index.tsx:797 src/admin/index.tsx:854 src/admin/index.tsx:858 src/admin/index.tsx:860 src/admin/index.tsx:863 src/index.ts:388 src/index.ts:395
 msgid "SEO"
 msgstr ""
 
-#: src/admin/index.tsx:170 src/admin/index.tsx:698
+#: src/admin/index.tsx:186 src/admin/index.tsx:799
 msgid "SEO title"
 msgstr ""
 
-#: src/admin/tools.tsx:294
+#: src/admin/tools.tsx:426
 msgid "SEO tools"
 msgstr ""
 
@@ -748,19 +744,19 @@ msgstr ""
 msgid "Set the site representation"
 msgstr ""
 
-#: src/admin/settings.tsx:121
+#: src/admin/settings.tsx:167
 msgid "Set up SEO"
 msgstr ""
 
-#: src/admin/settings.tsx:224
+#: src/admin/settings.tsx:332
 msgid "Settings saved."
 msgstr ""
 
-#: src/admin/index.tsx:305
+#: src/admin/index.tsx:331
 msgid "Share image"
 msgstr ""
 
-#: src/admin/index.tsx:574 src/admin/index.tsx:712
+#: src/admin/index.tsx:652 src/admin/index.tsx:813
 msgid "Show in search results"
 msgstr ""
 
@@ -768,59 +764,59 @@ msgstr ""
 msgid "Single main heading"
 msgstr ""
 
-#: src/admin/settings.tsx:259
+#: src/admin/settings.tsx:383
 msgid "Site representation"
 msgstr ""
 
-#: src/health.ts:80
+#: src/health.ts:81
 msgid "Sitemaps are off while search engines are discouraged."
 msgstr ""
 
-#: src/health.ts:79
+#: src/health.ts:80
 msgid "Sitemaps are turned off in Settings → SEO."
 msgstr ""
 
-#: src/admin/settings.tsx:304
+#: src/admin/settings.tsx:541
 msgid "Social"
 msgstr ""
 
-#: src/admin/index.tsx:372
+#: src/admin/index.tsx:408
 msgid "Social description"
 msgstr ""
 
-#: src/admin/index.tsx:278
+#: src/admin/index.tsx:302
 msgid "Social preview"
 msgstr ""
 
-#: src/admin/index.tsx:357
+#: src/admin/index.tsx:393
 msgid "Social title"
 msgstr ""
 
-#: src/admin/settings.tsx:254
+#: src/admin/settings.tsx:377
 msgid "Some settings weren’t saved."
 msgstr ""
 
-#: src/admin/ui.tsx:173
+#: src/admin/ui.tsx:203
 msgid "Suggest"
 msgstr ""
 
-#: src/admin/ui.tsx:170
+#: src/admin/ui.tsx:200
 msgid "Suggesting…"
 msgstr ""
 
-#: src/admin/ui.tsx:213
+#: src/admin/ui.tsx:243
 msgid "Suggestions from"
 msgstr ""
 
-#: src/admin/settings.tsx:322
+#: src/admin/settings.tsx:635
 msgid "Tells Bing, Yandex and other IndexNow engines when posts are published, changed or removed. On by default while search engines may index the site."
 msgstr ""
 
-#: src/admin/settings.tsx:277
+#: src/admin/settings.tsx:431
 msgid "Templates for titles and descriptions. A post’s own SEO title or description wins over these."
 msgstr ""
 
-#: src/admin/tools.tsx:266
+#: src/admin/tools.tsx:392
 msgid "terms updated."
 msgstr ""
 
@@ -884,11 +880,11 @@ msgstr ""
 msgid "The meta description contains the keyphrase."
 msgstr ""
 
-#: src/index.ts:247
+#: src/index.ts:284
 msgid "The path from the home page to this page, as search engines see it."
 msgstr ""
 
-#: src/admin/settings.tsx:170
+#: src/admin/settings.tsx:254
 msgid "The person"
 msgstr ""
 
@@ -900,7 +896,7 @@ msgstr ""
 msgid "The SEO title contains the keyphrase."
 msgstr ""
 
-#: src/admin/settings.tsx:228
+#: src/admin/settings.tsx:336
 msgid "The settings couldn’t be saved. Check the fields marked below."
 msgstr ""
 
@@ -908,7 +904,7 @@ msgstr ""
 msgid "The site doesn’t say who it represents"
 msgstr ""
 
-#: src/admin/settings.tsx:261
+#: src/admin/settings.tsx:390
 msgid "The site represents"
 msgstr ""
 
@@ -916,11 +912,11 @@ msgstr ""
 msgid "The site says who it represents"
 msgstr ""
 
-#: src/health.ts:84
+#: src/health.ts:85
 msgid "The sitemap answered with status"
 msgstr ""
 
-#: src/health.ts:86
+#: src/health.ts:87
 msgid "The sitemap couldn’t be fetched from the site’s own address."
 msgstr ""
 
@@ -932,11 +928,11 @@ msgstr ""
 msgid "The title is the clearest signal of what a page is about, and it’s what people scan in search results."
 msgstr ""
 
-#: src/admin/index.tsx:499
+#: src/admin/index.tsx:566
 msgid "The words you’d like this post to be found for."
 msgstr ""
 
-#: src/health.ts:68 src/health.ts:92
+#: src/health.ts:68 src/health.ts:93
 msgid "The XML sitemap is reachable"
 msgstr ""
 
@@ -952,27 +948,27 @@ msgstr ""
 msgid "There are no images in the content."
 msgstr ""
 
-#: src/admin/index.tsx:517
+#: src/admin/index.tsx:586
 msgid "These checks are in English and can’t judge what matters most: whether the post answers what people are searching for."
 msgstr ""
 
-#: src/admin/settings.tsx:121
+#: src/admin/settings.tsx:168
 msgid "Three questions, then you’re done. You can change any of it below."
 msgstr ""
 
-#: src/admin/settings.tsx:280
+#: src/admin/settings.tsx:438
 msgid "Title separator"
 msgstr ""
 
-#: src/admin/settings.tsx:63
+#: src/admin/settings.tsx:77
 msgid "Title template"
 msgstr ""
 
-#: src/admin/tools.tsx:66 src/admin/tools.tsx:154
+#: src/admin/tools.tsx:105 src/admin/tools.tsx:227
 msgid "To"
 msgstr ""
 
-#: src/admin/tools.tsx:59 src/admin/tools.tsx:155
+#: src/admin/tools.tsx:92 src/admin/tools.tsx:228
 msgid "Type"
 msgstr ""
 
@@ -980,35 +976,35 @@ msgstr ""
 msgid "Unique title"
 msgstr ""
 
-#: src/admin/settings.tsx:331
+#: src/admin/settings.tsx:664
 msgid "Unsaved changes"
 msgstr ""
 
-#: src/admin/tools.tsx:71
+#: src/admin/tools.tsx:123
 msgid "Update redirect"
 msgstr ""
 
-#: src/admin/tools.tsx:66
+#: src/admin/tools.tsx:108
 msgid "Use $1, $2… for the groups matched."
 msgstr ""
 
-#: src/index.ts:358
+#: src/index.ts:417
 msgid "Use a full address, starting with https://."
 msgstr ""
 
-#: src/admin/settings.tsx:103
+#: src/admin/settings.tsx:140
 msgid "Use as logo"
 msgstr ""
 
-#: src/admin/index.tsx:347
+#: src/admin/index.tsx:381
 msgid "Use for sharing"
 msgstr ""
 
-#: src/admin/index.tsx:578
+#: src/admin/index.tsx:656
 msgid "Use the default for this content type"
 msgstr ""
 
-#: src/admin/index.tsx:716
+#: src/admin/index.tsx:817
 msgid "Use the default for this taxonomy"
 msgstr ""
 
@@ -1016,43 +1012,43 @@ msgstr ""
 msgid "Use the keyphrase in the meta description, if it reads naturally."
 msgstr ""
 
-#: src/admin/ui.tsx:207
+#: src/admin/ui.tsx:237
 msgid "Use this"
 msgstr ""
 
-#: src/admin/index.tsx:605
+#: src/admin/index.tsx:685
 msgid "Used in breadcrumbs and the %%primary_category%% variable."
 msgstr ""
 
-#: src/admin/index.tsx:258
+#: src/admin/index.tsx:277
 msgid "Using the featured image."
 msgstr ""
 
-#: src/admin/index.tsx:260
+#: src/admin/index.tsx:279
 msgid "Using the first image in the post."
 msgstr ""
 
-#: src/admin/index.tsx:256
+#: src/admin/index.tsx:275
 msgid "Using the image you chose."
 msgstr ""
 
-#: src/admin/index.tsx:262
+#: src/admin/index.tsx:281
 msgid "Using the site’s default share image."
 msgstr ""
 
-#: src/admin/settings.tsx:273
+#: src/admin/settings.tsx:418
 msgid "Website name"
 msgstr ""
 
-#: src/admin/settings.tsx:315
+#: src/admin/settings.tsx:602
 msgid "What search engines and other crawlers are told about the site."
 msgstr ""
 
-#: src/admin/settings.tsx:304
+#: src/admin/settings.tsx:542
 msgid "What shows when the site is shared and a post has no image of its own."
 msgstr ""
 
-#: src/admin/tools.tsx:221
+#: src/admin/tools.tsx:327
 msgid "When a visitor reaches an address that doesn’t exist, it shows up here."
 msgstr ""
 
@@ -1060,19 +1056,19 @@ msgstr ""
 msgid "When pages share a title, people can’t tell them apart in search results, and search engines may show one in place of the other."
 msgstr ""
 
-#: src/admin/settings.tsx:259
+#: src/admin/settings.tsx:384
 msgid "Who is behind the site. Search engines use it in the schema graph and knowledge panels."
 msgstr ""
 
-#: src/admin/index.tsx:469
+#: src/admin/index.tsx:526
 msgid "Why it matters"
 msgstr ""
 
-#: src/admin/index.tsx:182 src/admin/index.tsx:204
+#: src/admin/index.tsx:201 src/admin/index.tsx:223
 msgid "wide"
 msgstr ""
 
-#: src/admin/ui.tsx:93
+#: src/admin/ui.tsx:114
 msgid "will be cut short"
 msgstr ""
 
@@ -1080,26 +1076,26 @@ msgstr ""
 msgid "Write a meta description to check this."
 msgstr ""
 
-#: src/admin/settings.tsx:308
+#: src/admin/settings.tsx:565
 msgid "X username"
 msgstr ""
 
-#: src/admin/settings.tsx:317
+#: src/admin/settings.tsx:606
 msgid "XML sitemaps"
 msgstr ""
 
-#: src/admin/index.tsx:579 src/admin/index.tsx:717
+#: src/admin/index.tsx:657 src/admin/index.tsx:818
 msgid "Yes"
 msgstr ""
 
-#: src/admin/settings.tsx:144
+#: src/admin/settings.tsx:220
 msgid "Yes, show it in search results"
 msgstr ""
 
-#: src/admin/index.tsx:657
+#: src/admin/index.tsx:741
 msgid "You can publish now and improve these later in the SEO tab."
 msgstr ""
 
-#: src/admin/settings.tsx:241
+#: src/admin/settings.tsx:354
 msgid "Your post title"
 msgstr ""
