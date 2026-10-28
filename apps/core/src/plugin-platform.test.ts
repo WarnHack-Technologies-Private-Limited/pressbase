@@ -412,6 +412,7 @@ export default function register(api) {
     if (object && object.kind === 'post') {
       out.print('<link rel="canonical" href="' + (await api.content.canonicalUrl(object.post)) + '" data-seo />');
     }
+    out.print('<meta name="main-query" content="' + (api.content.mainQuery() === page.main) + '" />');
   }, 1);
   api.hooks.addFilter('get_canonical_url', (url) => url + '?ref=canonical');
 }
@@ -434,6 +435,7 @@ describe('canonical URLs and core head output', () => {
       `<link rel="canonical" href="${post.link}?ref=canonical" data-seo />`,
     );
     expect(ctx.kernel.coreCallbacks.has('wp_head', 'rel_canonical')).toBe(false);
+    expect(taken.html).toContain('<meta name="main-query" content="true" />');
     const api = ctx.kernel.plugins.runtime('head')?.api;
     expect(api?.hooks.removeAction('wp_head', 'no_such_callback')).toBe(false);
     const draft = await ctx.request('POST', '/wp/v2/posts', { title: 'Draft' });
@@ -449,6 +451,7 @@ describe('canonical URLs and core head output', () => {
       url: 'http://localhost:3000/author/admin/',
     });
     expect(await api?.content.author(999)).toBeUndefined();
+    expect(api?.content.mainQuery()).toBeUndefined();
     expect(await api?.content.attachmentImage(post.id)).toBe(false);
     const login = await ctx.app.request('/wp-json/pressbase/v1/auth/login', {
       method: 'POST',

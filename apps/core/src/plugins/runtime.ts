@@ -18,6 +18,8 @@ import { type QueryArgs, type QueryResult, queryPosts } from '../content/query';
 import type { Taxonomy, TaxonomyArgs } from '../content/taxonomies';
 import type { Term, TermsService } from '../content/terms';
 import { wpGetCanonicalUrl } from '../frontend/head';
+import { currentPage } from '../frontend/page';
+import type { MainQuery } from '../frontend/query';
 import type { PublicFileHandler, PublicFileOptions } from '../frontend/public-files';
 import { type AppEnv, restError } from '../http';
 import type { Kernel } from '../kernel';
@@ -157,6 +159,11 @@ export interface PluginApi {
     permalink(post: Post | number): Promise<string | false>;
     /** wp_get_canonical_url(): the canonical URL of a published post, after `get_canonical_url`. */
     canonicalUrl(post: Post | number): Promise<string | false>;
+    /**
+     * The main query of the public page being rendered (WordPress's global
+     * `$wp_query`), for block renders and hooks; undefined outside a page render.
+     */
+    mainQuery(): MainQuery | undefined;
     /** get_term_link() */
     termLink(term: Pick<Term, 'id' | 'slug' | 'taxonomy'>): Promise<string>;
     /** get_userdata()'s public fields with get_author_posts_url(), or undefined. */
@@ -634,6 +641,7 @@ export class PluginRuntime {
           return p ? permalink(kernel, p, await permalinkContext(kernel)) : false;
         },
         canonicalUrl: (post: Post | number) => wpGetCanonicalUrl(kernel, post),
+        mainQuery: () => currentPage()?.main,
         termLink: (term: Pick<Term, 'id' | 'slug' | 'taxonomy'>) => contentTermLink(kernel, term),
         author: (id: number) => contentAuthor(kernel, id),
         attachmentImage: (id: number, size?: string) => contentAttachmentImage(kernel, id, size),
