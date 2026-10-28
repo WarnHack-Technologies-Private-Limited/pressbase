@@ -4,6 +4,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { Kernel } from '../kernel';
 import { PRESSBASE_VERSION } from '../version';
+import { clearPluginJobs } from './background';
 import {
   BUNDLED_PLUGINS_DIR,
   type DiscoveredPlugins,
@@ -256,6 +257,7 @@ export class PluginManager {
     }
     this.#runtimeErrors.delete(plugin.slug);
     this.#runtimes.set(plugin.slug, runtime);
+    runtime.startBackground();
     return runtime;
   }
 
@@ -448,6 +450,9 @@ export class PluginManager {
           console.error(`[plugin:${slug}] uninstall failed:`, error);
         }
       }
+
+      // Its jobs and cron events would otherwise wait forever for a handler.
+      await clearPluginJobs(this.kernel, slug);
 
       let deleted = true;
       try {

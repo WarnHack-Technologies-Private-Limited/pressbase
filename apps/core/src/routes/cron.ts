@@ -43,7 +43,10 @@ function formatFailedJob(job: Job) {
   return {
     id: job.id,
     name: job.name,
-    hook: job.name === 'cron' && typeof data?.hook === 'string' ? data.hook : null,
+    hook:
+      (job.name === 'cron' || job.name.startsWith('cron:')) && typeof data?.hook === 'string'
+        ? data.hook
+        : null,
     attempts: job.attempts,
     max_attempts: job.maxAttempts,
     // The first line only: stacks stay in the database.

@@ -8,6 +8,7 @@ import {
 } from './http';
 import type { Kernel } from './kernel';
 import { applicationPasswordAuth } from './people/application-passwords';
+import { pluginAssetRoutes } from './plugins/assets';
 import { pluginRoutes } from './plugins/dispatch';
 import { authRoutes } from './routes/auth';
 import { autosavesRoutes } from './routes/autosaves';
@@ -157,6 +158,8 @@ export function createApp(kernel: Kernel) {
   // request so activation needs no restart. See docs/architecture/plugins.md.
   installed.route('/wp/v2/plugins', pluginsRoutes());
   installed.all('*', pluginRoutes);
+  // Active plugins' static files (their public/ folder), outside /wp-json.
+  app.route('/', pluginAssetRoutes(kernel));
 
   api.route('/', installed);
 

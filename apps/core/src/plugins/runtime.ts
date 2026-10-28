@@ -1,5 +1,10 @@
 import type { Database } from '@pressbase/db';
-import type { ActionCallback, FilterCallback } from '@pressbase/hooks';
+import type {
+  ActionCallback,
+  ActionRegistry,
+  FilterCallback,
+  FilterRegistry,
+} from '@pressbase/hooks';
 import { sql } from 'drizzle-orm';
 import type { Context, Hono } from 'hono';
 import { type CurrentUser, userCan } from '../auth/users';
@@ -11,6 +16,8 @@ import type { TermsService } from '../content/terms';
 import { type AppEnv, restError } from '../http';
 import type { Kernel } from '../kernel';
 import { PRESSBASE_VERSION } from '../version';
+import { createAssets, type PluginAssets, type PluginScripts, type PluginStyles } from './assets';
+import { type Background, createBackground, type PluginCron, type PluginJobs } from './background';
 import type { InstalledPlugin } from './discovery';
 import { createSubApp } from './dispatch';
 import type { PluginPermission } from './manifest';
@@ -61,12 +68,13 @@ export interface PluginApi {
   };
   readonly pressbase: { version: string };
   readonly hooks: {
-    addFilter<K extends string>(
+    /** Hook names core declares autocomplete; any other name works too. */
+    addFilter<K extends keyof FilterRegistry | (string & {})>(
       name: K,
       callback: FilterCallback<K>,
       priority?: number,
     ): () => void;
-    addAction<K extends string>(
+    addAction<K extends keyof ActionRegistry | (string & {})>(
       name: K,
       callback: ActionCallback<K>,
       priority?: number,
@@ -130,6 +138,19 @@ export interface PluginApi {
     userCan(c: PluginRequestContext, capability: string): boolean;
   };
   readonly logger: PluginLogger;
+  /**
+   * WP-Cron for the plugin: hook names get the plugin's prefix (`rotate` →
+   * `daily_tips_rotate`). A deactivated plugin's events wait until it is active again.
+   */
+  readonly cron: PluginCron;
+  /** The job queue, with job names namespaced by the plugin's slug (`sync` → `daily-tips/sync`). */
+  readonly jobs: PluginJobs;
+  /** wp_enqueue_script() & co. for public pages; relative sources are files in `public/`. */
+  readonly scripts: PluginScripts;
+  /** wp_enqueue_style() & co. for public pages; relative sources are files in `public/`. */
+  readonly styles: PluginStyles;
+  /** URLs of the plugin's static files (its `public/` folder). */
+  readonly assets: PluginAssets;
 }
 
 /** What a plugin's main module exports. */
@@ -206,6 +227,7 @@ export class PluginRuntime {
   /** Wrapped hook callbacks by original callback, so removeFilter() can find them. */
   #wrapped = new Map<AnyCallback, { name: string; wrapped: AnyCallback; off: () => void }[]>();
   #disposed = false;
+  #background: Background | undefined;
 
   constructor(
     readonly kernel: Kernel,
@@ -238,6 +260,14 @@ export class PluginRuntime {
   restApp(): Hono<AppEnv> {
     if (!this.#app) this.#app = this.#buildApp();
     return this.#app;
+  }
+
+  /**
+   * Starts the plugin's background work (its cron runner), once `register`
+   * has added its callbacks, so no event runs before its action exists.
+   */
+  startBackground(): void {
+    this.#background?.start();
   }
 
   /** Takes back everything the plugin registered, newest first. */
@@ -329,6 +359,22 @@ export class PluginRuntime {
       return name.startsWith(prefix) ? name : `${prefix}${name}`;
     };
     const has = (permission: PluginPermission) => this.permissions.includes(permission);
+    const track = (dispose: () => void) => this.#track(dispose);
+    const background = createBackground({
+      kernel,
+      slug,
+      prefix,
+      track,
+      addAction: (name, callback, priority) => this.#addHook(name, callback, priority, false),
+      reportError: (during, error) => this.host.reportError(slug, during, error),
+    });
+    this.#background = background;
+    const { scripts, styles, assets } = createAssets({
+      kernel,
+      slug,
+      version: manifest.version,
+      track,
+    });
 
     const api: PluginApi = {
       plugin: Object.freeze({
@@ -432,6 +478,11 @@ export class PluginRuntime {
           userCan(c.get('user') ?? null, capability),
       }),
       logger: this.logger,
+      cron: background.cron,
+      jobs: background.jobs,
+      scripts,
+      styles,
+      assets,
     };
     return Object.freeze(api);
   }

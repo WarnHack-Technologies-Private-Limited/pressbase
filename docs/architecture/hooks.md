@@ -59,6 +59,8 @@ declare module '@pressbase/hooks' {
 
 Undeclared names still work, with `unknown` arguments.
 
+Plugins see the same declarations through `@pressbase/plugin-sdk`, whose types are generated from core ([ADR 0012](../adr/0012-plugin-sdk-types.md)): `api.hooks.addFilter('wp_robots', …)` autocompletes and types its callback. A module in core that declares hooks must be listed in `apps/core/src/plugins/sdk-types.ts` (the SDK's build fails otherwise). A plugin declares its own hooks with `declare module '@pressbase/plugin-sdk' { interface FilterRegistry { … } }`.
+
 ## Hooks core fires today
 
 | Hook             | Type   | Arguments                  | Fired by                                           |

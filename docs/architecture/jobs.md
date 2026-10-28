@@ -25,7 +25,7 @@ await kernel.jobs.enqueue('my-plugin/sync', { url: 'https://example.com' }, {
 ```
 
 - **Storage.** One row per job in the `jobs` table: `pending` → `running` → `completed` or `failed`.
-- **Handlers** are registered by name, in code, in every process that should run them. A job whose handler isn't registered stays `pending`.
+- **Handlers** are registered by name, in code, in every process that should run them. A job whose handler isn't registered stays `pending` (for plugins, see [Plugins](#plugins)).
 - **Retries.** A handler that throws (or times out) is retried after `backoffSeconds × 2^(attempt − 1)`, capped at a day, until `maxAttempts` (default 3). The last error is kept in `last_error`; each failure fires `pressbase_job_failed` (`job, error, retrying`).
 - **Timeouts.** After `timeoutSeconds` (default 300) the attempt fails and the handler's `signal` is aborted. A job left `running` by a process that died is retried (or failed) once its timeout plus a minute has passed.
 - **Deduplication.** With a `singletonKey`, `enqueue()` returns `null` while a job with that key is pending or running. `replace: true` updates the pending job's data and time instead.
@@ -71,6 +71,18 @@ Also `rescheduleEvent`, `unscheduleHook`, `getScheduledEvent`, `getSchedule`, `g
 | `pressbase_prune_jobs` | daily | Deletes finished jobs older than the retention. |
 
 The daily events are scheduled on `init` when missing, at midnight UTC. `init` also schedules events for `future` posts that lack one (posts scheduled before the queue existed). `kernel.posts.publishDue()` still runs before content queries as a safety net, so a scheduled post is never late when no worker is running. See [Content](content.md#scheduling).
+
+## Plugins
+
+Plugins use the queue and cron through `api.jobs` and `api.cron` ([Plugins](plugins.md#background-work-cron-and-jobs)), not the kernel:
+
+- **Names.** A plugin's jobs are named `{slug}/{name}`. Its cron hooks get its option prefix (`{slug_with_underscores}_{hook}`), and its events are stored as `cron:{slug}` jobs instead of `cron`. `kernel.cron` (and `GET /pressbase/v1/cron`) lists and clears both; a plugin's `api.cron` only sees its own.
+- **Handlers follow activation.** Loading a plugin registers its job handlers and a runner for its `cron:{slug}` jobs (after `register(api)` has added its callbacks, so no event fires before its action exists). Deactivating removes them.
+- **Deactivated: kept, not run, not failed.** Workers only claim jobs they have a handler for, so a deactivated plugin's jobs and events stay `pending` with their attempts untouched, and the worker doesn't wake for them. They show in Scheduled tasks meanwhile. Reactivating runs what is due: each overdue job and single event once, a recurring event once and then on its schedule (its next run keeps the phase, as for any late event). A plugin that wants nothing to run after a pause can clear its events in `deactivate(api)`.
+- **Deleted: cleared.** Deleting a plugin runs its `uninstall(api)` and then deletes every `{slug}/…` and `cron:{slug}` job, whatever its status (running ones in another process finish and are pruned later), so nothing waits forever for a handler that can't come back.
+- A plugin's job handler that throws is retried like any other, and the error is also recorded against the plugin (its `runtime_errors` in `/wp/v2/plugins`).
+
+Jobs enqueued directly on `kernel.jobs` under a name nobody registers still wait forever; that only happens to core code, which registers its handlers at boot.
 
 ## REST and admin
 
