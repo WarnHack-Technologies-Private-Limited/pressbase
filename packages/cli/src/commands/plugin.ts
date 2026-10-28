@@ -87,7 +87,8 @@ async function activate(ctx: Context, plugin: InstalledPlugin): Promise<boolean>
 }
 
 function summary(ctx: Context, done: number, total: number, verb: string) {
-  const message = `${verb} ${done} of ${total} plugin${total === 1 ? '' : 's'}.`;
+  // wp-cli's report_batch_operation_results(): always the plural noun.
+  const message = `${verb} ${done} of ${total} plugins.`;
   if (done < total) ctx.error(message);
   ctx.success(message);
 }
