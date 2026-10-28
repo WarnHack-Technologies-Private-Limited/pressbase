@@ -89,6 +89,16 @@ Twenty Twenty-Five renders the home page, posts, pages, archives, search, commen
 - [x] Internationalisation: `.po`/`.mo` files, `@wordpress/i18n`. See [Internationalisation](architecture/i18n.md), [ADR 0015](adr/0015-internationalisation.md).
 - [x] Site Health: Tools → Site Health (Status and Info), the Dashboard rating, `site_status_tests` and `debug_information`. See [Site Health](architecture/site-health.md).
 
+## v0.7: First-party plugins
+
+Plan: [Pressbase SEO and the first-party plugins](plans/first-party-plugins.md).
+
+- [ ] Plugin API: register meta, live editor data and more admin slots for UI modules, early request hooks (`template_redirect`, 404), canonical filters, `api.cache.purge`, plugin files at the site root.
+- [ ] AI client and Abilities API, ported from WordPress 7.x (`wp_ai_client_prompt()`, `wp_register_ability()`), with Settings → AI.
+- [ ] Plugin blocks: `api.blocks.register()`, loaded at runtime.
+- [ ] Pressbase SEO: titles and meta (Yoast-compatible), search and social previews, checks, schema graph, sitemaps, redirects and 404 log, breadcrumbs, IndexNow, `llms.txt`, AI suggestions.
+- [ ] The next first-party plugins (Forms, Anti-spam, Analytics, Backups, Security): order to be decided.
+
 ## v1.0: Stable
 
 - [ ] Security audit, accessibility audit, performance budget.

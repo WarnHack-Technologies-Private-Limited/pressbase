@@ -1,6 +1,6 @@
 # Plan: Pressbase SEO and the first-party plugins
 
-Status: **proposal**, for review. Written 2026-10-28, after v0.6.
+Status: **accepted** 2026-10-28, with the decisions [below](#decisions). Written after v0.6.
 
 ## Summary
 
@@ -72,7 +72,7 @@ From [Yoast's feature list](https://yoast.com/features/) and comparisons ([Nexte
 | `llms.txt` | Free (2025) | Free | **v1**: cheap, opt-in |
 | IndexNow | Yes (late adopter) | Free | **v1**: pings on publish and update |
 | Search Console data | Integration | Free | **v3**, with Analytics |
-| AI generation of titles and descriptions | Premium / AI+ | Pro | **v3**, optional, bring your own key |
+| AI generation of titles, descriptions, social text and alt text | Premium / AI+ | Pro | **v1**, opt-in, on the core AI client ([below](#ai)) |
 | Local, News, Video SEO | Premium add-ons | Pro | Not planned |
 
 ### Data model: compatible by design
@@ -133,9 +133,26 @@ From [Yoast's feature list](https://yoast.com/features/) and comparisons ([Nexte
 - **Same code in the browser and on the server:** live in the editor, and in a `pressbase seo audit` CLI command and a site-wide report.
 - **Readability:** sentence length and passive voice for English first, with a pluggable per-language module. It's labelled as English-only until other languages exist.
 
+### AI
+
+WordPress 7.0 added an AI client (`wp_ai_client_prompt()`, with providers registered by plugins) and the Abilities API (`wp_register_ability()`). Pressbase ports both into core (gap 10), and Pressbase SEO is their first user.
+
+- **Off until someone turns it on.** It's enabled per site, in **Settings → AI**, by someone with `manage_options`.
+  - Provider keys live there, are never sent to the browser, and are shown masked.
+  - `wp_supports_ai` can turn AI off per site or per request.
+- **Suggestions, never silent edits.** In the SEO panel, a **Suggest** button next to the title, description, social text and image alt text returns two or three options. The editor picks one or none.
+  - It sends the post's title, excerpt and the start of its content, and nothing private.
+  - The panel says which provider is used.
+- **Abilities:** SEO registers `pressbase-seo/suggest-meta`, `pressbase-seo/suggest-alt-text` and `pressbase-seo/audit-post` with input and output schemas. They're usable from the CLI and, later, by AI agents (MCP), with the same permission checks.
+- **Providers:** Anthropic (Claude) first, then OpenAI and Google, each as a small provider module. The model is a setting, not hard-coded.
+- **Costs and safety:**
+  - every request is logged without its content (who, which ability, tokens);
+  - a per-day request cap;
+  - timeouts;
+  - output is stripped of HTML and length-checked before it's shown.
+
 ### Out of scope for v1
 
-- AI generation.
 - Search Console.
 - Local, News and Video SEO.
 - Multilingual hreflang: it waits for a multilingual story in core.
@@ -156,6 +173,7 @@ Found by going through the SEO plugin feature by feature against `PluginApi` and
 | 7 | **Cache purges from plugins:** `api.cache.purge(tags)` so settings changes refresh affected pages | Every plugin with public output | S |
 | 8 | **Plugin tables at scale:** migrations with indexes, and documented patterns for large tables | Redirects, form entries, logs | S |
 | 9 | **Public routes from plugins:** a plugin-served file at a site-root path (`/{key}.txt`, `/llms.txt`) | IndexNow, llms.txt | S |
+| 10 | **AI client and Abilities API,** ported from WordPress 7.x (`wp_ai_client_prompt()`, `wp_register_ability()`): a provider registry, Settings → AI for keys, `api.ai` and `api.abilities` for plugins, plus `/wp-abilities/v1` REST | SEO's AI suggestions, later agents | M |
 
 ## Other first-party plugins
 
@@ -171,7 +189,7 @@ Found by going through the SEO plugin feature by feature against `PluginApi` and
 
 ## Phases
 
-1. **v0.7a, platform:** gaps 1, 2, 3, 5, 6, 7, then 9. Each comes with an e2e test that uses it from a test plugin.
+1. **v0.7a, platform:** gaps 1, 2, 3, 5, 6, 7, 9 and 10, then 4. Each comes with an e2e test that uses it from a test plugin.
 2. **v0.7b, Pressbase SEO v1:** everything marked v1 above, with a migration test from a WordPress + Yoast fixture (the MySQL migration fixture already has Yoast meta).
 3. **v0.7c, Forms and Anti-spam:** gaps 4 and 8, plus the plugin block runtime.
 4. **v0.8:** Analytics, Backups, Security, Email log, and Duplicate post in core.
@@ -183,13 +201,15 @@ Found by going through the SEO plugin feature by feature against `PluginApi` and
 - Lighthouse SEO scores 100 on the demo site.
 - No public JavaScript is added.
 
-## Decisions to make
+## Decisions
 
-1. **Storage:** Yoast's meta keys and variables (recommended: instant compatibility, export back to WordPress works), or Pressbase-named keys with an importer (cleaner names, but a conversion step for every migrated site).
-2. **Naming and distribution:** bundled in this repo like `daily-tips` (recommended until a plugin directory exists), or separate repos.
-3. **Analysis languages:** English-only readability at launch, or wait for one more language.
-4. **AI features:** none in v1 (recommended), then opt-in with the site's own provider key.
-5. **Order after SEO:** Forms then Anti-spam (recommended: forms bring spam), or Backups first for production users.
+Settled on 2026-10-28:
+
+1. **Storage:** Yoast's meta keys and title variables, for instant compatibility with migrated sites.
+2. **Distribution:** bundled in this repo, in `plugins/`, like `daily-tips`.
+3. **Analysis languages:** English only at launch; other languages are pluggable later.
+4. **AI:** yes, in Pressbase SEO v1. It's opt-in, on a core AI client ported from WordPress 7.x ([AI](#ai), gap 10).
+5. **Order after SEO:** to be decided later.
 
 ## Sources
 
