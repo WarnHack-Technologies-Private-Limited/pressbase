@@ -528,7 +528,11 @@ async function loopbackTest(health: SiteHealth): Promise<SiteHealthTestResult> {
       'The admin and the public site reach core over HTTP. If they can’t, pages and admin screens fail to load for visitors even though core is running.',
     ),
   );
-  const checks: { what: string; url: string; ok: (res: HealthResponse, body: string) => boolean }[] = [
+  const checks: {
+    what: string;
+    url: string;
+    ok: (res: HealthResponse, body: string) => boolean;
+  }[] = [
     {
       what: 'the site address',
       url: `${home}/wp-json/`,
