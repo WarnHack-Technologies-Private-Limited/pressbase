@@ -70,7 +70,7 @@ Twenty Twenty-Five renders the home page, posts, pages, archives, search, commen
 - [ ] Site editor: templates and template parts (`wp_template`, `wp_template_part`). → later
 - [x] Settings → Permalinks screen (the routing already follows `permalink_structure`). → done in v0.5
 
-## v0.5: Plugins
+## v0.5: Plugins ✅
 
 - [x] `plugin.json` manifest and runtime loader (no rebuild). See [Plugins](architecture/plugins.md).
 - [x] Lifecycle: activate, deactivate, uninstall, plugin migrations; installing from a .zip; `/wp/v2/plugins` and the Plugins screen.
