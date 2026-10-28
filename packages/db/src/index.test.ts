@@ -31,6 +31,7 @@ describe('migrations', () => {
       expect(rows.map((r) => r.table_name)).toEqual([
         'commentmeta',
         'comments',
+        'jobs',
         'options',
         'postmeta',
         'posts',

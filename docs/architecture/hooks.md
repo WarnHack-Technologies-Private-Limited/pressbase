@@ -146,5 +146,11 @@ Undeclared names still work, with `unknown` arguments.
 | `wp_sitemaps_max_urls` | filter | `max, objectType` | URLs per sitemap page (2,000) |
 | `wp_sitemaps_post_types`, `wp_sitemaps_taxonomies` | filter | `names` | which post types and taxonomies get sitemaps |
 | `wp_sitemaps_posts_query_args` | filter | `args, postType` | the query of a posts sitemap |
+| _any cron hook_, e.g. `publish_future_post` | action | the event's `args` | the job queue worker, when a scheduled event is due (see [Jobs and cron](jobs.md)) |
+| `cron_schedules` | filter | `schedules` | add recurrences to `hourly`, `twicedaily`, `daily`, `weekly` |
+| `pre_schedule_event`, `schedule_event`, `pre_reschedule_event`, `pre_unschedule_event`, `pre_clear_scheduled_hook`, `pre_unschedule_hook`, `pre_get_scheduled_event` | filter | as in WordPress | short-circuit or change `kernel.cron` calls |
+| `wp_next_scheduled`, `get_schedule` | filter | `timestamp, event, hook, args` / `schedule, hook, args` | the results of `nextScheduled()` / `getSchedule()` |
+| `cron_reschedule_event_error` | action | `error, hook, event` | a recurring event couldn't schedule its next run |
+| `pressbase_job_failed` | action | `job, error, retrying` | a job attempt threw or timed out; `retrying` is false on its last attempt |
 
 **When you add a hook to core,** use WordPress's name if WordPress has an equivalent. Add it to this table and declare its types.

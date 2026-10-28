@@ -10,6 +10,9 @@ import { PostTypeRegistry, registerCorePostTypes } from './content/post-types';
 import { PostsService } from './content/posts';
 import { registerCoreTaxonomies, TaxonomyRegistry } from './content/taxonomies';
 import { TermsService } from './content/terms';
+import { registerCoreEvents } from './jobs/core-events';
+import { Cron } from './jobs/cron';
+import { JobQueue } from './jobs/queue';
 import { Mailer } from './mail/mailer';
 import { registerCoreSettings, SettingsRegistry } from './options/settings';
 import { Options } from './options/store';
@@ -48,6 +51,10 @@ export class Kernel {
   readonly comments = new CommentsService(this);
   /** Installed themes, the active theme and its theme.json (see docs/architecture/themes.md). */
   readonly themes = new ThemesService(this);
+  /** Durable background jobs in PostgreSQL (see docs/architecture/jobs.md). */
+  readonly jobs = new JobQueue(this);
+  /** WP-Cron on top of the job queue: wp_schedule_event() and friends. */
+  readonly cron = new Cron(this);
   #connection: DatabaseConnection | undefined;
   #options: Options | undefined;
   #state: SiteState = 'needs-database';
@@ -66,6 +73,8 @@ export class Kernel {
     registerSiteIdentityHooks(this);
     // Public page caching: content changes announce the cache tags they make stale.
     registerCacheInvalidation(this);
+    // Job queue and cron (v0.5): publish_future_post and the daily chores.
+    registerCoreEvents(this);
   }
 
   get state(): SiteState {
@@ -126,6 +135,7 @@ export class Kernel {
   }
 
   async shutdown(): Promise<void> {
+    await this.jobs.stop();
     await this.#connection?.close();
     this.#connection = undefined;
   }

@@ -261,3 +261,51 @@ export const commentmeta = pgTable(
     index('commentmeta_key_idx').on(t.key),
   ],
 );
+
+/* --------------------------------------------------------------------- jobs */
+
+/**
+ * The job queue (docs/architecture/jobs.md, ADR 0010). WordPress keeps cron
+ * events in the `cron` option; Pressbase stores background jobs and cron
+ * events here, one row per run. Cron events are jobs named `cron` whose data
+ * holds the hook, its arguments and the recurrence.
+ *
+ * status: pending (waiting, or waiting to retry) → running → completed | failed.
+ */
+export const jobs = pgTable(
+  'jobs',
+  {
+    id: id(),
+    /** The registered handler that runs it, e.g. `cron` or `my-plugin/sync`. */
+    name: varchar('name', { length: 191 }).notNull(),
+    data: jsonb('data').notNull().default(sql`'{}'::jsonb`),
+    status: varchar('status', { length: 20 }).notNull().default('pending'),
+    /** Higher runs first among jobs that are due. */
+    priority: integer('priority').notNull().default(0),
+    /** Not before this time. Moved forward by the backoff after a failed attempt. */
+    runAt: timestamptz('run_at').notNull().defaultNow(),
+    attempts: integer('attempts').notNull().default(0),
+    maxAttempts: integer('max_attempts').notNull().default(3),
+    /** Base delay before a retry; doubles after each failed attempt. */
+    backoffSeconds: integer('backoff_seconds').notNull().default(30),
+    timeoutSeconds: integer('timeout_seconds').notNull().default(300),
+    /** At most one pending or running job per key (deduplication). */
+    singletonKey: text('singleton_key'),
+    lastError: text('last_error'),
+    /** The worker that claimed it (host:pid:random). */
+    lockedBy: varchar('locked_by', { length: 100 }),
+    createdAt: timestamptz('created_at').notNull().defaultNow(),
+    startedAt: timestamptz('started_at'),
+    finishedAt: timestamptz('finished_at'),
+  },
+  (t) => [
+    index('jobs_status_run_at_idx').on(t.status, t.runAt),
+    uniqueIndex('jobs_singleton_key')
+      .on(t.singletonKey)
+      .where(sql`status in ('pending', 'running')`),
+    // wp_next_scheduled() and friends look cron events up by hook.
+    index('jobs_cron_hook_idx')
+      .on(sql`(data ->> 'hook')`, t.runAt)
+      .where(sql`name = 'cron' and status = 'pending'`),
+  ],
+);

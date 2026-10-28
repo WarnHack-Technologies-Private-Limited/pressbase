@@ -22,6 +22,7 @@ New here? The [README](../README.md#see-it-in-action) shows Pressbase in action:
 - [Content](architecture/content.md): post types, statuses, taxonomies, queries, permissions, sanitising.
 - [Media](architecture/media.md): uploads, storage, image sizes, file serving and its security.
 - [Hooks](architecture/hooks.md): actions and filters, and the hooks core fires.
+- [Jobs and cron](architecture/jobs.md): the job queue, its worker, WP-Cron and scheduled posts.
 - [Blocks](architecture/blocks.md): parsing, rendering, dynamic blocks and patterns.
 - [People](architecture/people.md): users and roles, application passwords, mail, password reset.
 - [Comments](architecture/comments.md): the comment pipeline, moderation, blocks and the comment form.

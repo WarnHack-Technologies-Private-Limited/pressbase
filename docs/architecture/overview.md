@@ -63,6 +63,8 @@ loadConfig()          env vars, then <dataDir>/config.json
                  ├─ options.load()            autoloaded options
                  ├─ state = needs-install | ready
                  └─ if ready: data upgrades, then the `init` action
+                                (schedules missing cron events)
+  └─ jobs.start()        the job queue worker, unless PRESSBASE_WORKER=off
 ```
 
 The kernel's `state` drives the whole product: `needs-database` → `needs-install` → `ready`. See [Installer](installer.md).
@@ -79,6 +81,7 @@ apps/
     http.ts              middleware, error helpers
     auth/                passwords, sessions, users, capabilities, rate limiting
     install/             installer logic and database helpers
+    jobs/                kernel.jobs (job queue, worker) and kernel.cron (WP-Cron)
     people/              users, application passwords, password reset
     mail/                kernel.mail (wp_mail): SMTP or the development outbox
     options/             Options API and the settings registry

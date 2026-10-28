@@ -75,7 +75,9 @@ What the service does for you, as WordPress does:
 
 ### Scheduling
 
-Until the job queue arrives (v0.5), due `future` posts are published lazily: `kernel.posts.publishDue()` runs before every content query and post-count request. A scheduled post therefore appears the first time anyone asks for content after its date. That's indistinguishable for readers, but plugin `transition_post_status` callbacks run at that moment rather than at the exact minute.
+Saving a `future` post schedules a single `publish_future_post` cron event for its date (WordPress's `_future_post_hook()`); changing the date moves it, and publishing, unscheduling, trashing or deleting the post clears it. The job queue worker runs the event on time, which publishes the post and fires `transition_post_status` (`future` → `publish`). See [Jobs and cron](jobs.md).
+
+`kernel.posts.publishDue()` stays as a safety net: it runs before every content query and post-count request and publishes any due `future` post, so a post still goes live on the next content request when no worker is running (`PRESSBASE_WORKER=off` everywhere) or the worker was down at the time. `kernel.posts.publish(id)` publishes one scheduled post.
 
 ## Reading posts: `queryPosts`
 

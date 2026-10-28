@@ -14,6 +14,9 @@ const PAGES = [
   { slug: 'permalinks', label: 'Permalinks', release: 'v0.5' },
 ];
 
+/** Pressbase's own screens after WordPress's (WordPress has no cron screen). */
+PAGES.push({ slug: 'scheduled-tasks', label: 'Scheduled tasks' });
+
 export function SettingsNav() {
   const pathname = usePathname();
   return (
