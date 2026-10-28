@@ -40,6 +40,15 @@ export type {} from '../people/password-reset';
 export type {} from '../people/users';
 export type {} from '../routes/users';
 export type {
+  PageParent,
+  PluginPageArgs,
+  PluginSectionArgs,
+  PluginSettingArgs,
+  SettingChoice,
+  SettingControl,
+  SettingType,
+} from './admin';
+export type {
   PluginAssets,
   PluginScripts,
   PluginStyles,

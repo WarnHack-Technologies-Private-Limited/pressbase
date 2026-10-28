@@ -261,6 +261,8 @@ await api.jobs.enqueue('fetch', { url: 'https://example.com' }, { singletonKey: 
 
 A plugin's `public/` folder is served at `/wp-content/plugins/{name}/{file}` (WordPress's `plugins_url()`), **only while the plugin is active**, with the rules theme files follow: each path segment is decoded and checked (`..`, encoded slashes and backslashes, dot files are refused), symbolic links can't leave the folder, only static types are served (CSS, JS, images, fonts, video) with their content type and `nosniff`, and SVGs get a sandboxing CSP. A request whose `?ver=` is the plugin's version is cached for a year; others for an hour.
 
+The same URLs also serve the plugin's declared [UI modules](#ui-modules) and their folders, from the plugin's root. Those are checked first, so a `public/admin/index.js` is hidden by an `admin/index.js` UI module.
+
 `api.scripts` and `api.styles` are [`kernel.scripts` and `kernel.styles`](scripts-and-styles.md#kernelscripts-and-kernelstyles) with two differences:
 
 - a relative `src` is a file in `public/` (`'app.js'`, `'css/site.css'`; `./` and a leading `public/` are accepted), resolved to its URL; absolute and root-relative URLs are used as given;

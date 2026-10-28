@@ -12,7 +12,7 @@ import {
   SettingSanitizeError,
   saveSetting,
 } from '../plugins/admin';
-import { notFoundResponse, safeSegments, serveStaticFile } from '../themes/static-files';
+import { safeSegments, serveStaticFile } from '../themes/static-files';
 
 /**
  * What the admin needs to show plugins' pages, settings and browser modules.
@@ -159,18 +159,21 @@ const PREFIX = '/wp-content/plugins/';
  * the server module (`main`), and only while the plugin is active. With
  * `?ver=` matching the plugin's version the response is cached for a year
  * (immutable); otherwise it must be revalidated.
+ *
+ * Any other file under the prefix goes on to the plugin's `public/` folder
+ * (plugins/assets.ts), so this must be registered before that route.
  */
-export function pluginAssetRoutes(kernel: Kernel) {
+export function pluginModuleRoutes(kernel: Kernel) {
   const app = new Hono<AppEnv>({ strict: true });
-  app.on(['GET', 'HEAD'], `${PREFIX}*`, async (c) => {
-    if (kernel.state !== 'ready') return notFoundResponse();
+  app.on(['GET', 'HEAD'], `${PREFIX}*`, async (c, next) => {
+    if (kernel.state !== 'ready') return next();
     const segments = safeSegments(new URL(c.req.url).pathname, PREFIX);
-    if (!segments || segments.length < 2) return notFoundResponse();
+    if (!segments || segments.length < 2) return next();
     const [slug = '', ...rest] = segments;
     const admin = kernel.plugins.adminRegistrations().find((a) => a.slug === slug);
-    if (!admin) return notFoundResponse();
+    if (!admin) return next();
     const file = rest.join('/');
-    if (!servable(admin, file)) return notFoundResponse();
+    if (!servable(admin, file)) return next();
     const response = await serveStaticFile(c, admin.plugin.dir, rest);
     if (!response.ok && response.status !== 304) return response;
     const headers = new Headers(response.headers);

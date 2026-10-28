@@ -320,6 +320,7 @@ describe('admin pages', () => {
         'admin/chunk.js': 'export const x = 1;',
         'admin/style.css': 'body{}',
         'helper.js': 'export const secret = 1;',
+        'public/app.js': 'console.log("public");',
       },
       {
         admin: {
@@ -380,6 +381,10 @@ describe('admin pages', () => {
     // Siblings in the module's folder: chunks and CSS.
     expect((await asset(ctx, '/wp-content/plugins/reports/admin/chunk.js')).status).toBe(200);
     expect((await asset(ctx, '/wp-content/plugins/reports/admin/style.css')).status).toBe(200);
+    // The same URL space also serves the plugin's public/ folder (plugins/assets.ts).
+    const publicFile = await asset(ctx, '/wp-content/plugins/reports/app.js');
+    expect(publicFile.status).toBe(200);
+    expect(await publicFile.text()).toContain('public');
 
     for (const url of [
       '/wp-content/plugins/reports/index.js',

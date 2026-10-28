@@ -23,7 +23,7 @@ import { mediaRoutes } from './routes/media';
 import { navigationRoutes } from './routes/navigation';
 import { peopleRoutes } from './routes/people';
 import { permalinksRoutes } from './routes/permalinks';
-import { pluginAdminRoutes, pluginAssetRoutes } from './routes/plugin-admin';
+import { pluginAdminRoutes, pluginModuleRoutes } from './routes/plugin-admin';
 import { pluginsRoutes } from './routes/plugins';
 import { postsRoutes } from './routes/posts';
 import { searchRoutes } from './routes/search';
@@ -161,9 +161,10 @@ export function createApp(kernel: Kernel) {
   // Plugin admin pages, settings and browser modules (v0.5). See
   // docs/architecture/plugins.md#admin-pages-and-settings and ADR 0011.
   installed.route('/pressbase/v1', pluginAdminRoutes());
-  app.route('/', pluginAssetRoutes(kernel));
   installed.all('*', pluginRoutes);
-  // Active plugins' static files (their public/ folder), outside /wp-json.
+  // Active plugins' files, outside /wp-json: their declared admin modules,
+  // then anything in their public/ folder.
+  app.route('/', pluginModuleRoutes(kernel));
   app.route('/', pluginAssetRoutes(kernel));
 
   api.route('/', installed);
