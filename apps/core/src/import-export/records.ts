@@ -41,6 +41,21 @@ export interface ImportAuthor {
   author_display_name: string;
   author_first_name: string;
   author_last_name: string;
+  /*
+   * What a WordPress database source knows beyond WXR (wp_users and
+   * wp_usermeta). All optional: WXR carries none of them.
+   */
+  /** wp_users.user_pass: the password hash, kept so people keep their passwords. Never log it. */
+  author_pass?: string;
+  /** wp_users.user_nicename: the author archive slug. */
+  author_nicename?: string;
+  author_url?: string;
+  /** wp_users.user_registered, `Y-m-d H:i:s` in UTC. */
+  author_registered?: string;
+  /** The roles in `{prefix}capabilities`. */
+  author_roles?: string[];
+  /** User meta worth keeping: nickname, description, locale (first and last name have fields). */
+  author_meta?: ImportMeta[];
 }
 
 /**

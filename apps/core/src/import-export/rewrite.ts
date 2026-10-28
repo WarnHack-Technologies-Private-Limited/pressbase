@@ -12,8 +12,8 @@ import { serializeBlockAttributes } from '@pressbase/blocks';
  *   `photo2.jpg` isn't caught by `photo`.
  * - **Block IDs.** Image, cover, file, audio and video blocks (`id`),
  *   media & text (`mediaId`), galleries (`ids`), synced patterns and
- *   navigation blocks (`ref`), navigation links (`id`, by kind), and the
- *   `wp-image-{id}` class.
+ *   navigation blocks (`ref`), navigation links (`id`, by kind), the
+ *   `wp-image-{id}` class, and classic `[gallery ids="…"]` shortcodes.
  * - **Internal links.** `?p=`, `?page_id=` and `?attachment_id=` links get
  *   the new ID; any other link to the old site's address gets this site's
  *   address. Permalinks then resolve when the permalink structure matches.
@@ -174,6 +174,12 @@ export function createRewriter(maps: RewriteMaps): (content: string) => string {
         const mapped = maps.posts.get(Number(id));
         return mapped ? `wp-image-${mapped}` : whole;
       });
+      // Classic galleries: [gallery ids="12,13"] (gallery_shortcode(), wp-includes/media.php).
+      out = out.replace(
+        /(\[gallery\b[^\]]*?\b(?:ids|include|exclude)=)(["']?)([\d,\s]+)\2/g,
+        (_whole, head: string, quote: string, list: string) =>
+          `${head}${quote}${list.replace(/\d+/g, (id) => String(maps.posts.get(Number(id)) ?? id))}${quote}`,
+      );
     }
     if (urlPattern) out = out.replace(urlPattern, mapUrl);
     return out;
