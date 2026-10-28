@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { CurrentUser } from '../auth/users';
 import type { ActiveTheme } from '../themes/service';
+import type { Scripts, Styles } from './dependencies';
 import type { MainQuery } from './query';
 
 /**
@@ -17,8 +18,17 @@ export class PageRender {
   readonly supportStyles: string[] = [];
   /** CSS for block style variation instances (`block-style-variation-styles`). */
   readonly variationStyles: string[] = [];
-  /** Inline scripts the page needs (the navigation menu toggle). */
-  readonly scripts = new Set<string>();
+  /** Inline scripts the page needs (the navigation menu toggle), printed in `wp_footer`. */
+  readonly inlineScripts = new Set<string>();
+  /**
+   * This page's scripts and styles (WP_Scripts / WP_Styles): a copy of the
+   * site-wide registrations that `kernel.scripts` and `kernel.styles` change
+   * while the page renders. Set by the renderer.
+   */
+  scripts: Scripts | undefined;
+  styles: Styles | undefined;
+  /** The id the skip link points to, once the template has rendered. */
+  skipLinkTarget: string | undefined;
   #ids = new Map<string, number>();
 
   constructor(

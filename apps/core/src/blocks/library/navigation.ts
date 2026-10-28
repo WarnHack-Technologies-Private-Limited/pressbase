@@ -301,7 +301,7 @@ export async function renderNavigation(
   // is_interactive(): the overlay, or submenus with a toggle button.
   const page = currentPage();
   if (responsive || list.includes('wp-block-navigation-submenu__toggle')) {
-    page?.scripts.add(NAVIGATION_SCRIPT);
+    page?.inlineScripts.add(NAVIGATION_SCRIPT);
   }
   if (!responsive) return `<nav ${wrapper}>${list}</nav>`;
 

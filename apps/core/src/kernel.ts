@@ -10,6 +10,7 @@ import { PostTypeRegistry, registerCorePostTypes } from './content/post-types';
 import { PostsService } from './content/posts';
 import { registerCoreTaxonomies, TaxonomyRegistry } from './content/taxonomies';
 import { TermsService } from './content/terms';
+import { registerPublicPageHooks, ScriptsApi, StylesApi } from './frontend/head';
 import { Mailer } from './mail/mailer';
 import { registerCoreSettings, SettingsRegistry } from './options/settings';
 import { Options } from './options/store';
@@ -48,6 +49,10 @@ export class Kernel {
   readonly comments = new CommentsService(this);
   /** Installed themes, the active theme and its theme.json (see docs/architecture/themes.md). */
   readonly themes = new ThemesService(this);
+  /** wp_enqueue_script() and friends for public pages (see docs/architecture/scripts-and-styles.md). */
+  readonly scripts = new ScriptsApi(this.hooks);
+  /** wp_enqueue_style() and friends for public pages. */
+  readonly styles = new StylesApi(this.hooks);
   #connection: DatabaseConnection | undefined;
   #options: Options | undefined;
   #state: SiteState = 'needs-database';
@@ -66,6 +71,8 @@ export class Kernel {
     registerSiteIdentityHooks(this);
     // Public page caching: content changes announce the cache tags they make stale.
     registerCacheInvalidation(this);
+    // Public page hooks: wp_head, wp_footer, wp_enqueue_scripts (v0.5).
+    registerPublicPageHooks(this);
   }
 
   get state(): SiteState {

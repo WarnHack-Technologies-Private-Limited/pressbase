@@ -2,12 +2,12 @@ import { schema } from '@pressbase/db';
 import { and, asc, count, eq, gt, ilike, inArray, notInArray, or, type SQL } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { z } from 'zod';
+import { siteInfo, termLink } from '../blocks/helpers';
 import { permalink, permalinkContext } from '../content/permalinks';
 import { type QueryArgs, queryPosts } from '../content/query';
 import { type AppEnv, invalidParams, restError } from '../http';
 import type { Kernel } from '../kernel';
 import { intList, pageParam, perPageParam, queryObject, setPaginationHeaders } from './rest-util';
-import { termLink } from './terms';
 
 /**
  * GET /wp/v2/search — a port of WP_REST_Search_Controller
@@ -189,7 +189,7 @@ const termHandler: Handler = {
       .innerJoin(termTaxonomy, eq(termTaxonomy.termId, terms.id))
       .where(inArray(terms.id, numeric));
     const byId = new Map(rows.map((t) => [t.id, t]));
-    const home = await kernel.options.get<string>('home', '');
+    const site = await siteInfo(kernel);
     const items: SearchItem[] = [];
     for (const id of numeric) {
       const term = byId.get(id);
@@ -198,7 +198,7 @@ const termHandler: Handler = {
       items.push({
         id: term.id,
         title: term.name,
-        url: termLink(home, term.taxonomy, term.slug),
+        url: termLink(site, term),
         // As WordPress: `type` is the taxonomy, and there is no `subtype`.
         type: term.taxonomy,
         _links: {

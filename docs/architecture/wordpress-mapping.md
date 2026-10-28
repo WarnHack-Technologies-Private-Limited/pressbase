@@ -31,6 +31,8 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | `wp_insert_term`, `wp_update_term`, `wp_delete_term`, `wp_set_object_terms`, `_update_post_term_count` | `apps/core/src/content/terms.ts` (`kernel.terms`) | |
 | `WP_Query` | `apps/core/src/content/query.ts` (`queryPosts`) | Same argument names. |
 | `get_permalink` | `apps/core/src/content/permalinks.ts` | Uses `permalink_structure`. |
+| `options-permalink.php`, `WP_Rewrite::set_permalink_structure()`, `set_category_base()`, `set_tag_base()` | `apps/core/src/routes/permalinks.ts` (`/pressbase/v1/permalinks`), Settings → Permalinks | See [The public site](public-site.md#permalinks). |
+| `wp_head()`, `wp_footer()`, `wp_body_open()`, `WP_Scripts`, `WP_Styles`, `wp_enqueue_script()`, `wp_enqueue_style()` | `apps/core/src/frontend/head.ts`, `dependencies.ts` (`kernel.scripts`, `kernel.styles`) | See [Scripts and styles](scripts-and-styles.md). |
 | `wp_kses_post`, `sanitize_title` | `apps/core/src/content/sanitize.ts` | Keeps block delimiters intact. |
 | `WP_REST_Posts_Controller`, `WP_REST_Terms_Controller`, `WP_REST_Users_Controller`, types / taxonomies / statuses controllers | `apps/core/src/routes/posts.ts`, `terms.ts`, `users.ts`, `types.ts` | See [REST API](rest-api.md). |
 | `parse_blocks`, `serialize_blocks`, `WP_Block_Parser` | `packages/blocks` (`parseBlocks`, `serializeBlocks`) | Same output shape. See [Blocks](blocks.md). |

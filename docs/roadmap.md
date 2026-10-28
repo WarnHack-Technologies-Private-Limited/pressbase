@@ -68,7 +68,7 @@ Twenty Twenty-Five renders the home page, posts, pages, archives, search, commen
 - [x] Playwright end-to-end tests in CI (#7) and a Docker image (#8).
 - [ ] Duotone, responsive style states. → later
 - [ ] Site editor: templates and template parts (`wp_template`, `wp_template_part`). → later
-- [ ] Settings → Permalinks screen (the routing already follows `permalink_structure`). → v0.5
+- [x] Settings → Permalinks screen (the routing already follows `permalink_structure`). → done in v0.5
 
 ## v0.5: Plugins
 
@@ -78,8 +78,8 @@ Twenty Twenty-Five renders the home page, posts, pages, archives, search, commen
 - [ ] Job queue and cron (pg-boss).
 - [ ] `create-pressbase-plugin` scaffolding and the plugin SDK.
 - [ ] Plugin permissions (network, filesystem, database scopes).
-- [ ] `wp_head` / `wp_footer`-style hooks so plugins can add to public pages.
-- [ ] Settings → Permalinks.
+- [x] `wp_head` / `wp_footer`-style hooks so plugins can add to public pages.
+- [x] Settings → Permalinks.
 
 ## v0.6: Migration and tooling
 
