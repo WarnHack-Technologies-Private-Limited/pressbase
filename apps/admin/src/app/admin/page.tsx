@@ -17,7 +17,9 @@ interface Dashboard {
     pages: number;
     comments: number;
     pendingComments: number;
+    users: number;
   };
+  appearance: { customized: boolean };
   recent: { id: number; title: string; type: string; status: string; modified: string }[];
   system: { version: string; database: 'postgres' | 'pglite'; node: string };
 }
@@ -87,8 +89,18 @@ export default async function DashboardPage() {
       href: '/admin/posts/new',
       capability: 'edit_posts',
     },
-    { label: 'Invite your team', done: false, release: 'v0.2' },
-    { label: 'Choose a theme', done: false, release: 'v0.4' },
+    {
+      label: 'Invite your team',
+      done: data.counts.users > 1,
+      href: '/admin/users/new',
+      capability: 'create_users',
+    },
+    {
+      label: 'Make the site look like yours',
+      done: data.appearance.customized,
+      href: '/admin/appearance/styles',
+      capability: 'edit_theme_options',
+    },
   ];
   const completed = steps.filter((s) => s.done).length;
 

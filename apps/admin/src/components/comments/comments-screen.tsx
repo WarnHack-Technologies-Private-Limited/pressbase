@@ -587,7 +587,6 @@ function CommentRow({
         )}
       </td>
       <td className={`${listStyles.meta} ${listStyles.hideNarrow}`}>
-        {/* The public site (and so "View comment") arrives with themes in v0.4. */}
         {post && editHref ? (
           <Link href={editHref} className={styles.postLink}>
             {post.title}

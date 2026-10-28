@@ -2,6 +2,7 @@ import { schema } from '@pressbase/db';
 import { and, count, desc, eq, inArray } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { userCan } from '../auth/users';
+import { decodeGlobalStyles, userGlobalStylesPost } from '../themes/global-styles';
 import { type AppEnv, requireCapability, restError } from '../http';
 import { PRESSBASE_VERSION } from '../version';
 
@@ -14,7 +15,7 @@ export function dashboardRoutes() {
   app.get('/', async (c) => {
     const kernel = c.get('kernel');
     const { db } = kernel;
-    const { posts, comments } = schema;
+    const { posts, comments, users } = schema;
 
     const countPosts = async (type: string, status: string) =>
       (
@@ -27,13 +28,17 @@ export function dashboardRoutes() {
       (await db.select({ n: count() }).from(comments).where(eq(comments.approved, approved)))[0]
         ?.n ?? 0;
 
-    const [publishedPosts, draftPosts, publishedPages, approved, pending, recent] =
+    const [publishedPosts, draftPosts, publishedPages, approved, pending, people, recent] =
       await Promise.all([
         countPosts('post', 'publish'),
         countPosts('post', 'draft'),
         countPosts('page', 'publish'),
         countComments('1'),
         countComments('0'),
+        db
+          .select({ n: count() })
+          .from(users)
+          .then((rows) => rows[0]?.n ?? 0),
         db
           .select({
             id: posts.id,
@@ -50,6 +55,16 @@ export function dashboardRoutes() {
           .limit(5),
       ]);
 
+    // "Make it yours" on the dashboard: another theme, a logo, or saved styles.
+    const stylesheet = await kernel.options.get<string>('stylesheet', '');
+    const stylesPost = await userGlobalStylesPost(kernel, stylesheet);
+    const styles = stylesPost ? decodeGlobalStyles(stylesPost.content) : undefined;
+    const customized =
+      stylesheet !== 'twentytwentyfive' ||
+      Boolean(await kernel.options.get<number>('site_logo', 0)) ||
+      Object.keys(styles?.styles ?? {}).length > 0 ||
+      Object.keys(styles?.settings ?? {}).length > 0;
+
     return c.json({
       site: {
         title: await kernel.options.get<string>('blogname', ''),
@@ -62,7 +77,9 @@ export function dashboardRoutes() {
         pages: publishedPages,
         comments: approved,
         pendingComments: pending,
+        users: people,
       },
+      appearance: { customized },
       recent,
       system: {
         version: PRESSBASE_VERSION,

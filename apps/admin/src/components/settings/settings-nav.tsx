@@ -11,7 +11,7 @@ const PAGES = [
   { slug: 'reading', label: 'Reading' },
   { slug: 'discussion', label: 'Discussion' },
   { slug: 'media', label: 'Media' },
-  { slug: 'permalinks', label: 'Permalinks', release: 'v0.4' },
+  { slug: 'permalinks', label: 'Permalinks', release: 'v0.5' },
 ];
 
 export function SettingsNav() {
