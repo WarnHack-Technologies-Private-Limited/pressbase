@@ -31,8 +31,10 @@ async function merged<T extends object>(api: PluginApi, name: string, defaults: 
   } as T;
 }
 
-export const getTitles = (api: PluginApi) => merged<WpseoTitles>(api, 'wpseo_titles', TITLE_DEFAULTS);
-export const getSocial = (api: PluginApi) => merged<WpseoSocial>(api, 'wpseo_social', SOCIAL_DEFAULTS);
+export const getTitles = (api: PluginApi) =>
+  merged<WpseoTitles>(api, 'wpseo_titles', TITLE_DEFAULTS);
+export const getSocial = (api: PluginApi) =>
+  merged<WpseoSocial>(api, 'wpseo_social', SOCIAL_DEFAULTS);
 export const getWpseo = (api: PluginApi) => merged<Wpseo>(api, 'wpseo', WPSEO_DEFAULTS);
 
 /** `pressbase_seo_settings`: one object, so the settings page has no generic fields. */

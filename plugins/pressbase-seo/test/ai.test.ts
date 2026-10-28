@@ -22,9 +22,7 @@ function mockProvider(reply: (prompt: string) => string) {
         model: string;
         messages: { parts: { type: string; text?: string }[] }[];
       }) {
-        const prompt = request.messages
-          .flatMap((m) => m.parts.map((p) => p.text ?? ''))
-          .join('\n');
+        const prompt = request.messages.flatMap((m) => m.parts.map((p) => p.text ?? '')).join('\n');
         prompts.push(prompt);
         return {
           id: `msg_${prompts.length}`,

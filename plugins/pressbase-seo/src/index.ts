@@ -148,7 +148,10 @@ function registerHead(api: PluginApi): void {
   api.hooks.addFilter('wp_robots', async (robots, main) => {
     if (!main || robots.noindex) return robots;
     const head = await headFor(main);
-    const merged: Record<string, string | boolean> = { ...robotsDirectives(head.robots), ...robots };
+    const merged: Record<string, string | boolean> = {
+      ...robotsDirectives(head.robots),
+      ...robots,
+    };
     if (!head.robots.index) {
       delete merged['max-image-preview'];
       delete merged['max-snippet'];
@@ -172,22 +175,36 @@ function registerHead(api: PluginApi): void {
   const restField = async (item: Record<string, unknown>, context: RenderContext, rest: string) => {
     if (rest !== 'view') return item;
     const head = await computeHead(api, context);
-    return { ...item, pressbase_seo_head: { ...headJson(head), html: renderHead(head, { title: true, robots: true }) } };
+    return {
+      ...item,
+      pressbase_seo_head: {
+        ...headJson(head),
+        html: renderHead(head, { title: true, robots: true }),
+      },
+    };
   };
   for (const type of ['post', 'page']) {
-    api.hooks.addFilter(`rest_prepare_${type}`, async (item: unknown, post: unknown, rest: unknown) =>
-      (post as Post).status === 'publish'
-        ? restField(item as Record<string, unknown>, { target: { kind: 'post', post: post as Post }, paged: 1, maxPages: 1 }, String(rest))
-        : item,
+    api.hooks.addFilter(
+      `rest_prepare_${type}`,
+      async (item: unknown, post: unknown, rest: unknown) =>
+        (post as Post).status === 'publish'
+          ? restField(
+              item as Record<string, unknown>,
+              { target: { kind: 'post', post: post as Post }, paged: 1, maxPages: 1 },
+              String(rest),
+            )
+          : item,
     );
   }
   for (const taxonomy of ['category', 'post_tag']) {
-    api.hooks.addFilter(`rest_prepare_${taxonomy}`, async (item: unknown, term: unknown, rest: unknown) =>
-      restField(
-        item as Record<string, unknown>,
-        { target: { kind: 'term', term: term as never }, paged: 1, maxPages: 1 },
-        String(rest),
-      ),
+    api.hooks.addFilter(
+      `rest_prepare_${taxonomy}`,
+      async (item: unknown, term: unknown, rest: unknown) =>
+        restField(
+          item as Record<string, unknown>,
+          { target: { kind: 'term', term: term as never }, paged: 1, maxPages: 1 },
+          String(rest),
+        ),
     );
   }
 }
@@ -206,9 +223,18 @@ export function headJson(head: HeadData) {
     robots: robotsDirectives(head.robots),
     ...og,
     og_image: head.image
-      ? [{ url: head.image.url, width: head.image.width, height: head.image.height, type: head.image.type }]
+      ? [
+          {
+            url: head.image.url,
+            width: head.image.width,
+            height: head.image.height,
+            type: head.image.type,
+          },
+        ]
       : [],
-    twitter: Object.fromEntries(head.twitter.map((t) => [t.name.replace('twitter:', ''), t.content])),
+    twitter: Object.fromEntries(
+      head.twitter.map((t) => [t.name.replace('twitter:', ''), t.content]),
+    ),
     breadcrumbs: head.breadcrumbs,
     schema: head.schema,
   };
@@ -222,8 +248,13 @@ export function breadcrumbsHtml(trail: Crumb[], separator: string, showCurrent =
   const items = crumbs.map((crumb, index) => {
     const last = index === crumbs.length - 1;
     const label = escHtml(crumb.name);
-    const inner = crumb.url && !(last && showCurrent) ? `<a href="${escUrl(crumb.url)}">${label}</a>` : `<span${last && showCurrent ? ' aria-current="page"' : ''}>${label}</span>`;
-    const sep = last ? '' : ` <span class="pressbase-seo-breadcrumbs__separator" aria-hidden="true">${escHtml(separator)}</span>`;
+    const inner =
+      crumb.url && !(last && showCurrent)
+        ? `<a href="${escUrl(crumb.url)}">${label}</a>`
+        : `<span${last && showCurrent ? ' aria-current="page"' : ''}>${label}</span>`;
+    const sep = last
+      ? ''
+      : ` <span class="pressbase-seo-breadcrumbs__separator" aria-hidden="true">${escHtml(separator)}</span>`;
     return `<li>${inner}${sep}</li>`;
   });
   return `<ol class="pressbase-seo-breadcrumbs__list">${items.join('')}</ol>`;
@@ -235,11 +266,17 @@ function registerBreadcrumbs(api: PluginApi): void {
     if (!main) return '';
     const titles = await getTitles(api);
     const trail = await breadcrumbTrail(api, targetFromMain(main), titles);
-    return breadcrumbsHtml(trail, separator ?? String(titles['breadcrumbs-sep'] || '»'), showCurrent);
+    return breadcrumbsHtml(
+      trail,
+      separator ?? String(titles['breadcrumbs-sep'] || '»'),
+      showCurrent,
+    );
   };
 
-  api.hooks.addFilter('pressbase_seo_breadcrumbs', async (html, options) =>
-    html || render(options?.main ?? api.content.mainQuery(), options?.separator),
+  api.hooks.addFilter(
+    'pressbase_seo_breadcrumbs',
+    async (html, options) =>
+      html || render(options?.main ?? api.content.mainQuery(), options?.separator),
   );
 
   api.blocks.register('pressbase-seo/breadcrumbs', {
@@ -252,7 +289,12 @@ function registerBreadcrumbs(api: PluginApi): void {
       separator: { type: 'string', default: '' },
       showCurrent: { type: 'boolean', default: true },
     },
-    supports: { align: ['wide', 'full'], anchor: true, color: { text: true, link: true }, typography: { fontSize: true } },
+    supports: {
+      align: ['wide', 'full'],
+      anchor: true,
+      color: { text: true, link: true },
+      typography: { fontSize: true },
+    },
     render: async (attributes, _content, block) => {
       api.cache.addTags(CACHE_TAG);
       const list = await render(
@@ -286,11 +328,15 @@ function registerRedirects(api: PluginApi, redirects: Redirects): void {
 
   // Automatic redirects when a published post's address changes.
   api.hooks.addAction('post_updated', async (_id, after, before) => {
-    if (after.status !== 'publish' || before.status !== 'publish' || after.slug === before.slug) return;
+    if (after.status !== 'publish' || before.status !== 'publish' || after.slug === before.slug)
+      return;
     if (after.type === 'attachment' || !api.postTypes.get(after.type)?.public) return;
     const own = await getOwn(api);
     if (!own.auto_redirects) return;
-    const [from, to] = await Promise.all([api.content.permalink(before), api.content.permalink(after)]);
+    const [from, to] = await Promise.all([
+      api.content.permalink(before),
+      api.content.permalink(after),
+    ]);
     if (!from || !to || from === to) return;
     const source = normalizePath(from);
     const target = new URL(to).pathname;
@@ -319,7 +365,14 @@ function objectSanitizer(defaults: Record<string, unknown>) {
       const d = defaults[key];
       if (typeof d === 'boolean') out[key] = Boolean(v);
       else if (typeof d === 'number') out[key] = Number(v) || 0;
-      else if (Array.isArray(d)) out[key] = Array.isArray(v) ? v.filter((x) => typeof x === 'string').map((x: string) => x.trim()).filter(Boolean).slice(0, 20) : [];
+      else if (Array.isArray(d))
+        out[key] = Array.isArray(v)
+          ? v
+              .filter((x) => typeof x === 'string')
+              .map((x: string) => x.trim())
+              .filter(Boolean)
+              .slice(0, 20)
+          : [];
       else if (typeof v === 'boolean' || typeof v === 'number') out[key] = v;
       else if (typeof v === 'string') out[key] = v.trim().slice(0, 2000);
     }
@@ -345,7 +398,13 @@ function registerSettings(api: PluginApi): void {
     description: __('Redirects, the 404 log, and importing from other SEO plugins.'),
     entry: 'dist/admin/tools.js',
   });
-  api.settings.register('titles', { type: 'object', option: 'wpseo_titles', default: TITLE_DEFAULTS, page, sanitize: objectSanitizer(TITLE_DEFAULTS) });
+  api.settings.register('titles', {
+    type: 'object',
+    option: 'wpseo_titles',
+    default: TITLE_DEFAULTS,
+    page,
+    sanitize: objectSanitizer(TITLE_DEFAULTS),
+  });
   api.settings.register('social', {
     type: 'object',
     option: 'wpseo_social',
@@ -359,12 +418,20 @@ function registerSettings(api: PluginApi): void {
         }
       }
       if (Array.isArray(out.other_social_urls)) {
-        out.other_social_urls = (out.other_social_urls as string[]).filter((u) => /^https?:\/\//i.test(u));
+        out.other_social_urls = (out.other_social_urls as string[]).filter((u) =>
+          /^https?:\/\//i.test(u),
+        );
       }
       return out;
     },
   });
-  api.settings.register('wpseo', { type: 'object', option: 'wpseo', default: WPSEO_DEFAULTS, page, sanitize: objectSanitizer(WPSEO_DEFAULTS) });
+  api.settings.register('wpseo', {
+    type: 'object',
+    option: 'wpseo',
+    default: WPSEO_DEFAULTS,
+    page,
+    sanitize: objectSanitizer(WPSEO_DEFAULTS),
+  });
   api.settings.register('settings', {
     type: 'object',
     default: OWN_DEFAULTS,
@@ -372,7 +439,8 @@ function registerSettings(api: PluginApi): void {
     sanitize: (value) => {
       const v = (value ?? {}) as Record<string, unknown>;
       const robots = String(v.robots_txt ?? '');
-      if (robots.length > 5000) throw new Error(__('Keep the robots.txt additions under 5,000 characters.'));
+      if (robots.length > 5000)
+        throw new Error(__('Keep the robots.txt additions under 5,000 characters.'));
       return {
         robots_txt: robots
           .split('\n')
@@ -413,7 +481,11 @@ async function settingsPayload(api: PluginApi): Promise<SettingsPayload> {
     titles,
     social,
     wpseo,
-    own: { ...own, indexnow_effective: indexNowEnabled(own, site), indexnow_key: await indexNowKey(api) },
+    own: {
+      ...own,
+      indexnow_effective: indexNowEnabled(own, site),
+      indexnow_key: await indexNowKey(api),
+    },
     site: {
       name: site.name,
       description: site.description,
@@ -444,7 +516,10 @@ function registerRoutes(api: PluginApi, redirects: Redirects): void {
     throw error;
   };
 
-  api.rest.registerRoute(NS, '/settings', { permission: admin, handler: () => settingsPayload(api) });
+  api.rest.registerRoute(NS, '/settings', {
+    permission: admin,
+    handler: () => settingsPayload(api),
+  });
 
   api.rest.registerRoute(NS, '/redirects', {
     methods: ['GET', 'POST'],
@@ -470,14 +545,17 @@ function registerRoutes(api: PluginApi, redirects: Redirects): void {
     permission: admin,
     handler: async (c) => {
       const id = Number(c.req.param('id'));
-      const missing = () => restError(404, 'pressbase_seo_redirect_not_found', 'That redirect doesn’t exist.');
+      const missing = () =>
+        restError(404, 'pressbase_seo_redirect_not_found', 'That redirect doesn’t exist.');
       if (c.req.method === 'GET') return (await redirects.get(id)) ?? missing();
       if (c.req.method === 'DELETE') {
         const deleted = await redirects.delete(id);
         return deleted ? { deleted: true, previous: deleted } : missing();
       }
       try {
-        return (await redirects.update(id, (await body(c)) as unknown as RedirectInput)) ?? missing();
+        return (
+          (await redirects.update(id, (await body(c)) as unknown as RedirectInput)) ?? missing()
+        );
       } catch (error) {
         return fail(error);
       }
@@ -507,7 +585,8 @@ function registerRoutes(api: PluginApi, redirects: Redirects): void {
     permission: admin,
     handler: async (c) => {
       const csv = String((await body(c)).csv ?? '');
-      if (!csv.trim()) return restError(400, 'pressbase_seo_empty_csv', 'Choose a CSV file with redirects.');
+      if (!csv.trim())
+        return restError(400, 'pressbase_seo_empty_csv', 'Choose a CSV file with redirects.');
       return redirects.upsertMany(rulesFromCsv(csv).slice(0, 10000));
     },
   });
@@ -520,7 +599,12 @@ function registerRoutes(api: PluginApi, redirects: Redirects): void {
         await redirects.delete404();
         return { deleted: true };
       }
-      return { items: await redirects.list404({ after: Number(c.req.query('after')) || 0, limit: Number(c.req.query('per_page')) || 50 }) };
+      return {
+        items: await redirects.list404({
+          after: Number(c.req.query('after')) || 0,
+          limit: Number(c.req.query('per_page')) || 50,
+        }),
+      };
     },
   });
   api.rest.registerRoute(NS, '/404s/:id{[0-9]+}', {
@@ -542,7 +626,11 @@ function registerRoutes(api: PluginApi, redirects: Redirects): void {
   api.rest.registerRoute(NS, '/duplicates', {
     permission: editor,
     handler: async (c) => ({
-      items: await duplicateTitles(api, c.req.query('title') ?? '', Number(c.req.query('exclude')) || 0),
+      items: await duplicateTitles(
+        api,
+        c.req.query('title') ?? '',
+        Number(c.req.query('exclude')) || 0,
+      ),
     }),
   });
 
@@ -550,14 +638,23 @@ function registerRoutes(api: PluginApi, redirects: Redirects): void {
   api.rest.registerRoute(NS, '/editor', {
     permission: editor,
     handler: async () => {
-      const [titles, social, site] = await Promise.all([getTitles(api), getSocial(api), getSite(api)]);
+      const [titles, social, site] = await Promise.all([
+        getTitles(api),
+        getSocial(api),
+        getSite(api),
+      ]);
       return {
         home: site.home,
         siteName: site.name,
         siteDescription: site.description,
         separator: titles.separator,
-        titles: Object.fromEntries(Object.entries(titles).filter(([k]) => /^(title|metadesc|noindex)-/.test(k))),
-        social: { default_image: social.og_default_image, twitter_card_type: social.twitter_card_type },
+        titles: Object.fromEntries(
+          Object.entries(titles).filter(([k]) => /^(title|metadesc|noindex)-/.test(k)),
+        ),
+        social: {
+          default_image: social.og_default_image,
+          twitter_card_type: social.twitter_card_type,
+        },
       };
     },
   });
@@ -569,7 +666,9 @@ function registerRoutes(api: PluginApi, redirects: Redirects): void {
     handler: async () => {
       const locale = api.i18n.locale();
       if (locale === 'en_US') return { locale, strings: {} };
-      strings ??= JSON.parse(await readFile(path.join(api.plugin.dir, 'dist/admin-strings.json'), 'utf8')) as string[];
+      strings ??= JSON.parse(
+        await readFile(path.join(api.plugin.dir, 'dist/admin-strings.json'), 'utf8'),
+      ) as string[];
       const out: Record<string, string> = {};
       for (const s of strings) {
         const t = api.i18n.__(s);
@@ -596,7 +695,12 @@ function registerCli(api: PluginApi): void {
         }
       } else {
         for (let paged = 1; ; paged++) {
-          const result = await api.content.query({ post_type: ['post', 'page'], post_status: 'publish', posts_per_page: 100, paged });
+          const result = await api.content.query({
+            post_type: ['post', 'page'],
+            post_status: 'publish',
+            posts_per_page: 100,
+            paged,
+          });
           posts.push(...result.posts);
           if (paged >= result.maxPages || !result.posts.length) break;
         }
@@ -605,7 +709,12 @@ function registerCli(api: PluginApi): void {
       for (const post of posts) {
         for (const check of await auditPost(api, post)) {
           if (check.status === 'na' && !assoc.all) continue;
-          rows.push({ post: post.id, check: check.id, status: check.status, message: check.message });
+          rows.push({
+            post: post.id,
+            check: check.id,
+            status: check.status,
+            message: check.message,
+          });
         }
       }
       if (!rows.length) {
@@ -617,7 +726,8 @@ function registerCli(api: PluginApi): void {
     {
       shortdesc: 'Runs the SEO content checks on posts and prints what could be better.',
       synopsis: '[<post-id>...] [--all] [--format=<format>]',
-      longdesc: 'Without IDs, checks every published post and page. --all also lists checks that don’t apply.',
+      longdesc:
+        'Without IDs, checks every published post and page. --all also lists checks that don’t apply.',
     },
   );
 }
@@ -644,7 +754,8 @@ export default definePlugin(async (api) => {
   for (const type of ['post', 'page']) {
     api.hooks.addFilter(`rest_${type}_query`, async (args: unknown, params: unknown) => {
       const a = args as { post__not_in?: number[] };
-      if ((params as Record<string, unknown>)['pressbase-seo-description'] !== 'missing' || !api.db) return args;
+      if ((params as Record<string, unknown>)['pressbase-seo-description'] !== 'missing' || !api.db)
+        return args;
       const { sql, query } = api.db;
       const rows = await query<{ id: number | string }>(
         sql`select post_id as id from postmeta where key = ${META.metadesc} and coalesce(value #>> '{}', '') <> ''`,
@@ -662,7 +773,8 @@ export const activate = defineLifecycle(async (api) => {
 
 export const uninstall = defineLifecycle(async (api) => {
   // Yoast's options and meta stay: they belong to the content, and another SEO plugin can use them.
-  await api.db?.exec('drop table if exists pressbase_seo_redirects; drop table if exists pressbase_seo_404s;');
+  await api.db?.exec(
+    'drop table if exists pressbase_seo_redirects; drop table if exists pressbase_seo_404s;',
+  );
   for (const name of ['settings', 'indexnow_key']) await api.options.delete(name);
 });
-

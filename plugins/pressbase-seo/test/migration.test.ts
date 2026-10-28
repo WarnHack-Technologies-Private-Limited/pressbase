@@ -27,25 +27,40 @@ describe('a migrated Yoast site', () => {
 
     const post = head((await render(ctx, '/hauling-out-for-winter/')).html);
     expect(post).toContain('<title>Hauling out for winter - Harbour Notes</title>');
-    expect(post).toContain('<meta name="description" content="How we haul boats out for the winter." />');
-    expect(post).toMatch(/<link rel="canonical" href="http:\/\/localhost:3000\/hauling-out-for-winter\/" \/>/);
-    expect(post).toContain("<meta name='robots' content='index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1' />");
+    expect(post).toContain(
+      '<meta name="description" content="How we haul boats out for the winter." />',
+    );
+    expect(post).toMatch(
+      /<link rel="canonical" href="http:\/\/localhost:3000\/hauling-out-for-winter\/" \/>/,
+    );
+    expect(post).toContain(
+      "<meta name='robots' content='index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1' />",
+    );
     expect(meta(post, 'property', 'og:title')).toBe('Hauling out for winter - Harbour Notes');
     expect(meta(post, 'property', 'og:description')).toBe('How we haul boats out for the winter.');
     expect(meta(post, 'property', 'og:type')).toBe('article');
     // The featured image came along with the media.
-    expect(meta(post, 'property', 'og:image')).toMatch(/^http:\/\/localhost:3000\/.+\.(?:jpe?g|png)$/);
+    expect(meta(post, 'property', 'og:image')).toMatch(
+      /^http:\/\/localhost:3000\/.+\.(?:jpe?g|png)$/,
+    );
     // Yoast's primary category leads the breadcrumb trail.
     const crumbs = graph(post).find((n) => n['@type'] === 'BreadcrumbList') as {
       itemListElement: { name: string }[];
     };
     // Repairs sits under Boats.
-    expect(crumbs.itemListElement.map((c) => c.name)).toEqual(['Home', 'Boats', 'Repairs', 'Hauling out for winter']);
+    expect(crumbs.itemListElement.map((c) => c.name)).toEqual([
+      'Home',
+      'Boats',
+      'Repairs',
+      'Hauling out for winter',
+    ]);
 
     // wpseo_taxonomy_meta arrives as term meta.
     const category = head((await render(ctx, '/category/repairs/')).html);
     expect(category).toContain('<title>Repairs we do - Harbour Notes</title>');
-    expect(category).toContain('<meta name="description" content="Hull, deck and engine repairs at the yard." />');
+    expect(category).toContain(
+      '<meta name="description" content="Hull, deck and engine repairs at the yard." />',
+    );
 
     // Rank Math's meta on the same site needs the one-time import.
     const before = head((await render(ctx, '/antifouling-a-gallery/')).html);

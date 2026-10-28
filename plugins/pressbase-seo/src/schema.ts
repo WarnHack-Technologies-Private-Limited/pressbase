@@ -107,9 +107,7 @@ export function buildGraph(input: SchemaInput): GraphNode[] {
       mainEntityOfPage: { '@id': ids.webpage(page.url) },
       ...(a.wordCount ? { wordCount: a.wordCount } : {}),
       ...(publisherId ? { publisher: { '@id': publisherId } } : {}),
-      ...(hasImage
-        ? { image: { '@id': ids.image(page.url) }, thumbnailUrl: page.image?.url }
-        : {}),
+      ...(hasImage ? { image: { '@id': ids.image(page.url) }, thumbnailUrl: page.image?.url } : {}),
       ...(a.keywords.length ? { keywords: a.keywords } : {}),
       ...(a.sections.length ? { articleSection: a.sections } : {}),
       inLanguage: language,
@@ -215,9 +213,7 @@ export function buildGraph(input: SchemaInput): GraphNode[] {
       '@type': 'Person',
       '@id': ids.person(home, person.id),
       name: person.name,
-      ...('description' in person && person.description
-        ? { description: person.description }
-        : {}),
+      ...('description' in person && person.description ? { description: person.description } : {}),
       ...(person.url ? { url: person.url } : {}),
     });
   }

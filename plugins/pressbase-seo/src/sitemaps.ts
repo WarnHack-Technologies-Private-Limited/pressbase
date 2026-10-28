@@ -43,7 +43,10 @@ export function registerSitemaps(api: PluginApi): void {
       db.sql`select post_id as id from postmeta where key = ${META.noindex} and (value #>> '{}') = '1'`,
     );
     if (!rows.length) return args;
-    return { ...args, post__not_in: [...(args.post__not_in ?? []), ...rows.map((r) => Number(r.id))] };
+    return {
+      ...args,
+      post__not_in: [...(args.post__not_in ?? []), ...rows.map((r) => Number(r.id))],
+    };
   });
 
   api.hooks.addFilter('wp_sitemaps_taxonomies_query_args', async (args) => {

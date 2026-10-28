@@ -146,12 +146,22 @@ export function excerptOf(post: Pick<Post, 'excerpt' | 'content'>): string {
   return own || trimText(plainText(post.content ?? ''), 155);
 }
 
-async function attachment(api: PluginApi, id: unknown): Promise<SchemaImage & { type?: string; alt?: string } | null> {
+async function attachment(
+  api: PluginApi,
+  id: unknown,
+): Promise<(SchemaImage & { type?: string; alt?: string }) | null> {
   const n = Number(id);
   if (!Number.isInteger(n) || n <= 0) return null;
   const image = await api.content.attachmentImage(n);
   return image
-    ? { url: image.url, width: image.width, height: image.height, type: image.mimeType, alt: image.alt, caption: image.alt }
+    ? {
+        url: image.url,
+        width: image.width,
+        height: image.height,
+        type: image.mimeType,
+        alt: image.alt,
+        caption: image.alt,
+      }
     : null;
 }
 
@@ -224,7 +234,7 @@ export async function breadcrumbTrail(
         let parentId: number | null = post.parentId;
         for (let i = 0; parentId && i < 20; i++) {
           const parent = await api.content.posts.get(parentId);
-          if (!parent || parent.status !== 'publish') break;
+          if (parent?.status !== 'publish') break;
           const url = await api.content.permalink(parent);
           parents.unshift({
             name: await crumbName(api, 'post', parent.id, plainText(parent.title)),
@@ -254,14 +264,26 @@ export async function breadcrumbTrail(
     case 'author':
       return [
         home,
-        { name: `${str(t['breadcrumbs-archiveprefix'], 'Archives for')} ${target.author.displayName}`.trim() },
+        {
+          name: `${str(t['breadcrumbs-archiveprefix'], 'Archives for')} ${target.author.displayName}`.trim(),
+        },
       ];
     case 'search':
-      return [home, { name: `${str(t['breadcrumbs-searchprefix'], 'You searched for')} ${target.search}`.trim() }];
+      return [
+        home,
+        {
+          name: `${str(t['breadcrumbs-searchprefix'], 'You searched for')} ${target.search}`.trim(),
+        },
+      ];
     case '404':
       return [home, { name: str(t['breadcrumbs-404crumb'], 'Error 404: Page not found') }];
     case 'date':
-      return [home, { name: `${str(t['breadcrumbs-archiveprefix'], 'Archives for')} ${dateLabel(target.date, s.locale)}`.trim() }];
+      return [
+        home,
+        {
+          name: `${str(t['breadcrumbs-archiveprefix'], 'Archives for')} ${dateLabel(target.date, s.locale)}`.trim(),
+        },
+      ];
     default:
       return [home];
   }
@@ -291,7 +313,9 @@ function sameAs(social: WpseoSocial): string[] {
       : '',
     ...(Array.isArray(social.other_social_urls) ? social.other_social_urls : []),
   ];
-  return [...new Set(list.filter((u): u is string => typeof u === 'string' && /^https?:\/\//.test(u)))];
+  return [
+    ...new Set(list.filter((u): u is string => typeof u === 'string' && /^https?:\/\//.test(u))),
+  ];
 }
 
 async function representation(
@@ -307,7 +331,13 @@ async function representation(
     const image =
       (await attachment(api, titles.person_logo_id)) ??
       (titles.person_logo ? { url: titles.person_logo } : undefined);
-    return { type: 'person', id, name: user.name, ...(image ? { image } : {}), sameAs: sameAs(social) };
+    return {
+      type: 'person',
+      id,
+      name: user.name,
+      ...(image ? { image } : {}),
+      sameAs: sameAs(social),
+    };
   }
   const name = titles.company_name || '';
   if (!name) return null;
@@ -336,7 +366,11 @@ export async function computeHead(api: PluginApi, context: RenderContext): Promi
     currentyear: String(now.getFullYear()),
     currentmonth: now.toLocaleDateString('en-US', { month: 'long' }),
     currentday: String(now.getDate()),
-    currentdate: now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+    currentdate: now.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }),
   };
 
   let titleTemplate = '';
@@ -384,7 +418,8 @@ export async function computeHead(api: PluginApi, context: RenderContext): Promi
       descTemplate = meta.metadesc ?? appearance.metadesc;
       robots = metaRobots(meta, appearance.noindex);
       if (post.status !== 'publish') robots.index = false;
-      const permalink = (await api.content.canonicalUrl(post)) || (await api.content.permalink(post)) || '';
+      const permalink =
+        (await api.content.canonicalUrl(post)) || (await api.content.permalink(post)) || '';
       canonical = meta.canonical || permalink;
       ogType = target.front ? 'website' : 'article';
       pageType = 'WebPage';
@@ -392,11 +427,17 @@ export async function computeHead(api: PluginApi, context: RenderContext): Promi
       modified = iso(post.modified);
       if (ogType === 'article') {
         ogExtra.push({ property: 'article:published_time', content: published });
-        if (modified !== published) ogExtra.push({ property: 'article:modified_time', content: modified });
-        if (social.facebook_site) ogExtra.push({ property: 'article:publisher', content: social.facebook_site });
+        if (modified !== published)
+          ogExtra.push({ property: 'article:modified_time', content: modified });
+        if (social.facebook_site)
+          ogExtra.push({ property: 'article:publisher', content: social.facebook_site });
       }
-      const set = (await attachment(api, meta.ogImageId)) ?? (meta.ogImage ? { url: meta.ogImage } : null);
-      const featured = await attachment(api, await api.meta.get('post', post.id, '_thumbnail_id', true));
+      const set =
+        (await attachment(api, meta.ogImageId)) ?? (meta.ogImage ? { url: meta.ogImage } : null);
+      const featured = await attachment(
+        api,
+        await api.meta.get('post', post.id, '_thumbnail_id', true),
+      );
       const inContent = firstContentImage(post.content ?? '');
       image = set
         ? { ...set, source: 'set' }
@@ -406,13 +447,16 @@ export async function computeHead(api: PluginApi, context: RenderContext): Promi
             ? { url: inContent, source: 'content' }
             : null;
       if (post.type === 'post' && !target.front) {
-        const tags = (await api.content.terms.objectTermIds([post.id], 'post_tag')).get(post.id) ?? [];
+        const tags =
+          (await api.content.terms.objectTermIds([post.id], 'post_tag')).get(post.id) ?? [];
         const keywords: string[] = [];
         for (const id of tags) {
           const tag = await api.content.terms.get('post_tag', id);
           if (tag) keywords.push(tag.name);
         }
-        const words = plainText(post.content ?? '').split(/\s+/).filter(Boolean).length;
+        const words = plainText(post.content ?? '')
+          .split(/\s+/)
+          .filter(Boolean).length;
         article = {
           headline: plainText(post.title),
           datePublished: published,
@@ -445,11 +489,15 @@ export async function computeHead(api: PluginApi, context: RenderContext): Promi
       titleTemplate = meta.title ?? appearance.title;
       descTemplate = meta.metadesc ?? appearance.metadesc;
       robots = metaRobots(
-        { ...meta, noindex: meta.noindex === 'noindex' ? '1' : meta.noindex === 'index' ? '2' : '0' },
+        {
+          ...meta,
+          noindex: meta.noindex === 'noindex' ? '1' : meta.noindex === 'index' ? '2' : '0',
+        },
         appearance.noindex,
       );
       canonical = meta.canonical || pagedUrl(await api.content.termLink(term), paged, pretty);
-      const set = (await attachment(api, meta.ogImageId)) ?? (meta.ogImage ? { url: meta.ogImage } : null);
+      const set =
+        (await attachment(api, meta.ogImageId)) ?? (meta.ogImage ? { url: meta.ogImage } : null);
       image = set ? { ...set, source: 'set' } : null;
       break;
     }
@@ -518,20 +566,15 @@ export async function computeHead(api: PluginApi, context: RenderContext): Promi
   const og: { property: string; content: string }[] = [];
   const twitter: { name: string; content: string }[] = [];
   const isFrontHome = target.kind === 'home' || (target.kind === 'post' && target.front);
-  const ogTitle =
-    meta.ogTitle ||
-    (isFrontHome && social.og_frontpage_title) ||
-    title;
+  const ogTitle = meta.ogTitle || (isFrontHome && social.og_frontpage_title) || title;
   const ogDescription =
-    meta.ogDescription ||
-    (isFrontHome && social.og_frontpage_desc) ||
-    description ||
-    excerpt;
+    meta.ogDescription || (isFrontHome && social.og_frontpage_desc) || description || excerpt;
   if (social.opengraph !== false && target.kind !== '404' && target.kind !== 'search') {
     og.push({ property: 'og:locale', content: site.locale });
     og.push({ property: 'og:type', content: ogType });
     og.push({ property: 'og:title', content: replaceVars(ogTitle, vars) });
-    if (ogDescription) og.push({ property: 'og:description', content: replaceVars(ogDescription, vars) });
+    if (ogDescription)
+      og.push({ property: 'og:description', content: replaceVars(ogDescription, vars) });
     if (canonical) og.push({ property: 'og:url', content: canonical });
     if (site.name) og.push({ property: 'og:site_name', content: site.name });
     og.push(...ogExtra);
@@ -543,14 +586,24 @@ export async function computeHead(api: PluginApi, context: RenderContext): Promi
     }
   }
   if (social.twitter !== false && target.kind !== '404' && target.kind !== 'search') {
-    twitter.push({ name: 'twitter:card', content: social.twitter_card_type || 'summary_large_image' });
-    if (meta.twitterTitle) twitter.push({ name: 'twitter:title', content: replaceVars(meta.twitterTitle, vars) });
+    twitter.push({
+      name: 'twitter:card',
+      content: social.twitter_card_type || 'summary_large_image',
+    });
+    if (meta.twitterTitle)
+      twitter.push({ name: 'twitter:title', content: replaceVars(meta.twitterTitle, vars) });
     if (meta.twitterDescription)
-      twitter.push({ name: 'twitter:description', content: replaceVars(meta.twitterDescription, vars) });
+      twitter.push({
+        name: 'twitter:description',
+        content: replaceVars(meta.twitterDescription, vars),
+      });
     const twImage = (await attachment(api, meta.twitterImageId))?.url ?? meta.twitterImage;
     if (twImage) twitter.push({ name: 'twitter:image', content: twImage });
     if (social.twitter_site)
-      twitter.push({ name: 'twitter:site', content: `@${social.twitter_site.replace(/^@|^https?:\/\/(?:www\.)?(?:twitter|x)\.com\//g, '')}` });
+      twitter.push({
+        name: 'twitter:site',
+        content: `@${social.twitter_site.replace(/^@|^https?:\/\/(?:www\.)?(?:twitter|x)\.com\//g, '')}`,
+      });
   }
 
   const pageUrl = canonical || `${site.home}${context.path ?? '/'}`;
@@ -569,13 +622,26 @@ export async function computeHead(api: PluginApi, context: RenderContext): Promi
         ...(description ? { description } : {}),
         ...(published ? { datePublished: published } : {}),
         ...(modified ? { dateModified: modified } : {}),
-        ...(image && image.source !== 'default' ? { image: { url: image.url, width: image.width, height: image.height, caption: image.alt } } : {}),
+        ...(image && image.source !== 'default'
+          ? {
+              image: {
+                url: image.url,
+                width: image.width,
+                height: image.height,
+                caption: image.alt,
+              },
+            }
+          : {}),
       },
       breadcrumbs,
       ...(article ? { article } : {}),
       ...(profile ? { profile } : {}),
     });
-    graph = (await api.hooks.applyFilters('pressbase_seo_schema_graph', graph, context)) as GraphNode[];
+    graph = (await api.hooks.applyFilters(
+      'pressbase_seo_schema_graph',
+      graph,
+      context,
+    )) as GraphNode[];
   }
 
   const head: HeadData = {
@@ -594,7 +660,10 @@ export async function computeHead(api: PluginApi, context: RenderContext): Promi
 
 function dateLabelFromDate(value: Date | string, locale: string): string {
   const d = new Date(value);
-  return dateLabel({ year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() }, locale);
+  return dateLabel(
+    { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() },
+    locale,
+  );
 }
 
 /** Robots as wp_robots directives (Yoast's: index, follow and the max-* hints). */
@@ -613,10 +682,14 @@ export function robotsDirectives(robots: Robots): Record<string, string | boolea
 }
 
 /** The tags printed in wp_head after core's robots and title (WordPress's order, as Yoast prints). */
-export function renderHead(head: HeadData, options: { title?: boolean; robots?: boolean } = {}): string {
+export function renderHead(
+  head: HeadData,
+  options: { title?: boolean; robots?: boolean } = {},
+): string {
   const lines: string[] = ['<!-- Pressbase SEO -->'];
   if (options.title) lines.push(`<title>${escHtml(head.title)}</title>`);
-  if (head.description) lines.push(`<meta name="description" content="${escAttr(head.description)}" />`);
+  if (head.description)
+    lines.push(`<meta name="description" content="${escAttr(head.description)}" />`);
   if (options.robots) {
     const directives = Object.entries(robotsDirectives(head.robots)).map(([k, v]) =>
       typeof v === 'string' ? `${k}:${v}` : k,
@@ -634,7 +707,9 @@ export function renderHead(head: HeadData, options: { title?: boolean; robots?: 
     lines.push(`<meta name="${escAttr(name)}" content="${escAttr(content)}" />`);
   }
   if (head.schema['@graph'].length) {
-    lines.push(`<script type="application/ld+json" class="pressbase-seo-schema">${jsonForScript(head.schema)}</script>`);
+    lines.push(
+      `<script type="application/ld+json" class="pressbase-seo-schema">${jsonForScript(head.schema)}</script>`,
+    );
   }
   lines.push('<!-- / Pressbase SEO -->');
   return lines.join('\n');

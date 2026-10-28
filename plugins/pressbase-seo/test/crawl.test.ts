@@ -46,10 +46,14 @@ describe('robots.txt and llms.txt', () => {
   it('appends the robots.txt additions and serves llms.txt only when turned on', async () => {
     const ctx = await site();
     const seo = api(ctx);
-    await seo.settings.set('settings', { robots_txt: 'User-agent: ExampleBot\nDisallow: /private/' });
+    await seo.settings.set('settings', {
+      robots_txt: 'User-agent: ExampleBot\nDisallow: /private/',
+    });
     const robots = await render(ctx, '/robots.txt');
     expect(robots.html).toContain('Sitemap: http://localhost:3000/wp-sitemap.xml');
-    expect(robots.html).toContain('# Added in Settings → SEO\nUser-agent: ExampleBot\nDisallow: /private/');
+    expect(robots.html).toContain(
+      '# Added in Settings → SEO\nUser-agent: ExampleBot\nDisallow: /private/',
+    );
 
     expect((await render(ctx, '/llms.txt')).status).toBe(404);
     await publish(ctx, { title: 'About us' }, 'pages');

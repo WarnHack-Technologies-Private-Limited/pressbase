@@ -63,7 +63,10 @@ export function head(html: string): string {
 
 /** The JSON-LD graph printed by Pressbase SEO. */
 export function graph(html: string): Record<string, unknown>[] {
-  const json = /<script type="application\/ld\+json" class="pressbase-seo-schema">([\s\S]*?)<\/script>/.exec(html)?.[1];
+  const json =
+    /<script type="application\/ld\+json" class="pressbase-seo-schema">([\s\S]*?)<\/script>/.exec(
+      html,
+    )?.[1];
   return json ? (JSON.parse(json)['@graph'] as Record<string, unknown>[]) : [];
 }
 

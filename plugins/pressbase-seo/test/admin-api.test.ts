@@ -65,7 +65,9 @@ describe('Yoast meta in REST', () => {
     });
     expect(tag.body.meta.wpseo_title).toBe('%%term_title%% guide %%sep%% %%sitename%%');
     await publish(ctx, { title: 'Tagged', tags: [tag.body.id] });
-    expect((await render(ctx, '/tag/oolong/')).html).toContain('<title>Oolong guide - Test Site</title>');
+    expect((await render(ctx, '/tag/oolong/')).html).toContain(
+      '<title>Oolong guide - Test Site</title>',
+    );
   });
 
   it('filters the posts list to posts missing a description', async () => {
@@ -100,14 +102,20 @@ describe('imports from other SEO plugins', () => {
 
     const rm = await ctx.request('POST', '/pressbase-seo/v1/import/rankmath');
     expect(rm.body).toMatchObject({ posts: 1, fields: 5 });
-    expect(await seo.meta.get('post', a.id, '_yoast_wpseo_title', true)).toBe('%%title%% %%sep%% %%sitename%%');
+    expect(await seo.meta.get('post', a.id, '_yoast_wpseo_title', true)).toBe(
+      '%%title%% %%sep%% %%sitename%%',
+    );
     expect(await seo.meta.get('post', a.id, '_yoast_wpseo_focuskw', true)).toBe('rank math');
-    expect(String(await seo.meta.get('post', a.id, '_yoast_wpseo_meta-robots-noindex', true))).toBe('1');
+    expect(String(await seo.meta.get('post', a.id, '_yoast_wpseo_meta-robots-noindex', true))).toBe(
+      '1',
+    );
 
     const aio = await ctx.request('POST', '/pressbase-seo/v1/import/aioseo');
     expect(aio.body).toMatchObject({ posts: 1, fields: 1 });
     expect(await seo.meta.get('post', b.id, '_yoast_wpseo_title', true)).toBe('Keep me');
-    expect(await seo.meta.get('post', b.id, '_yoast_wpseo_metadesc', true)).toBe('All in one: %%title%%');
+    expect(await seo.meta.get('post', b.id, '_yoast_wpseo_metadesc', true)).toBe(
+      'All in one: %%title%%',
+    );
   });
 });
 

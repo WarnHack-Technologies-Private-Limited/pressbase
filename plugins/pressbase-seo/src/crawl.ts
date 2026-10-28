@@ -36,7 +36,9 @@ export async function buildLlmsTxt(api: PluginApi): Promise<string> {
       const url = await api.content.permalink(post);
       if (!url) continue;
       const summary = trimText(plainText(post.excerpt || post.content || ''), 160);
-      lines.push(`- ${markdownLink(plainText(post.title) || url, url)}${summary ? `: ${summary}` : ''}`);
+      lines.push(
+        `- ${markdownLink(plainText(post.title) || url, url)}${summary ? `: ${summary}` : ''}`,
+      );
     }
     lines.push('');
   };
@@ -58,7 +60,12 @@ export async function buildLlmsTxt(api: PluginApi): Promise<string> {
     no_found_rows: true,
   });
   await section('Recent posts', posts.posts);
-  lines.push('## Optional', '', `- ${markdownLink('XML sitemap', `${site.home}/wp-sitemap.xml`)}`, '');
+  lines.push(
+    '## Optional',
+    '',
+    `- ${markdownLink('XML sitemap', `${site.home}/wp-sitemap.xml`)}`,
+    '',
+  );
   return lines.join('\n');
 }
 

@@ -76,7 +76,8 @@ export function registerSiteHealth(api: PluginApi): void {
           description: `<p>${escHtml(message)}</p>`,
           actions: settings(__('Check the crawling settings')),
         });
-        if (!wpseo.enable_xml_sitemap) return fail(__('Sitemaps are turned off in Settings → SEO.'));
+        if (!wpseo.enable_xml_sitemap)
+          return fail(__('Sitemaps are turned off in Settings → SEO.'));
         if (!site.public) return fail(__('Sitemaps are off while search engines are discouraged.'));
         const url = `${site.home}/wp-sitemap.xml`;
         try {

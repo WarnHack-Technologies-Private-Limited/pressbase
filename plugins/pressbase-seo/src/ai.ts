@@ -123,14 +123,22 @@ async function postText(
 /** AI client errors as ability errors, so REST answers with their code and status. */
 async function viaAi<T>(api: PluginApi, run: () => Promise<T>): Promise<T> {
   if (!(await api.ai.supportsAi())) {
-    throw api.abilities.error('prompt_prevented', 'AI is turned off. An administrator can turn it on in Settings → AI.', 503);
+    throw api.abilities.error(
+      'prompt_prevented',
+      'AI is turned off. An administrator can turn it on in Settings → AI.',
+      503,
+    );
   }
   try {
     return await run();
   } catch (error) {
     const e = error as { code?: unknown; status?: unknown; message?: unknown };
     if (typeof e?.code === 'string' && e.code.startsWith('prompt_')) {
-      throw api.abilities.error(e.code, String(e.message), typeof e.status === 'number' ? e.status : 502);
+      throw api.abilities.error(
+        e.code,
+        String(e.message),
+        typeof e.status === 'number' ? e.status : 502,
+      );
     }
     if (typeof e?.code === 'string' && e.code === 'ai_daily_limit_reached') {
       throw api.abilities.error(e.code, String(e.message), 429);
@@ -147,16 +155,18 @@ async function ask(
   prompt: string,
   max: number,
 ): Promise<Suggestions> {
-  const result = await viaAi(api, () => api.ai
-    .prompt(prompt)
-    .usingSystemInstruction(
-      `${system} Reply with JSON: {"options": [two or three different options]}. English, plain text only.`,
-    )
-    .usingMaxTokens(1000)
-    .asJsonResponse(OPTIONS_SCHEMA)
-    .forUser(context.user)
-    .forAbility(ability)
-    .generateTextResult());
+  const result = await viaAi(api, () =>
+    api.ai
+      .prompt(prompt)
+      .usingSystemInstruction(
+        `${system} Reply with JSON: {"options": [two or three different options]}. English, plain text only.`,
+      )
+      .usingMaxTokens(1000)
+      .asJsonResponse(OPTIONS_SCHEMA)
+      .forUser(context.user)
+      .forAbility(ability)
+      .generateTextResult(),
+  );
   const text = result.message.parts
     .map((p) => (p.type === 'text' ? p.text : ''))
     .join('')
@@ -165,11 +175,19 @@ async function ask(
   try {
     parsed = JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g, ''));
   } catch {
-    throw api.abilities.error('prompt_invalid_output', 'The AI provider’s answer couldn’t be read.', 502);
+    throw api.abilities.error(
+      'prompt_invalid_output',
+      'The AI provider’s answer couldn’t be read.',
+      502,
+    );
   }
   const options = cleanOptions((parsed as { options?: unknown })?.options, max);
   if (!options.length) {
-    throw api.abilities.error('prompt_invalid_output', 'The AI provider didn’t suggest anything usable.', 502);
+    throw api.abilities.error(
+      'prompt_invalid_output',
+      'The AI provider didn’t suggest anything usable.',
+      502,
+    );
   }
   return { options, provider: providerLabel(result.providerId), model: result.model };
 }
@@ -216,7 +234,11 @@ export function registerAbilities(api: PluginApi): void {
     executeCallback: async (input, context) => {
       const text = await postText(api, input);
       if (!text.title && !text.content) {
-        throw api.abilities.error('pressbase_seo_nothing_to_go_on', 'Write a title or some content first.', 400);
+        throw api.abilities.error(
+          'pressbase_seo_nothing_to_go_on',
+          'Write a title or some content first.',
+          400,
+        );
       }
       const keyphrase = input.keyphrase?.trim();
       const prompt = [
@@ -237,11 +259,21 @@ export function registerAbilities(api: PluginApi): void {
       );
     },
     // Not read-only: each run is a logged AI request (so it's run with POST).
-    meta: { annotations: { readonly: false, destructive: false, idempotent: false }, showInRest: true },
+    meta: {
+      annotations: { readonly: false, destructive: false, idempotent: false },
+      showInRest: true,
+    },
   });
 
   api.abilities.register<
-    { attachmentId?: number; filename?: string; caption?: string; postId?: number; postTitle?: string; context?: string },
+    {
+      attachmentId?: number;
+      filename?: string;
+      caption?: string;
+      postId?: number;
+      postTitle?: string;
+      context?: string;
+    },
     Suggestions
   >('suggest-alt-text', {
     label: 'Suggest alt text',
@@ -269,13 +301,24 @@ export function registerAbilities(api: PluginApi): void {
       if (input.attachmentId) {
         const attachment = await api.content.posts.get(input.attachmentId);
         if (attachment?.type === 'attachment') {
-          filename ||= String(await api.meta.get('post', attachment.id, '_wp_attached_file', true) ?? '');
+          filename ||= String(
+            (await api.meta.get('post', attachment.id, '_wp_attached_file', true)) ?? '',
+          );
           caption ||= attachment.excerpt || attachment.title;
         }
       }
-      const name = filename.split('/').pop()?.replace(/\.[a-z0-9]+$/i, '').replace(/[-_]+/g, ' ') ?? '';
+      const name =
+        filename
+          .split('/')
+          .pop()
+          ?.replace(/\.[a-z0-9]+$/i, '')
+          .replace(/[-_]+/g, ' ') ?? '';
       if (!name.trim() && !caption.trim() && !input.context?.trim()) {
-        throw api.abilities.error('pressbase_seo_nothing_to_go_on', 'There’s nothing to describe the image from yet.', 400);
+        throw api.abilities.error(
+          'pressbase_seo_nothing_to_go_on',
+          'There’s nothing to describe the image from yet.',
+          400,
+        );
       }
       const prompt = [
         name ? `Image file name: ${name}` : '',
@@ -295,7 +338,10 @@ export function registerAbilities(api: PluginApi): void {
       );
     },
     // Not read-only: each run is a logged AI request (so it's run with POST).
-    meta: { annotations: { readonly: false, destructive: false, idempotent: false }, showInRest: true },
+    meta: {
+      annotations: { readonly: false, destructive: false, idempotent: false },
+      showInRest: true,
+    },
   });
 
   api.abilities.register<
@@ -339,28 +385,48 @@ export function registerAbilities(api: PluginApi): void {
         throw api.abilities.error('rest_post_invalid_id', 'Invalid post ID.', 404);
       }
       const results = await auditPost(api, post);
-      const checks = results.map(({ id, status, label, message, why }) => ({ id, status, label, message, why }));
+      const checks = results.map(({ id, status, label, message, why }) => ({
+        id,
+        status,
+        label,
+        message,
+        why,
+      }));
       const summary = summarize(results, (s) => api.i18n.__(s));
-      if (!input.explain || !(await api.ai.supportsAi())) return { postId: post.id, summary, checks };
-      const todo = checks.filter((c) => c.status === 'improve').map((c) => `- ${c.label}: ${c.message}`);
-      const result = await viaAi(api, () => api.ai
-        .prompt(
-          `Post title: ${plainText(post.title)}\n\nSuggestions from the checks:\n${todo.join('\n') || '- none'}`,
-        )
-        .usingSystemInstruction(
-          'In two or three calm, plain sentences, say what would most improve this post’s search appearance, based only on the listed suggestions. No scores, no hype.',
-        )
-        .usingMaxTokens(600)
-        .forUser(context.user)
-        .forAbility('pressbase-seo/audit-post')
-        .generateTextResult());
+      if (!input.explain || !(await api.ai.supportsAi()))
+        return { postId: post.id, summary, checks };
+      const todo = checks
+        .filter((c) => c.status === 'improve')
+        .map((c) => `- ${c.label}: ${c.message}`);
+      const result = await viaAi(api, () =>
+        api.ai
+          .prompt(
+            `Post title: ${plainText(post.title)}\n\nSuggestions from the checks:\n${todo.join('\n') || '- none'}`,
+          )
+          .usingSystemInstruction(
+            'In two or three calm, plain sentences, say what would most improve this post’s search appearance, based only on the listed suggestions. No scores, no hype.',
+          )
+          .usingMaxTokens(600)
+          .forUser(context.user)
+          .forAbility('pressbase-seo/audit-post')
+          .generateTextResult(),
+      );
       const advice = trimText(
         plainText(result.message.parts.map((p) => (p.type === 'text' ? p.text : '')).join(' ')),
         600,
       );
-      return { postId: post.id, summary, checks, advice, provider: providerLabel(result.providerId) };
+      return {
+        postId: post.id,
+        summary,
+        checks,
+        advice,
+        provider: providerLabel(result.providerId),
+      };
     },
-    meta: { annotations: { readonly: true, destructive: false, idempotent: true }, showInRest: true },
+    meta: {
+      annotations: { readonly: true, destructive: false, idempotent: true },
+      showInRest: true,
+    },
   });
 
   // Whether the panel shows Suggest buttons.

@@ -7,10 +7,10 @@
 //   node build.mjs --pot     also write languages/pressbase-seo.pot
 //
 // esbuild only strips types: `pnpm typecheck` checks them.
-import { readdir, readFile, writeFile, mkdir } from 'node:fs/promises';
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { context, build } from 'esbuild';
+import { build, context } from 'esbuild';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const watch = process.argv.includes('--watch');
@@ -85,7 +85,11 @@ async function extract() {
   for (const file of await files(path.join(root, 'src'))) {
     const text = await readFile(file, 'utf8');
     const rel = path.relative(root, file);
-    const browser = rel.startsWith(`src${path.sep}admin`) || rel.includes(`${path.sep}analysis${path.sep}`) || rel.endsWith('vars.ts') || rel.endsWith('shared.ts');
+    const browser =
+      rel.startsWith(`src${path.sep}admin`) ||
+      rel.includes(`${path.sep}analysis${path.sep}`) ||
+      rel.endsWith('vars.ts') ||
+      rel.endsWith('shared.ts');
     for (const m of text.matchAll(call)) {
       const msgid = m[2].replace(/\\'/g, "'");
       const ctx = m[1] === '_x' ? (m[3] ?? '').replace(/\\'/g, "'") : '';

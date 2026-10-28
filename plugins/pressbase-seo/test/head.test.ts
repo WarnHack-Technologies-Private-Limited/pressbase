@@ -42,11 +42,19 @@ describe('head output', () => {
     expect(article['@id']).toBe(`${post.link}#article`);
     expect(article.headline).toBe('Green tea basics');
     expect(article.articleSection).toEqual(['Recipes']);
-    expect(article.author).toEqual({ name: 'admin', '@id': 'http://localhost:3000/#/schema/person/1' });
+    expect(article.author).toEqual({
+      name: 'admin',
+      '@id': 'http://localhost:3000/#/schema/person/1',
+    });
     const crumbs = nodes[2] as { itemListElement: Record<string, unknown>[] };
     expect(crumbs.itemListElement).toEqual([
       { '@type': 'ListItem', position: 1, name: 'Home', item: 'http://localhost:3000/' },
-      { '@type': 'ListItem', position: 2, name: 'Recipes', item: 'http://localhost:3000/category/recipes/' },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Recipes',
+        item: 'http://localhost:3000/category/recipes/',
+      },
       { '@type': 'ListItem', position: 3, name: 'Green tea basics' },
     ]);
     const website = nodes[3] as Record<string, unknown>;
@@ -101,7 +109,9 @@ describe('head output', () => {
     expect(head((await render(ctx, '/author/admin/')).html)).toContain('noindex');
     const category = head((await render(ctx, '/category/uncategorized/')).html);
     expect(category).toContain('<title>Uncategorized topics | Test Site</title>');
-    expect(category).toContain('<link rel="canonical" href="http://localhost:3000/category/uncategorized/" />');
+    expect(category).toContain(
+      '<link rel="canonical" href="http://localhost:3000/category/uncategorized/" />',
+    );
     expect(graph(category).map((n) => n['@type'])).toContain('CollectionPage');
   });
 
@@ -148,12 +158,17 @@ describe('head output', () => {
       { '@type': 'FAQPage', '@id': 'http://localhost:3000/#faq' },
     ]);
     const post = await publish(ctx, { title: 'Filtered' });
-    expect(graph(head((await render(ctx, post.link)).html)).map((n) => n['@type'])).toContain('FAQPage');
+    expect(graph(head((await render(ctx, post.link)).html)).map((n) => n['@type'])).toContain(
+      'FAQPage',
+    );
   });
 
   it('adds pressbase_seo_head to posts and terms in REST', async () => {
     const ctx = await site();
-    const post = await publish(ctx, { title: 'Headless', meta: { _yoast_wpseo_metadesc: 'For apps.' } });
+    const post = await publish(ctx, {
+      title: 'Headless',
+      meta: { _yoast_wpseo_metadesc: 'For apps.' },
+    });
     const res = await ctx.client().request('GET', `/wp/v2/posts/${post.id}`);
     expect(res.body.pressbase_seo_head).toMatchObject({
       title: 'Headless - Test Site',
@@ -161,7 +176,9 @@ describe('head output', () => {
       canonical: post.link,
       og_type: 'article',
     });
-    expect(res.body.pressbase_seo_head.html).toContain('<meta name="description" content="For apps." />');
+    expect(res.body.pressbase_seo_head.html).toContain(
+      '<meta name="description" content="For apps." />',
+    );
     expect(res.body.pressbase_seo_head.schema['@graph'].length).toBeGreaterThan(2);
     const terms = await ctx.client().request('GET', '/wp/v2/categories');
     expect(terms.body[0].pressbase_seo_head.title).toBe('Uncategorized Archives - Test Site');

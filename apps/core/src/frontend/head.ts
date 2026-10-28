@@ -10,8 +10,8 @@ import { PRESSBASE_VERSION } from '../version';
 import { Scripts, type Strategy, Styles, type Version } from './dependencies';
 import { feedLinkTags } from './feeds';
 import { currentPage, type PageRender } from './page';
-import { documentTitle } from './title';
 import type { MainQuery } from './query';
+import { documentTitle } from './title';
 
 /**
  * Public page hooks: what wp_head(), wp_body_open(), wp_footer() and

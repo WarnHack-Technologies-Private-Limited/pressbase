@@ -7,7 +7,9 @@ import { publish, render, site } from './helpers';
 describe('title variables', () => {
   it('replaces Yoast’s %%variables%%, drops unknown ones and tidies separators', () => {
     const values = { title: 'Green tea', sitename: 'Tea House', sep: '-', page: '' };
-    expect(replaceVars('%%title%% %%page%% %%sep%% %%sitename%%', values)).toBe('Green tea - Tea House');
+    expect(replaceVars('%%title%% %%page%% %%sep%% %%sitename%%', values)).toBe(
+      'Green tea - Tea House',
+    );
     expect(replaceVars('%%title%% %%sep%% %%unknown%% %%sep%% %%sitename%%', values)).toBe(
       'Green tea - Tea House',
     );
@@ -15,7 +17,9 @@ describe('title variables', () => {
     expect(replaceVars('%%TITLE%%: %%page%%', { ...values, page: 'Page 2 of 3' })).toBe(
       'Green tea: Page 2 of 3',
     );
-    expect(replaceVars('%%term_title%% Archives', { title: 'News', sep: '|' })).toBe('News Archives');
+    expect(replaceVars('%%term_title%% Archives', { title: 'News', sep: '|' })).toBe(
+      'News Archives',
+    );
     expect(replaceVars('', values)).toBe('');
   });
 
@@ -96,7 +100,9 @@ describe('breadcrumbs block', () => {
       'pages',
     );
     const { html } = await render(ctx, child.link);
-    expect(html).toContain('<nav class="pressbase-seo-breadcrumbs wp-block-pressbase-seo-breadcrumbs"');
+    expect(html).toContain(
+      '<nav class="pressbase-seo-breadcrumbs wp-block-pressbase-seo-breadcrumbs"',
+    );
     expect(html).toMatch(
       /<a href="http:\/\/localhost:3000\/">Home<\/a>.*<a href="http:\/\/localhost:3000\/services\/">Services<\/a>.*<span aria-current="page">Fixing things<\/span>/,
     );

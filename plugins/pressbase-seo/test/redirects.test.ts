@@ -24,7 +24,15 @@ describe('redirect rules', () => {
   it('round-trips CSV', () => {
     const csv = toCsv([
       { id: 1, source: '/a,b', target: '/c', status: 301, regex: false, hits: 0, last_hit: null },
-      { id: 2, source: '^/blog/(.*)$', target: '/$1', status: 302, regex: true, hits: 0, last_hit: null },
+      {
+        id: 2,
+        source: '^/blog/(.*)$',
+        target: '/$1',
+        status: 302,
+        regex: true,
+        hits: 0,
+        last_hit: null,
+      },
     ]);
     expect(csv).toBe('source,target,status,regex\n"/a,b",/c,301,0\n^/blog/(.*)$,/$1,302,1\n');
     expect(rulesFromCsv(csv)).toEqual([
@@ -42,9 +50,13 @@ describe('redirects on the public site', () => {
     const add = (body: Record<string, unknown>) =>
       ctx.request('POST', '/pressbase-seo/v1/redirects', body);
     expect((await add({ source: '/old-post/', target, status: 301 })).status).toBe(201);
-    expect((await add({ source: '/temp', target: 'https://example.org/', status: 302 })).status).toBe(201);
+    expect(
+      (await add({ source: '/temp', target: 'https://example.org/', status: 302 })).status,
+    ).toBe(201);
     expect((await add({ source: '/keep-method', target, status: 307 })).status).toBe(201);
-    expect((await add({ source: '^/archive/(\\d+)/?$', target: '/?p=$1', regex: true })).status).toBe(201);
+    expect(
+      (await add({ source: '^/archive/(\\d+)/?$', target: '/?p=$1', regex: true })).status,
+    ).toBe(201);
     expect((await add({ source: '/retired/', status: 410 })).status).toBe(201);
     const dup = await add({ source: '/old-post', target: '/x/' });
     expect(dup.status).toBe(400);
@@ -106,9 +118,12 @@ describe('redirects on the public site', () => {
 describe('the 404 log', () => {
   it('logs path, referrer and count (never the IP) and is capped by the prune', async () => {
     const ctx = await site();
-    await ctx.app.request(`/wp-json/pressbase/v1/render?url=${encodeURIComponent('/missing-page/')}`, {
-      headers: { referer: 'https://elsewhere.example/links', 'x-forwarded-for': '203.0.113.9' },
-    });
+    await ctx.app.request(
+      `/wp-json/pressbase/v1/render?url=${encodeURIComponent('/missing-page/')}`,
+      {
+        headers: { referer: 'https://elsewhere.example/links', 'x-forwarded-for': '203.0.113.9' },
+      },
+    );
     await render(ctx, '/missing-page/?utm=1');
     await render(ctx, '/wp-login.php');
     const log = await ctx.request('GET', '/pressbase-seo/v1/404s');
