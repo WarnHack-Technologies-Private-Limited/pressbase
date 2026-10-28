@@ -74,12 +74,12 @@ export const migrateCommands: CommandSpec[] = [
         ctx.user ??
         ctx.error('Migrations run as a user. Add --user=<username>, for example --user=admin.');
       await ctx.require('import', undefined, `${user.login} isn’t allowed to import content.`);
-      const url = ctx.string('db-url') ?? process.env[URL_ENV];
-      if (!url) {
+      const url =
+        ctx.string('db-url') ||
+        process.env[URL_ENV] ||
         ctx.error(
           `Say which database to read: --db-url=mysql://user:password@host/database (or set ${URL_ENV}).`,
         );
-      }
       const prefix = ctx.string('prefix') ?? 'wp_';
       let uploads: string | undefined;
       const uploadsArg = ctx.string('uploads');
