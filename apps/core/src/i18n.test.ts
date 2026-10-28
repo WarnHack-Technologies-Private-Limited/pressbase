@@ -367,8 +367,10 @@ describe('the public site in the site’s language', () => {
     expect(missing).toContain('Seite nicht gefunden');
     expect(missing).toContain('<html lang="de-DE">');
     expect(missing).toContain('Zum Inhalt springen');
-    const pattern = ctx.kernel.blocks.patterns?.get?.('twentytwentyfive/hidden-404');
-    if (pattern) expect(pattern.title).toBe('404 (Fehler)');
+    const pattern = ctx.kernel.blocks
+      .patterns()
+      .find((p) => p.name === 'twentytwentyfive/hidden-404');
+    expect(pattern?.title).toBe('404 (Fehler)');
 
     const single = await render(new URL(created.body.link).pathname);
     expect(single).toContain('Oktober 12, 2026');

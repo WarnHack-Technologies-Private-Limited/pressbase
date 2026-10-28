@@ -63,7 +63,7 @@ test('switches the site language: admin, block editor and public site', async ({
     await expect(page.getByRole('button', { name: 'Rückgängig' })).toBeVisible();
     // Block titles in the inserter come from the core translation, as WordPress's server sends them.
     await page.getByRole('button', { name: 'Block hinzufügen' }).click();
-    await expect(page.getByRole('option', { name: 'Absatz' })).toBeVisible();
+    await expect(page.getByRole('option', { name: 'Absatz' }).first()).toBeVisible();
 
     // The public site.
     await page.goto('/');

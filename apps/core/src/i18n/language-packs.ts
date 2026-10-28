@@ -58,6 +58,20 @@ const PACK_FILE = /^[A-Za-z0-9_.@-]+\.(?:mo|po|json)$/;
 /** WordPress caches the list for three hours (the `available_translations` site transient). */
 const CACHE_SECONDS = 3 * 60 * 60;
 
+/** The slice of fetch() language packs use (typed here so the plugin SDK needs no DOM types). */
+export interface HttpResponse {
+  ok: boolean;
+  status: number;
+  headers: { get(name: string): string | null };
+  json(): Promise<unknown>;
+  arrayBuffer(): Promise<ArrayBuffer>;
+}
+
+export type HttpFetch = (
+  url: URL,
+  init?: { headers?: Record<string, string>; signal?: AbortSignal },
+) => Promise<HttpResponse>;
+
 export type TranslationType = 'core' | 'themes' | 'plugins';
 
 export interface AvailableTranslation {
@@ -100,7 +114,8 @@ export class LanguagePacks {
    * The HTTP client. Tests replace it; nothing else should. Requests go to
    * api.wordpress.org and downloads.wordpress.org only.
    */
-  fetch: typeof globalThis.fetch = (...args) => globalThis.fetch(...args);
+  fetch: HttpFetch = (url, init) =>
+    globalThis.fetch(url, init as never) as unknown as Promise<HttpResponse>;
 
   constructor(private readonly kernel: Kernel) {}
 
@@ -119,7 +134,7 @@ export class LanguagePacks {
       url.searchParams.set('version', args.version);
       if (type !== 'core' && args.slug) url.searchParams.set('slug', args.slug);
       url.searchParams.set('locale', this.kernel.i18n.getLocale());
-      let response: Response;
+      let response: HttpResponse;
       try {
         response = await this.fetch(url, {
           headers: { accept: 'application/json' },
@@ -199,7 +214,7 @@ export class LanguagePacks {
         ),
       );
     }
-    let response: Response;
+    let response: HttpResponse;
     try {
       response = await this.fetch(url, { signal: AbortSignal.timeout(60_000) });
     } catch (error) {
