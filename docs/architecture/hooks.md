@@ -164,8 +164,8 @@ Plugins see the same declarations through `@pressbase/plugin-sdk`, whose types a
 | `wp_head`, `wp_body_open`, `wp_footer` | action | `out, page` | print into the head, the start of `<body>`, the footer with `out.print(html)`; part of the cached page, so nothing per-visitor |
 | `script_loader_src`, `style_loader_src` | filter | `src, handle` | an enqueued script's / stylesheet's URL |
 | `script_loader_tag` / `style_loader_tag` | filter | `tag, handle, src` / `tag, handle, href, media` | the printed tag |
-| `wp_robots` | filter | `robots` | the robots meta directives |
-| `pre_get_document_title`, `document_title_separator`, `document_title_parts`, `document_title` | filter | `title` / `separator` / `parts` / `title` | the `<title>` |
+| `wp_robots` | filter | `robots`, `main` | the robots meta directives; `main` is the page's main query (Pressbase's addition: WordPress plugins read `$wp_query`) |
+| `pre_get_document_title`, `document_title_separator`, `document_title_parts`, `document_title` | filter | `title` / `separator` / `parts` / `title`, then `main` | the `<title>`; `main` is the main query being rendered (Pressbase's addition, as for `wp_robots`) |
 | `the_generator` | filter | `html, type` | the generator meta tag |
 | `get_canonical_url` | filter | `url, post` | `wp_get_canonical_url()`: the canonical URL `rel_canonical` prints (v0.7) |
 | `template_redirect` | action | `request` | before a public URL is served (robots.txt, sitemaps, feeds, plugin files, pages); `request.redirect(location, status)` or `request.notFound(404 \| 410)` answers instead. See [Plugins](plugins.md#early-request-hooks-template_redirect-and-404s), [ADR 0017](../adr/0017-early-request-hooks-and-the-page-cache.md) |

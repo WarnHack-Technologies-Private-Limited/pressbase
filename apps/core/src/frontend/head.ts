@@ -11,6 +11,7 @@ import { Scripts, type Strategy, Styles, type Version } from './dependencies';
 import { feedLinkTags } from './feeds';
 import { currentPage, type PageRender } from './page';
 import { documentTitle } from './title';
+import type { MainQuery } from './query';
 
 /**
  * Public page hooks: what wp_head(), wp_body_open(), wp_footer() and
@@ -64,7 +65,8 @@ declare module '@pressbase/hooks' {
     wp_footer: [out: HtmlOutput, page: PageRender];
   }
   interface FilterRegistry {
-    wp_robots: [robots: Record<string, string | boolean>];
+    /** Pressbase passes the page's main query as a second argument (WordPress reads the global $wp_query). */
+    wp_robots: [robots: Record<string, string | boolean>, main: MainQuery];
     the_generator: [html: string, type: string];
     get_canonical_url: [canonicalUrl: string, post: Post];
   }
@@ -308,12 +310,12 @@ export function registerPublicPageHooks(kernel: Kernel): void {
   // wp_robots(), with wp_robots_noindex() and wp_robots_max_image_preview_large() as defaults.
   head(
     'wp_robots',
-    async (out) => {
+    async (out, page) => {
       const blogPublic = await kernel.options.get<boolean>('blog_public', true);
       const defaults: Record<string, string | boolean> = blogPublic
         ? { 'max-image-preview': 'large' }
         : { noindex: true, nofollow: true };
-      const robots = (await hooks.applyFilters('wp_robots', defaults)) ?? {};
+      const robots = (await hooks.applyFilters('wp_robots', defaults, page.main)) ?? {};
       const directives = Object.entries(robots).flatMap(([name, value]) =>
         typeof value === 'string' ? [`${name}:${value}`] : value ? [name] : [],
       );
