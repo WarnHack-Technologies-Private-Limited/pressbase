@@ -20,3 +20,4 @@ To write one, copy [template.md](template.md) to `NNNN-short-title.md` and open 
 | [0010](0010-job-queue.md)                 | Table-backed job queue and cron, not pg-boss              | Accepted |
 | [0011](0011-plugin-admin-extensions.md) | Plugin admin extensions: declarative settings, runtime ES modules into slots | Accepted |
 | [0012](0012-plugin-sdk-types.md)          | The plugin SDK's types are generated from core            | Accepted |
+| [0014](0014-pressbase-cli.md)             | The pressbase CLI: in-process kernel, node:util parseArgs, a lock for the built-in database | Accepted |

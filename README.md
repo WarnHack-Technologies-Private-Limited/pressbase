@@ -83,7 +83,15 @@ cp .env.example .env             # then set DATABASE_URL=postgres://pressbase:pr
 pnpm dev
 ```
 
-More detail is in [Getting started](docs/development/getting-started.md).
+Or install from the terminal, without the browser, with the `pressbase` CLI:
+
+```bash
+pnpm pressbase core install --builtin-database --url=http://localhost:3000 \
+  --title="My site" --admin_user=admin --admin_email=you@example.com
+pnpm pressbase post list
+```
+
+More detail is in [Getting started](docs/development/getting-started.md) and the [CLI reference](docs/development/cli.md).
 
 ### Run with Docker
 
