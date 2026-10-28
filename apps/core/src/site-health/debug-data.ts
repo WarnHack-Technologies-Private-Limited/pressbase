@@ -120,7 +120,9 @@ async function core(health: SiteHealth): Promise<DebugSection> {
       user_count: field('User count', users?.n ?? 0),
       update_check: field(
         'Checks for new releases',
-        ['off', '0', 'false', 'no'].includes((process.env.PRESSBASE_UPDATE_CHECK ?? '').toLowerCase())
+        ['off', '0', 'false', 'no'].includes(
+          (process.env.PRESSBASE_UPDATE_CHECK ?? '').toLowerCase(),
+        )
           ? 'Off'
           : 'GitHub releases',
       ),
@@ -145,10 +147,7 @@ function pathsSizes(health: SiteHealth): DebugSection {
       uploads_size: field('Uploads directory size', LOADING.value, { debug: LOADING.debug }),
       themes_path: field('Themes directory location', kernel.themes.directories().join(', ')),
       themes_size: field('Themes directory size', LOADING.value, { debug: LOADING.debug }),
-      plugins_path: field(
-        'Plugins directory location',
-        [site, bundled].filter(Boolean).join(', '),
-      ),
+      plugins_path: field('Plugins directory location', [site, bundled].filter(Boolean).join(', ')),
       plugins_size: field('Plugins directory size', LOADING.value, { debug: LOADING.debug }),
       database_size: field('Database size', LOADING.value, { debug: LOADING.debug }),
       total_size: field('Total installation size', LOADING.value, { debug: LOADING.debug }),
@@ -160,9 +159,10 @@ async function themes(health: SiteHealth): Promise<DebugInfo> {
   const { kernel } = health;
   const [all, active] = await Promise.all([kernel.themes.all(), kernel.themes.activeStylesheet()]);
   const theme = all.find((t) => t.stylesheet === active);
-  const parent = theme && theme.template !== theme.stylesheet
-    ? all.find((t) => t.stylesheet === theme.template)
-    : undefined;
+  const parent =
+    theme && theme.template !== theme.stylesheet
+      ? all.find((t) => t.stylesheet === theme.template)
+      : undefined;
   const describe = (t: (typeof all)[number]) => ({
     value: `Version ${t.version || 'unknown'} by ${t.author || 'unknown'}`,
     debug: `version: ${t.version || 'undefined'}, author: ${t.author || 'undefined'}`,
@@ -217,13 +217,17 @@ async function plugins(health: SiteHealth): Promise<DebugInfo> {
   const row = (p: (typeof installed)[number]) => {
     const author = p.manifest.author || 'unknown';
     const error = errors[p.slug];
-    return field(p.manifest.title || p.slug, `Version ${p.manifest.version} by ${author}${
-      p.source === 'bundled' ? ' (ships with Pressbase)' : ''
-    }${error ? ` — stopped: ${error.message}` : ''}`, {
-      debug: `version: ${p.manifest.version}, author: ${author}, source: ${p.source}${
-        error ? `, error: ${error.message}` : ''
-      }`,
-    });
+    return field(
+      p.manifest.title || p.slug,
+      `Version ${p.manifest.version} by ${author}${
+        p.source === 'bundled' ? ' (ships with Pressbase)' : ''
+      }${error ? ` — stopped: ${error.message}` : ''}`,
+      {
+        debug: `version: ${p.manifest.version}, author: ${author}, source: ${p.source}${
+          error ? `, error: ${error.message}` : ''
+        }`,
+      },
+    );
   };
   const section = (label: string, list: typeof installed): DebugSection => ({
     label,
@@ -252,10 +256,17 @@ async function media(health: SiteHealth): Promise<DebugSection> {
     label: 'Media Handling',
     fields: {
       image_editor: field('Active editor', 'sharp'),
-      sharp_version: field('sharp version', sharp instanceof Error ? 'Not available' : sharp.sharp, {
-        debug: sharp instanceof Error ? `error: ${sharp.message}` : sharp.sharp,
-      }),
-      libvips_version: field('libvips version', sharp instanceof Error ? 'Not available' : sharp.vips),
+      sharp_version: field(
+        'sharp version',
+        sharp instanceof Error ? 'Not available' : sharp.sharp,
+        {
+          debug: sharp instanceof Error ? `error: ${sharp.message}` : sharp.sharp,
+        },
+      ),
+      libvips_version: field(
+        'libvips version',
+        sharp instanceof Error ? 'Not available' : sharp.vips,
+      ),
       output_formats: field(
         'Output formats',
         sharp instanceof Error ? 'None' : sharp.formats.join(', '),
@@ -287,7 +298,10 @@ function server(health: SiteHealth): DebugSection {
     description:
       'The options shown below relate to your server setup. If changes are required, you may need your web host’s assistance.',
     fields: {
-      server_architecture: field('Server architecture', `${os.type()} ${os.release()} ${os.arch()}`),
+      server_architecture: field(
+        'Server architecture',
+        `${os.type()} ${os.release()} ${os.arch()}`,
+      ),
       hostname: field('Hostname', os.hostname(), { private: true }),
       node_version: field('Node.js version', process.versions.node),
       v8_version: field('V8 version', process.versions.v8),
@@ -368,14 +382,18 @@ function configuration(health: SiteHealth): DebugSection {
   const set = (value: unknown) => (value ? 'Set' : 'Not set');
   return {
     label: 'Pressbase Constants',
-    description: 'These settings control how Pressbase runs. They come from environment variables and the data directory’s config.json.',
+    description:
+      'These settings control how Pressbase runs. They come from environment variables and the data directory’s config.json.',
     fields: {
       PRESSBASE_DATA_DIR: field('Data directory (PRESSBASE_DATA_DIR)', config.dataDir),
       PORT: field('Core port (PORT)', config.port),
       NODE_ENV: field('NODE_ENV', process.env.NODE_ENV || 'Not set', {
         debug: process.env.NODE_ENV || 'undefined',
       }),
-      PRESSBASE_WORKER: field('Job worker (PRESSBASE_WORKER)', config.worker === false ? 'Off' : 'On'),
+      PRESSBASE_WORKER: field(
+        'Job worker (PRESSBASE_WORKER)',
+        config.worker === false ? 'Off' : 'On',
+      ),
       PRESSBASE_MAX_UPLOAD_MB: field(
         'Upload limit (PRESSBASE_MAX_UPLOAD_MB)',
         `${config.maxUploadMb ?? 64} MB`,
@@ -393,9 +411,13 @@ function configuration(health: SiteHealth): DebugSection {
         config.mail?.host ?? (config.mail?.smtpUrl ? hostOf(config.mail.smtpUrl) : 'Not set'),
         { private: true },
       ),
-      PRESSBASE_MAIL_FROM: field('From address (PRESSBASE_MAIL_FROM)', config.mail?.from ?? 'Not set', {
-        private: true,
-      }),
+      PRESSBASE_MAIL_FROM: field(
+        'From address (PRESSBASE_MAIL_FROM)',
+        config.mail?.from ?? 'Not set',
+        {
+          private: true,
+        },
+      ),
       PAGE_CACHE: field('Page cache purges', config.revalidate ? 'On' : 'Off'),
       WEB_URL: field('Public site (WEB_URL)', health.webUrls().join(', ') || 'Not set', {
         private: true,

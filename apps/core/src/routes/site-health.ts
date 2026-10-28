@@ -91,7 +91,12 @@ export function wpSiteHealthRoutes() {
     const health = c.get('kernel').siteHealth;
     const found = await health.findAsync(c.req.param('test'));
     if (!found) {
-      return restError(c, 404, 'rest_no_route', 'No route was found matching the URL and request method.');
+      return restError(
+        c,
+        404,
+        'rest_no_route',
+        'No route was found matching the URL and request method.',
+      );
     }
     if (!(await allowed(c, found.id))) return forbidden(c, Boolean(c.get('user')));
     return c.json(await health.perform(found.id, found.test.label, found.test.async_direct_test));

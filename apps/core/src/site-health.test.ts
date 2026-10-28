@@ -5,7 +5,7 @@ import { sql } from 'drizzle-orm';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Config } from './config';
 import { formatDebugInfo } from './site-health/debug-data';
-import { RESULT_TRANSIENT, SCHEDULED_CHECK, overallStatus } from './site-health/service';
+import { overallStatus, RESULT_TRANSIENT, SCHEDULED_CHECK } from './site-health/service';
 import { nodeEnvTest, nodeVersionTest } from './site-health/tests';
 import type { DebugInfo, SiteHealthTestResult } from './site-health/types';
 import { setup } from './test-utils';
@@ -121,10 +121,19 @@ describe('GET /pressbase/v1/site-health', () => {
     );
     expect(body.async).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: 'https_status', test: '/wp-site-health/v1/tests/https-status' }),
-        expect.objectContaining({ id: 'loopback_requests', test: '/wp-site-health/v1/tests/loopback-requests' }),
+        expect.objectContaining({
+          id: 'https_status',
+          test: '/wp-site-health/v1/tests/https-status',
+        }),
+        expect.objectContaining({
+          id: 'loopback_requests',
+          test: '/wp-site-health/v1/tests/loopback-requests',
+        }),
         expect.objectContaining({ id: 'page_cache', test: '/wp-site-health/v1/tests/page-cache' }),
-        expect.objectContaining({ id: 'pressbase_version', test: '/wp-site-health/v1/tests/pressbase-version' }),
+        expect.objectContaining({
+          id: 'pressbase_version',
+          test: '/wp-site-health/v1/tests/pressbase-version',
+        }),
       ]),
     );
   });
@@ -229,7 +238,10 @@ describe('GET /pressbase/v1/site-health', () => {
       label: 'Background tasks aren’t running',
     });
     const failed = find(direct, 'failed_jobs');
-    expect(failed).toMatchObject({ status: 'recommended', label: 'A background task failed recently' });
+    expect(failed).toMatchObject({
+      status: 'recommended',
+      label: 'A background task failed recently',
+    });
     expect(failed.description).toContain('Broken on purpose.');
     expect(failed.description).not.toContain('stack');
   });
@@ -251,7 +263,12 @@ describe('GET /pressbase/v1/site-health', () => {
     await mkdir(plugin, { recursive: true });
     await writeFile(
       path.join(plugin, 'plugin.json'),
-      JSON.stringify({ name: 'unused-widget', title: 'Unused Widget', version: '1.0.0', main: 'index.js' }),
+      JSON.stringify({
+        name: 'unused-widget',
+        title: 'Unused Widget',
+        version: '1.0.0',
+        main: 'index.js',
+      }),
     );
     await writeFile(path.join(plugin, 'index.js'), 'export default function register() {}');
     const theme = path.join(ctx.dataDir, 'themes', 'spare-theme');
@@ -275,7 +292,11 @@ describe('GET /pressbase/v1/site-health', () => {
   it('reports plugins stopped by an error', async () => {
     const ctx = await site();
     await ctx.kernel.options.set('pressbase_plugin_errors', {
-      'broken-thing': { message: 'Cannot find module', during: 'load', time: new Date().toISOString() },
+      'broken-thing': {
+        message: 'Cannot find module',
+        during: 'load',
+        time: new Date().toISOString(),
+      },
     });
     const { direct } = await status(ctx);
     const result = find(direct, 'plugin_errors');
@@ -317,8 +338,14 @@ describe('async tests: /wp-site-health/v1/tests/{test}', () => {
         : Response.json({ name: 'Test Site', pressbase: { version: '0.1.0' } }),
     );
     const ok = await ctx.request('GET', '/wp-site-health/v1/tests/loopback-requests');
-    expect(ok.body).toMatchObject({ status: 'good', label: 'Your site can perform loopback requests' });
-    expect(calls).toEqual(['http://localhost:3000/wp-json/', 'http://web.internal:3001/robots.txt']);
+    expect(ok.body).toMatchObject({
+      status: 'good',
+      label: 'Your site can perform loopback requests',
+    });
+    expect(calls).toEqual([
+      'http://localhost:3000/wp-json/',
+      'http://web.internal:3001/robots.txt',
+    ]);
 
     stubFetch(ctx, (url) =>
       url.endsWith('/robots.txt')
@@ -350,7 +377,7 @@ describe('async tests: /wp-site-health/v1/tests/{test}', () => {
     const good = await ctx.request('GET', '/wp-site-health/v1/tests/page-cache');
     expect(good.body).toMatchObject({ status: 'good', label: 'Page caching is on' });
     expect(calls).toEqual(['http://web.internal:3001/_pressbase/revalidate']);
-    expect((sent[0]?.headers as Record<string, string>).authorization).toBe(
+    expect((sent[0]?.headers as Record<string, string> | undefined)?.authorization).toBe(
       'Bearer a-very-long-shared-secret',
     );
     // The secret is used, never shown.
@@ -361,16 +388,25 @@ describe('async tests: /wp-site-health/v1/tests/{test}', () => {
     expect(mismatch.body.status).toBe('critical');
     answer = 404;
     const webOff = await ctx.request('GET', '/wp-site-health/v1/tests/page-cache');
-    expect(webOff.body).toMatchObject({ status: 'recommended', label: 'The public site doesn’t cache pages' });
+    expect(webOff.body).toMatchObject({
+      status: 'recommended',
+      label: 'The public site doesn’t cache pages',
+    });
   });
 
   it('pressbase-version: compares with GitHub’s latest release, cached', async () => {
     const ctx = await site();
     const calls = stubFetch(ctx, () =>
-      Response.json({ tag_name: 'v99.0.0', html_url: 'https://github.com/example/releases/v99.0.0' }),
+      Response.json({
+        tag_name: 'v99.0.0',
+        html_url: 'https://github.com/example/releases/v99.0.0',
+      }),
     );
     const res = await ctx.request('GET', '/wp-site-health/v1/tests/pressbase-version');
-    expect(res.body).toMatchObject({ status: 'recommended', label: 'Pressbase 99.0.0 is available' });
+    expect(res.body).toMatchObject({
+      status: 'recommended',
+      label: 'Pressbase 99.0.0 is available',
+    });
     expect(res.body.actions).toContain('https://github.com/example/releases/v99.0.0');
     await ctx.request('GET', '/wp-site-health/v1/tests/pressbase-version');
     expect(calls).toHaveLength(1);
@@ -425,7 +461,10 @@ describe('extensibility', () => {
     expect(backups.description).toBe('<p>The last backup ran today.</p>');
     expect(body.direct.some((r) => r.test === 'timezone')).toBe(false);
     expect(body.async).toContainEqual(
-      expect.objectContaining({ id: 'example_remote', test: '/wp-site-health/v1/tests/example-remote' }),
+      expect.objectContaining({
+        id: 'example_remote',
+        test: '/wp-site-health/v1/tests/example-remote',
+      }),
     );
     const remote = await ctx.request('GET', '/wp-site-health/v1/tests/example-remote');
     expect(remote.body).toMatchObject({ status: 'recommended', badge: { color: 'orange' } });
@@ -460,11 +499,14 @@ describe('extensibility', () => {
     const ctx = await site();
     ctx.kernel.hooks.addFilter('site_status_test_result', (result) =>
       result.test === 'mail' || result.test === 'https_status'
-        ? { ...result, status: 'good', label: `${result.test} handled by the host` }
+        ? { ...result, status: 'good' as const, label: `${result.test} handled by the host` }
         : result,
     );
     const { direct } = await status(ctx);
-    expect(find(direct, 'mail')).toMatchObject({ status: 'good', label: 'mail handled by the host' });
+    expect(find(direct, 'mail')).toMatchObject({
+      status: 'good',
+      label: 'mail handled by the host',
+    });
     const https = await ctx.request('GET', '/wp-site-health/v1/tests/https-status');
     expect(https.body.label).toBe('https_status handled by the host');
   });
@@ -483,7 +525,12 @@ describe('extensibility', () => {
     await mkdir(dir, { recursive: true });
     await writeFile(
       path.join(dir, 'plugin.json'),
-      JSON.stringify({ name: 'health-extra', title: 'Health Extra', version: '1.0.0', main: 'index.js' }),
+      JSON.stringify({
+        name: 'health-extra',
+        title: 'Health Extra',
+        version: '1.0.0',
+        main: 'index.js',
+      }),
     );
     await writeFile(
       path.join(dir, 'index.js'),
@@ -525,7 +572,9 @@ describe('the saved result and the weekly check', () => {
       purges.push(tags);
     });
 
-    const bad = await ctx.request('POST', '/pressbase/v1/site-health/result', { counts: { good: -1 } });
+    const bad = await ctx.request('POST', '/pressbase/v1/site-health/result', {
+      counts: { good: -1 },
+    });
     expect(bad.status).toBe(400);
     expect(bad.body.code).toBe('rest_invalid_param');
 
@@ -566,13 +615,18 @@ describe('the saved result and the weekly check', () => {
   });
 
   it('works out the overall rating as site-health.js does', () => {
-    expect(overallStatus({ good: 20, recommended: 0, critical: 0 })).toEqual({ score: 100, status: 'good' });
+    expect(overallStatus({ good: 20, recommended: 0, critical: 0 })).toEqual({
+      score: 100,
+      status: 'good',
+    });
     expect(overallStatus({ good: 10, recommended: 4, critical: 0 })).toEqual({
       score: 85,
       status: 'good',
     });
     // Any critical issue means "Should be improved", whatever the score.
-    expect(overallStatus({ good: 30, recommended: 0, critical: 1 }).status).toBe('should_be_improved');
+    expect(overallStatus({ good: 30, recommended: 0, critical: 1 }).status).toBe(
+      'should_be_improved',
+    );
     expect(overallStatus({ good: 2, recommended: 8, critical: 0 })).toEqual({
       score: 60,
       status: 'should_be_improved',
@@ -614,7 +668,10 @@ describe('GET /pressbase/v1/site-health/info', () => {
     const ctx = await site({
       setupToken: 'setup-code-XYZ123',
       revalidate: { urls: ['http://web.internal:3001'], secret: 'revalidate-secret-ABC987' },
-      mail: { smtpUrl: 'smtps://mailer:smtp-pass-QRS456@smtp.example.com:465', from: 'Site <site@example.com>' },
+      mail: {
+        smtpUrl: 'smtps://mailer:smtp-pass-QRS456@smtp.example.com:465',
+        from: 'Site <site@example.com>',
+      },
     });
     vi.stubEnv('PRESSBASE_SMTP_PASS', 'env-pass-LMN654');
     vi.stubEnv('PRESSBASE_CUSTOM_THING', 'custom-value-DEF321');
@@ -647,7 +704,14 @@ describe('GET /pressbase/v1/site-health/info', () => {
     const ctx = await site();
     const res = await ctx.request('GET', '/wp-site-health/v1/directory-sizes');
     expect(res.status).toBe(200);
-    for (const key of ['data_size', 'uploads_size', 'themes_size', 'plugins_size', 'database_size', 'total_size']) {
+    for (const key of [
+      'data_size',
+      'uploads_size',
+      'themes_size',
+      'plugins_size',
+      'database_size',
+      'total_size',
+    ]) {
       expect(res.body[key].raw, key).toBeGreaterThanOrEqual(0);
       expect(res.body[key].size, key).toMatch(/B$/);
     }
@@ -698,6 +762,8 @@ describe('helpers', () => {
     expect(formatDebugInfo(info, 'debug')).toBe(
       '`\n### wp-core ###\n\nversion: 0.1.0\nhttps: true\nempty: undefined\nzero: 0\nsizes: \n\tthumbnail: 150×150\n\tmedium: 300×300\n\n### wp-plugins-active (1) ###\n\na: Version 1\n\n`',
     );
-    expect(formatDebugInfo(info, 'info')).toContain('### Pressbase ###\n\nVersion: 0.1.0\nHTTPS?: Yes\n');
+    expect(formatDebugInfo(info, 'info')).toContain(
+      '### Pressbase ###\n\nVersion: 0.1.0\nHTTPS?: Yes\n',
+    );
   });
 });

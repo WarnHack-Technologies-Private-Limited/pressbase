@@ -2,8 +2,8 @@ import { access, constants, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { pendingMigrations, resultRows, schema } from '@pressbase/db';
 import { and, count, eq, gte, inArray, lt, sql } from 'drizzle-orm';
-import { LocalStorage } from '../media/storage';
 import { mediaStorage } from '../media/service';
+import { LocalStorage } from '../media/storage';
 import { compareVersions, parseVersion } from '../plugins/semver';
 import { DEFAULT_THEME } from '../themes/service';
 import { DB_VERSION, PRESSBASE_VERSION } from '../version';
@@ -69,7 +69,10 @@ export function nodeVersionTest(version = process.versions.node): SiteHealthTest
     paragraphs(
       'Node.js runs Pressbase’s core. Newer long-term support (LTS) releases are faster and get security fixes.',
     ),
-    actionLink('https://nodejs.org/en/about/previous-releases', 'Learn more about Node.js releases'),
+    actionLink(
+      'https://nodejs.org/en/about/previous-releases',
+      'Learn more about Node.js releases',
+    ),
   );
   if (major < MIN_NODE.major || (major === MIN_NODE.major && minor < MIN_NODE.minor)) {
     r.status = 'critical';
@@ -600,12 +603,7 @@ async function uploadsTest(health: SiteHealth): Promise<SiteHealthTestResult> {
 
 /** get_test_available_updates_disk_space(), for the data directory. */
 async function diskSpaceTest(health: SiteHealth): Promise<SiteHealthTestResult> {
-  const r = result(
-    'available_disk_space',
-    PERFORMANCE,
-    'There is enough disk space',
-    '',
-  );
+  const r = result('available_disk_space', PERFORMANCE, 'There is enough disk space', '');
   const free = await health.freeDiskSpace();
   if (free === null) {
     r.status = 'recommended';
@@ -636,12 +634,7 @@ async function diskSpaceTest(health: SiteHealth): Promise<SiteHealthTestResult> 
 
 /** Pressbase: sharp, which resizes images (WordPress's GD and Imagick checks in get_test_php_extensions()). */
 async function imageProcessingTest(health: SiteHealth): Promise<SiteHealthTestResult> {
-  const r = result(
-    'image_processing',
-    PERFORMANCE,
-    'Images can be resized',
-    '',
-  );
+  const r = result('image_processing', PERFORMANCE, 'Images can be resized', '');
   const sharp = await health.sharpInfo();
   if (sharp instanceof Error) {
     r.status = 'critical';
@@ -681,16 +674,16 @@ async function pluginErrorsTest(health: SiteHealth): Promise<SiteHealthTestResul
       (slug) =>
         `<li><strong>${esc(slug)}</strong> was stopped: ${esc(errors[slug]?.message ?? '')}</li>`,
     ),
-    ...runtime.map((title) => `<li><strong>${esc(title)}</strong> reported errors while running</li>`),
+    ...runtime.map(
+      (title) => `<li><strong>${esc(title)}</strong> reported errors while running</li>`,
+    ),
     ...discovered.invalid.map(
       (p) => `<li><strong>${esc(p.slug)}</strong> can’t be loaded: ${esc(p.error)}</li>`,
     ),
   ];
   if (!items.length) return r;
   r.status = stopped.length ? 'critical' : 'recommended';
-  r.label = stopped.length
-    ? 'A plugin was stopped by an error'
-    : 'Plugins are reporting errors';
+  r.label = stopped.length ? 'A plugin was stopped by an error' : 'Plugins are reporting errors';
   r.description = `${paragraphs(
     'When a plugin fails to load, Pressbase deactivates it so your site keeps working, and what it adds to your site is missing until it’s fixed.',
   )}<ul>${items.join('')}</ul>`;
@@ -730,7 +723,10 @@ async function inactivePluginsTest(health: SiteHealth): Promise<SiteHealthTestRe
 async function inactiveThemesTest(health: SiteHealth): Promise<SiteHealthTestResult> {
   const { kernel } = health;
   const siteThemes = path.join(kernel.config.dataDir, 'themes');
-  const [themes, active] = await Promise.all([kernel.themes.all(), kernel.themes.activeStylesheet()]);
+  const [themes, active] = await Promise.all([
+    kernel.themes.all(),
+    kernel.themes.activeStylesheet(),
+  ]);
   const activeTheme = themes.find((t) => t.stylesheet === active);
   const keep = new Set([active, activeTheme?.template, DEFAULT_THEME]);
   // Only themes in the data directory can be removed; bundled ones ship with Pressbase.
@@ -783,9 +779,7 @@ async function timezoneTest(health: SiteHealth): Promise<SiteHealthTestResult> {
     'timezone',
     PERFORMANCE,
     `Your site’s time zone is set (${value ?? 'UTC'})`,
-    paragraphs(
-      'Post dates, scheduled posts and comment times use the site’s time zone.',
-    ),
+    paragraphs('Post dates, scheduled posts and comment times use the site’s time zone.'),
   );
   let valid = Boolean(value);
   try {

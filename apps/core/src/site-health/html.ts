@@ -23,7 +23,7 @@ export function paragraphs(...items: (string | false | undefined)[]): string {
 export function actionLink(href: string, text: string): string {
   const external = /^https?:\/\//.test(href);
   return `<p><a href="${esc(href)}"${external ? ' target="_blank" rel="noopener"' : ''}>${esc(text)}${
-    external ? '<span class="screen-reader-text"> (opens in a new tab)</span>' : ''
+    external ? '<span class="visually-hidden"> (opens in a new tab)</span>' : ''
   }</a></p>`;
 }
 
@@ -36,7 +36,7 @@ export function actionLink(href: string, text: string): string {
 const OPTIONS: sanitizeHtml.IOptions = {
   allowedTags: ['p', 'a', 'code', 'strong', 'em', 'ul', 'ol', 'li', 'br', 'span'],
   allowedAttributes: { a: ['href', 'target', 'rel'], span: ['class'] },
-  allowedClasses: { span: ['screen-reader-text'] },
+  allowedClasses: { span: ['visually-hidden'] },
   allowedSchemes: ['http', 'https', 'mailto'],
   allowProtocolRelative: false,
 };

@@ -5,9 +5,10 @@ import { sql } from 'drizzle-orm';
 import type { Kernel } from '../kernel';
 import { PRESSBASE_VERSION } from '../version';
 import { debugData, directorySizes } from './debug-data';
-import { esc, isValidResult, paragraphs, prepareResult } from './html';
+import { esc, isValidResult, ksesSiteHealth, paragraphs, prepareResult } from './html';
 import { coreTests } from './tests';
 import type {
+  DebugInfo,
   SiteHealthAsyncTest,
   SiteHealthCounts,
   SiteHealthTestCallback,
@@ -63,12 +64,17 @@ export function overallStatus(counts: SiteHealthCounts): {
 } {
   const total = counts.good + counts.recommended + counts.critical * 1.5;
   const failed = counts.recommended * 0.5 + counts.critical * 1.5;
-  const score = total === 0 ? 100 : Math.min(100, Math.max(0, 100 - Math.ceil((failed / total) * 100)));
+  const score =
+    total === 0 ? 100 : Math.min(100, Math.max(0, 100 - Math.ceil((failed / total) * 100)));
   return { score, status: score >= 80 && counts.critical === 0 ? 'good' : 'should_be_improved' };
 }
 
 /** The issue site-health.js shows when a test fails to run (addFailedSiteHealthCheckNotice()). */
-export function unavailableResult(test: string, label: string, error: unknown): SiteHealthTestResult {
+export function unavailableResult(
+  test: string,
+  label: string,
+  error: unknown,
+): SiteHealthTestResult {
   return {
     label: 'A test is unavailable',
     status: 'recommended',
@@ -95,7 +101,11 @@ export class SiteHealth {
     // maybe_create_scheduled_event(): weekly, the first run a day after install.
     kernel.hooks.addAction('init', async () => {
       if ((await kernel.cron.nextScheduled(SCHEDULED_CHECK)) === false) {
-        await kernel.cron.scheduleEvent(Math.floor(Date.now() / 1000) + 86_400, 'weekly', SCHEDULED_CHECK);
+        await kernel.cron.scheduleEvent(
+          Math.floor(Date.now() / 1000) + 86_400,
+          'weekly',
+          SCHEDULED_CHECK,
+        );
       }
     });
   }
@@ -174,7 +184,8 @@ export class SiteHealth {
     if (test.has_rest && typeof test.test === 'string' && test.test.startsWith('/')) {
       return test.test;
     }
-    if (typeof test.async_direct_test === 'function') return `/wp-site-health/v1/tests/${slugOf(id)}`;
+    if (typeof test.async_direct_test === 'function')
+      return `/wp-site-health/v1/tests/${slugOf(id)}`;
     return undefined;
   }
 
@@ -216,9 +227,20 @@ export class SiteHealth {
   /* ------------------------------------------------------------- info tab */
 
   /** WP_Debug_Data::debug_data(), through the `debug_information` filter. */
-  async debugData() {
-    const info = await debugData(this);
-    return this.kernel.hooks.applyFilters('debug_information', info);
+  async debugData(): Promise<DebugInfo> {
+    const filtered = await this.kernel.hooks.applyFilters(
+      'debug_information',
+      await debugData(this),
+    );
+    // Sections without fields are dropped; descriptions are shown as HTML, so they are sanitised.
+    const info: DebugInfo = {};
+    for (const [key, section] of Object.entries(filtered ?? {})) {
+      if (!section || typeof section !== 'object' || !section.fields) continue;
+      info[key] = section.description
+        ? { ...section, description: ksesSiteHealth(String(section.description)) }
+        : section;
+    }
+    return info;
   }
 
   /** WP_Debug_Data::get_sizes(). */
@@ -283,7 +305,11 @@ export class SiteHealth {
         .webp()
         .toBuffer();
       const formats = ['jpeg', 'png', 'webp', 'avif', 'gif']
-        .filter((name) => (sharp.format as unknown as Record<string, { output?: { buffer?: boolean } }>)[name]?.output?.buffer)
+        .filter(
+          (name) =>
+            (sharp.format as unknown as Record<string, { output?: { buffer?: boolean } }>)[name]
+              ?.output?.buffer,
+        )
         .map((name) => name.toUpperCase());
       return { sharp: sharp.versions.sharp ?? '', vips: sharp.versions.vips, formats };
     } catch (error) {
@@ -297,7 +323,9 @@ export class SiteHealth {
    * PRESSBASE_UPDATE_CHECK=off. Never throws: offline sites get an error state.
    */
   async latestRelease(): Promise<ReleaseCheck> {
-    if (['off', '0', 'false', 'no'].includes((process.env.PRESSBASE_UPDATE_CHECK ?? '').toLowerCase())) {
+    if (
+      ['off', '0', 'false', 'no'].includes((process.env.PRESSBASE_UPDATE_CHECK ?? '').toLowerCase())
+    ) {
       return { state: 'off' };
     }
     const cached = await this.#getTransient<ReleaseCheck>(UPDATE_TRANSIENT);
