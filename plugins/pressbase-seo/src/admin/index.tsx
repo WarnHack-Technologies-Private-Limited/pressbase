@@ -184,7 +184,7 @@ function SearchPreview({ config }: { config: EditorConfig | null }) {
       </div>
       <TextField
         label={__('SEO title')}
-        id="pressbase-seo-title"
+        name="pressbase-seo-title"
         value={seoTitle}
         placeholder={preview.titleTemplate}
         optional
@@ -210,7 +210,7 @@ function SearchPreview({ config }: { config: EditorConfig | null }) {
       )}
       <TextAreaField
         label={__('Meta description')}
-        id="pressbase-seo-description"
+        name="pressbase-seo-description"
         value={metadesc}
         rows={3}
         optional
@@ -529,7 +529,7 @@ function CheckItem({ check }: { check: CheckResult }) {
       {check.status === 'improve' && field && (
         <button
           type="button"
-          onClick={() => document.getElementById(field)?.focus()}
+          onClick={() => document.querySelector<HTMLElement>(`[name="${field}"]`)?.focus()}
           style={{
             alignSelf: 'start',
             font: 'inherit',
@@ -560,7 +560,7 @@ function Checks({ config }: { config: EditorConfig | null }) {
     <Section title={__('Focus keyphrase and checks')}>
       <TextField
         label={__('Focus keyphrase')}
-        id="pressbase-seo-keyphrase"
+        name="pressbase-seo-keyphrase"
         value={keyphrase}
         optional
         hint={__('The words you’d like this post to be found for.')}
