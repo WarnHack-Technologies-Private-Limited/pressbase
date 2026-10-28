@@ -63,7 +63,9 @@ import {
 } from './media-categories';
 import { registerMediaLibrary } from './media-library';
 import { createMediaUpload } from './media-upload';
-import { registerServerBlocks } from './server-blocks';
+import { preparePluginBlocks } from './server-blocks';
+import { EditorSkeleton } from './skeleton';
+import { type AdminBlock, useAdminExtensions } from '../extensions/host';
 
 /* ------------------------------------------------------------- one-time setup */
 
@@ -76,13 +78,22 @@ if (!getBlockType('core/paragraph')) {
   setFreeformContentHandlerName('core/html');
 }
 
-/** HTML for the canvas iframe's <head>. Stable, so the iframe is built once. */
-const RESOLVED_ASSETS = {
-  styles: CANVAS_STYLESHEETS.map(
-    (name) => `<link rel="stylesheet" href="${assetUrl(directional(name, isRTL()))}">`,
-  ).join(''),
-  scripts: '',
-};
+/**
+ * HTML for the canvas iframe's <head>: WordPress's stylesheets, then plugin
+ * blocks' `style` and `editorStyle` (as _wp_get_iframed_editor_assets() adds
+ * block styles). Stable per list, so the iframe is built once.
+ */
+function resolvedAssets(blockStyles: readonly string[]) {
+  return {
+    styles: [
+      ...CANVAS_STYLESHEETS.map((name) => assetUrl(directional(name, isRTL()))),
+      ...blockStyles,
+    ]
+      .map((href) => `<link rel="stylesheet" href="${href.replace(/"/g, '&quot;')}">`)
+      .join(''),
+    scripts: '',
+  };
+}
 
 /** The inserter's Media tab (Images, Videos, Audio), once the media library exists. */
 const MEDIA_CATEGORIES = createInserterMediaCategories();
@@ -128,7 +139,35 @@ type Panel = 'inserter' | 'list' | null;
 
 /* --------------------------------------------------------------- the editor */
 
+/**
+ * Plugin blocks first (their editor modules and the server's block types),
+ * then the editor, so saved plugin blocks parse as themselves.
+ */
 export default function BlockEditor(props: BlockEditorProps) {
+  const { blocks = [] } = useAdminExtensions();
+  const [ready, setReady] = useState(false);
+  const key = JSON.stringify(blocks);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: once per editor, with the blocks known then.
+  useEffect(() => {
+    let live = true;
+    preparePluginBlocks(JSON.parse(key) as AdminBlock[])
+      .catch((error) => console.error('Plugin blocks couldn’t be prepared:', error))
+      .finally(() => {
+        if (live) setReady(true);
+      });
+    return () => {
+      live = false;
+    };
+  }, []);
+  const assets = useMemo(
+    () => resolvedAssets((JSON.parse(key) as AdminBlock[]).flatMap((block) => block.styles)),
+    [key],
+  );
+  if (!ready) return <EditorSkeleton />;
+  return <Editor {...props} resolvedAssets={assets} />;
+}
+
+function Editor(props: BlockEditorProps & { resolvedAssets: ReturnType<typeof resolvedAssets> }) {
   const { initialContent, onContentChange, onReady, postId, canUnfilteredHtml } = props;
   const [initial] = useState(() => {
     const blocks = parse(initialContent);
@@ -149,7 +188,6 @@ export default function BlockEditor(props: BlockEditorProps) {
     let live = true;
     loadEditorFeatures().then((loaded) => {
       if (!live) return;
-      if (loaded.blockTypes) registerServerBlocks(loaded.blockTypes);
       if (loaded.media) registerMediaLibrary();
       setFeatures(loaded);
     });
@@ -191,7 +229,7 @@ export default function BlockEditor(props: BlockEditorProps) {
       __experimentalReusableBlocks: features.syncedPatterns ?? [],
       __experimentalCanUserUseUnfilteredHTML: canUnfilteredHtml,
       __experimentalFetchLinkSuggestions: fetchLinkSuggestions,
-      __unstableResolvedAssets: RESOLVED_ASSETS,
+      __unstableResolvedAssets: props.resolvedAssets,
       mediaUpload: createMediaUpload({ available: features.media, postId }),
       imageEditing: features.media,
       // The Media tab only lists categories whose type is allowed here; the
@@ -202,7 +240,7 @@ export default function BlockEditor(props: BlockEditorProps) {
       codeEditingEnabled: true,
       isRTL: isRTL(),
     };
-  }, [features, canUnfilteredHtml, postId]);
+  }, [features, canUnfilteredHtml, postId, props.resolvedAssets]);
 
   const togglePanel = (next: Exclude<Panel, null>) =>
     setPanel((current) => (current === next ? null : next));

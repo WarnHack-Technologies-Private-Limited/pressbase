@@ -38,6 +38,7 @@ import { Button, Spinner } from '../ui/button';
 import { Checkbox, SelectField, TextAreaField, TextField } from '../ui/field';
 import { Badge, Card, EmptyState, Notice } from '../ui/surface';
 import { useToast } from '../ui/toast';
+import { createBlocksHostApi } from './blocks-host';
 import styles from './extensions.module.css';
 
 /** One registry for the page's lifetime: modules can't be unloaded, so neither can it. */
@@ -667,6 +668,11 @@ export const HOST_API = Object.freeze({
     editPost: editorStore.editPost,
     subscribe: editorStore.subscribe,
   }),
+  /**
+   * Blocks: Gutenberg's registerBlockType() and what an edit function needs,
+   * for plugins' editor modules. See docs/architecture/plugins.md#blocks and ADR 0020.
+   */
+  blocks: createBlocksHostApi((name) => extensionStore.ownerFor(name)),
   /** The admin's UI kit, so extensions look like the rest of the admin. */
   components: Object.freeze({
     Button,
@@ -705,3 +711,5 @@ export function installHostApi() {
 }
 
 export { pageSlot, SLOTS };
+export { blockBridge } from './blocks-host';
+export type { AdminBlock } from '@/lib/extensions/pages';

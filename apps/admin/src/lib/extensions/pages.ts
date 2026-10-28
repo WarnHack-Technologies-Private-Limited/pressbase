@@ -33,12 +33,25 @@ export interface AdminModule {
   url: string;
 }
 
+/** A plugin block's editor assets (api.blocks on the server, ADR 0020). */
+export interface AdminBlock {
+  plugin: string;
+  title: string;
+  name: string;
+  /** Same-origin URL of the block's editor module, imported before the editor parses the post. */
+  editor_script: string | null;
+  /** Stylesheets for the editor canvas: the block's `style`, then its `editorStyle`. */
+  styles: string[];
+}
+
 export interface AdminExtensions {
   pages: AdminPage[];
   modules: AdminModule[];
+  /** Missing from cores before v0.7. */
+  blocks?: AdminBlock[];
 }
 
-export const NO_EXTENSIONS: AdminExtensions = { pages: [], modules: [] };
+export const NO_EXTENSIONS: AdminExtensions = { pages: [], modules: [], blocks: [] };
 
 /** Core screens under Settings and Tools, which a plugin's short URL must not shadow. */
 const RESERVED: Record<PageParent, Set<string>> = {
@@ -95,6 +108,7 @@ export function isPageCurrent(page: AdminPage, pathname: string): boolean {
 export function activeOwners(extensions: AdminExtensions): { plugin: string; title: string }[] {
   const owners = new Map<string, string>();
   for (const m of extensions.modules) owners.set(m.plugin, m.title);
+  for (const b of extensions.blocks ?? []) if (!owners.has(b.plugin)) owners.set(b.plugin, b.title);
   for (const p of extensions.pages) if (!owners.has(p.plugin)) owners.set(p.plugin, p.plugin_title);
   return [...owners].map(([plugin, title]) => ({ plugin, title }));
 }
