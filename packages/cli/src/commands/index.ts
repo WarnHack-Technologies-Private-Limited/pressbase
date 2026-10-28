@@ -5,6 +5,7 @@ import { cronCommands } from './cron';
 import { dbCommands } from './db';
 import { importExportCommands } from './import-export';
 import { mediaCommands } from './media';
+import { migrateCommands } from './migrate';
 import { optionCommands } from './option';
 import { pluginCommands } from './plugin';
 import { postCommands } from './post';
@@ -22,6 +23,7 @@ export const COMMANDS: CommandSpec[] = [
   ...dbCommands,
   ...importExportCommands,
   ...mediaCommands,
+  ...migrateCommands,
   ...optionCommands,
   ...pluginCommands,
   ...postCommands,
@@ -44,6 +46,7 @@ export const GROUPS: [string, string][] = [
   ['export', 'Exports content to a WordPress export (WXR) file.'],
   ['import', 'Imports content from WordPress export (WXR) files.'],
   ['media', 'Regenerates image sizes.'],
+  ['migrate', 'Migrates a site from WordPress’s database.'],
   ['option', 'Reads and changes options.'],
   ['plugin', 'Installs, activates, deactivates and deletes plugins.'],
   ['post', 'Lists, creates, updates and deletes posts and pages.'],

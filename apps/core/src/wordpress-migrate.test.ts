@@ -5,9 +5,11 @@ import { and, eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import {
   checkPrefix,
+  connectWordPressDatabase,
   parseDatabaseUrl,
   redactDatabaseUrl,
   redactSecret,
+  WordPressDatabaseError,
 } from './import-export/wordpress-db';
 import {
   FIXTURE_PASSWORDS,
@@ -43,7 +45,7 @@ async function logIn(ctx: Awaited<ReturnType<typeof site>>, login: string, passw
 }
 
 describe('database URLs', () => {
-  it('parses URLs, asks for TLS only when told, and never shows the password', () => {
+  it('parses URLs, asks for TLS only when told, and never shows the password', async () => {
     const plain = parseDatabaseUrl('mysql://reader:s%3Acr%40t@db.internal:3307/wordpress');
     expect(plain).toMatchObject({
       host: 'db.internal',
@@ -72,6 +74,13 @@ describe('database URLs', () => {
         expect((error as Error).message).not.toContain('hunter2');
       }
     }
+    // Nothing listens on port 1: the error names the server, not the password.
+    const refused = await connectWordPressDatabase('mysql://reader:hunter2@127.0.0.1:1/wp').catch(
+      (error: Error) => error,
+    );
+    expect(refused).toBeInstanceOf(WordPressDatabaseError);
+    expect((refused as Error).message).toMatch(/^Couldn’t connect to mysql:\/\/reader:\*\*\*@127\.0\.0\.1:1\/wp/);
+    expect((refused as Error).message).not.toContain('hunter2');
     expect(() => checkPrefix('wp_; DROP TABLE x')).toThrow(/letters, numbers and underscores/);
     expect(checkPrefix('blog2_')).toBe('blog2_');
   });
