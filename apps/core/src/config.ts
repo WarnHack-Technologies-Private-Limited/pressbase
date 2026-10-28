@@ -81,7 +81,8 @@ export async function loadConfig(env: NodeJS.ProcessEnv = process.env): Promise<
       : undefined,
     worker: !['off', '0', 'false', 'no'].includes((env.PRESSBASE_WORKER ?? '').toLowerCase()),
     import: {
-      maxFileMb: Number(env.PRESSBASE_MAX_IMPORT_MB) > 0 ? Number(env.PRESSBASE_MAX_IMPORT_MB) : 1024,
+      maxFileMb:
+        Number(env.PRESSBASE_MAX_IMPORT_MB) > 0 ? Number(env.PRESSBASE_MAX_IMPORT_MB) : 1024,
       allowPrivateHosts: ['1', 'true', 'yes'].includes(
         (env.PRESSBASE_IMPORT_ALLOW_PRIVATE_HOSTS ?? '').toLowerCase(),
       ),

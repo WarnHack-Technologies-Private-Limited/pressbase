@@ -36,7 +36,11 @@ declare module '@pressbase/hooks' {
     the_excerpt_export: [excerpt: string];
     /** Return true to leave a post meta row out. */
     wxr_export_skip_postmeta: [skip: boolean, key: string, meta: { key: string; value: unknown }];
-    wxr_export_skip_commentmeta: [skip: boolean, key: string, meta: { key: string; value: unknown }];
+    wxr_export_skip_commentmeta: [
+      skip: boolean,
+      key: string,
+      meta: { key: string; value: unknown },
+    ];
     wxr_export_skip_termmeta: [skip: boolean, key: string, meta: { key: string; value: unknown }];
   }
 }
@@ -108,7 +112,11 @@ function boundary(value: string, timeZone: string, nextMonth: boolean): Date | u
     }
     // export_wp(): strtotime( '+1 month', end_date ) keeps the day.
     const day = match[3] ?? '01';
-    return parseRestDate(`${year}-${String(month).padStart(2, '0')}-${day}T00:00:00`, timeZone, false);
+    return parseRestDate(
+      `${year}-${String(month).padStart(2, '0')}-${day}T00:00:00`,
+      timeZone,
+      false,
+    );
   }
   return parseRestDate(`${match[1]}-${match[2]}-${match[3] ?? '01'}T00:00:00`, timeZone, false);
 }
@@ -168,7 +176,10 @@ async function allTerms(kernel: Kernel, taxonomies: string[]): Promise<ExportTer
  * Generates the WXR document, chunk by chunk. `exportWxr()` writes it to a
  * stream; the REST route sends it as the download.
  */
-export async function* generateWxr(kernel: Kernel, input: ExportOptions = {}): AsyncGenerator<string> {
+export async function* generateWxr(
+  kernel: Kernel,
+  input: ExportOptions = {},
+): AsyncGenerator<string> {
   const args: ExportOptions = { content: 'all', ...input };
   await kernel.hooks.doAction('export_wp', args);
   const get = <T>(name: string, fallback: T) => kernel.options.get<T>(name, fallback);
@@ -181,10 +192,9 @@ export async function* generateWxr(kernel: Kernel, input: ExportOptions = {}): A
   let content = args.content ?? 'all';
   const exportable = exportablePostTypes(kernel);
   if (content !== 'all' && !exportable.includes(content)) content = 'all';
-  const where: SQL[] = [
-    content === 'all' ? inArray(p.type, exportable) : eq(p.type, content),
-  ];
-  if (args.status && (content === 'post' || content === 'page')) where.push(eq(p.status, args.status));
+  const where: SQL[] = [content === 'all' ? inArray(p.type, exportable) : eq(p.type, content)];
+  if (args.status && (content === 'post' || content === 'page'))
+    where.push(eq(p.status, args.status));
   else where.push(ne(p.status, 'auto-draft'));
 
   let category: ExportTerm | undefined;
@@ -211,7 +221,11 @@ export async function* generateWxr(kernel: Kernel, input: ExportOptions = {}): A
 
   // A snapshot of the IDs, in case content changes during the export.
   let postIds = (
-    await kernel.db.select({ id: p.id }).from(p).where(and(...where)).orderBy(asc(p.id))
+    await kernel.db
+      .select({ id: p.id })
+      .from(p)
+      .where(and(...where))
+      .orderBy(asc(p.id))
   ).map((r) => r.id);
 
   // Attachments and featured images of the chosen posts, unless all content goes anyway.
@@ -227,7 +241,9 @@ export async function* generateWxr(kernel: Kernel, input: ExportOptions = {}): A
       const thumbnails = await kernel.db
         .select({ value: schema.postmeta.value })
         .from(schema.postmeta)
-        .where(and(inArray(schema.postmeta.postId, chunk), eq(schema.postmeta.key, '_thumbnail_id')));
+        .where(
+          and(inArray(schema.postmeta.postId, chunk), eq(schema.postmeta.key, '_thumbnail_id')),
+        );
       for (const t of thumbnails) {
         const id = Number(t.value);
         if (Number.isInteger(id) && id > 0) extra.add(id);
@@ -333,9 +349,9 @@ ${t.name ? `\t\t<wp:term_name>${cdata(t.name)}</wp:term_name>\n` : ''}${t.descri
   for (let i = 0; i < postIds.length; i += 20) {
     const ids = postIds.slice(i, i + 20);
     const posts = await kernel.db.select().from(p).where(inArray(p.id, ids)).orderBy(asc(p.id));
-    const missing = [...new Set(posts.map((post) => post.authorId).filter((id): id is number => !!id))].filter(
-      (id) => !logins.has(id),
-    );
+    const missing = [
+      ...new Set(posts.map((post) => post.authorId).filter((id): id is number => !!id)),
+    ].filter((id) => !logins.has(id));
     if (missing.length) {
       const users = await kernel.db
         .select({ id: schema.users.id, login: schema.users.login })
@@ -356,7 +372,10 @@ ${t.name ? `\t\t<wp:term_name>${cdata(t.name)}</wp:term_name>\n` : ''}${t.descri
         name: schema.terms.name,
       })
       .from(schema.termRelationships)
-      .innerJoin(schema.termTaxonomy, eq(schema.termTaxonomy.id, schema.termRelationships.termTaxonomyId))
+      .innerJoin(
+        schema.termTaxonomy,
+        eq(schema.termTaxonomy.id, schema.termRelationships.termTaxonomyId),
+      )
       .innerJoin(schema.terms, eq(schema.terms.id, schema.termTaxonomy.termId))
       .where(inArray(schema.termRelationships.objectId, ids))
       .orderBy(asc(schema.termRelationships.termOrder), asc(schema.terms.name));
@@ -395,7 +414,10 @@ async function* authorsList(kernel: Kernel, postIds: number[]): AsyncGenerator<s
     .select()
     .from(schema.usermeta)
     .where(
-      and(inArray(schema.usermeta.userId, [...ids]), inArray(schema.usermeta.key, ['first_name', 'last_name'])),
+      and(
+        inArray(schema.usermeta.userId, [...ids]),
+        inArray(schema.usermeta.key, ['first_name', 'last_name']),
+      ),
     );
   const field = (userId: number, key: string) =>
     String(meta.find((m) => m.userId === userId && m.key === key)?.value ?? '');
@@ -464,7 +486,8 @@ async function item(kernel: Kernel, post: Post, x: ItemContext): Promise<string>
     `\t\t<wp:post_password>${cdata(post.password)}</wp:post_password>`,
     `\t\t<wp:is_sticky>${x.sticky ? 1 : 0}</wp:is_sticky>`,
   ];
-  if (post.type === 'attachment') lines.push(`\t\t<wp:attachment_url>${cdata(attachmentUrl)}</wp:attachment_url>`);
+  if (post.type === 'attachment')
+    lines.push(`\t\t<wp:attachment_url>${cdata(attachmentUrl)}</wp:attachment_url>`);
   // wxr_post_taxonomy()
   for (const term of x.terms) {
     lines.push(
@@ -490,7 +513,12 @@ async function item(kernel: Kernel, post: Post, x: ItemContext): Promise<string>
     ? await kernel.db
         .select()
         .from(schema.commentmeta)
-        .where(inArray(schema.commentmeta.commentId, comments.map((c) => c.id)))
+        .where(
+          inArray(
+            schema.commentmeta.commentId,
+            comments.map((c) => c.id),
+          ),
+        )
         .orderBy(asc(schema.commentmeta.id))
     : [];
   for (const c of comments) {

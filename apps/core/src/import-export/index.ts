@@ -32,7 +32,12 @@ export type {
   ImportSource,
   ImportTerm,
 } from './records';
-export { type FetchOptions, fetchRemoteFile, isPrivateAddress, RemoteFileError } from './remote-file';
+export {
+  type FetchOptions,
+  fetchRemoteFile,
+  isPrivateAddress,
+  RemoteFileError,
+} from './remote-file';
 export {
   IMPORT_JOB,
   type ImportWxrOptions,

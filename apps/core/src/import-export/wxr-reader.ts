@@ -246,7 +246,11 @@ export class WxrReader implements ImportSource {
             }
           } else if (post && name === 'wp:comment' && parent === 'item') {
             comment = emptyComment();
-          } else if (name === 'wp:postmeta' || name === 'wp:commentmeta' || name === 'wp:termmeta') {
+          } else if (
+            name === 'wp:postmeta' ||
+            name === 'wp:commentmeta' ||
+            name === 'wp:termmeta'
+          ) {
             meta = { key: '', value: '' };
           } else if (post && name === 'category' && parent === 'item') {
             postTerm = { domain: attributes.domain ?? '', slug: attributes.nicename ?? '' };
@@ -266,7 +270,10 @@ export class WxrReader implements ImportSource {
             else meta.value = value;
             return;
           }
-          if (meta && (name === 'wp:postmeta' || name === 'wp:commentmeta' || name === 'wp:termmeta')) {
+          if (
+            meta &&
+            (name === 'wp:postmeta' || name === 'wp:commentmeta' || name === 'wp:termmeta')
+          ) {
             if (name === 'wp:commentmeta') comment?.commentmeta.push(meta);
             else if (name === 'wp:termmeta') term?.termmeta.push(meta);
             else post?.postmeta.push(meta);

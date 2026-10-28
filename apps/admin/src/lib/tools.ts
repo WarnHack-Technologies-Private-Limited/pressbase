@@ -14,8 +14,18 @@ export interface CoreTool {
 }
 
 export const CORE_TOOLS: CoreTool[] = [
-  { slug: 'import', title: 'Import', description: 'Bring in posts, pages, comments and media from a WordPress export file.', capability: 'import' },
-  { slug: 'export', title: 'Export', description: 'Download your content as a WordPress export file.', capability: 'export' },
+  {
+    slug: 'import',
+    title: 'Import',
+    description: 'Bring in posts, pages, comments and media from a WordPress export file.',
+    capability: 'import',
+  },
+  {
+    slug: 'export',
+    title: 'Export',
+    description: 'Download your content as a WordPress export file.',
+    capability: 'export',
+  },
 ];
 
 /** The core tools a user with these capabilities may open. */

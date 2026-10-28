@@ -47,7 +47,11 @@ export function baseVariants(bases: string[]): string[] {
     const clean = base.trim().replace(/\/+$/, '');
     if (!/^https?:\/\//i.test(clean)) continue;
     out.add(clean);
-    out.add(clean.replace(/^https?:/i, (scheme) => (scheme.toLowerCase() === 'http:' ? 'https:' : 'http:')));
+    out.add(
+      clean.replace(/^https?:/i, (scheme) =>
+        scheme.toLowerCase() === 'http:' ? 'https:' : 'http:',
+      ),
+    );
   }
   return [...out].sort((a, b) => b.length - a.length);
 }

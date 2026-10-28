@@ -7,7 +7,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { exportWxr, generateWxr } from './import-export/exporter';
 import { sampleWxr } from './import-export/fixture';
 import { menuItemFromPost } from './import-export/menus';
-import { isSerialized, maybeUnserialize, metaToWordPress, phpSerialize } from './import-export/php-serialize';
+import {
+  isSerialized,
+  maybeUnserialize,
+  metaToWordPress,
+  phpSerialize,
+} from './import-export/php-serialize';
 import { emptyPost } from './import-export/records';
 import { fetchRemoteFile, isPrivateAddress, RemoteFileError } from './import-export/remote-file';
 import { createRewriter } from './import-export/rewrite';
@@ -71,7 +76,8 @@ async function site(options: { allowPrivate?: boolean } = {}) {
   const ctx = await setup({ import: { allowPrivateHosts: options.allowPrivate ?? true } });
   await ctx.install();
   // Start empty: no sample post, page or comment.
-  for (const post of await ctx.kernel.db.select().from(schema.posts)) await ctx.kernel.posts.delete(post.id);
+  for (const post of await ctx.kernel.db.select().from(schema.posts))
+    await ctx.kernel.posts.delete(post.id);
   const cookie = await cookieFor(ctx, SITE.username, SITE.password);
   return { ...ctx, cookie };
 }
@@ -98,7 +104,11 @@ async function runRestImport(
 ) {
   const uploaded = await uploadXml(ctx, ctx.cookie, xml);
   expect(uploaded.status).toBe(201);
-  const started = await ctx.request('POST', `/pressbase/v1/import/${uploaded.body.id}/start`, start);
+  const started = await ctx.request(
+    'POST',
+    `/pressbase/v1/import/${uploaded.body.id}/start`,
+    start,
+  );
   expect(started.status).toBe(202);
   expect(started.body.status).toBe('queued');
   // The site's daily cron events are due too; the import must not fail.
@@ -147,7 +157,9 @@ describe('PHP serialization', () => {
   });
 
   it('writes what WordPress reads, and round-trips', () => {
-    expect(phpSerialize({ width: 10, file: 'é.jpg' })).toBe('a:2:{s:5:"width";i:10;s:4:"file";s:6:"é.jpg";}');
+    expect(phpSerialize({ width: 10, file: 'é.jpg' })).toBe(
+      'a:2:{s:5:"width";i:10;s:4:"file";s:6:"é.jpg";}',
+    );
     expect(metaToWordPress(5)).toBe('5');
     expect(metaToWordPress(true)).toBe('1');
     expect(metaToWordPress(null)).toBe('');
@@ -169,7 +181,10 @@ describe('WXR reader', () => {
     }
     const records = [];
     for await (const record of new WxrReader(chunks()).records()) records.push(record);
-    expect(records[0]).toMatchObject({ kind: 'site', site: { wxr_version: '1.2', base_blog_url: 'https://old.example' } });
+    expect(records[0]).toMatchObject({
+      kind: 'site',
+      site: { wxr_version: '1.2', base_blog_url: 'https://old.example' },
+    });
     const authors = records.filter((r) => r.kind === 'author');
     expect(authors.map((a) => a.kind === 'author' && a.author.author_display_name)).toEqual([
       'Maria Okafor',
@@ -189,8 +204,14 @@ describe('WXR reader', () => {
     expect(first?.post_title).toBe('Raised bed in & out');
     expect(first?.post_content).toContain(']]> done.');
     expect(first?.is_sticky).toBe(true);
-    expect(first?.terms).toContainEqual({ domain: 'post_format', slug: 'post-format-gallery', name: 'Gallery' });
-    expect(first?.comments.map((c) => [c.comment_id, c.comment_parent, c.comment_author_IP])).toEqual([
+    expect(first?.terms).toContainEqual({
+      domain: 'post_format',
+      slug: 'post-format-gallery',
+      name: 'Gallery',
+    });
+    expect(
+      first?.comments.map((c) => [c.comment_id, c.comment_parent, c.comment_author_IP]),
+    ).toEqual([
       [31, 0, '203.0.113.4'],
       [32, 31, ''],
     ]);
@@ -210,14 +231,24 @@ describe('WXR reader', () => {
   it('summarises a file without importing it', async () => {
     const summary = await scanWxr({ xml: sampleWxr('https://media.old.example') });
     expect(summary.items).toBe(8);
-    expect(summary.posts).toEqual({ post: 1, page: 2, attachment: 1, product: 1, nav_menu_item: 3 });
+    expect(summary.posts).toEqual({
+      post: 1,
+      page: 2,
+      attachment: 1,
+      product: 1,
+      nav_menu_item: 3,
+    });
     expect(summary.comments).toBe(2);
     expect(summary.authors.map((a) => a.author_login)).toEqual(['maria', 'tomas']);
   });
 
   it('refuses files that are not WXR', async () => {
-    await expect(scanWxr({ xml: '<html><body>Hi</body></html>' })).rejects.toMatchObject({ code: 'wxr_invalid' });
-    await expect(scanWxr({ xml: '<rss><channel><title>A feed</title><item></item></channel></rss>' })).rejects.toMatchObject({
+    await expect(scanWxr({ xml: '<html><body>Hi</body></html>' })).rejects.toMatchObject({
+      code: 'wxr_invalid',
+    });
+    await expect(
+      scanWxr({ xml: '<rss><channel><title>A feed</title><item></item></channel></rss>' }),
+    ).rejects.toMatchObject({
       code: 'wxr_invalid',
     });
   });
@@ -235,7 +266,12 @@ describe('WXR reader', () => {
         { key: '_menu_item_classes', value: 'a:2:{i:0;s:4:"wide";i:1;s:0:"";}' },
       ],
     };
-    expect(menuItemFromPost(post)).toMatchObject({ menu: 'footer', type: 'taxonomy', objectId: 5, classes: ['wide'] });
+    expect(menuItemFromPost(post)).toMatchObject({
+      menu: 'footer',
+      type: 'taxonomy',
+      objectId: 5,
+      classes: ['wide'],
+    });
     expect(menuItemFromPost({ ...post, terms: [] })).toBeUndefined();
   });
 });
@@ -247,9 +283,17 @@ describe('content rewriting', () => {
       [12, 112],
     ]),
     terms: new Map([[5, 105]]),
-    urls: new Map([['https://cdn.old.example/2019/05/doc.pdf', 'http://new.example/wp-content/uploads/2019/05/doc.pdf']]),
+    urls: new Map([
+      [
+        'https://cdn.old.example/2019/05/doc.pdf',
+        'http://new.example/wp-content/uploads/2019/05/doc.pdf',
+      ],
+    ]),
     sizePrefixes: new Map([
-      ['https://old.example/wp-content/uploads/2019/05/photo', 'http://new.example/wp-content/uploads/2019/05/photo-1'],
+      [
+        'https://old.example/wp-content/uploads/2019/05/photo',
+        'http://new.example/wp-content/uploads/2019/05/photo-1',
+      ],
     ]),
     oldBases: ['https://old.example'],
     newBase: 'http://new.example',
@@ -270,7 +314,9 @@ describe('content rewriting', () => {
     ].join('\n');
     const out = rewrite(html);
     expect(out).toContain('<!-- wp:image {"id":120,"sizeSlug":"large"} -->');
-    expect(out).toContain('src="http://new.example/wp-content/uploads/2019/05/photo-1-300x200.jpg" class="wp-image-120"');
+    expect(out).toContain(
+      'src="http://new.example/wp-content/uploads/2019/05/photo-1-300x200.jpg" class="wp-image-120"',
+    );
     expect(out).toContain('href="http://new.example/wp-content/uploads/2019/05/doc.pdf"');
     expect(out).toContain('href="http://new.example/?page_id=112#top">About</a>.');
     expect(out).toContain('href="http://new.example/2019/05/hello/"');
@@ -284,7 +330,19 @@ describe('content rewriting', () => {
 
 describe('downloading attachments', () => {
   it('knows private addresses', () => {
-    for (const ip of ['127.0.0.1', '10.1.2.3', '172.16.0.1', '192.168.1.1', '169.254.169.254', '100.64.0.1', '0.0.0.0', '::1', 'fe80::1', 'fd00::1', '::ffff:127.0.0.1']) {
+    for (const ip of [
+      '127.0.0.1',
+      '10.1.2.3',
+      '172.16.0.1',
+      '192.168.1.1',
+      '169.254.169.254',
+      '100.64.0.1',
+      '0.0.0.0',
+      '::1',
+      'fe80::1',
+      'fd00::1',
+      '::ffff:127.0.0.1',
+    ]) {
       expect(isPrivateAddress(ip), ip).toBe(true);
     }
     for (const ip of ['93.184.216.34', '2606:2800:220:1:248:1893:25c8:1946', '8.8.8.8']) {
@@ -293,13 +351,20 @@ describe('downloading attachments', () => {
   });
 
   it('refuses private hosts, unsafe ports and other schemes by default', async () => {
-    await expect(fetchRemoteFile(`${mediaBase}/wp-content/uploads/2019/05/garden-bed.png`, { maxBytes: 1e6 })).rejects.toMatchObject({
+    await expect(
+      fetchRemoteFile(`${mediaBase}/wp-content/uploads/2019/05/garden-bed.png`, { maxBytes: 1e6 }),
+    ).rejects.toMatchObject({
       code: 'import_unsafe_port',
     });
     await expect(
-      fetchRemoteFile(`${mediaBase}/x.png`, { maxBytes: 1e6, safePorts: [Number(new URL(mediaBase).port)] }),
+      fetchRemoteFile(`${mediaBase}/x.png`, {
+        maxBytes: 1e6,
+        safePorts: [Number(new URL(mediaBase).port)],
+      }),
     ).rejects.toMatchObject({ code: 'import_private_host' });
-    await expect(fetchRemoteFile('http://localhost/x.png', { maxBytes: 1e6 })).rejects.toMatchObject({
+    await expect(
+      fetchRemoteFile('http://localhost/x.png', { maxBytes: 1e6 }),
+    ).rejects.toMatchObject({
       code: 'import_private_host',
     });
     await expect(fetchRemoteFile('http://[::1]/x.png', { maxBytes: 1e6 })).rejects.toMatchObject({
@@ -318,17 +383,24 @@ describe('downloading attachments', () => {
 
   it('caps size and redirects, and checks every redirect', async () => {
     const allow = { allowPrivate: true };
-    const file = await fetchRemoteFile(`${mediaBase}/wp-content/uploads/2019/05/garden-bed.png`, { maxBytes: 1e6, ...allow });
+    const file = await fetchRemoteFile(`${mediaBase}/wp-content/uploads/2019/05/garden-bed.png`, {
+      maxBytes: 1e6,
+      ...allow,
+    });
     expect(file).toMatchObject({ filename: 'garden-bed.png', contentType: 'image/png' });
-    await expect(fetchRemoteFile(`${mediaBase}/big`, { maxBytes: 1000, ...allow })).rejects.toMatchObject({
+    await expect(
+      fetchRemoteFile(`${mediaBase}/big`, { maxBytes: 1000, ...allow }),
+    ).rejects.toMatchObject({
       code: 'import_file_too_big',
     });
-    await expect(fetchRemoteFile(`${mediaBase}/loop`, { maxBytes: 1000, ...allow })).rejects.toMatchObject({
+    await expect(
+      fetchRemoteFile(`${mediaBase}/loop`, { maxBytes: 1000, ...allow }),
+    ).rejects.toMatchObject({
       code: 'import_too_many_redirects',
     });
-    await expect(fetchRemoteFile(`${mediaBase}/missing`, { maxBytes: 1000, ...allow })).rejects.toBeInstanceOf(
-      RemoteFileError,
-    );
+    await expect(
+      fetchRemoteFile(`${mediaBase}/missing`, { maxBytes: 1000, ...allow }),
+    ).rejects.toBeInstanceOf(RemoteFileError);
     // Allowed to reach 127.0.0.1 through a vouched host, but the redirect to a metadata address isn't.
     await expect(
       fetchRemoteFile(`${mediaBase}/redirect-private`, {
@@ -417,14 +489,16 @@ describe('importing a WXR file', () => {
     expect(report.skippedPostTypes).toEqual({ product: 1 });
     expect(report.skippedTaxonomies).toEqual({ soil_type: 1 });
     expect(report.errors).toEqual({ total: 0, items: [] });
-    expect(report.skipped.items.map((i: { code: string; title: string }) => `${i.code}:${i.title}`)).toEqual([
-      'invalid_taxonomy:Loam',
-      'invalid_post_type:Seed tray',
-    ]);
+    expect(
+      report.skipped.items.map((i: { code: string; title: string }) => `${i.code}:${i.title}`),
+    ).toEqual(['invalid_taxonomy:Loam', 'invalid_post_type:Seed tray']);
     expect(requests).toEqual(['/wp-content/uploads/2019/05/garden-bed.png']);
 
     // Authors: a new user for maria, tomas mapped to the administrator.
-    const [maria] = await kernel.db.select().from(schema.users).where(eq(schema.users.login, 'maria'));
+    const [maria] = await kernel.db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.login, 'maria'));
     expect(maria).toMatchObject({ email: 'maria@old.example', displayName: 'Maria Okafor' });
 
     // Terms, with their parent and meta.
@@ -432,7 +506,10 @@ describe('importing a WXR file', () => {
     const tomatoes = (await kernel.terms.list('category', { slug: ['tomatoes'] })).terms[0];
     expect(tomatoes?.parent).toBe(veg?.id);
     expect(veg?.description).toBe('Everything that grows in beds');
-    const [colour] = await kernel.db.select().from(schema.termmeta).where(eq(schema.termmeta.termId, veg?.id ?? 0));
+    const [colour] = await kernel.db
+      .select()
+      .from(schema.termmeta)
+      .where(eq(schema.termmeta.termId, veg?.id ?? 0));
     expect(colour).toMatchObject({ key: 'colour', value: 'green' });
 
     // The post.
@@ -451,7 +528,10 @@ describe('importing a WXR file', () => {
     const terms = await kernel.db
       .select({ taxonomy: schema.termTaxonomy.taxonomy, slug: schema.terms.slug })
       .from(schema.termRelationships)
-      .innerJoin(schema.termTaxonomy, eq(schema.termTaxonomy.id, schema.termRelationships.termTaxonomyId))
+      .innerJoin(
+        schema.termTaxonomy,
+        eq(schema.termTaxonomy.id, schema.termRelationships.termTaxonomyId),
+      )
       .innerJoin(schema.terms, eq(schema.terms.id, schema.termTaxonomy.termId))
       .where(eq(schema.termRelationships.objectId, postId))
       .orderBy(asc(schema.terms.slug));
@@ -462,21 +542,36 @@ describe('importing a WXR file', () => {
       'category:tomatoes',
     ]);
     expect(await kernel.options.get('sticky_posts')).toEqual([postId]);
-    expect(await meta(ctx, postId, 'bed_sizes')).toEqual({ width: 120, plants: ['tomato', 'basil'] });
+    expect(await meta(ctx, postId, 'bed_sizes')).toEqual({
+      width: 120,
+      plants: ['tomato', 'basil'],
+    });
     expect(await meta(ctx, postId, '_edit_last')).toBe(maria?.id);
     // No revision is stored for imported content.
     expect(await kernel.posts.revisions(postId)).toEqual([]);
 
     // The attachment: downloaded into its original month, its URLs rewritten.
     const attachment = await postByTitle(ctx, 'attachment', 'garden-bed');
-    expect(attachment).toMatchObject({ parentId: postId, mimeType: 'image/png', excerpt: 'The bed in May' });
-    expect(await meta(ctx, attachment?.id ?? 0, '_wp_attached_file')).toBe('2019/05/garden-bed.png');
-    expect(await meta(ctx, attachment?.id ?? 0, '_wp_attachment_image_alt')).toBe('A raised bed with young plants');
+    expect(attachment).toMatchObject({
+      parentId: postId,
+      mimeType: 'image/png',
+      excerpt: 'The bed in May',
+    });
+    expect(await meta(ctx, attachment?.id ?? 0, '_wp_attached_file')).toBe(
+      '2019/05/garden-bed.png',
+    );
+    expect(await meta(ctx, attachment?.id ?? 0, '_wp_attachment_image_alt')).toBe(
+      'A raised bed with young plants',
+    );
     expect(await meta(ctx, postId, '_thumbnail_id')).toBe(attachment?.id);
     const fresh = post?.content ?? '';
     expect(fresh).toContain(`<!-- wp:image {"id":${attachment?.id},"sizeSlug":"large"} -->`);
-    expect(fresh).toContain(`src="http://localhost:3000/wp-content/uploads/2019/05/garden-bed.png" alt="" class="wp-image-${attachment?.id}"`);
-    expect(fresh).toContain('src="http://localhost:3000/wp-content/uploads/2019/05/garden-bed-150x150.png"');
+    expect(fresh).toContain(
+      `src="http://localhost:3000/wp-content/uploads/2019/05/garden-bed.png" alt="" class="wp-image-${attachment?.id}"`,
+    );
+    expect(fresh).toContain(
+      'src="http://localhost:3000/wp-content/uploads/2019/05/garden-bed-150x150.png"',
+    );
     expect(fresh).toContain('<a href="http://localhost:3000/about/">about page</a>');
     const about = await postByTitle(ctx, 'page', 'About');
     expect(fresh).toContain(`<a href="http://localhost:3000/?page_id=${about?.id}">`);
@@ -518,20 +613,31 @@ describe('importing a WXR file', () => {
     const ctx = await site();
     const xml = sampleWxr(mediaBase);
     await runRestImport(ctx, xml);
-    const count = async (table: typeof schema.posts | typeof schema.comments | typeof schema.terms) =>
-      (await ctx.kernel.db.select().from(table)).length;
-    const before = [await count(schema.posts), await count(schema.comments), await count(schema.terms)];
+    const count = async (
+      table: typeof schema.posts | typeof schema.comments | typeof schema.terms,
+    ) => (await ctx.kernel.db.select().from(table)).length;
+    const before = [
+      await count(schema.posts),
+      await count(schema.comments),
+      await count(schema.terms),
+    ];
     requests = [];
     const { done } = await runRestImport(ctx, xml);
     expect(done.status).toBe('completed');
     expect(done.report.imported).toEqual({ users: 0, terms: 0, posts: {}, comments: 0, menus: 0 });
-    const codes = done.report.skipped.items.map((i: { kind: string; code: string }) => `${i.kind}:${i.code}`);
+    const codes = done.report.skipped.items.map(
+      (i: { kind: string; code: string }) => `${i.kind}:${i.code}`,
+    );
     expect(codes.filter((c: string) => c === 'post:exists')).toHaveLength(3);
     expect(codes).toContain('attachment:exists');
     expect(codes).toContain('comment:exists');
     expect(codes).toContain('menu:exists');
     expect(codes).toContain('author:exists');
-    expect([await count(schema.posts), await count(schema.comments), await count(schema.terms)]).toEqual(before);
+    expect([
+      await count(schema.posts),
+      await count(schema.comments),
+      await count(schema.terms),
+    ]).toEqual(before);
     expect(requests).toEqual([]);
   });
 
@@ -539,7 +645,9 @@ describe('importing a WXR file', () => {
     const off = await site();
     const { done } = await runRestImport(off, sampleWxr(mediaBase), { fetch_attachments: false });
     expect(done.report.imported.posts.attachment).toBeUndefined();
-    expect(done.report.skipped.items.map((i: { code: string }) => i.code)).toContain('attachment_fetch_disabled');
+    expect(done.report.skipped.items.map((i: { code: string }) => i.code)).toContain(
+      'attachment_fetch_disabled',
+    );
 
     const guarded = await site({ allowPrivate: false });
     const second = await runRestImport(guarded, sampleWxr(mediaBase));
@@ -577,7 +685,11 @@ describe('importing a WXR file', () => {
 
   it('imports from the CLI-facing function too', async () => {
     const ctx = await site();
-    const report = await importWxr(ctx.kernel, { xml: sampleWxr(mediaBase) }, { userId: 1, fetchAttachments: false });
+    const report = await importWxr(
+      ctx.kernel,
+      { xml: sampleWxr(mediaBase) },
+      { userId: 1, fetchAttachments: false },
+    );
     expect(report.imported.posts).toEqual({ post: 1, page: 2 });
   });
 });
@@ -585,14 +697,20 @@ describe('importing a WXR file', () => {
 /* -------------------------------------------------------------- exporting */
 
 async function download(ctx: Ctx, cookie: string, query = '') {
-  const res = await ctx.app.request(`/wp-json/pressbase/v1/export/download${query}`, { headers: { cookie } });
+  const res = await ctx.app.request(`/wp-json/pressbase/v1/export/download${query}`, {
+    headers: { cookie },
+  });
   return { status: res.status, headers: res.headers, text: await res.text() };
 }
 
 describe('exporting', () => {
   it('offers WordPress’s export choices', async () => {
     const ctx = await site();
-    await importWxr(ctx.kernel, { xml: sampleWxr(mediaBase) }, { userId: 1, fetchAttachments: true });
+    await importWxr(
+      ctx.kernel,
+      { xml: sampleWxr(mediaBase) },
+      { userId: 1, fetchAttachments: true },
+    );
     const res = await ctx.request('GET', '/pressbase/v1/export');
     expect(res.status).toBe(200);
     expect(res.body.types.map((t: { name: string }) => t.name)).toEqual(
@@ -609,21 +727,33 @@ describe('exporting', () => {
 
   it('streams a WXR 1.2 download', async () => {
     const ctx = await site();
-    await importWxr(ctx.kernel, { xml: sampleWxr(mediaBase) }, { userId: 1, fetchAttachments: true });
+    await importWxr(
+      ctx.kernel,
+      { xml: sampleWxr(mediaBase) },
+      { userId: 1, fetchAttachments: true },
+    );
     const res = await download(ctx, ctx.cookie);
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toBe('text/xml; charset=UTF-8');
-    expect(res.headers.get('content-disposition')).toMatch(/^attachment; filename="testsite\.WordPress\.\d{4}-\d{2}-\d{2}\.xml"$/);
+    expect(res.headers.get('content-disposition')).toMatch(
+      /^attachment; filename="testsite\.WordPress\.\d{4}-\d{2}-\d{2}\.xml"$/,
+    );
     const xml = res.text;
     expect(xml).toMatch(/^<\?xml version="1.0" encoding="UTF-8" \?>/);
     expect(xml).toContain('<wp:wxr_version>1.2</wp:wxr_version>');
     expect(xml).toContain('<wp:base_blog_url>http://localhost:3000</wp:base_blog_url>');
     expect(xml).toContain('<wp:category_parent><![CDATA[vegetables]]></wp:category_parent>');
-    expect(xml).toContain('<category domain="post_format" nicename="post-format-gallery"><![CDATA[Gallery]]></category>');
-    expect(xml).toContain('<wp:meta_value><![CDATA[a:2:{s:5:"width";i:120;s:6:"plants";a:2:{i:0;s:6:"tomato";i:1;s:5:"basil";}}]]></wp:meta_value>');
+    expect(xml).toContain(
+      '<category domain="post_format" nicename="post-format-gallery"><![CDATA[Gallery]]></category>',
+    );
+    expect(xml).toContain(
+      '<wp:meta_value><![CDATA[a:2:{s:5:"width";i:120;s:6:"plants";a:2:{i:0;s:6:"tomato";i:1;s:5:"basil";}}]]></wp:meta_value>',
+    );
     expect(xml).toContain(']]]]><![CDATA[> done.');
     expect(xml).toContain('<wp:is_sticky>1</wp:is_sticky>');
-    expect(xml).toContain('<wp:attachment_url><![CDATA[http://localhost:3000/wp-content/uploads/2019/05/garden-bed.png]]></wp:attachment_url>');
+    expect(xml).toContain(
+      '<wp:attachment_url><![CDATA[http://localhost:3000/wp-content/uploads/2019/05/garden-bed.png]]></wp:attachment_url>',
+    );
     expect(xml).toContain('<wp:author_login><![CDATA[maria]]></wp:author_login>');
     // It parses again, completely.
     const summary = await scanWxr({ xml });
@@ -632,23 +762,41 @@ describe('exporting', () => {
 
   it('filters like export_wp()', async () => {
     const ctx = await site();
-    await importWxr(ctx.kernel, { xml: sampleWxr(mediaBase) }, { userId: 1, fetchAttachments: true });
+    await importWxr(
+      ctx.kernel,
+      { xml: sampleWxr(mediaBase) },
+      { userId: 1, fetchAttachments: true },
+    );
     const pages = await scanWxr({ xml: (await download(ctx, ctx.cookie, '?content=pages')).text });
     expect(pages.posts).toEqual({ page: 2 });
     expect(pages.terms).toEqual({});
     // Posts by category bring their attachments and featured images.
-    const veg = await scanWxr({ xml: (await download(ctx, ctx.cookie, '?content=posts&category=tomatoes')).text });
+    const veg = await scanWxr({
+      xml: (await download(ctx, ctx.cookie, '?content=posts&category=tomatoes')).text,
+    });
     expect(veg.posts).toEqual({ post: 1, attachment: 1 });
     expect(veg.terms).toEqual({ category: 1 });
-    const none = await scanWxr({ xml: (await download(ctx, ctx.cookie, '?content=posts&category=vegetables')).text });
+    const none = await scanWxr({
+      xml: (await download(ctx, ctx.cookie, '?content=posts&category=vegetables')).text,
+    });
     expect(none.posts).toEqual({});
     const may = await scanWxr({
-      xml: (await download(ctx, ctx.cookie, '?content=posts&start_date=2019-05&end_date=2019-05&status=publish')).text,
+      xml: (
+        await download(
+          ctx,
+          ctx.cookie,
+          '?content=posts&start_date=2019-05&end_date=2019-05&status=publish',
+        )
+      ).text,
     });
     expect(may.posts).toEqual({ post: 1, attachment: 1 });
-    const later = await scanWxr({ xml: (await download(ctx, ctx.cookie, '?content=posts&start_date=2019-06')).text });
+    const later = await scanWxr({
+      xml: (await download(ctx, ctx.cookie, '?content=posts&start_date=2019-06')).text,
+    });
     expect(later.posts).toEqual({});
-    const drafts = await scanWxr({ xml: (await download(ctx, ctx.cookie, '?content=posts&status=draft')).text });
+    const drafts = await scanWxr({
+      xml: (await download(ctx, ctx.cookie, '?content=posts&status=draft')).text,
+    });
     expect(drafts.posts).toEqual({});
     const bad = await download(ctx, ctx.cookie, '?start_date=yesterday');
     expect(bad.status).toBe(400);
@@ -677,7 +825,9 @@ describe('round trip', () => {
       authorId: 1,
       date: new Date('2026-09-01T12:00:00Z'),
     });
-    await a.kernel.db.insert(schema.postmeta).values({ postId: extra.id, key: 'mood', value: ['calm', { level: 2 }] });
+    await a.kernel.db
+      .insert(schema.postmeta)
+      .values({ postId: extra.id, key: 'mood', value: ['calm', { level: 2 }] });
     const chunks: string[] = [];
     await exportWxr(a.kernel, {}, (chunk) => chunks.push(chunk));
     const xml = chunks.join('');
@@ -709,12 +859,20 @@ describe('round trip', () => {
         const terms = await ctx.kernel.db
           .select({ taxonomy: schema.termTaxonomy.taxonomy, slug: schema.terms.slug })
           .from(schema.termRelationships)
-          .innerJoin(schema.termTaxonomy, eq(schema.termTaxonomy.id, schema.termRelationships.termTaxonomyId))
+          .innerJoin(
+            schema.termTaxonomy,
+            eq(schema.termTaxonomy.id, schema.termRelationships.termTaxonomyId),
+          )
           .innerJoin(schema.terms, eq(schema.terms.id, schema.termTaxonomy.termId))
           .where(eq(schema.termRelationships.objectId, post.id))
           .orderBy(asc(schema.terms.slug));
         const author = post.authorId
-          ? (await ctx.kernel.db.select().from(schema.users).where(eq(schema.users.id, post.authorId)))[0]?.login
+          ? (
+              await ctx.kernel.db
+                .select()
+                .from(schema.users)
+                .where(eq(schema.users.id, post.authorId))
+            )[0]?.login
           : null;
         out.push({
           title: post.title,
@@ -726,25 +884,41 @@ describe('round trip', () => {
           content: post.content.replace(/(page_id=|"id":|wp-image-)\d+/g, '$1N'),
           author,
           parent: parent?.title ?? null,
-          sticky: ((await ctx.kernel.options.get<number[]>('sticky_posts', [])) ?? []).includes(post.id),
+          sticky: ((await ctx.kernel.options.get<number[]>('sticky_posts', [])) ?? []).includes(
+            post.id,
+          ),
           terms: terms.map((t) => `${t.taxonomy}:${t.slug}`),
           meta: meta.filter((m) => m.key !== '_thumbnail_id' && m.key !== '_edit_last'),
-          comments: comments.map((c) => ({ author: c.author, content: c.content, approved: c.approved, parent: !!c.parentId })),
+          comments: comments.map((c) => ({
+            author: c.author,
+            content: c.content,
+            approved: c.approved,
+            parent: !!c.parentId,
+          })),
         });
       }
       const pages = await ctx.kernel.db
-        .select({ title: schema.posts.title, parentId: schema.posts.parentId, order: schema.posts.menuOrder })
+        .select({
+          title: schema.posts.title,
+          parentId: schema.posts.parentId,
+          order: schema.posts.menuOrder,
+        })
         .from(schema.posts)
         .where(eq(schema.posts.type, 'page'))
         .orderBy(asc(schema.posts.title));
-      const categories = (await ctx.kernel.terms.list('category', { perPage: 100, orderby: 'slug' })).terms.map(
-        (t) => `${t.slug}<${t.parent ? 'child' : 'top'}`,
-      );
+      const categories = (
+        await ctx.kernel.terms.list('category', { perPage: 100, orderby: 'slug' })
+      ).terms.map((t) => `${t.slug}<${t.parent ? 'child' : 'top'}`);
       const menus = await ctx.kernel.db
         .select({ title: schema.posts.title })
         .from(schema.posts)
         .where(eq(schema.posts.type, 'wp_navigation'));
-      return { posts: out, pages: pages.map((p) => [p.title, Boolean(p.parentId), p.order]), categories, menus };
+      return {
+        posts: out,
+        pages: pages.map((p) => [p.title, Boolean(p.parentId), p.order]),
+        categories,
+        menus,
+      };
     };
 
     const before = await snapshot(a);

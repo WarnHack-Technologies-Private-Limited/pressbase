@@ -101,7 +101,9 @@ export function authorChoices(values: Record<string, AuthorValue>) {
   return Object.fromEntries(
     Object.entries(values).map(([login, value]) => [
       login,
-      value === 'new' ? { action: 'create' as const } : { action: 'map' as const, user_id: Number(value) },
+      value === 'new'
+        ? { action: 'create' as const }
+        : { action: 'map' as const, user_id: Number(value) },
     ]),
   );
 }
@@ -128,10 +130,15 @@ export function contentSummary(counts: ImportSession['counts']): string[] {
     .sort((a, b) => b[1] - a[1])
     .map(([type, n]) => countLabel(n, type));
   if (counts.comments) {
-    parts.push(`${counts.comments.toLocaleString()} ${counts.comments === 1 ? 'comment' : 'comments'}`);
+    parts.push(
+      `${counts.comments.toLocaleString()} ${counts.comments === 1 ? 'comment' : 'comments'}`,
+    );
   }
   const terms = (counts.terms.category ?? 0) + (counts.terms.post_tag ?? 0);
-  if (terms) parts.push(`${terms.toLocaleString()} ${terms === 1 ? 'category or tag' : 'categories and tags'}`);
+  if (terms)
+    parts.push(
+      `${terms.toLocaleString()} ${terms === 1 ? 'category or tag' : 'categories and tags'}`,
+    );
   if (counts.terms.nav_menu) {
     parts.push(`${counts.terms.nav_menu} ${counts.terms.nav_menu === 1 ? 'menu' : 'menus'}`);
   }
@@ -140,7 +147,7 @@ export function contentSummary(counts: ImportSession['counts']): string[] {
 
 /** "45%" of the items read, for the progress bar. */
 export function percent(progress: ImportProgress | null): number {
-  if (!progress || !progress.total) return 0;
+  if (!progress?.total) return 0;
   if (progress.phase === 'done') return 100;
   return Math.min(99, Math.floor((progress.done / progress.total) * 100));
 }
@@ -151,8 +158,12 @@ export function importedLines(report: ImportReport): string[] {
     .sort((a, b) => b[1] - a[1])
     .map(([type, n]) => countLabel(n, type));
   const { comments, terms, users, menus } = report.imported;
-  if (comments) lines.push(`${comments.toLocaleString()} ${comments === 1 ? 'comment' : 'comments'}`);
-  if (terms) lines.push(`${terms.toLocaleString()} ${terms === 1 ? 'category or tag' : 'categories and tags'}`);
+  if (comments)
+    lines.push(`${comments.toLocaleString()} ${comments === 1 ? 'comment' : 'comments'}`);
+  if (terms)
+    lines.push(
+      `${terms.toLocaleString()} ${terms === 1 ? 'category or tag' : 'categories and tags'}`,
+    );
   if (menus) lines.push(`${menus} ${menus === 1 ? 'menu' : 'menus'}`);
   if (users) lines.push(`${users} new ${users === 1 ? 'user' : 'users'}`);
   return lines;

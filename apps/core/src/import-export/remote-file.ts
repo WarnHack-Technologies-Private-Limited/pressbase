@@ -154,7 +154,10 @@ export async function fetchRemoteFile(rawUrl: string, options: FetchOptions): Pr
       );
     }
     if (url.username || url.password) {
-      throw new RemoteFileError('import_invalid_url', 'Addresses with a user name or password aren’t downloaded.');
+      throw new RemoteFileError(
+        'import_invalid_url',
+        'Addresses with a user name or password aren’t downloaded.',
+      );
     }
     const host = url.hostname.replace(/^\[|\]$/g, '');
     const external =
@@ -185,7 +188,10 @@ export async function fetchRemoteFile(rawUrl: string, options: FetchOptions): Pr
     if (status >= 300 && status < 400 && response.headers.location) {
       response.resume();
       if (hop >= maxRedirects) {
-        throw new RemoteFileError('import_too_many_redirects', 'The file’s address redirected too many times.');
+        throw new RemoteFileError(
+          'import_too_many_redirects',
+          'The file’s address redirected too many times.',
+        );
       }
       url = new URL(response.headers.location, url);
       continue;
@@ -213,7 +219,10 @@ export async function fetchRemoteFile(rawUrl: string, options: FetchOptions): Pr
       chunks.push(chunk);
     }
     if (length && total !== length) {
-      throw new RemoteFileError('import_file_error', 'The download stopped before the whole file arrived.');
+      throw new RemoteFileError(
+        'import_file_error',
+        'The download stopped before the whole file arrived.',
+      );
     }
     if (!total) throw new RemoteFileError('import_file_error', 'The downloaded file is empty.');
     return {

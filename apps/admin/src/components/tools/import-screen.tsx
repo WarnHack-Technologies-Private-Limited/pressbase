@@ -111,9 +111,14 @@ export function ImportScreen({ meId, resume }: { meId: number; resume: ImportSes
         session={session}
         onUpdate={(next) => {
           if (next.status === 'completed') {
-            toast(next.report?.errors.total ? 'Import finished, with some problems.' : 'Import finished.', {
-              tone: next.report?.errors.total ? 'danger' : 'success',
-            });
+            toast(
+              next.report?.errors.total
+                ? 'Import finished, with some problems.'
+                : 'Import finished.',
+              {
+                tone: next.report?.errors.total ? 'danger' : 'success',
+              },
+            );
           } else if (next.status === 'failed') {
             toast('The import stopped.', { tone: 'danger' });
           }
@@ -169,7 +174,9 @@ function UploadStep({ onUploaded }: { onUploaded: (session: UploadedSession) => 
       toast('Export file read.');
       onUploaded(session);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'The file couldn’t be uploaded. Please try again.');
+      setError(
+        e instanceof ApiError ? e.message : 'The file couldn’t be uploaded. Please try again.',
+      );
       inputRef.current?.focus();
     } finally {
       setBusy(false);
@@ -298,8 +305,8 @@ function OptionsStep({
               {session.unsupported_types
                 .map((t) => countLabel(session.counts.posts[t] ?? 0, t))
                 .join(' and ')}{' '}
-              will be skipped. A plugin that adds the type may help; you can import the same
-              file again afterwards.
+              will be skipped. A plugin that adds the type may help; you can import the same file
+              again afterwards.
             </Notice>
           )}
         </div>
@@ -319,7 +326,9 @@ function OptionsStep({
               <SelectField
                 key={author.login}
                 label={`Posts by ${author.display_name}`}
-                hint={author.display_name === author.login ? undefined : `Username: ${author.login}`}
+                hint={
+                  author.display_name === author.login ? undefined : `Username: ${author.login}`
+                }
                 value={authors[author.login]}
                 onChange={(e) =>
                   setAuthors((current) => ({
@@ -329,9 +338,9 @@ function OptionsStep({
                 }
               >
                 {session.can_create_users &&
-                  !session.users.some((u) => u.login.toLowerCase() === author.login.toLowerCase()) && (
-                    <option value="new">New user: {author.login}</option>
-                  )}
+                  !session.users.some(
+                    (u) => u.login.toLowerCase() === author.login.toLowerCase(),
+                  ) && <option value="new">New user: {author.login}</option>}
                 {session.users.map((user) => (
                   <option key={user.id} value={String(user.id)}>
                     {user.name || user.login}
@@ -453,8 +462,8 @@ function ProgressStep({
         </p>
         {stalled && (
           <Notice tone="warning" title="The import hasn’t started yet.">
-            Background tasks may be turned off in this Pressbase process (PRESSBASE_WORKER=off).
-            It starts as soon as a process with a worker picks it up.
+            Background tasks may be turned off in this Pressbase process (PRESSBASE_WORKER=off). It
+            starts as soon as a process with a worker picks it up.
           </Notice>
         )}
       </div>
@@ -492,8 +501,8 @@ function ResultStep({ session, onAgain }: { session: ImportSession; onAgain: () 
       <Card title={<StepHeading>The import stopped</StepHeading>}>
         <div className={styles.fields}>
           <Notice tone="danger" title="Pressbase couldn’t finish importing this file.">
-            {session.error || 'Something went wrong while importing.'} Anything imported before
-            it stopped is kept; importing the same file again skips it and carries on.
+            {session.error || 'Something went wrong while importing.'} Anything imported before it
+            stopped is kept; importing the same file again skips it and carries on.
           </Notice>
           <div className={styles.actions}>
             <Button variant="primary" onClick={onAgain}>

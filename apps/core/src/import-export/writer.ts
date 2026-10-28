@@ -12,7 +12,12 @@ import type { Post } from '../content/posts';
 import type { Kernel } from '../kernel';
 import { fileUrl, MediaError, maxUploadBytes, setMeta, uploadAttachment } from '../media/service';
 import { insertUser, UserError } from '../people/users';
-import { type ClassicMenuItem, convertClassicMenu, menuItemFromPost, type ResolvedTarget } from './menus';
+import {
+  type ClassicMenuItem,
+  convertClassicMenu,
+  menuItemFromPost,
+  type ResolvedTarget,
+} from './menus';
 import { maybeUnserialize } from './php-serialize';
 import type {
   ImportAuthor,
@@ -26,7 +31,12 @@ import type {
   ImportTerm,
 } from './records';
 import { ZERO_DATE } from './records';
-import { type FetchOptions, fetchRemoteFile, type RemoteFile, RemoteFileError } from './remote-file';
+import {
+  type FetchOptions,
+  fetchRemoteFile,
+  type RemoteFile,
+  RemoteFileError,
+} from './remote-file';
 import { createRewriter } from './rewrite';
 
 /**
@@ -140,9 +150,7 @@ export interface ImportPostData {
 }
 
 /** How to handle one author: map them to a user, or create a user. */
-export type AuthorChoice =
-  | { action: 'map'; userId: number }
-  | { action: 'create'; login?: string };
+export type AuthorChoice = { action: 'map'; userId: number } | { action: 'create'; login?: string };
 
 export interface ImportOptions {
   /** Who runs the import: their capabilities decide what's allowed, and unmapped posts are theirs. */
@@ -304,7 +312,10 @@ export class ImportWriter {
     const { kernel, options } = this;
     const user = options.user;
     if (!userCan(user, 'import')) {
-      throw new ImportError('import_forbidden', 'Sorry, you are not allowed to import content into this site.');
+      throw new ImportError(
+        'import_forbidden',
+        'Sorry, you are not allowed to import content into this site.',
+      );
     }
     this.#timeZone = await kernel.options.get<string>('timezone_string', 'UTC');
     this.#home = (await kernel.options.get<string>('home', '')).replace(/\/+$/, '');
@@ -437,7 +448,12 @@ export class ImportWriter {
       const wantedLogin = (choice?.action === 'create' && choice.login?.trim()) || login;
       userId = await this.#userId(sql`lower(${schema.users.login}) = ${wantedLogin.toLowerCase()}`);
       if (userId) {
-        this.#skip({ kind: 'author', title: wantedLogin, code: 'exists', reason: 'A user with this username already exists.' });
+        this.#skip({
+          kind: 'author',
+          title: wantedLogin,
+          code: 'exists',
+          reason: 'A user with this username already exists.',
+        });
       } else if (!this.#canCreateUsers) {
         if (choice?.action === 'create') {
           this.#error({
@@ -471,7 +487,9 @@ export class ImportWriter {
   async #createUser(login: string, record: ImportAuthor | undefined): Promise<number | undefined> {
     const email = record?.author_email?.trim() ?? '';
     if (email) {
-      const existing = await this.#userId(sql`lower(${schema.users.email}) = ${email.toLowerCase()}`);
+      const existing = await this.#userId(
+        sql`lower(${schema.users.email}) = ${email.toLowerCase()}`,
+      );
       if (existing) {
         this.#skip({
           kind: 'author',
@@ -487,7 +505,8 @@ export class ImportWriter {
         kind: 'author',
         title: login,
         code: 'import_user_no_email',
-        reason: 'The export has no email address for this author, so no user was created; their posts are yours.',
+        reason:
+          'The export has no email address for this author, so no user was created; their posts are yours.',
       });
       return undefined;
     }
@@ -552,12 +571,21 @@ export class ImportWriter {
     const existing = term.slug ? await this.#findTerm(taxonomy, term.slug) : undefined;
     if (existing) {
       if (term.term_id) this.#terms.set(term.term_id, existing);
-      this.#skip({ kind: 'term', title: label, type: taxonomy, id: term.term_id, code: 'exists', reason: 'Already exists.' });
+      this.#skip({
+        kind: 'term',
+        title: label,
+        type: taxonomy,
+        id: term.term_id,
+        code: 'exists',
+        reason: 'Already exists.',
+      });
       return;
     }
     const hierarchical = this.kernel.taxonomies.get(taxonomy)?.hierarchical ?? false;
     const parent =
-      hierarchical && term.term_parent ? await this.#findTerm(taxonomy, term.term_parent) : undefined;
+      hierarchical && term.term_parent
+        ? await this.#findTerm(taxonomy, term.term_parent)
+        : undefined;
     try {
       const created = await this.kernel.terms.insert(taxonomy, {
         name: label,
@@ -568,7 +596,11 @@ export class ImportWriter {
       this.#termsBySlug.set(`${taxonomy}:${created.slug}`, created.id);
       if (term.term_id) this.#terms.set(term.term_id, created.id);
       if (hierarchical && term.term_parent && !parent) {
-        this.#pendingTermParents.push({ taxonomy, termId: created.id, parentSlug: term.term_parent });
+        this.#pendingTermParents.push({
+          taxonomy,
+          termId: created.id,
+          parentSlug: term.term_parent,
+        });
       }
       this.report.imported.terms += 1;
       await this.#termMeta(created.id, term);
@@ -586,16 +618,27 @@ export class ImportWriter {
 
   /** WP_Import::process_termmeta() */
   async #termMeta(termId: number, term: ImportTerm): Promise<void> {
-    const list = await this.kernel.hooks.applyFilters('wp_import_term_meta', term.termmeta, termId, term);
+    const list = await this.kernel.hooks.applyFilters(
+      'wp_import_term_meta',
+      term.termmeta,
+      termId,
+      term,
+    );
     const rows: { termId: number; key: string; value: unknown }[] = [];
     for (const meta of list ?? []) {
-      const key = await this.kernel.hooks.applyFilters('import_term_meta_key', meta.key, termId, term);
+      const key = await this.kernel.hooks.applyFilters(
+        'import_term_meta_key',
+        meta.key,
+        termId,
+        term,
+      );
       if (!key) continue;
       rows.push({ termId, key, value: maybeUnserialize(meta.value) });
     }
     if (!rows.length) return;
     await this.kernel.db.insert(schema.termmeta).values(rows);
-    for (const row of rows) await this.kernel.hooks.doAction('import_term_meta', termId, row.key, row.value);
+    for (const row of rows)
+      await this.kernel.hooks.doAction('import_term_meta', termId, row.key, row.value);
   }
 
   async #backfillTermParents(): Promise<void> {
@@ -667,7 +710,11 @@ export class ImportWriter {
 
     const date = this.#date(post.post_date, post.post_date_gmt) ?? new Date();
     const existing = Number(
-      await kernel.hooks.applyFilters('wp_import_existing_post', await this.#existing(post, date), post),
+      await kernel.hooks.applyFilters(
+        'wp_import_existing_post',
+        await this.#existing(post, date),
+        post,
+      ),
     );
     if (existing) {
       const found = await kernel.posts.get(existing);
@@ -762,24 +809,39 @@ export class ImportWriter {
 
   /** The terms block of process_posts(): finds or creates each term, then sets them per taxonomy. */
   async #postTerms(postId: number, post: ImportPost): Promise<void> {
-    const terms = await this.kernel.hooks.applyFilters('wp_import_post_terms', post.terms, postId, post);
+    const terms = await this.kernel.hooks.applyFilters(
+      'wp_import_post_terms',
+      post.terms,
+      postId,
+      post,
+    );
     const byTaxonomy = new Map<string, number[]>();
     for (const term of terms ?? []) {
       const taxonomy = term.domain === 'tag' ? 'post_tag' : term.domain;
       const tax = this.kernel.taxonomies.get(taxonomy);
       if (!tax) {
-        this.report.skippedTaxonomies[taxonomy] = (this.report.skippedTaxonomies[taxonomy] ?? 0) + 1;
+        this.report.skippedTaxonomies[taxonomy] =
+          (this.report.skippedTaxonomies[taxonomy] ?? 0) + 1;
         continue;
       }
       const slug = term.slug || term.name;
       let termId = slug ? await this.#findTerm(taxonomy, slug) : undefined;
       if (!termId) {
         try {
-          const created = await this.kernel.terms.insert(taxonomy, { name: term.name || slug, slug });
+          const created = await this.kernel.terms.insert(taxonomy, {
+            name: term.name || slug,
+            slug,
+          });
           termId = created.id;
           this.#termsBySlug.set(`${taxonomy}:${created.slug}`, created.id);
           this.report.imported.terms += 1;
-          await this.kernel.hooks.doAction('wp_import_insert_term', { term_id: termId }, term, postId, post);
+          await this.kernel.hooks.doAction(
+            'wp_import_insert_term',
+            { term_id: termId },
+            term,
+            postId,
+            post,
+          );
         } catch (error) {
           this.#error({
             kind: 'term',
@@ -800,7 +862,9 @@ export class ImportWriter {
       const ttIds = await this.kernel.db
         .select({ id: schema.termTaxonomy.id })
         .from(schema.termTaxonomy)
-        .where(and(eq(schema.termTaxonomy.taxonomy, taxonomy), inArray(schema.termTaxonomy.termId, ids)));
+        .where(
+          and(eq(schema.termTaxonomy.taxonomy, taxonomy), inArray(schema.termTaxonomy.termId, ids)),
+        );
       await this.kernel.hooks.doAction(
         'wp_import_set_post_terms',
         ttIds.map((r) => r.id),
@@ -814,7 +878,12 @@ export class ImportWriter {
 
   /** The comments block of process_posts(): threaded, deduplicated by author and date. */
   async #comments(target: Post, post: ImportPost): Promise<void> {
-    const list = await this.kernel.hooks.applyFilters('wp_import_post_comments', post.comments, target.id, post);
+    const list = await this.kernel.hooks.applyFilters(
+      'wp_import_post_comments',
+      post.comments,
+      target.id,
+      post,
+    );
     if (!list?.length) return;
     const inserted = new Map<number, number>();
     for (const comment of [...list].sort((a, b) => a.comment_id - b.comment_id)) {
@@ -823,7 +892,13 @@ export class ImportWriter {
       const [found] = await this.kernel.db
         .select({ id: c.id })
         .from(c)
-        .where(and(eq(c.postId, target.id), eq(c.author, comment.comment_author), sameSecond(c.date, date)))
+        .where(
+          and(
+            eq(c.postId, target.id),
+            eq(c.author, comment.comment_author),
+            sameSecond(c.date, date),
+          ),
+        )
         .limit(1);
       if (found) {
         inserted.set(comment.comment_id, found.id);
@@ -844,14 +919,18 @@ export class ImportWriter {
         const row = await this.kernel.comments.insert(
           {
             postId: target.id,
-            parentId: comment.comment_parent ? (inserted.get(comment.comment_parent) ?? null) : null,
+            parentId: comment.comment_parent
+              ? (inserted.get(comment.comment_parent) ?? null)
+              : null,
             content: this.#filterHtml ? relUgc(ksesComment(content)) : content,
             author: comment.comment_author,
             authorEmail: comment.comment_author_email.slice(0, 100),
             authorUrl: comment.comment_author_url.slice(0, 200),
             authorIp: comment.comment_author_IP.slice(0, 100),
             type: comment.comment_type || 'comment',
-            userId: comment.comment_user_id ? (this.#authorsById.get(comment.comment_user_id) ?? null) : null,
+            userId: comment.comment_user_id
+              ? (this.#authorsById.get(comment.comment_user_id) ?? null)
+              : null,
             date,
           },
           approved,
@@ -859,11 +938,23 @@ export class ImportWriter {
         inserted.set(comment.comment_id, row.id);
         this.report.imported.comments += 1;
         if (comment.commentmeta.length) {
-          await this.kernel.db.insert(schema.commentmeta).values(
-            comment.commentmeta.map((m) => ({ commentId: row.id, key: m.key, value: maybeUnserialize(m.value) })),
-          );
+          await this.kernel.db
+            .insert(schema.commentmeta)
+            .values(
+              comment.commentmeta.map((m) => ({
+                commentId: row.id,
+                key: m.key,
+                value: maybeUnserialize(m.value),
+              })),
+            );
         }
-        await this.kernel.hooks.doAction('wp_import_insert_comment', row.id, comment, target.id, post);
+        await this.kernel.hooks.doAction(
+          'wp_import_insert_comment',
+          row.id,
+          comment,
+          target.id,
+          post,
+        );
       } catch (error) {
         this.#error({
           kind: 'comment',
@@ -878,10 +969,20 @@ export class ImportWriter {
 
   /** The postmeta block of process_posts(). `_thumbnail_id` waits for remap_featured_images(). */
   async #postMeta(postId: number, post: ImportPost): Promise<void> {
-    const list = await this.kernel.hooks.applyFilters('wp_import_post_meta', post.postmeta, postId, post);
+    const list = await this.kernel.hooks.applyFilters(
+      'wp_import_post_meta',
+      post.postmeta,
+      postId,
+      post,
+    );
     const rows: { postId: number; key: string; value: unknown }[] = [];
     for (const meta of list ?? []) {
-      const key = await this.kernel.hooks.applyFilters('import_post_meta_key', meta.key, postId, post);
+      const key = await this.kernel.hooks.applyFilters(
+        'import_post_meta_key',
+        meta.key,
+        postId,
+        post,
+      );
       if (!key || SKIPPED_META.has(key)) continue;
       if (post.post_type === 'attachment' && ATTACHMENT_FILE_META.has(key)) continue;
       if (key === '_thumbnail_id') {
@@ -899,7 +1000,8 @@ export class ImportWriter {
     }
     if (!rows.length) return;
     await this.kernel.db.insert(schema.postmeta).values(rows);
-    for (const row of rows) await this.kernel.hooks.doAction('import_post_meta', postId, row.key, row.value);
+    for (const row of rows)
+      await this.kernel.hooks.doAction('import_post_meta', postId, row.key, row.value);
   }
 
   /* ---------------------------------------------------------- attachments */
@@ -933,7 +1035,14 @@ export class ImportWriter {
         allowPrivate: this.options.allowPrivateHosts,
         signal: this.options.signal,
         hostIsExternal: async (host, href) =>
-          Boolean(await this.kernel.hooks.applyFilters('http_request_host_is_external', false, host, href)),
+          Boolean(
+            await this.kernel.hooks.applyFilters(
+              'http_request_host_is_external',
+              false,
+              host,
+              href,
+            ),
+          ),
       });
     } catch (error) {
       if (this.options.signal?.aborted) throw error;
@@ -988,7 +1097,12 @@ export class ImportWriter {
       .where(eq(schema.posts.id, created.id));
 
     // backfill_attachment_urls(): the old URL (and guid) now mean the new file.
-    const newUrl = created.guid || (await fileUrl(this.kernel, String(await this.kernel.posts.getMeta(created.id, '_wp_attached_file'))));
+    const newUrl =
+      created.guid ||
+      (await fileUrl(
+        this.kernel,
+        String(await this.kernel.posts.getMeta(created.id, '_wp_attached_file')),
+      ));
     this.#urls.set(url, newUrl);
     if (post.guid && post.guid !== url) this.#urls.set(post.guid, newUrl);
     // Image sub-sizes: photo-300x200.jpg follows photo.jpg.
@@ -1017,7 +1131,10 @@ export class ImportWriter {
       // Hierarchical types need a parent of their own type; attachments may hang off any post.
       const hierarchical = this.kernel.postTypes.get(self.type)?.hierarchical;
       if (self.type !== 'attachment' && !(hierarchical && row.type === self.type)) continue;
-      await this.kernel.db.update(schema.posts).set({ parentId: parent }).where(eq(schema.posts.id, postId));
+      await this.kernel.db
+        .update(schema.posts)
+        .set({ parentId: parent })
+        .where(eq(schema.posts.id, postId));
     }
   }
 
@@ -1038,7 +1155,9 @@ export class ImportWriter {
   }
 
   async #rewriteContent(): Promise<void> {
-    const oldBases = [this.#site?.base_blog_url ?? '', this.#site?.base_site_url ?? ''].filter(Boolean);
+    const oldBases = [this.#site?.base_blog_url ?? '', this.#site?.base_site_url ?? ''].filter(
+      Boolean,
+    );
     const rewrite = createRewriter({
       posts: this.#posts,
       terms: this.#terms,
@@ -1092,7 +1211,12 @@ export class ImportWriter {
         .where(and(eq(schema.posts.type, 'wp_navigation'), eq(schema.posts.title, name)))
         .limit(1);
       if (existing) {
-        this.#skip({ kind: 'menu', title: name, code: 'exists', reason: 'A menu with this name already exists.' });
+        this.#skip({
+          kind: 'menu',
+          title: name,
+          code: 'exists',
+          reason: 'A menu with this name already exists.',
+        });
         continue;
       }
       const resolved = new Map<number, ResolvedTarget | undefined>();
@@ -1120,7 +1244,12 @@ export class ImportWriter {
         });
         this.report.imported.menus += 1;
       } catch (error) {
-        this.#error({ kind: 'menu', title: name, code: 'import_menu_failed', reason: describe(error) });
+        this.#error({
+          kind: 'menu',
+          title: name,
+          code: 'import_menu_failed',
+          reason: describe(error),
+        });
       }
     }
   }
@@ -1144,7 +1273,10 @@ export class ImportWriter {
       return { id: term.id, url: termLink(site, term), title: term.name };
     }
     if (item.type === 'post_type_archive') {
-      return { url: `${this.#home}/?post_type=${encodeURIComponent(item.object)}`, title: item.title || item.object };
+      return {
+        url: `${this.#home}/?post_type=${encodeURIComponent(item.object)}`,
+        title: item.title || item.object,
+      };
     }
     if (!item.url) return undefined;
     return { url: rewrite(item.url), title: item.title || item.url };

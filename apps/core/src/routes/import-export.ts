@@ -6,6 +6,12 @@ import { z } from 'zod';
 import { userCan } from '../auth/users';
 import { type AppEnv, invalidParams, readJson, requireCapability, restError } from '../http';
 import {
+  type ExportOptions,
+  exportablePostTypes,
+  exportFilename,
+  generateWxr,
+} from '../import-export/exporter';
+import {
   createImportSession,
   deleteImportSession,
   getSession,
@@ -16,7 +22,6 @@ import {
   sessionStatus,
   startImportSession,
 } from '../import-export/service';
-import { type ExportOptions, exportablePostTypes, exportFilename, generateWxr } from '../import-export/exporter';
 import type { Kernel } from '../kernel';
 
 /**
@@ -35,7 +40,8 @@ import type { Kernel } from '../kernel';
  */
 
 function sessionError(c: Context<AppEnv>, error: unknown) {
-  if (error instanceof ImportSessionError) return restError(c, error.status, error.code, error.message);
+  if (error instanceof ImportSessionError)
+    return restError(c, error.status, error.code, error.message);
   throw error;
 }
 
@@ -165,11 +171,24 @@ export function importRoutes() {
           : { action: 'create' as const, login: choice.login },
       ]),
     );
-    if (Object.values(authors).some((a) => a.action === 'create') && !userCan(user, 'create_users')) {
-      return restError(c, 403, 'import_cannot_create_users', 'Sorry, you are not allowed to create users.');
+    if (
+      Object.values(authors).some((a) => a.action === 'create') &&
+      !userCan(user, 'create_users')
+    ) {
+      return restError(
+        c,
+        403,
+        'import_cannot_create_users',
+        'Sorry, you are not allowed to create users.',
+      );
     }
     if (parsed.data.fetch_attachments && !userCan(user, 'upload_files')) {
-      return restError(c, 403, 'import_cannot_upload', 'Sorry, you are not allowed to upload files.');
+      return restError(
+        c,
+        403,
+        'import_cannot_upload',
+        'Sorry, you are not allowed to upload files.',
+      );
     }
     try {
       const session = await startImportSession(kernel, c.req.param('id'), {
@@ -275,7 +294,11 @@ export function exportRoutes() {
     const args = (await kernel.hooks.applyFilters('export_args', {
       content: q.content === 'posts' ? 'post' : q.content === 'pages' ? 'page' : q.content,
       author: q.author || undefined,
-      category: q.category ? (/^\d+$/.test(q.category) ? Number(q.category) : q.category) : undefined,
+      category: q.category
+        ? /^\d+$/.test(q.category)
+          ? Number(q.category)
+          : q.category
+        : undefined,
       start_date: q.start_date,
       end_date: q.end_date,
       status: q.status || undefined,

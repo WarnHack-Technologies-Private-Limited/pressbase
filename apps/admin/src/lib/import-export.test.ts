@@ -6,8 +6,8 @@ import {
   defaultAuthorValue,
   exportUrl,
   filtersFor,
-  importedLines,
   type ImportReport,
+  importedLines,
   itemKind,
   monthLabel,
   percent,
@@ -41,7 +41,14 @@ describe('import helpers', () => {
         comments: 1,
         items: 20,
       }),
-    ).toEqual(['12 posts', '3 pages', '1 media item', '1 comment', '7 categories and tags', '1 menu']);
+    ).toEqual([
+      '12 posts',
+      '3 pages',
+      '1 media item',
+      '1 comment',
+      '7 categories and tags',
+      '1 menu',
+    ]);
   });
 
   it('reports progress and results', () => {
@@ -59,15 +66,31 @@ describe('import helpers', () => {
       startedAt: '',
       finishedAt: '',
     };
-    expect(importedLines(report)).toEqual(['2 posts', '1 page', '1 comment', '2 categories and tags', '1 menu', '1 new user']);
+    expect(importedLines(report)).toEqual([
+      '2 posts',
+      '1 page',
+      '1 comment',
+      '2 categories and tags',
+      '1 menu',
+      '1 new user',
+    ]);
     expect(itemKind({ kind: 'post', type: 'page', title: '', code: '', reason: '' })).toBe('Page');
-    expect(itemKind({ kind: 'post', type: 'product', title: '', code: '', reason: '' })).toBe('product');
+    expect(itemKind({ kind: 'post', type: 'product', title: '', code: '', reason: '' })).toBe(
+      'product',
+    );
     expect(itemKind({ kind: 'attachment', title: '', code: '', reason: '' })).toBe('Media');
   });
 });
 
 describe('export helpers', () => {
-  const base = { content: 'all', category: '3', author: '2', start_date: '2026-01', end_date: '', status: 'draft' };
+  const base = {
+    content: 'all',
+    category: '3',
+    author: '2',
+    start_date: '2026-01',
+    end_date: '',
+    status: 'draft',
+  };
 
   it('only sends the filters that apply', () => {
     expect(filtersFor('all')).toEqual([]);

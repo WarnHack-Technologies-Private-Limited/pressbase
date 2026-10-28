@@ -6,8 +6,8 @@ import { pipeline } from 'node:stream/promises';
 import { schema } from '@pressbase/db';
 import { eq, sql } from 'drizzle-orm';
 import { loadUser } from '../auth/users';
-import type { Kernel } from '../kernel';
 import type { Job } from '../jobs/queue';
+import type { Kernel } from '../kernel';
 import {
   type AuthorChoice,
   type ImportOptions,
@@ -94,7 +94,8 @@ export function maxImportBytes(kernel: Kernel): number {
 const ID = /^[a-f0-9]{24}$/;
 
 function paths(kernel: Kernel, id: string) {
-  if (!ID.test(id)) throw new ImportSessionError('import_not_found', 'That import doesn’t exist.', 404);
+  if (!ID.test(id))
+    throw new ImportSessionError('import_not_found', 'That import doesn’t exist.', 404);
   const dir = importsDir(kernel);
   return { xml: path.join(dir, `${id}.xml`), json: path.join(dir, `${id}.json`) };
 }
@@ -152,7 +153,11 @@ async function removeSession(kernel: Kernel, id: string): Promise<void> {
  */
 export async function createImportSession(
   kernel: Kernel,
-  input: { body: AsyncIterable<Uint8Array> | ReadableStream<Uint8Array>; filename: string; userId: number },
+  input: {
+    body: AsyncIterable<Uint8Array> | ReadableStream<Uint8Array>;
+    filename: string;
+    userId: number;
+  },
 ): Promise<ImportSession> {
   await pruneSessions(kernel);
   const dir = importsDir(kernel);
@@ -185,7 +190,10 @@ export async function createImportSession(
   }
   if (!size) {
     await rm(xml, { force: true });
-    throw new ImportSessionError('import_empty_file', 'The file is empty. Choose the .xml file from Tools → Export.');
+    throw new ImportSessionError(
+      'import_empty_file',
+      'The file is empty. Choose the .xml file from Tools → Export.',
+    );
   }
   let summary: WxrSummary;
   try {
@@ -225,7 +233,11 @@ export async function startImportSession(
   try {
     await stat(xml);
   } catch {
-    throw new ImportSessionError('import_not_found', 'The uploaded file is gone. Upload it again.', 404);
+    throw new ImportSessionError(
+      'import_not_found',
+      'The uploaded file is gone. Upload it again.',
+      404,
+    );
   }
   const data: ImportJobData = {
     importId: id,
@@ -240,7 +252,8 @@ export async function startImportSession(
     maxAttempts: 3,
     backoffSeconds: 30,
   });
-  if (!job) throw new ImportSessionError('import_already_started', 'This import has already started.', 409);
+  if (!job)
+    throw new ImportSessionError('import_already_started', 'This import has already started.', 409);
   session.jobId = job.id;
   session.startedAt = new Date().toISOString();
   session.options = { authors: data.authors, fetchAttachments: data.fetchAttachments };
@@ -257,7 +270,10 @@ export interface SessionStatus {
 }
 
 /** Where an import is: from its job while it exists, else from the saved report. */
-export async function sessionStatus(kernel: Kernel, session: ImportSession): Promise<SessionStatus> {
+export async function sessionStatus(
+  kernel: Kernel,
+  session: ImportSession,
+): Promise<SessionStatus> {
   if (!session.jobId) {
     return { status: 'uploaded', progress: null, report: null, error: null };
   }
@@ -265,11 +281,15 @@ export async function sessionStatus(kernel: Kernel, session: ImportSession): Pro
   if (!job) {
     return session.report
       ? { status: 'completed', progress: null, report: session.report, error: null }
-      : { status: 'failed', progress: null, report: null, error: session.error ?? 'The import stopped.' };
+      : {
+          status: 'failed',
+          progress: null,
+          report: null,
+          error: session.error ?? 'The import stopped.',
+        };
   }
   const data = job.data as ImportJobData;
-  const status: ImportStatus =
-    job.status === 'pending' ? 'queued' : (job.status as ImportStatus);
+  const status: ImportStatus = job.status === 'pending' ? 'queued' : (job.status as ImportStatus);
   return {
     status: status === 'queued' && job.attempts > 0 ? 'running' : status,
     progress: data.progress ?? null,
@@ -284,7 +304,11 @@ export async function deleteImportSession(kernel: Kernel, id: string): Promise<v
   if (session.jobId) {
     const job = await kernel.jobs.get(session.jobId);
     if (job?.status === 'running' || (job?.status === 'pending' && job.attempts > 0)) {
-      throw new ImportSessionError('import_running', 'This import is running and can’t be cancelled now.', 409);
+      throw new ImportSessionError(
+        'import_running',
+        'This import is running and can’t be cancelled now.',
+        409,
+      );
     }
     if (job?.status === 'pending') await kernel.jobs.cancel(job.id);
   }
@@ -313,7 +337,11 @@ export async function listImportSessions(kernel: Kernel, limit = 10): Promise<Im
 }
 
 /** Merges `patch` into a job's data without touching anything else. */
-async function patchJobData(kernel: Kernel, jobId: number, patch: Partial<ImportJobData>): Promise<void> {
+async function patchJobData(
+  kernel: Kernel,
+  jobId: number,
+  patch: Partial<ImportJobData>,
+): Promise<void> {
   await kernel.db
     .update(schema.jobs)
     .set({ data: sql`${schema.jobs.data} || ${JSON.stringify(patch)}::jsonb` })
@@ -351,17 +379,23 @@ export function registerImportJobs(kernel: Kernel): void {
     { maxAttempts: 3, timeoutSeconds: IMPORT_TIMEOUT_SECONDS, backoffSeconds: 30 },
   );
   // Remember why an import failed for good, after its job row is pruned.
-  kernel.hooks.addAction('pressbase_job_failed', async (job: Job, error: unknown, retrying: boolean) => {
-    if (job.name !== IMPORT_JOB || retrying) return;
-    const id = (job.data as ImportJobData | null)?.importId;
-    if (!id) return;
-    try {
-      const session = await getSession(kernel, id);
-      await saveSession(kernel, { ...session, error: error instanceof Error ? error.message : String(error) });
-    } catch {
-      // Already deleted.
-    }
-  });
+  kernel.hooks.addAction(
+    'pressbase_job_failed',
+    async (job: Job, error: unknown, retrying: boolean) => {
+      if (job.name !== IMPORT_JOB || retrying) return;
+      const id = (job.data as ImportJobData | null)?.importId;
+      if (!id) return;
+      try {
+        const session = await getSession(kernel, id);
+        await saveSession(kernel, {
+          ...session,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      } catch {
+        // Already deleted.
+      }
+    },
+  );
 }
 
 /* ------------------------------------------------------- functions for the CLI */
