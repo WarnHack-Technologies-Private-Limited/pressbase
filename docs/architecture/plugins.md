@@ -127,7 +127,7 @@ A route's `handler` receives Hono's context (`c.req.query()`, `await c.req.json(
 `get_plugins()` looks in two places:
 
 - `<dataDir>/plugins/<name>/` (default `.pressbase/plugins`): uploads land here, and these can be deleted;
-- the repository's `plugins/` folder: plugins bundled with Pressbase (the example). They can be activated but not deleted.
+- the repository's `plugins/` folder: plugins bundled with Pressbase (the example, and [Pressbase SEO](seo-plugin.md)). They can be activated but not deleted.
 
 A folder in the data directory wins over a bundled one with the same name. Folders that are symlinks are skipped. A folder with an invalid `plugin.json` is listed (with its error) so it can be deleted.
 
