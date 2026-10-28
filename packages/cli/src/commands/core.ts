@@ -88,7 +88,7 @@ export const coreCommands: CommandSpec[] = [
         };
         const issue = parsed.error.issues[0];
         const key = String(issue?.path[0] ?? '');
-        ctx.error(`--${flags[key] ?? key}: ${issue?.message ?? 'This value isn’t valid.'}`);
+        return ctx.error(`--${flags[key] ?? key}: ${issue?.message ?? 'This value isn’t valid.'}`);
       }
 
       let databaseUrl: string | undefined;

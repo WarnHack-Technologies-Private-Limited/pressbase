@@ -34,6 +34,7 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "db:generate": "pnpm --filter @pressbase/db generate",
+    "pressbase": "node packages/cli/bin/pressbase.mjs",
     "db:up": "docker compose up -d postgres"
   },
   "devDependencies": {
