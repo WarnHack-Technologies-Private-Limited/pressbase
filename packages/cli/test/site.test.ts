@@ -51,7 +51,7 @@ describe('plugin', () => {
       /already installed/,
     );
     expect(await s.ok(['plugin', 'list', '--fields=name,status,source', '--format=csv'])).toBe(
-      'name,status,source\ndaily-tips,inactive,bundled\nreading-time,inactive,site\n',
+      'name,status,source\ndaily-tips,inactive,bundled\npressbase-seo,inactive,bundled\nreading-time,inactive,site\n',
     );
 
     // It asks for a permission: activating needs agreement (--yes without a terminal).
@@ -63,7 +63,7 @@ describe('plugin', () => {
     expect(await s.kernel.options.get('reading_time_activated')).toBe(true);
     expect((await s.kernel.plugins.grants())['reading-time']?.permissions).toEqual(['options']);
     expect(await s.ok(['plugin', 'status'])).toMatch(
-      / {2}I daily-tips\s+\d+\.\d+\.\d+\n {2}A reading-time\s+0\.1\.0/,
+      / {2}I daily-tips\s+\d+\.\d+\.\d+\n {2}I pressbase-seo\s+\d+\.\d+\.\d+\n {2}A reading-time\s+0\.1\.0/,
     );
     expect(await s.ok(['plugin', 'status', 'reading-time'])).toMatch(
       /Status: Active\n {4}Version: 0\.1\.0/,

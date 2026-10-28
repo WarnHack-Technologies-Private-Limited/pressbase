@@ -21,7 +21,7 @@ In a terminal it asks for a title, a description and whether to include a databa
 | `--sdk <spec>` | the `@pressbase/plugin-sdk` version to depend on |
 | `-y`, `--yes` | ask nothing, use the defaults |
 
-The name follows `plugin.json`'s rules: lowercase letters, numbers and single dashes, at most 64 characters, not one of the reserved names (`wp`, `pressbase`, `oembed`, `wp-site-health`, `wp-block-editor`). Nothing is downloaded while scaffolding.
+The name follows `plugin.json`'s rules: lowercase letters, numbers and single dashes, at most 64 characters, not one of the reserved names (`wp`, `pressbase`, `oembed`, `wp-site-health`, `wp-abilities`, `wp-block-editor`). Nothing is downloaded while scaffolding.
 
 You get:
 
