@@ -228,6 +228,10 @@ msgstr ""
 msgid "Log in"
 msgstr ""
 
+#: apps/admin/src/components/block-editor/index.tsx:17
+msgid "Loading the editor…"
+msgstr ""
+
 #: apps/admin/src/components/install/login-form.tsx:32
 msgid "Enter your username or email and your password."
 msgstr ""

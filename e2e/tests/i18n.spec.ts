@@ -11,7 +11,10 @@ import { logInAsAdmin } from './helpers';
  * so nothing is downloaded. See docs/architecture/i18n.md.
  */
 
-const FIXTURES = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../fixtures/languages');
+const FIXTURES = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../fixtures/languages',
+);
 
 async function chooseSiteLanguage(page: Page, language: string) {
   await page.goto('/admin/settings/general');

@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { withUserLocale } from './api';
 
 const CORE_URL = process.env.CORE_URL ?? 'http://localhost:4000';
 
@@ -17,7 +18,7 @@ export async function coreGet<T>(path: string): Promise<{ status: number; data: 
   let res: Response;
   try {
     // `_locale=user`: answers in the user's language (see withUserLocale() in api.ts).
-    res = await fetch(`${CORE_URL}/wp-json${path}${/[?&]_locale=/.test(path) ? '' : `${path.includes('?') ? '&' : '?'}_locale=user`}`, {
+    res = await fetch(`${CORE_URL}/wp-json${withUserLocale(path)}`, {
       headers: cookieHeader ? { cookie: cookieHeader } : {},
       cache: 'no-store',
     });
