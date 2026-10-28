@@ -86,7 +86,8 @@ test('Tools → Site Health → Info: sections, sizes and copying without privat
 
   await page.getByRole('button', { name: 'Copy site info to clipboard' }).click();
   await expect(page.getByText('Site information has been copied to your clipboard.')).toBeVisible();
-  const copied = await page.evaluate(() => navigator.clipboard.readText());
+  // A string, because the e2e project has no DOM types.
+  const copied = String(await page.evaluate('navigator.clipboard.readText()'));
   expect(copied).toContain('### wp-core ###');
   expect(copied).toContain('### wp-paths-sizes ###');
   expect(copied).not.toContain('uploads_size: loading...');
