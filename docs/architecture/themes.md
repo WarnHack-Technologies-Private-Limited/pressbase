@@ -195,8 +195,8 @@ WordPress registers every core block on the server. Pressbase now does too (`app
 |---|---|
 | `/` | Latest posts (`show_on_front = posts`), or the front page (`show_on_front = page`, `page_on_front`) |
 | `…/page/N/`, `?paged=N` | Page N of a listing; past the last page is a 404 |
-| `/category/{path}/`, `?cat=`, `?category_name=` | Category archive, including child categories |
-| `/tag/{slug}/`, `?tag=` | Tag archive |
+| `/category/{path}/`, `?cat=`, `?category_name=` | Category archive, including child categories (`category` is the category base) |
+| `/tag/{slug}/`, `?tag=` | Tag archive (`tag` is the tag base) |
 | `/author/{nicename}/`, `?author=` | Author archive |
 | `/search/{term}/`, `?s=` | Search (posts and pages) |
 | The permalink structure, e.g. `/2026/10/27/hello/` | A single post (the date parts must match) |
@@ -207,7 +207,7 @@ WordPress registers every core block on the server. Pressbase now does too (`app
 
 With `/%postname%/`-style structures, pages are tried before posts ("verbose page rules"). With plain permalinks, only query strings route.
 
-`redirect_canonical()`'s main cases are covered: `?p=` and `?page_id=` redirect (301) to the pretty permalink, and pretty URLs without their trailing slash redirect to it.
+`redirect_canonical()`'s main cases are covered: `?p=` and `?page_id=` redirect (301) to the pretty permalink, and pretty URLs without their trailing slash redirect to it. The structure and the category and tag bases are set in Settings → Permalinks; addresses from earlier settings redirect to the new ones (see [The public site](public-site.md#permalinks)).
 
 **Visibility.** Listings show published posts, plus private ones to people with `read_private_posts`. A single draft, pending or scheduled post shows only to people who can edit it (a preview); a private one to people who can read it; otherwise 404. **Passwords:** a protected post shows WordPress's password form in place of its content (and no featured image). The form posts to `/wp-login.php?action=postpass`, which stores a hash of the password in the `wp-postpass` cookie for 10 days and redirects back (same-site only).
 
@@ -234,7 +234,7 @@ With `/%postname%/`-style structures, pages are tried before posts ("verbose pag
 
 1. Runs the main query; a redirect answers immediately.
 2. Picks the template and renders it with `kernel.blocks.render()`, inside a `PageRender` (`frontend/page.ts`) that travels with the render through `AsyncLocalStorage`: the main query (for `core/query` with `inherit`, pagination, titles), unique IDs, the collected CSS and scripts, the request's path and cookies. Singular views render with the post as context.
-3. Wraps the result in `<div class="wp-site-blocks">`, adds the skip link (`#wp--skip-link--target` on the first `<main>`), and builds the head: `<title>` (`wp_get_document_title()`), robots meta, canonical link, the block library CSS (`/wp-includes/css/dist/block-library/style.min.css`, WordPress 7.1.3's), global styles, variation and block support CSS, the theme's stylesheets and `@font-face` rules. `<body>` gets `get_body_class()`'s classes.
+3. Wraps the result in `<div class="wp-site-blocks">`, adds the skip link (`#wp--skip-link--target` on the first `<main>`), and runs `wp_enqueue_scripts`, `wp_head`, `wp_body_open` and `wp_footer` ([Scripts and styles](scripts-and-styles.md)). Core's own callbacks build the head: `<title>` (`wp_get_document_title()`), robots meta, canonical link, the block library CSS (`/wp-includes/css/dist/block-library/style.min.css`, WordPress 7.1.3's), global styles, variation and block support CSS, the theme's stylesheets (enqueued with `kernel.styles`) and `@font-face` rules. `<body>` gets `get_body_class()`'s classes.
 4. Answers `404` for 404s, with `Cache-Control: public, max-age=0, must-revalidate` (private for logged-in visitors, unlocked protected posts and held-comment previews) and an `ETag`; a matching `If-None-Match` gives 304. The head links the site's feeds (`feed_links()`, `feed_links_extra()`).
 5. Returns the cache tags of everything the render read (`tags`), for `apps/web`'s page cache ([ADR 0008](../adr/0008-public-page-caching.md)).
 
@@ -263,11 +263,11 @@ Any WordPress block theme that keeps its logic in `theme.json`, templates and pa
 4. Static assets referenced with `file:./` (fonts) or through `get_template_directory_uri()` in patterns.
 5. Activate it in **Appearance**.
 
-Anything a theme does in `functions.php` doesn't happen; keep styles in `theme.json` and `style.css` (enqueued only through `compat.ts` for now — a theme manifest for stylesheets and block styles is planned with the plugin loader).
+Anything a theme does in `functions.php` doesn't happen; keep styles in `theme.json` and `style.css` (stylesheets listed in `compat.ts` are enqueued with `kernel.styles` in `wp_enqueue_scripts` — a theme manifest for stylesheets and block styles is planned with the plugin loader).
 
 ## Not yet
 
 - The site editor: editing templates and parts (`wp_template`, `wp_template_part`). Global styles have the essentials (Appearance → Styles); per-block styles, shadows, borders, the style book and "Additional CSS" in the admin are still to come (the REST API takes them already).
 - Responsive style states, duotone; the image cropper for the site icon (the centre is used).
-- The admin bar, `wp_head` hooks for plugins, oEmbed.
+- The admin bar, oEmbed.
 - Post formats, sticky-post styling beyond ordering, attachment pages, custom post type archives.

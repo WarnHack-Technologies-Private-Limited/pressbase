@@ -3,6 +3,7 @@ import { schema } from '@pressbase/db';
 import { eq } from 'drizzle-orm';
 import type { CurrentUser } from '../auth/users';
 import { addCacheTags, CacheTag } from '../cache/tags';
+import { type PermalinkBases, permalinkBases } from '../content/permalinks';
 import type { Post } from '../content/posts';
 import { sanitizePostTitle } from '../content/sanitize';
 import type { Term } from '../content/terms';
@@ -33,6 +34,8 @@ export interface SiteInfo {
   name: string;
   description: string;
   pretty: boolean;
+  /** Category and tag bases without slashes (Settings → Permalinks). */
+  bases: PermalinkBases;
   timeZone: string;
   dateFormat: string;
 }
@@ -47,6 +50,7 @@ export async function siteInfo(kernel: Kernel): Promise<SiteInfo> {
     name: await get('blogname', ''),
     description: await get('blogdescription', ''),
     pretty: (await get('permalink_structure', '')) !== '',
+    bases: await permalinkBases(kernel),
     timeZone: await get('timezone_string', 'UTC'),
     dateFormat: await get('date_format', 'F j, Y'),
   };
@@ -62,7 +66,12 @@ export function taxonomyQueryVar(taxonomy: string): string {
 /** get_term_link() */
 export function termLink(site: SiteInfo, term: Pick<Term, 'id' | 'slug' | 'taxonomy'>): string {
   if (site.pretty) {
-    const base = term.taxonomy === 'post_tag' ? 'tag' : term.taxonomy;
+    const base =
+      term.taxonomy === 'category'
+        ? site.bases.category
+        : term.taxonomy === 'post_tag'
+          ? site.bases.tag
+          : term.taxonomy;
     return `${site.home}/${base}/${term.slug}/`;
   }
   if (term.taxonomy === 'category') return `${site.home}/?cat=${term.id}`;

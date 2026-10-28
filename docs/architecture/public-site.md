@@ -136,6 +136,26 @@ Sitemap: https://example.com/wp-sitemap.xml
 
 When the site discourages search engines, `Disallow: /` and no sitemap line; pages also carry `noindex` in the robots meta tag and `X-Robots-Tag`. The `do_robotstxt` action runs first and the `robots_txt` filter (`output, public`) last.
 
+## Permalinks
+
+Settings → Permalinks (`/admin/settings/permalinks`) is WordPress's `options-permalink.php`: Plain, Day and name, Month and name, Numeric, Post name, or a custom structure built from the tags `%year% %monthnum% %day% %hour% %minute% %second% %post_id% %postname% %category% %author%`, plus optional category and tag bases.
+
+**Endpoint.** `GET` / `POST /wp-json/pressbase/v1/permalinks` (`manage_options`) reads and writes `permalink_structure`, `category_base` and `tag_base` (`apps/core/src/routes/permalinks.ts`). They are not `/wp/v2/settings` fields: WordPress doesn't register them for REST, and saving them is more than writing options (normalising, a cross-field check, remembering old values for redirects), so `/wp/v2/settings` stays WordPress's.
+
+**Validation** (`sanitizePermalinkStructure()`, `sanitizePermalinkBase()` in `content/permalinks.ts`), as `options-permalink.php` and `sanitize_option()`:
+
+- Structures get `#` removed, a leading slash and no repeated slashes. An empty value is Plain. A custom structure needs a structure tag (`A structure tag is required when using custom permalinks.`).
+- Stricter than WordPress, because Pressbase routes posts by slug or ID rather than generated rewrite rules: only the tags above, at least one of `%postname%` / `%post_id%`, and only URL-safe characters around them.
+- Bases are stored as WordPress stores them (`/topics`, or empty for the default `category` / `tag`), must differ from each other and can't be `author`, `search`, `page`, `feed`, `comments` or `wp-json`.
+
+Errors come back as `rest_invalid_param` with a message per field, which the screen shows next to the field.
+
+**Routing.** `parseRequest()` (`frontend/query.ts`) matches `/{category base}/{path}/` and `/{tag base}/{slug}/`; `termLink()` (`blocks/helpers.ts`) builds term links from the same bases, so blocks, feeds, sitemaps and the REST `link` field follow them. WordPress's `$front` (a structure's static prefix, e.g. `/archives/`) is not added to the bases.
+
+**Old addresses.** Saving remembers the replaced structure and bases (the `pressbase_permalink_history` option, ten of each). When a URL would be a 404, it is parsed against each earlier structure: a published post found by `%post_id%` or by `%postname%` (preferring one whose date matches) redirects (301) to its current permalink; a URL under an earlier category or tag base redirects to the term's archive. Like `wp_old_slug_redirect()`, this only runs for 404s, so current addresses always win. Switching to Plain redirects pretty addresses to `?p=`; switching from Plain, `?p=` already redirects to the pretty permalink.
+
+**Caching.** Each changed option fires `updated_option`, which purges `site`: every cached page (`cache/invalidation.ts`).
+
 ## Not yet
 
 - RSS 1.0 (`rdf`) and RSS 0.92 documents (both answered with RSS 2.0), enclosures, the `rss2_item` / `rss2_head` actions.

@@ -20,6 +20,7 @@ import { installRoutes } from './routes/install';
 import { mediaRoutes } from './routes/media';
 import { navigationRoutes } from './routes/navigation';
 import { peopleRoutes } from './routes/people';
+import { permalinksRoutes } from './routes/permalinks';
 import { postsRoutes } from './routes/posts';
 import { searchRoutes } from './routes/search';
 import { settingsRoutes } from './routes/settings';
@@ -87,6 +88,8 @@ export function createApp(kernel: Kernel) {
   installed.route('/pressbase/v1/cron', cronRoutes());
   installed.route('/wp/v2/users', userRoutes());
   installed.route('/wp/v2/settings', settingsRoutes());
+  // Settings → Permalinks (v0.5). See routes/permalinks.ts.
+  installed.route('/pressbase/v1/permalinks', permalinksRoutes());
   installed.route('/wp/v2', typeRoutes());
   // One controller per registered type and taxonomy, at its rest_base. Plugins
   // register theirs before the app is built (the plugin loader arrives in v0.5).

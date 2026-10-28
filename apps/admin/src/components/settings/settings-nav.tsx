@@ -5,13 +5,13 @@ import { usePathname } from 'next/navigation';
 import styles from './settings.module.css';
 
 /** WordPress's settings screens, in the same order. Unbuilt ones show their release. */
-const PAGES = [
+const PAGES: { slug: string; label: string; release?: string }[] = [
   { slug: 'general', label: 'General' },
   { slug: 'writing', label: 'Writing' },
   { slug: 'reading', label: 'Reading' },
   { slug: 'discussion', label: 'Discussion' },
   { slug: 'media', label: 'Media' },
-  { slug: 'permalinks', label: 'Permalinks', release: 'v0.5' },
+  { slug: 'permalinks', label: 'Permalinks' },
 ];
 
 /** Pressbase's own screens after WordPress's (WordPress has no cron screen). */

@@ -152,5 +152,14 @@ Undeclared names still work, with `unknown` arguments.
 | `wp_next_scheduled`, `get_schedule` | filter | `timestamp, event, hook, args` / `schedule, hook, args` | the results of `nextScheduled()` / `getSchedule()` |
 | `cron_reschedule_event_error` | action | `error, hook, event` | a recurring event couldn't schedule its next run |
 | `pressbase_job_failed` | action | `job, error, retrying` | a job attempt threw or timed out; `retrying` is false on its last attempt |
+| `wp_enqueue_scripts` | action | `page` | a public page is about to print its head; enqueue scripts and styles with `kernel.scripts` / `kernel.styles`. See [Scripts and styles](scripts-and-styles.md) |
+| `wp_head`, `wp_body_open`, `wp_footer` | action | `out, page` | print into the head, the start of `<body>`, the footer with `out.print(html)`; part of the cached page, so nothing per-visitor |
+| `script_loader_src`, `style_loader_src` | filter | `src, handle` | an enqueued script's / stylesheet's URL |
+| `script_loader_tag` / `style_loader_tag` | filter | `tag, handle, src` / `tag, handle, href, media` | the printed tag |
+| `wp_robots` | filter | `robots` | the robots meta directives |
+| `pre_get_document_title`, `document_title_separator`, `document_title_parts`, `document_title` | filter | `title` / `separator` / `parts` / `title` | the `<title>` |
+| `the_generator` | filter | `html, type` | the generator meta tag |
+| `body_class` | filter | `classes, extra` | the public page's `<body>` classes |
+| `language_attributes` | filter | `output, doctype` | the `<html>` attributes |
 
 **When you add a hook to core,** use WordPress's name if WordPress has an equivalent. Add it to this table and declare its types.

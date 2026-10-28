@@ -13,6 +13,7 @@ import { TermsService } from './content/terms';
 import { registerCoreEvents } from './jobs/core-events';
 import { Cron } from './jobs/cron';
 import { JobQueue } from './jobs/queue';
+import { registerPublicPageHooks, ScriptsApi, StylesApi } from './frontend/head';
 import { Mailer } from './mail/mailer';
 import { registerCoreSettings, SettingsRegistry } from './options/settings';
 import { Options } from './options/store';
@@ -55,6 +56,10 @@ export class Kernel {
   readonly jobs = new JobQueue(this);
   /** WP-Cron on top of the job queue: wp_schedule_event() and friends. */
   readonly cron = new Cron(this);
+  /** wp_enqueue_script() and friends for public pages (see docs/architecture/scripts-and-styles.md). */
+  readonly scripts = new ScriptsApi(this.hooks);
+  /** wp_enqueue_style() and friends for public pages. */
+  readonly styles = new StylesApi(this.hooks);
   #connection: DatabaseConnection | undefined;
   #options: Options | undefined;
   #state: SiteState = 'needs-database';
@@ -75,6 +80,8 @@ export class Kernel {
     registerCacheInvalidation(this);
     // Job queue and cron (v0.5): publish_future_post and the daily chores.
     registerCoreEvents(this);
+    // Public page hooks: wp_head, wp_footer, wp_enqueue_scripts (v0.5).
+    registerPublicPageHooks(this);
   }
 
   get state(): SiteState {

@@ -1,23 +1,28 @@
 import { createHash } from 'node:crypto';
-import { escAttr, escUrl } from '@pressbase/blocks';
+import { escAttr } from '@pressbase/blocks';
 import { schema } from '@pressbase/db';
 import { and, eq } from 'drizzle-orm';
 import type { CurrentUser } from '../auth/users';
-import { NAVIGATION_NOSCRIPT } from '../blocks/library/navigation';
 import { POSTPASS_COOKIE } from '../blocks/library/template';
 import { addCacheTags, CacheTag, collectCacheTags } from '../cache/tags';
-import { permalink, permalinkContext } from '../content/permalinks';
 import type { Kernel } from '../kernel';
 import type { ActiveTheme } from '../themes/service';
-import { siteIconTags } from '../themes/site-identity';
-import { PRESSBASE_VERSION } from '../version';
-import { feedLinkTags, parseFeedRequest, renderFeed } from './feeds';
+import { parseFeedRequest, renderFeed } from './feeds';
+import { HtmlOutput } from './head';
 import { templateHierarchy } from './hierarchy';
 import { PageRender, withPage } from './page';
 import { type MainQuery, resolveMainQuery } from './query';
 import { renderRobots } from './robots';
 import { parseSitemapRequest, renderSitemap } from './sitemaps';
-import { documentTitle } from './title';
+
+export { BLOCK_LIBRARY_CSS } from './head';
+
+declare module '@pressbase/hooks' {
+  interface FilterRegistry {
+    body_class: [classes: string[], extra: string[]];
+    language_attributes: [output: string, doctype: string];
+  }
+}
 
 /**
  * The public site's renderer: WordPress's template-loader.php,
@@ -51,11 +56,6 @@ export interface RenderRequest {
   /** Render with this theme instead of the active one (the global styles preview). */
   theme?: ActiveTheme;
 }
-
-/** The URL of WordPress's front-end block styles, served by core (routes/frontend.ts). */
-export const BLOCK_LIBRARY_CSS = '/wp-includes/css/dist/block-library/style.min.css';
-const SKIP_LINK_CSS =
-  '.skip-link.screen-reader-text{border:0;clip-path:inset(50%);height:1px;margin:-1px;overflow:hidden;padding:0;position:absolute!important;width:1px;word-wrap:normal!important;word-break:normal!important}.skip-link.screen-reader-text:focus{background-color:#eee;clip-path:none;color:#444;display:block;font-size:1em;height:auto;left:5px;line-height:normal;padding:15px 23px 14px;text-decoration:none;top:5px;width:auto;z-index:100000}';
 
 /** get_body_class() */
 async function bodyClasses(
@@ -116,7 +116,14 @@ async function bodyClasses(
   if (user) classes.push('logged-in');
   classes.push(`wp-theme-${(await kernel.themes.active()).info.stylesheet}`, 'wp-embed-responsive');
   if (template) classes.push(`wp-block-template-${template}`);
-  return classes.map((c) => c.replace(/[^A-Za-z0-9_-]/g, '')).join(' ');
+  const filtered = await kernel.hooks.applyFilters('body_class', classes, []);
+  const unique = new Set(
+    (Array.isArray(filtered) ? filtered : classes)
+      .filter((c): c is string => typeof c === 'string')
+      .map((c) => c.replace(/[^A-Za-z0-9_-]/g, ''))
+      .filter(Boolean),
+  );
+  return [...unique].join(' ');
 }
 
 /** The custom template chosen for a post (_wp_page_template meta). */
@@ -272,6 +279,9 @@ async function renderPage(
   const template = theme.templates.get(slug);
   const home = (await kernel.options.get<string>('home', '')).replace(/\/+$/, '');
   const page = new PageRender(theme, main, user, home, requestedPath, request.cookies);
+  // This page's copy of the site-wide scripts and styles (kernel.scripts / kernel.styles).
+  page.scripts = kernel.scripts.forPage();
+  page.styles = kernel.styles.forPage();
 
   // Singular views render with the post as context (the loop's global $post).
   const object = main.queriedObject;
@@ -286,62 +296,39 @@ async function renderPage(
     );
   }
   const skip = addSkipLinkTarget(`<div class="wp-site-blocks">${body}</div>`);
+  page.skipLinkTarget = skip.target;
+
+  // template-canvas.php: wp_head(), wp_body_open() and wp_footer() around the
+  // template, after it rendered (blocks may have enqueued scripts and styles).
+  const head = new HtmlOutput();
+  const bodyOpen = new HtmlOutput();
+  const footer = new HtmlOutput();
+  await withPage(page, async () => {
+    await kernel.hooks.doAction('wp_enqueue_scripts', page);
+    await kernel.hooks.doAction('wp_head', head, page);
+    await kernel.hooks.doAction('wp_body_open', bodyOpen, page);
+    await kernel.hooks.doAction('wp_footer', footer, page);
+  });
 
   const lang = ((await kernel.options.get<string>('locale', 'en_US')) || 'en_US').replace('_', '-');
-  const title = await documentTitle(kernel, main);
-  const blogPublic = await kernel.options.get<boolean>('blog_public', true);
-  const head: string[] = [
-    '<meta charset="UTF-8" />',
-    '<meta name="viewport" content="width=device-width, initial-scale=1" />',
-    blogPublic
-      ? "<meta name='robots' content='max-image-preview:large' />"
-      : "<meta name='robots' content='noindex, nofollow' />",
-    `<title>${title}</title>`,
-    `<meta name="generator" content="Pressbase ${escAttr(PRESSBASE_VERSION)}" />`,
-  ];
-  if (main.isSingular && object?.kind === 'post' && object.post.status === 'publish') {
-    const link = await permalink(kernel, object.post, await permalinkContext(kernel));
-    head.push(`<link rel="canonical" href="${escUrl(link)}" />`);
-  }
-  // feed_links() and feed_links_extra(): block themes support automatic-feed-links.
-  if (!main.is404) head.push(...(await feedLinkTags(kernel, main)));
-  head.push(
-    `<link rel='stylesheet' id='wp-block-library-css' href='${BLOCK_LIBRARY_CSS}?ver=${escAttr(PRESSBASE_VERSION)}' media='all' />`,
+  // get_language_attributes(): printed as filtered, like WordPress.
+  const languageAttributes = await kernel.hooks.applyFilters(
+    'language_attributes',
+    `lang="${escAttr(lang)}"`,
+    'html',
   );
-  if (skip.target)
-    head.push(`<style id='wp-block-template-skip-link-inline-css'>\n${SKIP_LINK_CSS}\n</style>`);
-  const styleTag = (id: string, css: string) =>
-    css ? `<style id='${id}'>\n${css.replaceAll('</style', '<\\/style')}\n</style>` : '';
-  head.push(styleTag('global-styles-inline-css', theme.css.global + theme.css.custom));
-  head.push(styleTag('block-style-variation-styles-inline-css', page.variationStyles.join('')));
-  head.push(styleTag('core-block-supports-inline-css', page.supportStyles.join('')));
-  head.push(styleTag('theme-block-styles-inline-css', theme.css.blockStyles));
-  theme.stylesheets.forEach((href, i) => {
-    const id = `${theme.info.stylesheet}-style${i ? `-${i}` : ''}-css`;
-    head.push(
-      `<link rel='stylesheet' id='${escAttr(id)}' href='${escAttr(href)}?ver=${escAttr(theme.info.version)}' media='all' />`,
-    );
-  });
-  if (theme.css.fontFaces)
-    head.push(`<style class='wp-fonts-local'>\n${theme.css.fontFaces}\n</style>`);
-  if (page.scripts.size) head.push(NAVIGATION_NOSCRIPT);
-  // wp_site_icon() (wp_head, priority 99).
-  head.push(await siteIconTags(kernel));
-
-  const scripts = [...page.scripts]
-    .map((js) => `<script>${js.replaceAll('</script', '<\\/script')}</script>`)
-    .join('\n');
+  const blogPublic = await kernel.options.get<boolean>('blog_public', true);
   const skipLink = skip.target
     ? `<a class="skip-link screen-reader-text" id="wp-skip-link" href="#${escAttr(skip.target)}">Skip to content</a>\n`
     : '';
   const html = `<!DOCTYPE html>
-<html lang="${escAttr(lang)}">
+<html${languageAttributes ? ` ${languageAttributes}` : ''}>
 <head>
-${head.filter(Boolean).join('\n')}
+<meta charset="UTF-8" />${head.empty ? '' : `\n${head}`}
 </head>
 <body class="${escAttr(await bodyClasses(kernel, main, user, slug))}">
-${skipLink}${skip.html}
-${scripts}
+${bodyOpen.empty ? '' : `${bodyOpen}\n`}${skipLink}${skip.html}
+${footer}
 </body>
 </html>
 `;

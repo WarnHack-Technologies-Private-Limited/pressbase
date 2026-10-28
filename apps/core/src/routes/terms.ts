@@ -2,6 +2,7 @@ import { type Context, Hono } from 'hono';
 import { z } from 'zod';
 import { currentUserCan } from '../auth/meta-caps';
 import { userCan } from '../auth/users';
+import { type SiteInfo, siteInfo, termLink } from '../blocks/helpers';
 import type { Taxonomy } from '../content/taxonomies';
 import type { Term } from '../content/terms';
 import { type AppEnv, invalidParams, readJson, restError } from '../http';
@@ -23,18 +24,12 @@ import {
  * (wordpress/wp-includes/rest-api/endpoints/class-wp-rest-terms-controller.php).
  */
 
-const BASE_PATH: Record<string, string> = { category: 'category', post_tag: 'tag' };
-
-/** get_term_link(): the term's archive URL (served by the public site from v0.4). */
-export const termLink = (home: string, taxonomy: string, slug: string) =>
-  `${home}/${BASE_PATH[taxonomy] ?? taxonomy}/${slug}/`;
-
-function prepare(term: Term, taxonomy: Taxonomy, home: string, context: string) {
+function prepare(term: Term, taxonomy: Taxonomy, site: SiteInfo, context: string) {
   const item: Record<string, unknown> = {
     id: term.id,
     count: term.count,
     description: term.description,
-    link: termLink(home, taxonomy.name, term.slug),
+    link: termLink(site, term),
     name: term.name,
     slug: term.slug,
     taxonomy: taxonomy.name,
@@ -79,7 +74,7 @@ const writeBody = z.object({
 
 export function termsRoutes(taxonomy: Taxonomy) {
   const app = new Hono<AppEnv>({ strict: false });
-  const home = (c: Context<AppEnv>) => c.get('kernel').options.get<string>('home', '');
+  const home = (c: Context<AppEnv>) => siteInfo(c.get('kernel'));
 
   app.get('/', async (c) => {
     const kernel = c.get('kernel');

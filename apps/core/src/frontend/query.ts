@@ -2,8 +2,16 @@ import { schema } from '@pressbase/db';
 import { and, eq, isNull } from 'drizzle-orm';
 import { currentUserCan } from '../auth/meta-caps';
 import type { CurrentUser } from '../auth/users';
+import { siteInfo, termLink } from '../blocks/helpers';
 import { addCacheTags, CacheTag } from '../cache/tags';
-import { permalink, permalinkContext } from '../content/permalinks';
+import {
+  basePath,
+  type PermalinkBases,
+  permalink,
+  permalinkBases,
+  permalinkContext,
+  permalinkHistory,
+} from '../content/permalinks';
 import type { Post } from '../content/posts';
 import { type QueryArgs, queryPosts } from '../content/query';
 import type { Term } from '../content/terms';
@@ -160,8 +168,24 @@ function structureRegex(structure: string): { regex: RegExp; tags: string[] } | 
   return { regex: new RegExp(`^${pattern}(?:/([0-9]+))?$`), tags };
 }
 
-/** WP::parse_request(): the query variables for a URL. */
-export function parseRequest(url: URL, structure: string): QueryVars {
+const DEFAULT_BASES: PermalinkBases = { category: 'category', tag: 'tag' };
+
+/** The rest of `path` after a base (`topics/all`), or undefined when it doesn't start with it. */
+function afterBase(path: string, base: string): string[] | undefined {
+  if (!path.startsWith(`${base}/`)) return undefined;
+  const rest = path.slice(base.length + 1).split('/');
+  return rest.every(Boolean) ? rest : undefined;
+}
+
+/**
+ * WP::parse_request(): the query variables for a URL. `bases` are the
+ * category and tag bases (Settings → Permalinks).
+ */
+export function parseRequest(
+  url: URL,
+  structure: string,
+  bases: PermalinkBases = DEFAULT_BASES,
+): QueryVars {
   const vars: QueryVars = {};
   const q = url.searchParams;
   const pretty = structure !== '';
@@ -183,8 +207,10 @@ export function parseRequest(url: URL, structure: string): QueryVars {
   if (pretty && path) {
     const segments = path.split('/');
     const [base, ...rest] = segments;
-    if (base === 'category' && rest.length) vars.category_name = rest[rest.length - 1];
-    else if (base === 'tag' && rest.length === 1) vars.tag = rest[0];
+    const category = afterBase(path, bases.category);
+    const tag = afterBase(path, bases.tag);
+    if (category) vars.category_name = category[category.length - 1];
+    else if (tag?.length === 1) vars.tag = tag[0];
     else if (base === 'author' && rest.length === 1) vars.author_name = rest[0];
     else if (base === 'search' && rest.length === 1) vars.s = rest[0];
     else {
@@ -380,6 +406,96 @@ export interface ResolveOptions {
 export async function resolveMainQuery(
   kernel: Kernel,
   url: URL,
+  options: ResolveOptions,
+): Promise<MainQuery> {
+  const main = await mainQuery(kernel, url, options);
+  if (!main.is404 || options.feed || options.notFound) return main;
+  const location = await oldPermalinkRedirect(kernel, url);
+  if (location) main.redirect = { location, status: 301 };
+  return main;
+}
+
+/**
+ * Where an address from an earlier permalink setting lives now: the post a
+ * previous structure names (by slug or ID), or the term a previous category
+ * or tag base names. Like WordPress's wp_old_slug_redirect() and
+ * redirect_guess_404_permalink(), only for 404s; the history is kept by
+ * routes/permalinks.ts.
+ */
+export async function oldPermalinkRedirect(kernel: Kernel, url: URL): Promise<string | undefined> {
+  const history = await permalinkHistory(kernel);
+  const current = await kernel.options.get<string>('permalink_structure', '');
+  const bases = await permalinkBases(kernel);
+  let path = url.pathname;
+  try {
+    path = decodeURIComponent(path)
+      .replace(/\/{2,}/g, '/')
+      .replace(/^\/+|\/+$/g, '');
+  } catch {
+    return undefined;
+  }
+  if (!path) return undefined;
+  const target = async (post: Post | undefined) => {
+    if (post?.type !== 'post' || post.status !== 'publish') return undefined;
+    const link = await permalink(kernel, post, await permalinkContext(kernel));
+    return new URL(link, 'http://x').pathname === url.pathname ? undefined : link;
+  };
+
+  for (const structure of history.structures) {
+    if (!structure || structure === current) continue;
+    const vars = parseRequest(new URL(url.pathname, 'http://x'), structure, bases);
+    if (vars.p) {
+      const found = await target(await kernel.posts.get(vars.p));
+      if (found) return found;
+    }
+    if (vars.name) {
+      const candidates: Post[] = await kernel.db
+        .select()
+        .from(schema.posts)
+        .where(
+          and(
+            eq(schema.posts.type, 'post'),
+            eq(schema.posts.status, 'publish'),
+            eq(schema.posts.slug, vars.name),
+          ),
+        );
+      const timeZone = await kernel.options.get<string>('timezone_string', 'UTC');
+      const date = vars.postDate ?? {};
+      const post =
+        candidates.find((candidate) => {
+          const local = localDate(candidate.date, timeZone);
+          return (
+            (!date.year || local.year === date.year) &&
+            (!date.monthnum || local.month === date.monthnum) &&
+            (!date.day || local.day === date.day)
+          );
+        }) ?? (candidates.length === 1 ? candidates[0] : undefined);
+      const found = await target(post);
+      if (found) return found;
+    }
+  }
+
+  const site = await siteInfo(kernel);
+  const termRedirect = async (taxonomy: string, old: string[], now: string) => {
+    for (const base of old) {
+      if (base === now) continue;
+      const rest = afterBase(path, basePath(base, now));
+      const slug = rest?.[rest.length - 1];
+      if (!slug || (taxonomy === 'post_tag' && rest.length !== 1)) continue;
+      const term = await termBySlug(kernel, taxonomy, slug);
+      if (term) return termLink(site, term);
+    }
+    return undefined;
+  };
+  return (
+    (await termRedirect('category', history.categoryBases, bases.category)) ??
+    (await termRedirect('post_tag', history.tagBases, bases.tag))
+  );
+}
+
+async function mainQuery(
+  kernel: Kernel,
+  url: URL,
   { user, feed, notFound: forceNotFound }: ResolveOptions,
 ): Promise<MainQuery> {
   const get = <T>(name: string, fallback: T) => kernel.options.get<T>(name, fallback);
@@ -409,7 +525,7 @@ export async function resolveMainQuery(
     }
   }
 
-  const vars = parseRequest(url, structure);
+  const vars = parseRequest(url, structure, await permalinkBases(kernel));
   if (vars.error) return notFound();
   const paged = vars.paged ?? 1;
   main.paged = paged;
