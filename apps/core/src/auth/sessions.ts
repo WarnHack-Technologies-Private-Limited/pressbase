@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { schema } from '@pressbase/db';
-import { and, eq, gt, lt } from 'drizzle-orm';
+import { and, eq, gt } from 'drizzle-orm';
 import type { Kernel } from '../kernel';
 
 /**
@@ -31,8 +31,7 @@ export async function createSession(
     ip: details.ip.slice(0, 100),
     userAgent: details.userAgent.slice(0, 255),
   });
-  // Opportunistic clean-up until the job queue exists.
-  await kernel.db.delete(schema.sessions).where(lt(schema.sessions.expiresAt, new Date()));
+  // Expired sessions are removed by the daily pressbase_delete_expired_sessions event.
   return { token, maxAge: details.remember ? ttl : undefined };
 }
 

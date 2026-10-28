@@ -16,6 +16,12 @@ export interface DatabaseConnection {
   driver: Driver;
   /** Applies any migrations that have not run yet. Safe to call on every boot. */
   migrate(): Promise<void>;
+  /**
+   * Runs a script of one or more SQL statements with the simple query
+   * protocol, so the statements run together in one implicit transaction
+   * (unless the script manages its own). Used for plugin migrations.
+   */
+  exec(script: string): Promise<void>;
   close(): Promise<void>;
 }
 
@@ -60,6 +66,9 @@ export async function connect(
       db: db as unknown as Database,
       driver: 'pglite',
       migrate: () => migrate(db, { migrationsFolder: MIGRATIONS_FOLDER }),
+      exec: async (script) => {
+        await client.exec(script);
+      },
       close: () => client.close(),
     };
   }
@@ -79,6 +88,9 @@ export async function connect(
     db: db as unknown as Database,
     driver: 'postgres',
     migrate: () => migrate(db, { migrationsFolder: MIGRATIONS_FOLDER }),
+    exec: async (script) => {
+      await client.unsafe(script).simple();
+    },
     close: () => client.end({ timeout: 5 }),
   };
 }

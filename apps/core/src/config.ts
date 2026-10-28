@@ -24,6 +24,8 @@ export interface Config {
    * sends no purges and apps/web doesn't cache.
    */
   revalidate?: { urls: string[]; secret: string };
+  /** Run the job queue worker in this process (PRESSBASE_WORKER=off disables it). Default true. */
+  worker?: boolean;
 }
 
 export interface MailConfig {
@@ -64,6 +66,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv = process.env): Promise<
             .filter(Boolean),
         }
       : undefined,
+    worker: !['off', '0', 'false', 'no'].includes((env.PRESSBASE_WORKER ?? '').toLowerCase()),
     mail: {
       smtpUrl: env.PRESSBASE_SMTP_URL || undefined,
       host: env.PRESSBASE_SMTP_HOST || undefined,

@@ -62,7 +62,9 @@ loadConfig()          env vars, then <dataDir>/config.json
             └─ refreshState()
                  ├─ options.load()            autoloaded options
                  ├─ state = needs-install | ready
-                 └─ if ready: data upgrades, then the `init` action
+                 └─ if ready: data upgrades, active plugins (import + register), then the `init` action
+                                (schedules missing cron events)
+  └─ jobs.start()        the job queue worker, unless PRESSBASE_WORKER=off
 ```
 
 The kernel's `state` drives the whole product: `needs-database` → `needs-install` → `ready`. See [Installer](installer.md).
@@ -79,11 +81,13 @@ apps/
     http.ts              middleware, error helpers
     auth/                passwords, sessions, users, capabilities, rate limiting
     install/             installer logic and database helpers
+    jobs/                kernel.jobs (job queue, worker) and kernel.cron (WP-Cron)
     people/              users, application passwords, password reset
     mail/                kernel.mail (wp_mail): SMTP or the development outbox
     options/             Options API and the settings registry
     routes/              one file per REST resource
     themes/              theme discovery, PHP pattern loader, theme block supports, assets
+    plugins/             plugin.json, discovery, the plugin manager and runtime, dynamic routing, zip reader
     frontend/            request routing, main query, template hierarchy, page rendering
   admin/src/
     app/                 Next.js routes (install, login, admin/…)
@@ -96,6 +100,7 @@ packages/
   blocks/                block parser, registry, renderer, block supports
   theme-json/            theme.json engine: merging, global stylesheet, layout styles
 themes/                  bundled block themes (Twenty Twenty-Five)
+plugins/                 bundled plugins (the Daily Tips example)
 apps/web/                the public site (Next.js route handler)
 docs/                    you are here
 ```
@@ -106,4 +111,4 @@ docs/                    you are here
 | --------------------------------------------- | ---------------------------------------- |
 | Post types, taxonomies, `ContentQuery` (v0.2) | `apps/core/src/content/`                 |
 | Block parsing and rendering (v0.3)            | `packages/blocks`                        |
-| Plugin loader and SDK (v0.5)                  | `apps/core/src/plugins/`, `packages/sdk` |
+| Plugin SDK and scaffolder (v0.5)              | `packages/sdk`                           |

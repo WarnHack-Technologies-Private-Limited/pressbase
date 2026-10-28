@@ -40,7 +40,7 @@ hooks.didAction('save_post'); // → 1
 - **Order:** ascending priority, then the order callbacks were added.
 - **Async:** each callback is awaited before the next one runs.
 - **Snapshot:** callbacks added or removed while a hook is running take effect from the next run.
-- **Errors:** propagate to the caller. Core will isolate plugin failures when the plugin loader lands (v0.5).
+- **Errors:** propagate to the caller. Callbacks a plugin adds through its `api.hooks` are wrapped: an exception is logged and recorded against the plugin, and the hook carries on (a filter keeps its incoming value). See [Plugins](plugins.md#when-a-plugin-breaks).
 
 ## Typing hook names
 
@@ -146,5 +146,25 @@ Undeclared names still work, with `unknown` arguments.
 | `wp_sitemaps_max_urls` | filter | `max, objectType` | URLs per sitemap page (2,000) |
 | `wp_sitemaps_post_types`, `wp_sitemaps_taxonomies` | filter | `names` | which post types and taxonomies get sitemaps |
 | `wp_sitemaps_posts_query_args` | filter | `args, postType` | the query of a posts sitemap |
+| _any cron hook_, e.g. `publish_future_post` | action | the event's `args` | the job queue worker, when a scheduled event is due (see [Jobs and cron](jobs.md)) |
+| `cron_schedules` | filter | `schedules` | add recurrences to `hourly`, `twicedaily`, `daily`, `weekly` |
+| `pre_schedule_event`, `schedule_event`, `pre_reschedule_event`, `pre_unschedule_event`, `pre_clear_scheduled_hook`, `pre_unschedule_hook`, `pre_get_scheduled_event` | filter | as in WordPress | short-circuit or change `kernel.cron` calls |
+| `wp_next_scheduled`, `get_schedule` | filter | `timestamp, event, hook, args` / `schedule, hook, args` | the results of `nextScheduled()` / `getSchedule()` |
+| `cron_reschedule_event_error` | action | `error, hook, event` | a recurring event couldn't schedule its next run |
+| `pressbase_job_failed` | action | `job, error, retrying` | a job attempt threw or timed out; `retrying` is false on its last attempt |
+| `wp_enqueue_scripts` | action | `page` | a public page is about to print its head; enqueue scripts and styles with `kernel.scripts` / `kernel.styles`. See [Scripts and styles](scripts-and-styles.md) |
+| `wp_head`, `wp_body_open`, `wp_footer` | action | `out, page` | print into the head, the start of `<body>`, the footer with `out.print(html)`; part of the cached page, so nothing per-visitor |
+| `script_loader_src`, `style_loader_src` | filter | `src, handle` | an enqueued script's / stylesheet's URL |
+| `script_loader_tag` / `style_loader_tag` | filter | `tag, handle, src` / `tag, handle, href, media` | the printed tag |
+| `wp_robots` | filter | `robots` | the robots meta directives |
+| `pre_get_document_title`, `document_title_separator`, `document_title_parts`, `document_title` | filter | `title` / `separator` / `parts` / `title` | the `<title>` |
+| `the_generator` | filter | `html, type` | the generator meta tag |
+| `body_class` | filter | `classes, extra` | the public page's `<body>` classes |
+| `language_attributes` | filter | `output, doctype` | the `<html>` attributes |
+| `activate_plugin` / `activated_plugin` | action | `slug` | before a plugin's migrations and code run / after it's active. See [Plugins](plugins.md#lifecycle) |
+| `deactivate_plugin` / `deactivated_plugin` | action | `slug` | before / after a plugin is switched off and its registrations removed |
+| `pre_uninstall_plugin` | action | `slug, manifest` | before an inactive plugin's `uninstall` runs and its folder is deleted |
+| `deleted_plugin` | action | `slug, deleted` | after a plugin was deleted (`deleted` is false if its files couldn't be removed) |
+| `pressbase_plugin_error` | action | `slug, error` | a plugin failed to load or activate, or one of its hooks or routes threw; `error` is `{ message, during, time }` |
 
 **When you add a hook to core,** use WordPress's name if WordPress has an equivalent. Add it to this table and declare its types.

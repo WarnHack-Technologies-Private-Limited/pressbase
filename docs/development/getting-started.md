@@ -110,6 +110,7 @@ See `.env.example`. Core reads the repo-root `.env` in development.
 | `PRESSBASE_SMTP_URL` | —                            | SMTP server as a URL, e.g. `smtps://user:pass@smtp.example.com:465`. Wins over the fields below. |
 | `PRESSBASE_SMTP_HOST`, `PRESSBASE_SMTP_PORT`, `PRESSBASE_SMTP_USER`, `PRESSBASE_SMTP_PASS`, `PRESSBASE_SMTP_SECURE` | — · `587` (`465` when secure) | SMTP server as separate settings. `SECURE=true` uses TLS from the start. |
 | `PRESSBASE_MAIL_FROM` | site title + `pressbase@<site host>` | Sender, e.g. `"The Morning Paper <hello@example.com>"` |
+| `PRESSBASE_WORKER` | on | `off` stops this core process from running background jobs and cron events, when another process sharing the database runs them. See [Jobs and cron](../architecture/jobs.md#the-worker). |
 
 ## Email
 

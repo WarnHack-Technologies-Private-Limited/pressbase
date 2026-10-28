@@ -68,18 +68,18 @@ Twenty Twenty-Five renders the home page, posts, pages, archives, search, commen
 - [x] Playwright end-to-end tests in CI (#7) and a Docker image (#8).
 - [ ] Duotone, responsive style states. → later
 - [ ] Site editor: templates and template parts (`wp_template`, `wp_template_part`). → later
-- [ ] Settings → Permalinks screen (the routing already follows `permalink_structure`). → v0.5
+- [x] Settings → Permalinks screen (the routing already follows `permalink_structure`). → done in v0.5
 
 ## v0.5: Plugins
 
-- [ ] `plugin.json` manifest and runtime loader (no rebuild).
-- [ ] Lifecycle: activate, deactivate, uninstall, plugin migrations.
+- [x] `plugin.json` manifest and runtime loader (no rebuild). See [Plugins](architecture/plugins.md).
+- [x] Lifecycle: activate, deactivate, uninstall, plugin migrations; installing from a .zip; `/wp/v2/plugins` and the Plugins screen.
 - [ ] Admin extension points (SlotFill), admin pages, Settings API for plugins.
-- [ ] Job queue and cron (pg-boss).
+- [x] Job queue and cron: a table-backed queue instead of pg-boss ([ADR 0010](adr/0010-job-queue.md)).
 - [ ] `create-pressbase-plugin` scaffolding and the plugin SDK.
-- [ ] Plugin permissions (network, filesystem, database scopes).
-- [ ] `wp_head` / `wp_footer`-style hooks so plugins can add to public pages.
-- [ ] Settings → Permalinks.
+- [x] Plugin permissions (network, filesystem, database scopes): declared, confirmed on activation, recorded; `database` and `options` enforced.
+- [x] `wp_head` / `wp_footer`-style hooks so plugins can add to public pages.
+- [x] Settings → Permalinks.
 
 ## v0.6: Migration and tooling
 

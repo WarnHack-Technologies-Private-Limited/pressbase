@@ -1,5 +1,5 @@
 import { schema } from '@pressbase/db';
-import { and, eq, inArray, lte, sql } from 'drizzle-orm';
+import { and, eq, inArray, lte, type SQL, sql } from 'drizzle-orm';
 import { addCacheTags, CacheTag } from '../cache/tags';
 import type { Kernel } from '../kernel';
 import { sanitizePostContent, sanitizePostTitle, sanitizeSlug } from './sanitize';
@@ -299,20 +299,35 @@ export class PostsService {
   }
 
   /**
-   * Publishes scheduled posts whose time has come — what wp-cron's
-   * publish_future_post does. Called before content queries until the job
-   * queue arrives in v0.5.
+   * wp_publish_post() for a scheduled post: the `publish_future_post` cron
+   * event calls it at the post's date. Only a `future` post changes, so the
+   * event and publishDue() can't both publish it.
    */
-  async publishDue(): Promise<void> {
+  async publish(id: number): Promise<Post | undefined> {
+    return (await this.#publishWhere(eq(schema.posts.id, id)))[0];
+  }
+
+  /**
+   * The safety net behind the `publish_future_post` events (see
+   * jobs/core-events.ts): publishes every scheduled post whose time has come.
+   * Runs before content queries, so a post is never late even when the worker
+   * is off or was down at the time.
+   */
+  async publishDue(now = new Date()): Promise<void> {
+    await this.#publishWhere(lte(schema.posts.date, now));
+  }
+
+  async #publishWhere(condition: SQL): Promise<Post[]> {
     const due = await this.#db
       .update(schema.posts)
       .set({ status: 'publish' })
-      .where(and(eq(schema.posts.status, 'future'), lte(schema.posts.date, new Date())))
+      .where(and(eq(schema.posts.status, 'future'), condition))
       .returning();
     for (const post of due) {
       await this.kernel.terms.recountForObject(post.id);
       await this.kernel.hooks.doAction('transition_post_status', 'publish', 'future', post);
     }
+    return due;
   }
 
   async getMeta(id: number, key: string): Promise<unknown> {

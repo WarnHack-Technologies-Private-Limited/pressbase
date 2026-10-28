@@ -31,6 +31,8 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | `wp_insert_term`, `wp_update_term`, `wp_delete_term`, `wp_set_object_terms`, `_update_post_term_count` | `apps/core/src/content/terms.ts` (`kernel.terms`) | |
 | `WP_Query` | `apps/core/src/content/query.ts` (`queryPosts`) | Same argument names. |
 | `get_permalink` | `apps/core/src/content/permalinks.ts` | Uses `permalink_structure`. |
+| `options-permalink.php`, `WP_Rewrite::set_permalink_structure()`, `set_category_base()`, `set_tag_base()` | `apps/core/src/routes/permalinks.ts` (`/pressbase/v1/permalinks`), Settings → Permalinks | See [The public site](public-site.md#permalinks). |
+| `wp_head()`, `wp_footer()`, `wp_body_open()`, `WP_Scripts`, `WP_Styles`, `wp_enqueue_script()`, `wp_enqueue_style()` | `apps/core/src/frontend/head.ts`, `dependencies.ts` (`kernel.scripts`, `kernel.styles`) | See [Scripts and styles](scripts-and-styles.md). |
 | `wp_kses_post`, `sanitize_title` | `apps/core/src/content/sanitize.ts` | Keeps block delimiters intact. |
 | `WP_REST_Posts_Controller`, `WP_REST_Terms_Controller`, `WP_REST_Users_Controller`, types / taxonomies / statuses controllers | `apps/core/src/routes/posts.ts`, `terms.ts`, `users.ts`, `types.ts` | See [REST API](rest-api.md). |
 | `parse_blocks`, `serialize_blocks`, `WP_Block_Parser` | `packages/blocks` (`parseBlocks`, `serializeBlocks`) | Same output shape. See [Blocks](blocks.md). |
@@ -54,7 +56,11 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | `do_robots()` | `apps/core/src/frontend/robots.ts` | Disallows `/admin/`. |
 | `esc_xml()`, `ent2ncr()` | `apps/core/src/frontend/xml.ts` | |
 | Caching plugins (`clean_post_cache`, page caches) | `apps/core/src/cache/`, `apps/web/src/lib/page-cache.ts` | Tag-based purges. See [ADR 0008](../adr/0008-public-page-caching.md). |
-| `publish_future_post` (wp-cron) | a one-minute timer in `apps/core/src/server.ts` | Until the job queue arrives. |
+| `wp-cron.php`, `wp_schedule_event()` and the rest of `cron.php` | `apps/core/src/jobs/` (`kernel.jobs`, `kernel.cron`) | Events are rows in the `jobs` table, run on time by a worker. See [Jobs and cron](jobs.md). |
+| `publish_future_post`, `_future_post_hook()` | `apps/core/src/jobs/core-events.ts` | One event per scheduled post; `publishDue()` is the safety net. |
+| `get_plugins()`, `activate_plugin()`, `deactivate_plugins()`, `delete_plugins()`, `uninstall_plugin()`, plugin file headers | `apps/core/src/plugins/` (`kernel.plugins`), `plugin.json` | ES modules; tracked registrations instead of a fresh process per request. See [Plugins](plugins.md). |
+| `WP_REST_Plugins_Controller`, `Plugin_Upgrader` (upload) | `apps/core/src/routes/plugins.ts` | `plugin` is the folder name; installs from an uploaded .zip only. |
+| `plugins.php`, `plugin-install.php?tab=upload` | `/admin/plugins` | |
 | `themes.php` | `/admin/appearance` | |
 | `register_post_type( 'wp_navigation' )`, `WP_Navigation_Fallback`, `WP_REST_Navigation_Fallback_Controller` | `apps/core/src/content/post-types.ts`, `content/navigation.ts`, `routes/navigation.ts` | The header's menu is chosen with the `pressbase_navigation_fallback` option. See [Navigation](navigation.md). |
 | `blocks/navigation.php`, `navigation-link.php`, `navigation-submenu.php`, `home-link.php`, `view.js` | `apps/core/src/blocks/library/navigation.ts` | A small inline script instead of the Interactivity API. |
@@ -88,8 +94,6 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | Autosave | Autosaves endpoint, with the block editor | v0.3 |
 | Site editor (`wp_template`, `wp_global_styles`) | Admin site editor | later |
 | Classic menus (`nav_menu`, `/wp/v2/menus`, `WP_Classic_To_Block_Menu_Converter`) | Converted to `wp_navigation` by the importer | v0.6 |
-| Plugins API, `activate_plugin`                 | Plugin loader + `plugin.json`               | v0.5    |
-| `wp-cron.php`                                  | pg-boss job queue                           | v0.5    |
 | Importer, wp-cli                               | Migration tool, `pressbase` CLI                 | v0.6    |
 | `__()`, text domains                           | `@wordpress/i18n`, `.po`/`.mo`              | v0.6    |
 | Abilities API (WordPress 7)                    | Abilities registry + MCP server             | later   |

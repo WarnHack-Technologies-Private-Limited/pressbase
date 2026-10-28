@@ -19,11 +19,10 @@ if (config.revalidate) {
   void kernel.hooks.doAction(PURGE_ACTION, [CacheTag.site], 'boot');
 }
 
-// Scheduled posts go live on time even when every page is served from cache:
-// what wp-cron's publish_future_post does, once a minute.
-setInterval(() => {
-  if (kernel.state === 'ready') kernel.posts.publishDue().catch((e) => console.error(e));
-}, 60_000).unref();
+// The job queue worker runs cron events (publish_future_post, daily chores)
+// and plugin jobs on time. PRESSBASE_WORKER=off leaves that to other
+// processes (docs/architecture/jobs.md).
+if (config.worker !== false) kernel.jobs.start();
 
 const server = serve({ fetch: createApp(kernel).fetch, port: config.port }, (info) => {
   console.log(`Pressbase core listening on http://localhost:${info.port} (${kernel.state})`);

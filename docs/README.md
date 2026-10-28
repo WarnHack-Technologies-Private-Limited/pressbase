@@ -22,11 +22,14 @@ New here? The [README](../README.md#see-it-in-action) shows Pressbase in action:
 - [Content](architecture/content.md): post types, statuses, taxonomies, queries, permissions, sanitising.
 - [Media](architecture/media.md): uploads, storage, image sizes, file serving and its security.
 - [Hooks](architecture/hooks.md): actions and filters, and the hooks core fires.
+- [Jobs and cron](architecture/jobs.md): the job queue, its worker, WP-Cron and scheduled posts.
 - [Blocks](architecture/blocks.md): parsing, rendering, dynamic blocks and patterns.
 - [People](architecture/people.md): users and roles, application passwords, mail, password reset.
 - [Comments](architecture/comments.md): the comment pipeline, moderation, blocks and the comment form.
 - [Themes and the public site](architecture/themes.md): theme.json, block themes, routing, the template hierarchy and page rendering.
-- [The public site: caching, feeds, sitemaps](architecture/public-site.md): the page cache and its invalidation, RSS and Atom feeds, XML sitemaps, robots.txt.
+- [The public site: caching, feeds, sitemaps](architecture/public-site.md): the page cache and its invalidation, RSS and Atom feeds, XML sitemaps, robots.txt, permalink settings.
+- [Public page hooks, scripts and styles](architecture/scripts-and-styles.md): `wp_head`, `wp_body_open`, `wp_footer`, `kernel.scripts` and `kernel.styles`.
+- [Plugins](architecture/plugins.md): writing a plugin, plugin.json, the lifecycle, installing, the security model and its limits.
 - [REST API](architecture/rest-api.md): endpoints, errors, authentication.
 - [Block editor](architecture/block-editor.md): how Gutenberg runs in the admin, api-fetch, hidden blocks, autosave.
 - [Installer](architecture/installer.md): site states, the install flow, configuration.

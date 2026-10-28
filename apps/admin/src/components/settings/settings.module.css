@@ -211,3 +211,62 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Settings → Scheduled tasks */
+.tableScroll {
+  margin: calc(-1 * var(--space-5)) calc(-1 * var(--space-6)) calc(-1 * var(--space-6));
+  overflow-x: auto;
+}
+
+.taskMeta {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+
+/* Permalinks: example addresses wrap on narrow screens; the tag buttons under Custom structure. */
+.example {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.mono input {
+  font-family: var(--font-mono);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag {
+  height: 2rem;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.tag:hover {
+  background: var(--color-surface-hover);
+}
+
+.tag[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.tag:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}

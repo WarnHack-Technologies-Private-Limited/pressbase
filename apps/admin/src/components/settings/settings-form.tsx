@@ -17,13 +17,17 @@ export interface FieldApi<T> {
 /**
  * A settings screen backed by /wp/v2/settings: tracks unsaved changes, shows
  * the save bar, warns before leaving, and maps server errors onto fields.
+ * `endpoint` replaces /wp/v2/settings for screens with their own route
+ * (Permalinks: /pressbase/v1/permalinks).
  */
 export function SettingsForm<T extends Record<string, unknown>>({
   initial,
   children,
+  endpoint = '/wp/v2/settings',
 }: {
   initial: T;
   children: (api: FieldApi<T>) => ReactNode;
+  endpoint?: string;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -51,7 +55,7 @@ export function SettingsForm<T extends Record<string, unknown>>({
     setBusy(true);
     setProblem(undefined);
     try {
-      const result = await api<Record<string, unknown>>('/wp/v2/settings', {
+      const result = await api<Record<string, unknown>>(endpoint, {
         method: 'POST',
         body: values,
       });
