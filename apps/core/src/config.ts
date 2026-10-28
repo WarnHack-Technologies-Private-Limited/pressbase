@@ -26,6 +26,8 @@ export interface Config {
   revalidate?: { urls: string[]; secret: string };
   /** Run the job queue worker in this process (PRESSBASE_WORKER=off disables it). Default true. */
   worker?: boolean;
+  /** The public app's URLs (WEB_URL), when set, for Site Health's loopback test. */
+  webUrls?: string[];
 }
 
 export interface MailConfig {
@@ -65,6 +67,11 @@ export async function loadConfig(env: NodeJS.ProcessEnv = process.env): Promise<
             .map((u) => u.trim())
             .filter(Boolean),
         }
+      : undefined,
+    webUrls: env.WEB_URL
+      ? env.WEB_URL.split(',')
+          .map((u) => u.trim())
+          .filter(Boolean)
       : undefined,
     worker: !['off', '0', 'false', 'no'].includes((env.PRESSBASE_WORKER ?? '').toLowerCase()),
     mail: {

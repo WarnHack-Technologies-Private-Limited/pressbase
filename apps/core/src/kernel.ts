@@ -18,6 +18,7 @@ import { Mailer } from './mail/mailer';
 import { registerCoreSettings, SettingsRegistry } from './options/settings';
 import { Options } from './options/store';
 import { PluginManager } from './plugins/manager';
+import { SiteHealth } from './site-health/service';
 import { registerGlobalStylesHooks, registerGlobalStylesPostType } from './themes/global-styles';
 import { ThemesService } from './themes/service';
 import { registerSiteIdentityHooks, registerSiteIdentitySettings } from './themes/site-identity';
@@ -63,6 +64,8 @@ export class Kernel {
   readonly styles = new StylesApi(this.hooks);
   /** Installed plugins, loading and the plugin lifecycle (see docs/architecture/plugins.md). */
   readonly plugins = new PluginManager(this);
+  /** Site Health: status tests and debug information (see docs/architecture/site-health.md). */
+  readonly siteHealth = new SiteHealth(this);
   #connection: DatabaseConnection | undefined;
   #options: Options | undefined;
   #state: SiteState = 'needs-database';

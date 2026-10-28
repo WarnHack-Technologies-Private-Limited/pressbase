@@ -55,6 +55,8 @@ export async function setup(overrides: Partial<Config> = {}) {
     ...overrides,
   });
   kernels.push(kernel);
+  // No network in API tests: Site Health's outgoing requests fail unless a test stubs them.
+  kernel.siteHealth.fetch = () => Promise.reject(new Error('The network is off in tests.'));
   await kernel.boot();
   const app = createApp(kernel);
 
