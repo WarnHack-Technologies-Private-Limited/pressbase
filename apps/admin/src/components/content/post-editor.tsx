@@ -35,7 +35,9 @@ import {
   type RestTerm,
   STATUS_LABELS,
 } from '@/lib/content';
+import { SLOTS } from '@/lib/extensions/registry';
 import { BlockEditor, type BlockEditorHandle, lightScope } from '../block-editor';
+import { Slot } from '../extensions/host';
 import { useCurrentUser } from '../shell/current-user';
 import { Button, ButtonLink } from '../ui/button';
 import { ConfirmDialog } from '../ui/dialog';
@@ -1167,6 +1169,18 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
                 </span>
               </div>
             </Panel>
+
+            {/* Plugins' panels (the `editor.document-settings` slot). */}
+            <Slot
+              name={SLOTS.editorDocumentSettings}
+              place="editor panel"
+              fillProps={{ postId: post?.id ?? id ?? null, postType: config.type }}
+              wrap={(fill, content) => (
+                <Panel title={typeof fill.props.title === 'string' ? fill.props.title : 'Plugin'}>
+                  {content}
+                </Panel>
+              )}
+            />
 
             {revisions.length > 0 && (
               <Panel title={`Revisions (${revisions.length})`} defaultOpen={false}>

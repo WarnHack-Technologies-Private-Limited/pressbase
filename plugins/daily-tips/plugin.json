@@ -1,8 +1,8 @@
 {
   "name": "daily-tips",
   "title": "Daily Tips",
-  "version": "1.0.0",
-  "description": "Shows a short writing tip with every post in the REST API, serves a random tip at /wp-json/daily-tips/v1/tip, and adds a Tips post type for your own.",
+  "version": "1.1.0",
+  "description": "Shows a short writing tip with every post in the REST API, on the dashboard and in the editor, serves a random tip at /wp-json/daily-tips/v1/tip, and adds a Tips post type for your own.",
   "author": {
     "name": "The Pressbase contributors",
     "url": "https://github.com/WarnHack-Technologies-Private-Limited/pressbase"
@@ -12,12 +12,48 @@
   "main": "index.js",
   "permissions": [],
   "admin": {
+    "module": "admin/index.js",
+    "sections": [
+      {
+        "id": "where",
+        "title": "Where tips appear",
+        "description": "Tips show on the dashboard and in the editor’s Post tab."
+      },
+      {
+        "id": "tips",
+        "title": "Your tips",
+        "description": "Add your own tips beside the ones that come with the plugin."
+      }
+    ],
     "settings": [
       {
         "name": "show_in_posts",
-        "type": "boolean",
+        "control": "toggle",
         "label": "Add a tip to posts in the REST API",
-        "default": true
+        "description": "Adds a daily_tip field to /wp/v2/posts responses.",
+        "default": true,
+        "section": "where",
+        "showInRest": true
+      },
+      {
+        "name": "accent",
+        "control": "color",
+        "label": "Widget colour",
+        "description": "The stripe beside the tip on the dashboard.",
+        "default": "#3858e9",
+        "section": "where"
+      },
+      {
+        "name": "source",
+        "control": "radio",
+        "label": "Which tips to show",
+        "options": [
+          { "value": "all", "label": "All tips" },
+          { "value": "builtin", "label": "Only the built-in tips" },
+          { "value": "own", "label": "Only your tips" }
+        ],
+        "default": "all",
+        "section": "tips"
       }
     ]
   }

@@ -17,6 +17,7 @@ import { safeKeySegments } from '../media/storage';
 export const STATIC_TYPES: Record<string, string> = {
   css: 'text/css',
   js: 'text/javascript',
+  mjs: 'text/javascript',
   png: 'image/png',
   jpg: 'image/jpeg',
   jpeg: 'image/jpeg',

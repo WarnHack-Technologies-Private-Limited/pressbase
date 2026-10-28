@@ -22,6 +22,7 @@ import { mediaRoutes } from './routes/media';
 import { navigationRoutes } from './routes/navigation';
 import { peopleRoutes } from './routes/people';
 import { permalinksRoutes } from './routes/permalinks';
+import { pluginAdminRoutes, pluginAssetRoutes } from './routes/plugin-admin';
 import { pluginsRoutes } from './routes/plugins';
 import { postsRoutes } from './routes/posts';
 import { searchRoutes } from './routes/search';
@@ -156,6 +157,10 @@ export function createApp(kernel: Kernel) {
   // types, taxonomies and REST namespaces of active plugins, looked up per
   // request so activation needs no restart. See docs/architecture/plugins.md.
   installed.route('/wp/v2/plugins', pluginsRoutes());
+  // Plugin admin pages, settings and browser modules (v0.5). See
+  // docs/architecture/plugins.md#admin-pages-and-settings and ADR 0011.
+  installed.route('/pressbase/v1', pluginAdminRoutes());
+  app.route('/', pluginAssetRoutes(kernel));
   installed.all('*', pluginRoutes);
 
   api.route('/', installed);

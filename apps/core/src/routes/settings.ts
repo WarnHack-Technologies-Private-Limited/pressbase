@@ -2,6 +2,7 @@ import { type Context, Hono } from 'hono';
 import { userCan } from '../auth/users';
 import { type AppEnv, readJson, requireCapability, restError } from '../http';
 import type { Kernel } from '../kernel';
+import { SettingSanitizeError, sanitizeSettingValue } from '../options/settings';
 
 async function readSettings(kernel: Kernel, user: Parameters<typeof userCan>[0]) {
   const result: Record<string, unknown> = {};
@@ -36,9 +37,14 @@ export function settingsRoutes() {
     for (const [name, value] of Object.entries(body)) {
       const setting = kernel.settings.get(name);
       if (!setting || !userCan(user, setting.capability)) continue;
-      const parsed = setting.schema.safeParse(value);
-      if (parsed.success) changes.push([setting.option, parsed.data]);
-      else params[name] = parsed.error.issues[0]?.message ?? 'Invalid value.';
+      // The schema, the setting's sanitize callback and the sanitize_option_ /
+      // pre_update_option_ filters, as update_option() runs them.
+      try {
+        changes.push([setting.option, await sanitizeSettingValue(kernel, setting, value)]);
+      } catch (error) {
+        if (!(error instanceof SettingSanitizeError)) throw error;
+        params[name] = error.message;
+      }
     }
     if (Object.keys(params).length > 0) {
       return restError(

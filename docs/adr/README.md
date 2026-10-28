@@ -18,3 +18,4 @@ To write one, copy [template.md](template.md) to `NNNN-short-title.md` and open 
 | [0008](0008-public-page-caching.md)       | Tag-indexed page cache in apps/web, purged by core        | Accepted |
 | [0009](0009-plugin-runtime.md)            | In-process ESM plugins, tracked registrations, per-request routing | Accepted |
 | [0010](0010-job-queue.md)                 | Table-backed job queue and cron, not pg-boss              | Accepted |
+| [0011](0011-plugin-admin-extensions.md) | Plugin admin extensions: declarative settings, runtime ES modules into slots | Accepted |

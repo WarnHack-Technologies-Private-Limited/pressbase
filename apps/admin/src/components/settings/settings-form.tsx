@@ -24,10 +24,13 @@ export function SettingsForm<T extends Record<string, unknown>>({
   initial,
   children,
   endpoint = '/wp/v2/settings',
+  savedValues = (result) => result,
 }: {
   initial: T;
   children: (api: FieldApi<T>) => ReactNode;
   endpoint?: string;
+  /** Where the saved values are in the response (plugin pages nest them in `values`). */
+  savedValues?: (result: Record<string, unknown>) => Record<string, unknown>;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -55,10 +58,9 @@ export function SettingsForm<T extends Record<string, unknown>>({
     setBusy(true);
     setProblem(undefined);
     try {
-      const result = await api<Record<string, unknown>>(endpoint, {
-        method: 'POST',
-        body: values,
-      });
+      const result = savedValues(
+        await api<Record<string, unknown>>(endpoint, { method: 'POST', body: values }),
+      );
       const next = Object.fromEntries(
         Object.keys(values).map((k) => [k, result[k] ?? values[k]]),
       ) as T;
