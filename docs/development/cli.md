@@ -144,8 +144,10 @@ pressbase post delete $(pressbase post list --post_status=trash --format=ids) --
 | `plugin install <zip> [--activate]` | through the same strict ZIP checks as an upload. No plugin directory or URLs yet |
 | `plugin delete <plugin>...` | runs the plugin's `uninstall` |
 | `theme list [--status=…]`, `theme activate <theme>` | block themes only |
+| `theme install <zip> [--force] [--activate]` | the checks of Appearance → Themes → Upload theme (a safe archive, `style.css` with a `Theme Name`, `templates/index.html`). `--force` replaces a theme installed in the same folder, as wp-cli's does; `--activate` switches to it. Needs `upload_themes`. No theme directory or URLs yet |
+| `theme delete <theme>...` | asks first (`--yes` agrees). Not the active theme, its parent or a bundled theme (wp-cli's `--force` for the active theme isn't offered). Needs `delete_themes` |
 
-Everything goes through the plugin manager, so migrations, `activate`/`deactivate`/`uninstall`, the lifecycle hooks, recorded permissions and page-cache purges happen as from the Plugins screen.
+Everything goes through the plugin manager, so migrations, `activate`/`deactivate`/`uninstall`, the lifecycle hooks, recorded permissions and page-cache purges happen as from the Plugins screen. Theme commands go through `kernel.themes` the same way (see [Themes](../architecture/themes.md#installing-and-deleting-themes)).
 
 ### cache, rewrite, cron, media
 

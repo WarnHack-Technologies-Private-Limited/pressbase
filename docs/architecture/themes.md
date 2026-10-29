@@ -6,6 +6,7 @@ How Pressbase loads WordPress block themes, turns `theme.json` into CSS, and ren
 |---|---|---|
 | theme.json engine | `packages/theme-json` (`@pressbase/theme-json`) | `WP_Theme_JSON`, `WP_Theme_JSON_Resolver`, `wp_get_global_stylesheet()`, fluid typography, `wp_get_layout_style()`, `WP_Font_Face` |
 | Themes | `apps/core/src/themes/` (`kernel.themes`) | `WP_Theme`, `search_theme_directories()`, `switch_theme()`, `_register_theme_block_patterns()` |
+| Installing and deleting themes | `apps/core/src/themes/install.ts` | `Theme_Upgrader::install()`, `check_package()`, `delete_theme()` |
 | Style variations, sanitising user styles | `packages/theme-json/src/{style-variations,sanitize}.ts` | `get_style_variations()`, the site editor's variation logic, `remove_insecure_properties()`, `safecss_filter_attr()` |
 | User global styles | `apps/core/src/themes/global-styles.ts`, `routes/global-styles.ts` | `wp_global_styles`, `WP_REST_Global_Styles_Controller` (+ revisions) |
 | Site logo and icon | `apps/core/src/themes/site-identity.ts` | `get_custom_logo()`, `WP_Site_Icon`, `wp_site_icon()` |
@@ -80,7 +81,50 @@ The package also holds the pieces of the site editor and of WordPress's save pat
 
 The active theme comes from the `stylesheet` and `template` options (the installer sets `twentytwentyfive`). A missing theme falls back to the default. `kernel.themes.active()` loads and caches it: templates, parts with their areas, `theme.json` resolved against the registered block types, the global stylesheet, patterns and the stylesheets to enqueue. `kernel.themes.activate(stylesheet)` switches, fires `switch_theme` and reloads. `kernel.themes.reload()` picks up edited theme files.
 
-Theme files are served at `/wp-content/themes/{theme}/…` with the uploads' safety rules: each path segment decoded and checked (no `..`, hidden files, encoded slashes or control characters), only static types (CSS, JS, images, fonts, video; never PHP, HTML, JSON or Markdown), the real path must stay in the theme folder, `nosniff`, a sandboxing CSP on SVG, `ETag` and `Last-Modified` with 304s.
+Theme files are served at `/wp-content/themes/{theme}/…` with the uploads' safety rules: each path segment decoded and checked (no `..`, hidden files, encoded slashes or control characters), only static types (CSS, JS, images, fonts, video; never PHP, HTML, JSON or Markdown), the real path must stay in the theme folder, `nosniff`, a sandboxing CSP on SVG, `ETag` and `Last-Modified` with 304s. The same rules apply to uploaded themes.
+
+## Installing and deleting themes
+
+Site owners add themes with **Appearance → Themes → Upload theme**, `POST /pressbase/v1/themes` or `pressbase theme install`, and remove them with the theme card's **Delete**, `DELETE /pressbase/v1/themes/{stylesheet}` or `pressbase theme delete`. All three call `kernel.themes.install()` and `kernel.themes.delete()` (`apps/core/src/themes/install.ts`), which run one at a time. The decision is [ADR 0025](../adr/0025-theme-install-and-delete.md).
+
+### Installing: `kernel.themes.install(zip, { overwrite, filename })`
+
+A port of `Theme_Upgrader::install()` and `check_package()` (`wp-admin/includes/class-theme-upgrader.php`) with `WP_Upgrader::install_package()`:
+
+1. **Size.** The archive may be as large as the upload limit (`PRESSBASE_MAX_UPLOAD_MB`), at most 32 MB, as for plugins (`413 rest_upload_file_too_big`); once unpacked, four times that.
+2. **The archive.** Read by the shared strict ZIP reader (`apps/core/src/files/zip.ts`, also used for plugins and language packs): zip-slip paths (`incompatible_archive_path`), links and special files (`incompatible_archive_symlink`), encryption, ZIP64, damaged entries, duplicates and more than 5,000 files (`incompatible_archive`), and zip bombs (`incompatible_archive_too_big`) are refused before anything is written. An empty archive is `incompatible_archive_empty`. `__MACOSX/` and `.DS_Store` are skipped.
+3. **Where the theme is.** As WordPress decides: when everything sits in one top-level folder, that folder is the theme; otherwise the archive's root is.
+4. **The theme.** `style.css` must exist (`incompatible_archive_theme_no_style`) and have a `Theme Name` header (`incompatible_archive_theme_no_name`). It must be a **block theme**, with `templates/index.html` (or the legacy `block-templates/index.html`). A classic theme, with `index.php` but no block template, is refused with `pressbase_theme_not_block_theme` and a message saying Pressbase runs block themes only; an archive with neither is `incompatible_archive_theme_no_index`. WordPress accepts a child theme without an index file; Pressbase needs `templates/index.html` in child themes too, because it only activates themes that have one. `Requires at least` and `Requires PHP` are not checked: they describe WordPress and PHP.
+5. **The folder name** (the theme's `stylesheet`): the top-level folder's name, else the uploaded file's name without `.zip`, else the theme's name, sanitised as `sanitize_file_name()` does and then limited to the characters Pressbase accepts in theme folder names (`A–Z a–z 0–9 _ -`; accents dropped, anything else becomes `-`). `My Theme (1)` becomes `My-Theme-1`.
+6. **An existing theme** with that folder name, uploaded or bundled, is `409 folder_exists` unless `overwrite` is set. The error's `data` holds the `current` and `uploaded` theme's name, version, author, parent (`template`) and `source`, for the admin's "Replace the installed theme?" step (WordPress's *Replace current with uploaded*, `Theme_Installer_Skin::do_overwrite()`).
+7. **Unpacking.** Files are written into a hidden staging folder in `<dataDir>/themes` (`.upload-…`; folders starting with a dot are never listed), then renamed into place. With `overwrite`, the old folder is renamed aside first and removed once the new one is in place, or moved back if the rename fails, so a half-written theme is never seen. A bundled theme is never touched: its replacement is installed in the data directory, which wins over the bundled folder, and deleting it brings the bundled copy back.
+8. **After.** If the theme is the active theme or the active theme's parent, it stays active: the `template` option follows a changed `Template:` header, the theme is reloaded, and the page cache is purged (`site` tag, reason `theme_overwrite`, from `cache/invalidation.ts`). Then `upgrader_process_complete (null, { action: 'install', type: 'theme', themes: [stylesheet] })` fires (WordPress passes its `WP_Upgrader`; Pressbase has none), and, when a theme was replaced, `upgrader_overwrote_package (filename, newThemeData, 'theme')` with the `check_package()` headers (`Name`, `Version`, `Author`, `Template`, `RequiresWP`, `RequiresPHP`).
+
+Installing never activates a theme; that's `activate()` (`switch_theme()`), as in WordPress. The CLI's `--activate` calls it after installing.
+
+### Deleting: `kernel.themes.delete(stylesheet)`
+
+`delete_theme()` (`wp-admin/includes/theme.php`) with the checks of `wp-admin/themes.php`:
+
+- **Refused:** the active theme (`rest_cannot_delete_active_theme`), the parent of the active child theme (`pressbase_cannot_delete_parent_theme`, WordPress's *delete-active-child*), and themes bundled with Pressbase (`pressbase_cannot_delete_bundled_theme`): they live in the repository's read-only `themes/` folder. The checks use both the `stylesheet` and `template` options and the theme actually loaded, which differ when the stored theme is missing and the default is used.
+- `delete_theme (stylesheet)` fires, the folder is removed, then `deleted_theme (stylesheet, deleted)`; a folder that can't be removed is `500 could_not_remove_theme`.
+- The theme's translations in `languages/themes` (`{stylesheet}-{locale}.po`, `.mo`, `.l10n.php`, `-{hash}.json`) are removed, as `delete_theme()` does.
+- The `theme_mods_{stylesheet}` option is removed. **WordPress 7.1.3 leaves it** (only `remove_theme_mods()` deletes it); Pressbase cleans it up because nothing else would.
+- The theme's `wp_global_styles` post stays, as in WordPress: reinstalling the theme brings its saved styles back.
+
+Deleting an inactive theme changes nothing visitors see, so nothing is purged.
+
+### REST and the admin
+
+`/wp/v2/themes` items carry two extra fields: `pressbase_source` (`bundled` or `site`) and `pressbase_deletable` (true for an uploaded theme that is neither active nor the active theme's parent). The admin shows **Delete** in a theme card's menu only when `pressbase_deletable` is true and the user has `delete_themes`, and **Upload theme** only with `install_themes`. See [REST API](rest-api.md) for the endpoints and error codes.
+
+### Capabilities
+
+`POST /pressbase/v1/themes` checks `upload_themes`, which `map_meta_cap()` maps to `install_themes` (`upload_plugins` maps to `install_plugins` the same way; `apps/core/src/auth/meta-caps.ts`). Pressbase has no multisite and no `DISALLOW_FILE_MODS`, so nothing maps to `do_not_allow`. Deleting checks `delete_themes`. All three capabilities belong to administrators only.
+
+### What an uploaded theme can do
+
+Pressbase never runs a theme's PHP. It reads `style.css` headers, `theme.json`, `styles/`, HTML templates and parts, and interprets the small PHP subset of `patterns/*.php` described below; `functions.php` and any other `.php` file are ignored, and none of them is ever served. But a theme's templates, patterns, CSS and JavaScript reach every visitor (a template can contain an HTML block with a script), so only install themes you trust.
 
 ## Global styles
 
@@ -257,7 +301,7 @@ With `/%postname%/`-style structures, pages are tried before posts ("verbose pag
 
 Any WordPress block theme that keeps its logic in `theme.json`, templates and patterns works:
 
-1. A folder in `<PRESSBASE_DATA_DIR>/themes/` with `style.css` (header with at least `Theme Name`) and `templates/index.html`.
+1. A folder with `style.css` (header with at least `Theme Name`) and `templates/index.html`. Zip it and upload it in **Appearance → Themes**, or copy the folder into `<PRESSBASE_DATA_DIR>/themes/`.
 2. `theme.json` (schema 2 or 3), `parts/*.html` with areas declared in `templateParts`, `templates/*.html` named after the hierarchy, `styles/blocks/*.json` and `styles/sections/*.json` for block style variations.
 3. Patterns as `patterns/*.php`, using only the PHP subset above, or as plain block markup.
 4. Static assets referenced with `file:./` (fonts) or through `get_template_directory_uri()` in patterns.
