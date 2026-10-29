@@ -28,3 +28,4 @@ To write one, copy [template.md](template.md) to `NNNN-short-title.md` and open 
 | [0018](0018-editor-data-for-plugins.md) | Live editor data for plugins: a small store on window.pressbase, not a @wordpress/data store | Accepted |
 | [0019](0019-ai-client-and-abilities.md) | The AI client and the Abilities API in core: keys on the server, a usage table for caps | Accepted |
 | [0020](0020-plugin-blocks.md) | Plugin blocks: server registration through api.blocks, editor modules through window.pressbase.blocks | Accepted |
+| [0025](0025-theme-install-and-delete.md) | Installing and deleting themes from a .zip: one strict ZIP reader, block themes only, atomic replacement | Accepted |

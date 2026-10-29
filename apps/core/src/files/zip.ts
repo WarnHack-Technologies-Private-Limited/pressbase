@@ -1,8 +1,10 @@
+import { mkdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
 import { crc32, deflateRawSync, inflateRawSync } from 'node:zlib';
 
 /**
- * A small, strict ZIP reader for plugin uploads (WordPress's unzip_file()
- * with PclZip / ZipArchive). It reads the central directory, refuses anything
+ * A small, strict ZIP reader for uploaded packages — plugins, themes and
+ * language packs (WordPress's unzip_file() with PclZip / ZipArchive). It reads the central directory, refuses anything
  * that could write outside the target folder or surprise the server, and
  * inflates entries with hard output limits:
  *
@@ -161,6 +163,28 @@ export function readZip(input: Uint8Array, options: ReadZipOptions = {}): ZipEnt
     entries.push({ name, data: new Uint8Array(data) });
   }
   return entries;
+}
+
+/**
+ * Writes entries below `dir`, creating folders as needed. Every path is
+ * checked again against `dir` (belt and braces after safeEntryPath()), and
+ * files are created with `wx`, so nothing existing is ever overwritten.
+ * Unpack into a fresh staging folder and rename it into place.
+ */
+export async function writeEntries(dir: string, entries: readonly ZipEntry[]): Promise<void> {
+  const root = path.resolve(dir);
+  for (const entry of entries) {
+    if (!entry.name) continue;
+    const dest = path.resolve(root, entry.name);
+    if (!dest.startsWith(root + path.sep)) {
+      throw new ZipError(
+        'incompatible_archive_path',
+        `Unsafe path in the archive: "${entry.name}".`,
+      );
+    }
+    await mkdir(path.dirname(dest), { recursive: true });
+    await writeFile(dest, entry.data, { flag: 'wx' });
+  }
 }
 
 export interface NewZipEntry {

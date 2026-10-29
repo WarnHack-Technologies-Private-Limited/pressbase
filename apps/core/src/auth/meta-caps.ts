@@ -173,6 +173,12 @@ export async function mapMetaCap(
     case 'add_users':
       return ['promote_users'];
 
+    // Uploading a package is installing it (single site, no DISALLOW_FILE_MODS).
+    case 'upload_themes':
+      return ['install_themes'];
+    case 'upload_plugins':
+      return ['install_plugins'];
+
     default:
       return [cap];
   }

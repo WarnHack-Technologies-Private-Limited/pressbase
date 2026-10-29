@@ -109,6 +109,7 @@ export type {
   SiteHealthTestResult,
   SiteStatusTests,
 } from '../site-health/types';
+export type { ThemeSummary, UploadedThemeData } from '../themes/install';
 export type {
   PageParent,
   PluginPageArgs,
