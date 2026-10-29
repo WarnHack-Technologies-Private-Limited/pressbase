@@ -286,9 +286,18 @@ describe('the Pressbase theme', () => {
     expect(html).toContain('Platypi-VariableFont_wght.woff2');
     expect(html).toContain('<header class="wp-block-template-part">');
     expect(html).toContain('<footer class="wp-block-template-part">');
-    expect(html).toMatch(/<h1 class="wp-block-heading has-text-align-center has-display-font-size"/);
+    expect(html).toMatch(
+      /<h1 class="wp-block-heading has-text-align-center has-display-font-size"/,
+    );
     expect(html).toContain('Publish ideas that <em>move</em> people.');
-    for (const style of ['is-style-gradient', 'is-style-marquee', 'is-style-reveal', 'is-style-lift', 'is-style-glass', 'is-style-pill']) {
+    for (const style of [
+      'is-style-gradient',
+      'is-style-marquee',
+      'is-style-reveal',
+      'is-style-lift',
+      'is-style-glass',
+      'is-style-pill',
+    ]) {
       expect(html, style).toContain(style);
     }
     // Section styles are generated per instance.
@@ -296,7 +305,9 @@ describe('the Pressbase theme', () => {
     // The latest posts query and the grid span container queries.
     expect(html).toContain('Hello world!');
     expect(html).toMatch(/@container \(max-width: [\d.]+rem \)\{\.wp-container-content-/);
-    expect(html).toContain('Powered by <a href="https://github.com/WarnHack-Technologies-Private-Limited/pressbase" rel="nofollow">Pressbase</a>');
+    expect(html).toContain(
+      'Powered by <a href="https://github.com/WarnHack-Technologies-Private-Limited/pressbase" rel="nofollow">Pressbase</a>',
+    );
     // Exactly one h1, nothing left unrendered.
     expect(html.match(/<h1[\s>]/g)?.length).toBe(1);
     expect(html).not.toContain('<?php');
@@ -370,11 +381,18 @@ describe('the Pressbase theme', () => {
       blocks.push([css.slice(at, open).trim(), css.slice(open + 1, end - 1)]);
       i = end;
     }
-    const supports = blocks.filter(([prelude]) => prelude.startsWith('@supports (animation-timeline'));
+    const supports = blocks.filter(([prelude]) =>
+      prelude.startsWith('@supports (animation-timeline'),
+    );
     expect(supports.length).toBe(2);
 
     // Nothing starts hidden, and no scroll timeline is used, outside the @supports blocks.
-    const unguarded = outside + blocks.filter((b) => !supports.includes(b)).map(([, body]) => body).join('');
+    const unguarded =
+      outside +
+      blocks
+        .filter((b) => !supports.includes(b))
+        .map(([, body]) => body)
+        .join('');
     expect(unguarded).not.toMatch(/opacity:\s*0(?:[;\s}]|\.0*[;\s}])/);
     expect(unguarded).not.toContain('animation-timeline');
     const guarded = supports.map(([, body]) => body).join('');
@@ -393,12 +411,16 @@ describe('the Pressbase theme', () => {
     // Transitions too.
     for (const [, value] of css.matchAll(/transition:\s*([^;]+);/g)) {
       for (const part of (value ?? '').split(',')) {
-        expect(['transform', 'translate', 'scale', 'opacity', 'none']).toContain(part.trim().split(/\s+/)[0]);
+        expect(['transform', 'translate', 'scale', 'opacity', 'none']).toContain(
+          part.trim().split(/\s+/)[0],
+        );
       }
     }
 
     // Reduced motion stops every animation and transition.
-    const reduced = blocks.find(([prelude]) => prelude === '@media (prefers-reduced-motion: reduce)');
+    const reduced = blocks.find(
+      ([prelude]) => prelude === '@media (prefers-reduced-motion: reduce)',
+    );
     expect(reduced?.[1]).toMatch(/animation:\s*none\s*!important/);
     expect(reduced?.[1]).toMatch(/transition:\s*none\s*!important/);
   });
