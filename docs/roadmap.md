@@ -99,6 +99,15 @@ Plan: [Pressbase SEO and the first-party plugins](plans/first-party-plugins.md).
 - [ ] Pressbase SEO (in progress): built in [`plugins/pressbase-seo`](../plugins/pressbase-seo/README.md): titles and meta (Yoast-compatible), search and social previews, checks, schema graph, sitemaps, redirects and 404 log, breadcrumbs, IndexNow, `llms.txt`, AI suggestions on the core AI client. See [Pressbase SEO](architecture/seo-plugin.md). Left: checking Google's Rich Results test and Lighthouse on a real site, and a site-wide audit screen.
 - [ ] The next first-party plugins (Forms, Anti-spam, Analytics, Backups, Security): order to be decided.
 
+## v0.8: Site editor and building with AI (proposed)
+
+Plan: [The visual site builder and building with AI](plans/visual-site-builder.md) (for review).
+
+- [ ] Site editor: templates and template parts (`wp_template`, `wp_template_part`), header and footer edited in place, page tree, Simple and Advanced modes.
+- [ ] Changesets (`customize_changeset`): one draft across styles, templates, pages and menus; Preview, Publish, Discard.
+- [ ] Design: section library with Swap layout, style book, per-block styles, Additional CSS, responsive styles and breakpoints (WordPress 7.1), starter sites, export as a block theme.
+- [ ] AI: prompt to site, page and section; Ask AI on a selection; site-building abilities; quality checks and honest placeholders; an evaluation suite.
+
 ## v1.0: Stable
 
 - [ ] Security audit, accessibility audit, performance budget.
