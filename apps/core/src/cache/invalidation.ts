@@ -236,6 +236,12 @@ export function registerCacheInvalidation(kernel: Kernel): void {
     if (!isPrivateOption(String(name))) await purge([CacheTag.site], `option:${String(name)}`);
   });
   hooks.addAction('switch_theme', async () => purge([CacheTag.site], 'switch_theme'));
+  // A theme upload that replaced the active theme or its parent: new templates and styles.
+  hooks.addAction('upgrader_process_complete', async (_upgrader, extra) => {
+    if (extra?.type !== 'theme') return;
+    const inUse = await kernel.themes.inUse();
+    if (extra.themes.some((t) => inUse.has(t))) await purge([CacheTag.site], 'theme_overwrite');
+  });
 }
 
 /** term:{id} for term_taxonomy IDs. */

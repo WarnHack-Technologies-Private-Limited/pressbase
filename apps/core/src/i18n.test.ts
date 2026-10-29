@@ -2,8 +2,8 @@ import { existsSync } from 'node:fs';
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { createZip } from './files/zip';
 import { compileMo } from './i18n/translation-file';
-import { createZip } from './plugins/zip';
 import { setup } from './test-utils';
 
 /**

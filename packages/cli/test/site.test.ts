@@ -2,7 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import path from 'node:path';
 import { PURGE_ACTION } from '@pressbase/core/src/cache/invalidation';
-import { createZip } from '@pressbase/core/src/plugins/zip';
+import { createZip } from '@pressbase/core/src/files/zip';
 import { describe, expect, it } from 'vitest';
 import { site } from './helpers';
 

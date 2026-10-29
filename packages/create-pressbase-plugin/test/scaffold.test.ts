@@ -11,7 +11,7 @@ import {
   RESERVED_NAMES as CORE_RESERVED,
   SLUG as CORE_SLUG,
 } from '@pressbase/core/src/plugins/manifest';
-import { readZip } from '@pressbase/core/src/plugins/zip';
+import { readZip } from '@pressbase/core/src/files/zip';
 import { setup } from '@pressbase/core/src/test-utils';
 import { afterAll, describe, expect, it } from 'vitest';
 import {

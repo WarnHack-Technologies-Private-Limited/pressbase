@@ -1,7 +1,7 @@
 import { mkdir, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { readZip, ZipError } from '../files/zip';
 import type { Kernel } from '../kernel';
-import { readZip, ZipError } from '../plugins/zip';
 import { isLocale, languageNames } from './locale';
 
 /**

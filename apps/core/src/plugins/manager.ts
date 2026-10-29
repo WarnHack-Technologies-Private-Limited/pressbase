@@ -1,7 +1,8 @@
 import { randomBytes } from 'node:crypto';
-import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { readZip, writeEntries, ZipError } from '../files/zip';
 import type { Kernel } from '../kernel';
 import { PRESSBASE_VERSION } from '../version';
 import type { PluginAdmin } from './admin';
@@ -25,7 +26,6 @@ import {
 } from './manifest';
 import { type PluginModule, PluginRuntime, type RuntimeHost } from './runtime';
 import { satisfies } from './semver';
-import { readZip, ZipError } from './zip';
 
 /**
  * The plugin manager: activate_plugin(), deactivate_plugins(),
@@ -536,7 +536,7 @@ export class PluginManager {
 
   /**
    * Plugin_Upgrader::install() for an uploaded .zip: validates the archive
-   * (see zip.ts) and the manifest, then unpacks it into
+   * (see files/zip.ts) and the manifest, then unpacks it into
    * `<dataDir>/plugins/<name>/`. The archive holds the plugin either at its
    * root or in one top-level folder, as WordPress plugin zips do.
    */
@@ -612,21 +612,11 @@ export class PluginManager {
     await mkdir(site, { recursive: true });
     const staging = path.join(site, `.upload-${randomBytes(6).toString('hex')}`);
     try {
-      for (const file of files) {
-        if (!file.name) continue;
-        const dest = path.resolve(staging, file.name);
-        if (!dest.startsWith(staging + path.sep)) {
-          throw new PluginError(
-            'incompatible_archive_path',
-            `Unsafe path in the archive: "${file.name}".`,
-          );
-        }
-        await mkdir(path.dirname(dest), { recursive: true });
-        await writeFile(dest, file.data, { flag: 'wx' });
-      }
+      await writeEntries(staging, files);
       await rename(staging, target);
     } catch (error) {
       await rm(staging, { recursive: true, force: true });
+      if (error instanceof ZipError) throw new PluginError(error.code, error.message, 400);
       throw error;
     }
     const installed = await this.get(manifest.name);

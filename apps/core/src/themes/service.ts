@@ -1,5 +1,5 @@
 import type { Dirent } from 'node:fs';
-import { readdir, readFile, stat } from 'node:fs/promises';
+import { readdir, readFile, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -20,6 +20,14 @@ import type { Kernel } from '../kernel';
 import { THEME_COMPAT, type ThemeCompat } from './compat';
 import { readFileHeaders, THEME_HEADERS } from './file-headers';
 import { decodeGlobalStyles, userGlobalStylesPost } from './global-styles';
+import {
+  checkThemePackage,
+  maxThemeBytes,
+  removeThemeTranslations,
+  ThemeError,
+  type ThemeSummary,
+  unpackTheme,
+} from './install';
 import { loadPhpPattern } from './php-patterns';
 
 /**
@@ -63,6 +71,23 @@ export interface ThemeInfo {
   /** File name of the screenshot, if there is one. */
   screenshot: string | null;
   isBlockTheme: boolean;
+  /** `bundled`: the repository's read-only `themes/` folder; `site`: `<dataDir>/themes`. */
+  source: 'bundled' | 'site';
+}
+
+export interface InstallThemeOptions {
+  /** Replace a theme already installed with the same folder name ("Replace current with uploaded"). */
+  overwrite?: boolean;
+  /** The uploaded file's name: names the folder when the archive has no top-level folder. */
+  filename?: string;
+  /** Largest archive accepted; defaults to maxThemeBytes(). */
+  maxBytes?: number;
+}
+
+export interface InstalledTheme {
+  theme: ThemeInfo;
+  /** True when an installed theme was replaced. */
+  replaced: boolean;
 }
 
 export interface TemplateFile {
@@ -159,6 +184,8 @@ export class ThemesService {
   #registered = { patterns: [] as string[], categories: [] as string[] };
   /** The active theme's text domain paths, forgotten on switch. */
   #textdomains: (() => void)[] = [];
+  /** Installs and deletes run one at a time. */
+  #queue: Promise<unknown> = Promise.resolve();
 
   constructor(private readonly kernel: Kernel) {
     kernel.hooks.addAction('init', async () => {
@@ -168,7 +195,12 @@ export class ThemesService {
 
   /** Folders searched for themes, in increasing priority. */
   directories(): string[] {
-    return [BUNDLED_THEMES, path.join(this.kernel.config.dataDir, 'themes')];
+    return [BUNDLED_THEMES, this.siteDirectory()];
+  }
+
+  /** `<dataDir>/themes`: where uploaded themes go, and the only folder themes are deleted from. */
+  siteDirectory(): string {
+    return path.join(this.kernel.config.dataDir, 'themes');
   }
 
   /** search_theme_directories() + wp_get_themes(). */
@@ -243,7 +275,181 @@ export class ThemesService {
       isBlockTheme:
         (await exists(path.join(dir, 'templates', 'index.html'))) ||
         (await exists(path.join(dir, 'block-templates', 'index.html'))),
+      source: root === BUNDLED_THEMES ? 'bundled' : 'site',
     };
+  }
+
+  /**
+   * The stylesheets the site is using: the active theme and its parent, both
+   * as the options name them and as loaded (a missing theme falls back to
+   * the default one).
+   */
+  async inUse(): Promise<Set<string>> {
+    const names = new Set<string>([
+      await this.activeStylesheet(),
+      await this.kernel.options.get<string>('template', DEFAULT_THEME),
+    ]);
+    const active = await this.active().catch(() => undefined);
+    if (active) {
+      names.add(active.info.stylesheet);
+      names.add(active.info.template);
+      if (active.parent) names.add(active.parent.stylesheet);
+    }
+    names.delete('');
+    return names;
+  }
+
+  /**
+   * Whether a theme can be deleted (delete_theme() plus wp-admin/themes.php's
+   * checks): installed in the data directory, not active, and not the active
+   * child theme's parent.
+   */
+  async deletable(theme: ThemeInfo, inUse?: Set<string>): Promise<boolean> {
+    if (theme.source !== 'site') return false;
+    return !(inUse ?? (await this.inUse())).has(theme.stylesheet);
+  }
+
+  #serial<T>(task: () => Promise<T>): Promise<T> {
+    const run = this.#queue.then(task, task);
+    this.#queue = run.catch(() => {});
+    return run;
+  }
+
+  /**
+   * Theme_Upgrader::install() for an uploaded .zip: check_package(), then
+   * unpack into `<dataDir>/themes/<stylesheet>` atomically. A theme with the
+   * same folder name (installed or bundled) is `folder_exists` unless
+   * `overwrite`; replacing the active theme (or its parent) keeps it active
+   * and reloads it, and cache/invalidation.ts purges the page cache on
+   * `upgrader_process_complete`.
+   */
+  install(zip: Uint8Array, options: InstallThemeOptions = {}): Promise<InstalledTheme> {
+    return this.#serial(async () => {
+      const { stylesheet, data, files } = checkThemePackage(zip, {
+        maxBytes: options.maxBytes ?? maxThemeBytes(this.kernel),
+        filename: options.filename,
+      });
+      const existing = await this.get(stylesheet);
+      if (existing && !options.overwrite) {
+        throw new ThemeError(
+          'folder_exists',
+          `${existing.name} is already installed (in the “${stylesheet}” folder). Replace it with the uploaded copy, or delete it first.`,
+          409,
+          {
+            stylesheet,
+            current: {
+              stylesheet,
+              name: existing.name,
+              version: existing.version,
+              author: existing.author,
+              template: existing.template === stylesheet ? '' : existing.template,
+              source: existing.source,
+            } satisfies ThemeSummary,
+            uploaded: {
+              stylesheet,
+              name: data.Name,
+              version: data.Version,
+              author: data.Author,
+              template: data.Template,
+              source: 'site',
+            } satisfies ThemeSummary,
+          },
+        );
+      }
+      // A bundled theme is never replaced in place: the copy goes to the data
+      // directory, which wins over the bundled folder.
+      await unpackTheme(this.siteDirectory(), stylesheet, files, Boolean(options.overwrite));
+      const theme = await this.get(stylesheet);
+      if (!theme) {
+        throw new ThemeError(
+          'incompatible_archive',
+          'The theme could not be read after unpacking.',
+          500,
+        );
+      }
+
+      // Replacing the theme the site runs on: it stays active, with the new files.
+      if ((await this.inUse()).has(stylesheet)) {
+        if (
+          (await this.activeStylesheet()) === stylesheet &&
+          (await this.kernel.options.get<string>('template', '')) !== theme.template
+        ) {
+          await this.kernel.options.set('template', theme.template);
+        }
+        await this.reload();
+      }
+      await this.kernel.hooks.doAction('upgrader_process_complete', null, {
+        action: 'install',
+        type: 'theme',
+        themes: [stylesheet],
+      });
+      if (existing) {
+        await this.kernel.hooks.doAction(
+          'upgrader_overwrote_package',
+          options.filename ?? `${stylesheet}.zip`,
+          data,
+          'theme',
+        );
+      }
+      return { theme, replaced: Boolean(existing) };
+    });
+  }
+
+  /**
+   * delete_theme() (wp-admin/includes/theme.php) with wp-admin/themes.php's
+   * checks: not the active theme, not the active child theme's parent, not a
+   * bundled theme. Fires `delete_theme` and `deleted_theme`, removes the
+   * folder, the theme's translations and its `theme_mods_{stylesheet}`
+   * option. Its `wp_global_styles` post stays, as in WordPress.
+   */
+  delete(stylesheet: string): Promise<ThemeInfo> {
+    return this.#serial(async () => {
+      const theme = await this.get(stylesheet);
+      if (!theme) throw new ThemeError('rest_theme_not_found', 'Theme not found.', 404);
+      if (theme.source !== 'site') {
+        throw new ThemeError(
+          'pressbase_cannot_delete_bundled_theme',
+          `${theme.name} ships with Pressbase in its read-only themes folder, so it can’t be deleted.`,
+        );
+      }
+      const active = await this.active().catch(() => undefined);
+      if (
+        stylesheet === (await this.activeStylesheet()) ||
+        stylesheet === active?.info.stylesheet
+      ) {
+        throw new ThemeError(
+          'rest_cannot_delete_active_theme',
+          'Cannot delete the active theme. Activate another theme first.',
+        );
+      }
+      if ((await this.inUse()).has(stylesheet)) {
+        // wp-admin/themes.php?delete-active-child=true
+        throw new ThemeError(
+          'pressbase_cannot_delete_parent_theme',
+          'You cannot delete a theme while it has an active child theme.',
+        );
+      }
+
+      await this.kernel.hooks.doAction('delete_theme', stylesheet);
+      let deleted = true;
+      try {
+        await rm(theme.dir, { recursive: true, force: true });
+      } catch (error) {
+        console.error(`[theme:${stylesheet}] could not remove ${theme.dir}:`, error);
+        deleted = false;
+      }
+      await this.kernel.hooks.doAction('deleted_theme', stylesheet, deleted);
+      if (!deleted) {
+        throw new ThemeError(
+          'could_not_remove_theme',
+          `Could not fully remove the theme ${stylesheet}.`,
+          500,
+        );
+      }
+      await removeThemeTranslations(this.kernel.i18n.languagesDir, stylesheet);
+      await this.kernel.options.delete(`theme_mods_${stylesheet}`);
+      return theme;
+    });
   }
 
   /** The `stylesheet` option, falling back to the default theme. */

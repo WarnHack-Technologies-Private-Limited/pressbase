@@ -3,12 +3,12 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { createApp } from './app';
+import { createZip, readZip, safeEntryPath, ZipError } from './files/zip';
 import { Kernel } from './kernel';
 import { discoverPlugins } from './plugins/discovery';
 import { ACTIVE_PLUGINS, PLUGIN_ERRORS, PLUGIN_MIGRATIONS } from './plugins/manager';
 import { parseManifest } from './plugins/manifest';
 import { isValidRange, satisfies } from './plugins/semver';
-import { createZip, readZip, safeEntryPath, ZipError } from './plugins/zip';
 import { SITE, setup, type TestResponse } from './test-utils';
 
 /**
