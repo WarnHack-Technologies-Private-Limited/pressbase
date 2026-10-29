@@ -87,9 +87,9 @@ export function sanitizeThemeSlug(name: string): string {
   const special = /[?[\]/\\=<>:;,'"&$#*()|~`!{}%+’«»”“\u0000]/g;
   return name
     .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/%20|\+/g, '-')
+    .replace(/\p{M}/gu, '')
     .replace(special, '')
+    .replace(/%20|\+/g, '-')
     .replace(/[\r\n\t -]+/g, '-')
     .replace(/[^A-Za-z0-9_-]+/g, '-')
     .replace(/-{2,}/g, '-')

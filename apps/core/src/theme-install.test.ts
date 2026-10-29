@@ -90,6 +90,8 @@ describe('theme folder names', () => {
     expect(sanitizeThemeSlug('Café Noir')).toBe('Cafe-Noir');
     expect(sanitizeThemeSlug('theme.v2.0')).toBe('theme-v2-0');
     expect(sanitizeThemeSlug('--_x_--')).toBe('x');
+    // As in WordPress, '+' is one of the removed characters before '+' would become '-'.
+    expect(sanitizeThemeSlug('Light+Dark')).toBe('LightDark');
     expect(sanitizeThemeSlug('!!!')).toBe('');
   });
 
