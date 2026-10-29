@@ -167,7 +167,7 @@ async function renderLayout(
       },
       'wp-container-content-',
     );
-    const css = getChildLayoutStyle(`.${contentClass}`, values);
+    const css = getChildLayoutStyle(`.${contentClass}`, values, parentLayout);
     if (css) {
       outer.push(contentClass);
       page?.addSupportStyle(css);

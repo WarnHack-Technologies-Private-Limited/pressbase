@@ -404,6 +404,30 @@ describe('layout support styles (wp_get_layout_style)', () => {
       '.x{flex-basis:200px;box-sizing:border-box;}',
     );
   });
+  it('child layout: spans in a responsive grid collapse below the span (container query)', () => {
+    // wp_get_child_layout_style_rules(): 2 × 18rem + 1 × 1.5rem gap = 37.5rem.
+    expect(
+      getChildLayoutStyle(
+        '.x',
+        { columnSpan: 2, rowSpan: 2 },
+        { columnCount: 4, minimumColumnWidth: '18rem' },
+      ),
+    ).toBe(
+      '.x{grid-column:span 2;grid-row:span 2;}' +
+        '@container (max-width: 37.5rem ){.x{grid-column:1/-1;grid-row:auto;}}',
+    );
+    // No minimumColumnWidth but no columnCount either: 12rem columns; px widths use a 24px gap.
+    expect(getChildLayoutStyle('.x', { columnStart: 3 })).toBe(
+      '.x{grid-column:3;}@container (max-width: 39rem ){.x{grid-column:auto;grid-row:auto;}}',
+    );
+    expect(getChildLayoutStyle('.x', { columnSpan: 3 }, { minimumColumnWidth: '200px' })).toBe(
+      '.x{grid-column:span 3;}@container (max-width: 648px ){.x{grid-column:1/-1;grid-row:auto;}}',
+    );
+    // A fixed grid (columnCount without minimumColumnWidth) keeps its spans.
+    expect(getChildLayoutStyle('.x', { columnSpan: 2 }, { columnCount: 3 })).toBe(
+      '.x{grid-column:span 2;}',
+    );
+  });
 });
 
 describe('fonts', () => {

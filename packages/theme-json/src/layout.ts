@@ -256,8 +256,17 @@ export function getLayoutStyle(input: LayoutStyleInput): string {
   return stylesheetFromRules(rules);
 }
 
-/** wp_get_child_layout_style_rules(), without the container-query fallback for grids. */
-export function getChildLayoutStyle(selector: string, childLayout: JsonObject): string {
+/**
+ * wp_get_child_layout_style_rules() (viewport overrides not ported). In a
+ * responsive grid (the parent has a `minimumColumnWidth`, or no
+ * `columnCount`), a span or start is dropped by a container query once the
+ * grid is too narrow for it, so spanning children never overflow.
+ */
+export function getChildLayoutStyle(
+  selector: string,
+  childLayout: JsonObject,
+  parentLayout: JsonObject = {},
+): string {
   const declarations: Record<string, string> = {};
   const stretch = childLayout.selfStretch;
   if (
@@ -278,5 +287,37 @@ export function getChildLayoutStyle(selector: string, childLayout: JsonObject): 
   if (rowStart && rowSpan) declarations['grid-row'] = `${rowStart} / span ${rowSpan}`;
   else if (rowStart) declarations['grid-row'] = `${rowStart}`;
   else if (rowSpan) declarations['grid-row'] = `span ${rowSpan}`;
-  return stylesheetFromRules([{ selector, declarations }]);
+  const rules: CssRule[] = [{ selector, declarations }];
+
+  const minimumColumnWidth = parentLayout.minimumColumnWidth;
+  const columnCount = parentLayout.columnCount;
+  if ((columnSpan || columnStart) && (minimumColumnWidth || !columnCount)) {
+    const spanNumber = Number.parseFloat(String(columnSpan ?? '')) || 0;
+    const startNumber = Number.parseFloat(String(columnStart ?? '')) || 0;
+    const parentWidth =
+      typeof minimumColumnWidth === 'string' && minimumColumnWidth ? minimumColumnWidth : '12rem';
+    let value = Number.parseFloat(parentWidth) || 0;
+    // PHP: explode( floatval( $width ), $width ).
+    const parts = parentWidth.split(String(value));
+    let unit = 'rem';
+    if (parts.length <= 1) value = 12;
+    else if (['px', 'rem', 'em'].includes(parts[1] as string)) unit = parts[1] as string;
+    const breakAt =
+      spanNumber && startNumber
+        ? startNumber + spanNumber - 1
+        : spanNumber
+          ? spanNumber
+          : startNumber;
+    const gap = unit === 'px' ? 24 : 1.5;
+    const query = Math.max(breakAt * value + (breakAt - 1) * gap, value * 2 + gap - 1);
+    rules.push({
+      rulesGroup: `@container (max-width: ${query}${unit} )`,
+      selector,
+      declarations: {
+        'grid-column': columnSpan && Number(columnSpan) > 1 ? '1/-1' : 'auto',
+        'grid-row': 'auto',
+      },
+    });
+  }
+  return stylesheetFromRules(rules);
 }
