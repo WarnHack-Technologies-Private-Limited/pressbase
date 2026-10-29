@@ -1,0 +1,412 @@
+/*
+Theme Name: Pressbase
+Theme URI: https://github.com/WarnHack-Technologies-Private-Limited/pressbase
+Author: Pressbase contributors
+Author URI: https://github.com/WarnHack-Technologies-Private-Limited/pressbase
+Description: The default theme of Pressbase. A calm, confident block theme with editorial serif headlines, a glassy sticky header, an animated indigo aurora, scroll-driven reveals and more than twenty patterns for landing pages and blogs. All motion is CSS, respects reduced-motion preferences and never shifts the layout.
+Requires at least: 6.7
+Tested up to: 7.1
+Requires PHP: 7.2
+Version: 1.0.0
+License: GPLv2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: pressbase
+Tags: one-column, grid-layout, custom-colors, custom-menu, custom-logo, editor-style, featured-images, full-site-editing, block-patterns, block-styles, style-variations, sticky-post, threaded-comments, translation-ready, wide-blocks, accessibility-ready, blog, portfolio, news
+*/
+
+/*
+ * Motion rules: only transform and opacity animate (no layout shift);
+ * anything that starts hidden lives inside @supports, so content is always
+ * visible where scroll-driven animations aren't supported; everything stops
+ * under prefers-reduced-motion (last rule in this file).
+ */
+
+/* Base ------------------------------------------------------------------ */
+
+/* Fallbacks sized like the web fonts, so text doesn't shift when they arrive. */
+@font-face {
+	font-family: "Manrope Fallback";
+	src: local("Arial"), local("Liberation Sans"), local("Arimo");
+	size-adjust: 101.52%;
+	ascent-override: 105.4%;
+	descent-override: 29.55%;
+	line-gap-override: 0%;
+}
+
+@font-face {
+	font-family: "Platypi Fallback";
+	src: local("Times New Roman"), local("Liberation Serif"), local("Tinos");
+	size-adjust: 124.14%;
+	ascent-override: 91.03%;
+	descent-override: 20.14%;
+	line-gap-override: 0%;
+}
+
+@font-face {
+	font-family: "Platypi Fallback";
+	font-style: italic;
+	src: local("Times New Roman Italic"), local("Liberation Serif Italic"), local("Tinos Italic");
+	size-adjust: 116.5%;
+	ascent-override: 97%;
+	descent-override: 21.46%;
+	line-gap-override: 0%;
+}
+
+html {
+	scroll-padding-top: 6rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+	text-wrap: balance;
+}
+
+p, li, blockquote, figcaption {
+	text-wrap: pretty;
+}
+
+a {
+	text-decoration-thickness: 1px;
+	text-underline-offset: 0.2em;
+}
+
+::selection {
+	background: var(--wp--preset--color--accent);
+	color: var(--wp--preset--color--on-accent);
+}
+
+:where(.wp-site-blocks) :focus-visible {
+	outline: 2px solid var(--wp--preset--color--accent);
+	outline-offset: 3px;
+}
+
+:where(pre) {
+	overflow-x: auto;
+}
+
+.more-link {
+	display: block;
+}
+
+:where(.wp-site-blocks) > footer {
+	margin-block-start: 0;
+}
+
+/* Sections below the first are rendered only as they near the viewport. */
+.wp-site-blocks > main > .alignfull:not(:first-child) {
+	content-visibility: auto;
+	contain-intrinsic-size: auto 40rem;
+}
+
+/* Italic accents in headings: Platypi italic, filled with the brand gradient. */
+:is(h1, h2, h3) em {
+	font-style: italic;
+	font-weight: 500;
+}
+
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+	:is(h1, h2, h3) em {
+		background: var(--wp--preset--gradient--accent);
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+		padding-inline-end: 0.06em;
+	}
+}
+
+/* On coloured backgrounds, the accent is plain italic in the text colour. */
+:is(.has-background, .is-style-section-ink) :is(h1, h2, h3) em {
+	background: none;
+	color: inherit;
+}
+
+@media (forced-colors: active) {
+	:is(h1, h2, h3) em {
+		background: none;
+		color: CanvasText;
+	}
+}
+
+/* Sticky glass header ----------------------------------------------------- */
+
+.wp-site-blocks > header.wp-block-template-part {
+	position: sticky;
+	top: var(--wp-admin--admin-bar--height, 0px);
+	z-index: 100;
+	isolation: isolate;
+}
+
+@media (max-width: 600px) {
+	.admin-bar .wp-site-blocks > header.wp-block-template-part {
+		top: 0;
+	}
+}
+
+/* The glass is a layer of its own, so only its opacity animates. */
+.wp-site-blocks > header.wp-block-template-part::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	background: var(--wp--custom--glass--background);
+	-webkit-backdrop-filter: blur(var(--wp--custom--glass--blur)) saturate(160%);
+	backdrop-filter: blur(var(--wp--custom--glass--blur)) saturate(160%);
+	border-bottom: 1px solid var(--wp--custom--line);
+	pointer-events: none;
+}
+
+/* Links: an underline that draws itself ------------------------------------ */
+
+:is(.wp-block-navigation-item__content, .wp-block-read-more, .wp-block-post-navigation-link a, .wp-block-query-pagination a, .is-style-links a) {
+	position: relative;
+	text-decoration: none;
+}
+
+:is(.wp-block-navigation-item__content, .wp-block-read-more, .wp-block-post-navigation-link a, .wp-block-query-pagination a, .is-style-links a)::after {
+	content: "";
+	position: absolute;
+	inset-inline: 0;
+	bottom: -0.2em;
+	height: 1px;
+	background: currentColor;
+	transform: scaleX(0);
+	transform-origin: right;
+	transition: transform var(--wp--custom--motion--base) var(--wp--custom--motion--ease);
+}
+
+:is(.wp-block-navigation-item__content, .wp-block-read-more, .wp-block-post-navigation-link a, .wp-block-query-pagination a, .is-style-links a):is(:hover, :focus-visible, [aria-current="page"])::after {
+	transform: scaleX(1);
+	transform-origin: left;
+}
+
+/* Buttons: lift, press and a sheen ------------------------------------------ */
+
+.wp-element-button,
+.wp-block-button__link {
+	position: relative;
+	overflow: hidden;
+	isolation: isolate;
+	transition: translate var(--wp--custom--motion--fast) var(--wp--custom--motion--ease), scale var(--wp--custom--motion--fast) var(--wp--custom--motion--ease);
+}
+
+.wp-element-button::after,
+.wp-block-button__link::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	background: linear-gradient(110deg, transparent 35%, rgb(255 255 255 / 0.3) 50%, transparent 65%);
+	transform: translateX(-110%);
+	pointer-events: none;
+}
+
+.wp-element-button:hover,
+.wp-block-button__link:hover {
+	translate: 0 -2px;
+}
+
+.wp-element-button:hover::after,
+.wp-block-button__link:hover::after {
+	transform: translateX(110%);
+	transition: transform 0.7s var(--wp--custom--motion--ease);
+}
+
+.wp-element-button:active,
+.wp-block-button__link:active {
+	translate: 0 0;
+	scale: 0.98;
+}
+
+/* Outline buttons on ink sections follow the section's text colour. */
+.is-style-section-ink .wp-block-button.is-style-outline > .wp-block-button__link {
+	border-color: currentColor;
+	color: inherit;
+}
+
+/* Block style: Pill (paragraph; on post terms, each term is a pill) ------- */
+
+:is(p.is-style-pill, .wp-block-post-terms.is-style-pill a) {
+	width: fit-content;
+	padding: 0.35em 0.9em;
+	border: 1px solid color-mix(in srgb, var(--wp--preset--color--accent) 25%, transparent);
+	border-radius: var(--wp--preset--border-radius--full);
+	background: var(--wp--preset--color--accent-soft);
+	color: var(--wp--preset--color--accent-text);
+	font-size: var(--wp--preset--font-size--small);
+	font-weight: 600;
+	line-height: 1.4;
+	text-decoration: none;
+}
+
+p.is-style-pill a {
+	color: inherit;
+}
+
+.wp-block-post-terms.is-style-pill {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.wp-block-post-terms.is-style-pill .wp-block-post-terms__separator {
+	display: none;
+}
+
+/* Block style: Lift (cards) ------------------------------------------------- */
+
+.is-style-lift {
+	background-color: var(--wp--preset--color--surface);
+	border: 1px solid var(--wp--custom--line);
+	border-radius: var(--wp--preset--border-radius--lg);
+	box-shadow: var(--wp--preset--shadow--soft);
+	transition: translate var(--wp--custom--motion--base) var(--wp--custom--motion--ease);
+}
+
+.is-style-lift:is(:hover, :focus-within) {
+	translate: 0 -6px;
+	border-color: color-mix(in srgb, var(--wp--preset--color--accent) 35%, transparent);
+	box-shadow: var(--wp--preset--shadow--lifted);
+}
+
+/* Block style: Glass -------------------------------------------------------- */
+
+.is-style-glass {
+	background-color: var(--wp--custom--glass--background);
+	-webkit-backdrop-filter: blur(var(--wp--custom--glass--blur)) saturate(150%);
+	backdrop-filter: blur(var(--wp--custom--glass--blur)) saturate(150%);
+	border: 1px solid var(--wp--custom--glass--border);
+	border-radius: var(--wp--preset--border-radius--xl);
+	box-shadow: var(--wp--preset--shadow--lifted);
+}
+
+/* Block style: Gradient (an aurora mesh behind the content) ----------------- */
+
+.is-style-gradient {
+	position: relative;
+	isolation: isolate;
+	overflow: clip;
+}
+
+.is-style-gradient::before,
+.is-style-gradient::after {
+	content: "";
+	position: absolute;
+	pointer-events: none;
+}
+
+.is-style-gradient::before {
+	inset: -30% -15%;
+	z-index: -2;
+	background:
+		radial-gradient(closest-side at 22% 34%, color-mix(in srgb, var(--wp--preset--color--accent) 20%, transparent), transparent),
+		radial-gradient(closest-side at 78% 24%, color-mix(in srgb, var(--wp--preset--color--violet) 18%, transparent), transparent),
+		radial-gradient(closest-side at 58% 82%, color-mix(in srgb, var(--wp--preset--color--accent) 12%, transparent), transparent);
+	animation: pb-drift 22s var(--wp--custom--motion--ease) infinite alternate;
+	will-change: transform;
+}
+
+/* Film grain: a tiny SVG noise tile, static. */
+.is-style-gradient::after {
+	inset: 0;
+	z-index: -1;
+	opacity: 0.35;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .18 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@keyframes pb-drift {
+	0% { transform: translate3d(-4%, -3%, 0) rotate(0deg) scale(1); }
+	50% { transform: translate3d(3%, 2%, 0) rotate(6deg) scale(1.08); }
+	100% { transform: translate3d(-2%, 4%, 0) rotate(-5deg) scale(1.03); }
+}
+
+/* Block style: Marquee (a strip that glides as the page scrolls) ------------ */
+
+.is-style-marquee {
+	overflow-x: clip;
+}
+
+.is-style-marquee > .wp-block-group {
+	justify-content: center;
+}
+
+/* Scroll-driven effects: only where supported ------------------------------- */
+
+@supports (animation-timeline: scroll()) {
+	.wp-site-blocks > header.wp-block-template-part::before {
+		animation: pb-glass linear both;
+		animation-timeline: scroll(root);
+		animation-range: 0 6rem;
+	}
+
+	@keyframes pb-glass {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+}
+
+@supports (animation-timeline: view()) {
+	/* Reveal: a block rises into place; columns and grids reveal each child, staggered. */
+	.is-style-reveal:not(.wp-block-columns, .is-layout-grid),
+	:is(.wp-block-columns, .is-layout-grid).is-style-reveal > * {
+		animation: pb-reveal linear both;
+		animation-timeline: view();
+		animation-range: entry 0% cover 30%;
+	}
+
+	.is-style-reveal > :nth-child(3n + 2) {
+		animation-range: entry 10% cover 38%;
+	}
+
+	.is-style-reveal > :nth-child(3n + 3) {
+		animation-range: entry 20% cover 46%;
+	}
+
+	@keyframes pb-reveal {
+		from { opacity: 0; transform: translateY(2.5rem) scale(0.98); }
+		to { opacity: 1; transform: none; }
+	}
+
+	.is-style-marquee > .wp-block-group {
+		flex-wrap: nowrap;
+		justify-content: flex-start;
+		width: max-content;
+		max-width: none;
+		animation: pb-marquee linear both;
+		animation-timeline: view();
+		animation-range: cover;
+	}
+
+	@keyframes pb-marquee {
+		from { transform: translateX(6vw); }
+		to { transform: translateX(calc(94vw - 100%)); }
+	}
+}
+
+/* Cross-document page transitions (a soft cross-fade), where supported. */
+@media (prefers-reduced-motion: no-preference) {
+	@view-transition {
+		navigation: auto;
+	}
+}
+
+/* Reduced motion: everything stops, and content stays where it belongs. */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation: none !important;
+		transition: none !important;
+		scroll-behavior: auto !important;
+	}
+
+	.wp-element-button:hover,
+	.wp-block-button__link:hover,
+	.is-style-lift:is(:hover, :focus-within) {
+		translate: none;
+	}
+
+	.is-style-marquee > .wp-block-group {
+		flex-wrap: wrap;
+		justify-content: center;
+		width: auto;
+	}
+}

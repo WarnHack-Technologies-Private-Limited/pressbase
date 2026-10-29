@@ -189,6 +189,18 @@ The admin shows it in a sandboxed `iframe` (`srcdoc`, `sandbox="allow-same-origi
 
 Bundled unchanged in `themes/twentytwentyfive` (GPL-2.0-or-later; see its `NOTICE.md`).
 
+### The Pressbase theme
+
+`themes/pressbase` is Pressbase's own block theme, built to the same rules as any other: it runs unchanged in WordPress 6.7–7.1 and uses only what this page describes. See its `README.md` for the full contents.
+
+- **Brand.** The admin's tokens: ink `#1b1b19` on paper `#f6f6f3`, indigo `#3b4cca` (`#5b6cf0` in Midnight). Platypi (with italic) for headings and accents, echoing the italic serif "P" of the logo; Manrope for text; Fira Code for code.
+- **Looks.** Paper (`theme.json`), Midnight (`styles/01-midnight.json`), Violet (colours) and Grotesk (typography), plus the section styles `section-ink` and `section-soft`. Every text pair passes WCAG 2.2 AA; the test checks the palettes.
+- **Templates and patterns.** `front-page` is built from patterns (hero, marquee, features, bento grid, stats, code card, testimonials, pricing, questions and answers, latest posts, call to action); 20 of the 29 patterns are in the inserter, in the `pressbase` category, the `pressbase_page` category or WordPress's.
+- **Motion, CSS only.** Block styles Reveal (scroll-driven, `animation-timeline: view()`), Lift, Glass, Gradient (a drifting aurora), Marquee (moves with the visitor's scrolling) and Animated links, and a header whose glass fades in with `animation-timeline: scroll()`. Only `transform` and `opacity` animate; anything that starts hidden sits inside `@supports (animation-timeline: …)`; `prefers-reduced-motion: reduce` stops it all.
+- **Speed.** Later sections use `content-visibility: auto`, fonts swap onto metric-matched local fallbacks (no layout shift), and the hero avoids the code font. Lighthouse, mobile, front page: performance 99, accessibility 100.
+
+`apps/core/src/pressbase-theme.test.ts` checks that every pattern converts, every template and part parses into registered blocks, the variations load, the front page and the other views render, and the CSS follows the motion rules.
+
 ### functions.php
 
 Pressbase never runs PHP. What block themes typically do in `functions.php` is listed per theme in `apps/core/src/themes/compat.ts`. For Twenty Twenty-Five:
@@ -201,6 +213,15 @@ Pressbase never runs PHP. What block themes typically do in `functions.php` is l
 | `add_theme_support( 'post-formats' )` | Recorded; posts are always "standard" until post formats exist. |
 | `add_editor_style()` | Not yet: the editor doesn't load theme styles. |
 | `register_block_bindings_source( 'twentytwentyfive/format' )` | Not yet: block bindings arrive later. |
+
+For Pressbase:
+
+| functions.php | Pressbase |
+|---|---|
+| `wp_enqueue_style( 'pressbase-style', style.css )` | Enqueued. |
+| `register_block_style()` × 12 (Reveal, Lift, Glass, Gradient, Marquee, Animated links, Pill) | Registered; their CSS is in `style.css`. |
+| `register_block_pattern_category()` × 2 | Registered. |
+| `add_editor_style( 'style.css' )` | Not yet: the editor doesn't load theme styles. |
 
 ### Patterns in PHP files
 
@@ -218,7 +239,7 @@ Theme URLs in patterns and font faces are root-relative (`/wp-content/themes/…
 
 Some block supports need the active theme's settings, so core applies them as `render_block_data` / `render_block` filters (`themes/supports.ts`), for static blocks (Group, Columns…) as well as dynamic ones:
 
-- **Layout**: `is-layout-flow|constrained|flex|grid`, `wp-block-{name}-is-layout-*`, `has-global-padding` (root padding aware alignments), `is-content-justification-*`, `is-nowrap`, `is-vertical`, and a `wp-container-{block}-is-layout-{hash}` class with its generated CSS (content and wide sizes, full-width margins, flex alignment, grid columns, block gap). The hash is `wp_unique_id_from_values()`'s, so classes are stable between requests. Child layout (`selfStretch`, `flexSize`, grid spans) gets `wp-container-content-{hash}`.
+- **Layout**: `is-layout-flow|constrained|flex|grid`, `wp-block-{name}-is-layout-*`, `has-global-padding` (root padding aware alignments), `is-content-justification-*`, `is-nowrap`, `is-vertical`, and a `wp-container-{block}-is-layout-{hash}` class with its generated CSS (content and wide sizes, full-width margins, flex alignment, grid columns, block gap). The hash is `wp_unique_id_from_values()`'s, so classes are stable between requests. Child layout (`selfStretch`, `flexSize`, grid spans) gets `wp-container-content-{hash}`; in a responsive grid (a `minimumColumnWidth`, or no `columnCount`), a container query drops a span or start once the grid is too narrow for it, as `wp_get_child_layout_style_rules()` does.
 - **Elements**: link, heading and button colours set on a block get a `wp-elements-N` class and CSS.
 - **Position**: sticky and fixed, when the theme allows them.
 - **Typography**: custom font sizes become fluid.
