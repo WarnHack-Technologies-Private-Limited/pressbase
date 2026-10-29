@@ -38,6 +38,27 @@
   padding: 0 var(--space-6) var(--space-6);
 }
 
+/* Dialog: a task rather than a question, so a little more room. */
+.wide {
+  width: min(34rem, calc(100vw - 2 * var(--space-4)));
+  max-height: calc(100dvh - 2 * var(--space-4));
+}
+
+@media (max-width: 40rem) {
+  .wide .body {
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .wide .actions {
+    flex-wrap: wrap-reverse;
+    padding: 0 var(--space-4) var(--space-5);
+  }
+
+  .wide .actions > * {
+    flex: 1 1 auto;
+  }
+}
+
 @keyframes pop {
   from {
     transform: scale(0.97);
