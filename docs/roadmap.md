@@ -81,7 +81,7 @@ Twenty Twenty-Five renders the home page, posts, pages, archives, search, commen
 - [x] `wp_head` / `wp_footer`-style hooks so plugins can add to public pages.
 - [x] Settings → Permalinks.
 
-## v0.6: Migration and tooling
+## v0.6: Migration and tooling ✅
 
 - [x] WXR importer and exporter (Tools → Import, Tools → Export). See [Import and export](architecture/import-export.md), [ADR 0013](adr/0013-wxr-import-export.md).
 - [x] Direct WordPress (MySQL) migration: users and password hashes, media, SEO meta. See [Migrating from a WordPress database](architecture/import-export.md#migrating-from-a-wordpress-database), [ADR 0016](adr/0016-wordpress-database-migration.md).
@@ -93,11 +93,12 @@ Twenty Twenty-Five renders the home page, posts, pages, archives, search, commen
 
 Plan: [Pressbase SEO and the first-party plugins](plans/first-party-plugins.md).
 
-- [ ] Plugin API: register meta, live editor data and more admin slots for UI modules, early request hooks (`template_redirect`, 404), canonical filters, `api.cache.purge`, plugin files at the site root.
-- [ ] AI client and Abilities API, ported from WordPress 7.x (`wp_ai_client_prompt()`, `wp_register_ability()`), with Settings → AI.
-- [ ] Plugin blocks: `api.blocks.register()`, loaded at runtime.
-- [ ] Pressbase SEO (in progress): built in [`plugins/pressbase-seo`](../plugins/pressbase-seo/README.md): titles and meta (Yoast-compatible), search and social previews, checks, schema graph, sitemaps, redirects and 404 log, breadcrumbs, IndexNow, `llms.txt`, AI suggestions on the core AI client. See [Pressbase SEO](architecture/seo-plugin.md). Left: checking Google's Rich Results test and Lighthouse on a real site, and a site-wide audit screen.
-- [ ] The next first-party plugins (Forms, Anti-spam, Analytics, Backups, Security): order to be decided.
+- [x] Plugin API: register meta, live editor data and more admin slots for UI modules, early request hooks (`template_redirect`, 404), canonical filters, `api.cache.purge`, plugin files at the site root.
+- [x] AI client and Abilities API, ported from WordPress 7.x (`wp_ai_client_prompt()`, `wp_register_ability()`), with Settings → AI.
+- [x] Plugin blocks: `api.blocks.register()`, loaded at runtime.
+- [x] Pressbase SEO, in [`plugins/pressbase-seo`](../plugins/pressbase-seo/README.md): titles and meta (Yoast-compatible), search and social previews, checks, schema graph, sitemaps, redirects and 404 log, breadcrumbs, IndexNow, `llms.txt`, AI suggestions on the core AI client. See [Pressbase SEO](architecture/seo-plugin.md).
+- [ ] Pressbase SEO follow-ups: check Google's Rich Results test and Lighthouse on a real site; a site-wide audit screen.
+- [ ] The next first-party plugins (Forms, Anti-spam, Analytics, Backups, Security): order to be decided, in a later milestone.
 
 ## v1.0: Stable
 
@@ -109,4 +110,4 @@ Plan: [Pressbase SEO and the first-party plugins](plans/first-party-plugins.md).
 
 - Multisite: schema per site or row-level security.
 - Real-time collaborative editing (Yjs).
-- An Abilities API and MCP server, so AI agents can work on a site within capability checks (as WordPress 7 introduced).
+- An MCP server on top of the Abilities API, so AI agents can work on a site within capability checks.
