@@ -68,7 +68,6 @@ async function upload(
     headers: options.headers ?? (await headersFor(ctx)),
     body: form,
   });
-  // biome-ignore lint/suspicious/noExplicitAny: test responses are loosely typed.
   return { status: res.status, body: (await res.json()) as any };
 }
 
