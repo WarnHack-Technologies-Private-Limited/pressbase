@@ -319,7 +319,7 @@ describe('POST /pressbase/v1/themes', () => {
 });
 
 describe('DELETE /pressbase/v1/themes/{stylesheet}', () => {
-  it('deletes an inactive uploaded theme, its theme mods and translations, not its styles', async () => {
+  it('deletes an inactive uploaded theme and its translations, not its theme mods or styles', async () => {
     const ctx = await site();
     await upload(ctx, themeZip('gone'));
     // Its global styles post, created while it was active.
@@ -349,7 +349,7 @@ describe('DELETE /pressbase/v1/themes/{stylesheet}', () => {
       ['deleted_theme', 'gone', true],
     ]);
     expect(await exists(path.join(ctx.dataDir, 'themes', 'gone'))).toBe(false);
-    expect(await ctx.kernel.options.get('theme_mods_gone')).toBeUndefined();
+    expect(await ctx.kernel.options.get('theme_mods_gone')).toEqual({ header_textcolor: 'blank' });
     expect(await readdir(languages)).toEqual(['gone-more-de_DE.mo']);
     expect(await userGlobalStylesPost(ctx.kernel, 'gone')).toBeTruthy();
     expect((await ctx.request('DELETE', '/pressbase/v1/themes/gone')).status).toBe(404);

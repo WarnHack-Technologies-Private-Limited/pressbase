@@ -17,8 +17,7 @@ import { readFileHeaders, THEME_HEADERS } from './file-headers';
  * - the folder name is sanitised to the characters Pressbase allows in a
  *   theme's folder name;
  * - themes bundled with Pressbase (the repository's read-only `themes/`
- *   folder) can't be deleted;
- * - the `theme_mods_{stylesheet}` option is removed with the theme.
+ *   folder) can't be deleted.
  */
 
 declare module '@pressbase/hooks' {

@@ -109,8 +109,7 @@ Installing never activates a theme; that's `activate()` (`switch_theme()`), as i
 - **Refused:** the active theme (`rest_cannot_delete_active_theme`), the parent of the active child theme (`pressbase_cannot_delete_parent_theme`, WordPress's *delete-active-child*), and themes bundled with Pressbase (`pressbase_cannot_delete_bundled_theme`): they live in the repository's read-only `themes/` folder. The checks use both the `stylesheet` and `template` options and the theme actually loaded, which differ when the stored theme is missing and the default is used.
 - `delete_theme (stylesheet)` fires, the folder is removed, then `deleted_theme (stylesheet, deleted)`; a folder that can't be removed is `500 could_not_remove_theme`.
 - The theme's translations in `languages/themes` (`{stylesheet}-{locale}.po`, `.mo`, `.l10n.php`, `-{hash}.json`) are removed, as `delete_theme()` does.
-- The `theme_mods_{stylesheet}` option is removed. **WordPress 7.1.3 leaves it** (only `remove_theme_mods()` deletes it); Pressbase cleans it up because nothing else would.
-- The theme's `wp_global_styles` post stays, as in WordPress: reinstalling the theme brings its saved styles back.
+- The theme's `theme_mods_{stylesheet}` option and `wp_global_styles` post stay, as in WordPress: reinstalling the theme brings its saved styles back.
 
 Deleting an inactive theme changes nothing visitors see, so nothing is purged.
 

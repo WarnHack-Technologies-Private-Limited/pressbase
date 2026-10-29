@@ -399,8 +399,8 @@ export class ThemesService {
    * delete_theme() (wp-admin/includes/theme.php) with wp-admin/themes.php's
    * checks: not the active theme, not the active child theme's parent, not a
    * bundled theme. Fires `delete_theme` and `deleted_theme`, removes the
-   * folder, the theme's translations and its `theme_mods_{stylesheet}`
-   * option. Its `wp_global_styles` post stays, as in WordPress.
+   * folder and the theme's translations. Its `theme_mods_{stylesheet}` option
+   * and `wp_global_styles` post stay, as in WordPress.
    */
   delete(stylesheet: string): Promise<ThemeInfo> {
     return this.#serial(async () => {
@@ -447,7 +447,6 @@ export class ThemesService {
         );
       }
       await removeThemeTranslations(this.kernel.i18n.languagesDir, stylesheet);
-      await this.kernel.options.delete(`theme_mods_${stylesheet}`);
       return theme;
     });
   }
