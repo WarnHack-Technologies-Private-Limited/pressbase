@@ -181,9 +181,15 @@ a {
 	scale: 0.98;
 }
 
-/* Block style: Pill (paragraph) --------------------------------------------- */
+/* Outline buttons on ink sections follow the section's text colour. */
+.is-style-section-ink .wp-block-button.is-style-outline > .wp-block-button__link {
+	border-color: currentColor;
+	color: inherit;
+}
 
-.is-style-pill {
+/* Block style: Pill (paragraph; on post terms, each term is a pill) ------- */
+
+:is(p.is-style-pill, .wp-block-post-terms.is-style-pill a) {
 	width: fit-content;
 	padding: 0.35em 0.9em;
 	border: 1px solid color-mix(in srgb, var(--wp--preset--color--accent) 25%, transparent);
@@ -193,10 +199,21 @@ a {
 	font-size: var(--wp--preset--font-size--small);
 	font-weight: 600;
 	line-height: 1.4;
+	text-decoration: none;
 }
 
-.is-style-pill a {
+p.is-style-pill a {
 	color: inherit;
+}
+
+.wp-block-post-terms.is-style-pill {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.wp-block-post-terms.is-style-pill .wp-block-post-terms__separator {
+	display: none;
 }
 
 /* Block style: Lift (cards) ------------------------------------------------- */

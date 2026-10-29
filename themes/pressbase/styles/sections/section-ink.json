@@ -34,24 +34,6 @@
 			}
 		},
 		"blocks": {
-			"core/button": {
-				"variations": {
-					"outline": {
-						"border": {
-							"color": "var:preset|color|base"
-						},
-						"color": {
-							"background": "transparent",
-							"text": "var:preset|color|base"
-						}
-					}
-				}
-			},
-			"core/paragraph": {
-				"color": {
-					"text": "color-mix(in srgb, var(--wp--preset--color--base) 82%, transparent)"
-				}
-			},
 			"core/separator": {
 				"color": {
 					"text": "color-mix(in srgb, currentColor 25%, transparent)"

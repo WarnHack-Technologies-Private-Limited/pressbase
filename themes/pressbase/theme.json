@@ -403,6 +403,9 @@
 					"fontWeight": "600"
 				}
 			},
+			"core/post-comments-form": {
+				"css": "& textarea, & input:not([type=submit]):not([type=checkbox]){background:var(--wp--preset--color--surface);color:var(--wp--preset--color--contrast);border:1px solid color-mix(in srgb,currentColor 55%,transparent);border-radius:var(--wp--preset--border-radius--sm);padding:.6rem .8rem;font:inherit;} & label{font-size:var(--wp--preset--font-size--small);font-weight:600;}"
+			},
 			"core/post-date": {
 				"color": {
 					"text": "var:preset|color|muted"
@@ -432,8 +435,7 @@
 			"core/post-featured-image": {
 				"border": {
 					"radius": "var:preset|border-radius|lg"
-				},
-				"css": "& img{border-radius:inherit;}"
+				}
 			},
 			"core/post-terms": {
 				"elements": {
