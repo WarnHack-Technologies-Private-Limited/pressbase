@@ -61,7 +61,7 @@ export const themeCommands: CommandSpec[] = [
     shortdesc: 'Switches the site to another theme.',
     synopsis: '<theme>',
     options: { theme: 'The theme’s folder name (see “pressbase theme list”).' },
-    examples: [['pressbase theme activate twentytwentyfive', 'Switch theme']],
+    examples: [['pressbase theme activate pressbase', 'Switch theme']],
     needs: 'installed',
     async run(ctx) {
       await ctx.require(

@@ -5,6 +5,7 @@ import { DEFAULT_ROLES } from '../auth/capabilities';
 import { hashPassword } from '../auth/password';
 import { writeSiteConfig } from '../config';
 import type { Kernel } from '../kernel';
+import { DEFAULT_THEME } from '../themes/service';
 import { DB_VERSION, PRESSBASE_VERSION } from '../version';
 import { describeDatabaseError } from './database';
 
@@ -94,9 +95,9 @@ function defaultOptions(site: SiteInput): Record<string, unknown> {
     large_size_w: 1024,
     large_size_h: 1024,
     active_plugins: [],
-    // The bundled block theme (themes/twentytwentyfive), as WordPress installs its default theme.
-    template: 'twentytwentyfive',
-    stylesheet: 'twentytwentyfive',
+    // The bundled block theme (themes/pressbase), as WordPress installs its default theme.
+    template: DEFAULT_THEME,
+    stylesheet: DEFAULT_THEME,
     user_roles: DEFAULT_ROLES,
     fresh_site: true,
     pressbase_version: PRESSBASE_VERSION,

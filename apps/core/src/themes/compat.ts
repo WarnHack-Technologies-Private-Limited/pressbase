@@ -6,7 +6,8 @@ import type { BlockPatternCategory } from '../blocks/patterns';
  * effects that matter on the front end are listed here. Other themes get
  * none of them — the vision's promise is theme.json plus HTML templates.
  *
- * Twenty Twenty-Five's functions.php (WordPress 7.1.3):
+ * Twenty Twenty-Five's functions.php (WordPress 7.1.3). It no longer ships
+ * with Pressbase; the entry stays for sites that upload it:
  * - add_theme_support( 'post-formats', … ): reproduced (`postFormats`), but
  *   Pressbase has no post formats yet, so posts are always "standard".
  * - add_editor_style( 'assets/css/editor-style.css' ): editor only; the

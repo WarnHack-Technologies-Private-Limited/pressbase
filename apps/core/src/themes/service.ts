@@ -41,7 +41,7 @@ import { loadPhpPattern } from './php-patterns';
  * Only block themes (with `templates/index.html`) can render.
  */
 
-export const DEFAULT_THEME = 'twentytwentyfive';
+export const DEFAULT_THEME = 'pressbase';
 const BUNDLED_THEMES = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '../../../../themes',

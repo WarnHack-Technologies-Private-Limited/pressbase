@@ -14,7 +14,7 @@ import { isLocale, languageNames } from './locale';
  * `install_languages`; nothing is downloaded in the background. A core pack
  * holds WordPress's translations (`de_DE.mo`, `admin-de_DE.mo`) and the
  * block editor's script translations (`de_DE-{md5}.json`). Themes from
- * WordPress.org have packs too (Twenty Twenty-Five's go to `languages/themes`).
+ * WordPress.org have packs too (they go to `languages/themes`).
  * Only `.mo`, `.po` and `.json` files are written: Pressbase never runs the
  * packs' `.l10n.php` files.
  */

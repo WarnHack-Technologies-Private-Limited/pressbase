@@ -749,8 +749,8 @@ async function inactiveThemesTest(health: SiteHealth): Promise<SiteHealthTestRes
     r.status = 'recommended';
     r.label = 'You should remove inactive themes';
     r.description = paragraphs(
-      `Your site has ${inactive.length} inactive ${inactive.length === 1 ? 'theme' : 'themes'} (${inactive.map((t) => esc(t.name)).join(', ')}). To enhance your site’s security, you should consider removing any themes you’re not using. You should keep your active theme, and the default theme, Twenty Twenty-Five, as a fallback.`,
-      `Delete a theme by removing its folder from <code>${esc(siteThemes)}</code>.`,
+      `Your site has ${inactive.length} inactive ${inactive.length === 1 ? 'theme' : 'themes'} (${inactive.map((t) => esc(t.name)).join(', ')}). To enhance your site’s security, you should consider removing any themes you’re not using. You should keep your active theme, and the default theme, Pressbase, as a fallback.`,
+      `Delete themes in Appearance → Themes, or remove their folders from <code>${esc(siteThemes)}</code>.`,
     );
     r.actions = actionLink('/admin/appearance', 'Manage your themes');
   }

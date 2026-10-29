@@ -4,6 +4,7 @@ import { Hono } from 'hono';
 import { userCan } from '../auth/users';
 import { type AppEnv, requireCapability, restError } from '../http';
 import { decodeGlobalStyles, userGlobalStylesPost } from '../themes/global-styles';
+import { DEFAULT_THEME } from '../themes/service';
 import { PRESSBASE_VERSION } from '../version';
 
 /** Everything the dashboard home screen shows, in one request. */
@@ -60,7 +61,7 @@ export function dashboardRoutes() {
     const stylesPost = await userGlobalStylesPost(kernel, stylesheet);
     const styles = stylesPost ? decodeGlobalStyles(stylesPost.content) : undefined;
     const customized =
-      stylesheet !== 'twentytwentyfive' ||
+      stylesheet !== DEFAULT_THEME ||
       Boolean(await kernel.options.get<number>('site_logo', 0)) ||
       Object.keys(styles?.styles ?? {}).length > 0 ||
       Object.keys(styles?.settings ?? {}).length > 0;

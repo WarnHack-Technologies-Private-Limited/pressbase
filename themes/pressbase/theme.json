@@ -413,7 +413,7 @@
 				}
 			},
 			"core/post-comments-form": {
-				"css": "& textarea, & input:not([type=submit]):not([type=checkbox]){background:var(--wp--preset--color--surface);color:var(--wp--preset--color--contrast);border:1px solid color-mix(in srgb,currentColor 55%,transparent);border-radius:var(--wp--preset--border-radius--sm);padding:.6rem .8rem;font:inherit;} & label{font-size:var(--wp--preset--font-size--small);font-weight:600;}"
+				"css": "& textarea{background:var(--wp--preset--color--surface);color:var(--wp--preset--color--contrast);border:1px solid color-mix(in srgb,currentColor 55%,transparent);border-radius:var(--wp--preset--border-radius--sm);padding:.6rem .8rem;font:inherit;} & input:not([type=submit]):not([type=checkbox]){background:var(--wp--preset--color--surface);color:var(--wp--preset--color--contrast);border:1px solid color-mix(in srgb,currentColor 55%,transparent);border-radius:var(--wp--preset--border-radius--sm);padding:.6rem .8rem;font:inherit;} & label{font-size:var(--wp--preset--font-size--small);font-weight:600;}"
 			},
 			"core/post-date": {
 				"color": {

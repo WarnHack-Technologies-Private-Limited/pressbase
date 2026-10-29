@@ -18,16 +18,16 @@ import {
   validateCustomCss,
 } from './index';
 
-const TT5 = path.resolve(import.meta.dirname, '../../../themes/twentytwentyfive');
+const PRESSBASE = path.resolve(import.meta.dirname, '../../../themes/pressbase');
 const readJson = (file: string) => JSON.parse(readFileSync(file, 'utf8')) as ThemeJsonData;
-const partials = ['blocks', 'sections'].flatMap((dir) =>
-  readdirSync(path.join(TT5, 'styles', dir)).map((f) => readJson(path.join(TT5, 'styles', dir, f))),
+const partials = readdirSync(path.join(PRESSBASE, 'styles', 'sections')).map((f) =>
+  readJson(path.join(PRESSBASE, 'styles', 'sections', f)),
 );
-const theme = readJson(path.join(TT5, 'theme.json'));
+const theme = readJson(path.join(PRESSBASE, 'theme.json'));
 
 /** A variation as /wp/v2/global-styles/themes/{stylesheet}/variations returns it. */
 const variation = (file: string) =>
-  keyPresetsByOrigin(readJson(path.join(TT5, 'styles', file)), 'theme') as StyleVariation;
+  keyPresetsByOrigin(readJson(path.join(PRESSBASE, 'styles', file)), 'theme') as StyleVariation;
 
 function stylesheetWith(user?: ThemeJsonData) {
   const resolved = resolveThemeJson({ theme, blockStyleVariations: partials, user });
@@ -36,117 +36,135 @@ function stylesheetWith(user?: ThemeJsonData) {
 
 describe('theme style variations (styles/*.json)', () => {
   it('tells full, colour and typography variations apart, as the site editor does', () => {
-    expect(styleVariationKind(variation('01-evening.json'))).toBe('full');
-    expect(styleVariationKind(variation('03-dusk.json'))).toBe('full');
-    expect(styleVariationKind(variation('colors/02-noon.json'))).toBe('color');
-    expect(styleVariationKind(variation('typography/typography-preset-1.json'))).toBe('typography');
+    expect(styleVariationKind(variation('01-midnight.json'))).toBe('full');
+    expect(styleVariationKind(variation('colors/02-violet.json'))).toBe('color');
+    expect(styleVariationKind(variation('typography/03-grotesk.json'))).toBe('typography');
     expect(styleVariationKind({ title: 'Default' })).toBe('full');
-    expect(styleVariationScope(readJson(path.join(TT5, 'styles/blocks/01-display.json')))).toBe(
-      'block',
-    );
-    expect(styleVariationScope(variation('01-evening.json'))).toBe('theme');
+    expect(
+      styleVariationScope(readJson(path.join(PRESSBASE, 'styles/sections/section-ink.json'))),
+    ).toBe('block');
+    expect(styleVariationScope(variation('01-midnight.json'))).toBe('theme');
   });
 
   it('keys preset lists by origin, leaving preset references as written', () => {
-    const evening = variation('01-evening.json');
-    expect(evening.settings?.color).toMatchObject({
+    const midnight = variation('01-midnight.json');
+    expect(midnight.settings?.color).toMatchObject({
       palette: {
-        theme: expect.arrayContaining([{ color: '#1B1B1B', name: 'Base', slug: 'base' }]),
+        theme: expect.arrayContaining([{ color: '#1b1b19', name: 'Ink', slug: 'base' }]),
       },
     });
-    expect(evening.styles?.color).toEqual({ text: 'var:preset|color|accent-4' });
+    const blocks = midnight.styles?.blocks as
+      | Record<string, { variations?: Record<string, object> }>
+      | undefined;
+    expect(blocks?.['core/group']?.variations?.['section-ink']).toMatchObject({
+      color: { background: 'var:preset|color|surface' },
+    });
   });
 
-  it('merges Evening over Twenty Twenty-Five as WordPress merges the user origin', () => {
+  it('merges Midnight over the theme as WordPress merges the user origin', () => {
     const user = applyStyleVariation(
       { version: 3, isGlobalStylesUserThemeJSON: true },
-      variation('01-evening.json'),
+      variation('01-midnight.json'),
     );
     const { stylesheet } = stylesheetWith(user);
     // The variation's palette replaces the theme's (same slugs, custom origin wins).
-    expect(stylesheet).toContain('--wp--preset--color--base: #1B1B1B;');
-    expect(stylesheet).toContain('--wp--preset--color--accent-6: #FFFFFF33;');
-    expect(stylesheet).not.toContain('--wp--preset--color--base: #FFFFFF;');
-    // Root styles: the variation's text colour over the theme's other body styles.
+    expect(stylesheet).toContain('--wp--preset--color--base: #1b1b19;');
+    expect(stylesheet).toContain('--wp--preset--color--on-accent: #000000;');
+    expect(stylesheet).not.toContain('--wp--preset--color--base: #f6f6f3;');
+    // So do its shadows.
     expect(stylesheet).toContain(
-      'body{background-color: var(--wp--preset--color--base);color: var(--wp--preset--color--accent-4);font-family: var(--wp--preset--font-family--manrope);',
+      '--wp--preset--shadow--glow: 0 1px 0 rgb(255 255 255 / 0.2) inset, 0 8px 28px -8px rgb(91 108 240 / 0.7);',
     );
-    // Element styles merge key by key: the theme's button radius stays, the colours change.
+    // Root and element styles the variation doesn't touch are the theme's.
+    expect(stylesheet).toContain(
+      'body{background-color: var(--wp--preset--color--base);color: var(--wp--preset--color--contrast);font-family: var(--wp--preset--font-family--manrope);',
+    );
     expect(stylesheet).toMatch(
-      /:root :where\(\.wp-element-button, \.wp-block-button__link\)\{background-color: var\(--wp--preset--color--contrast\);[^}]*color: var\(--wp--preset--color--base\);/,
+      /:root :where\(\.wp-element-button, \.wp-block-button__link\)\{background-color: var\(--wp--preset--color--accent\);border-radius: var\(--wp--preset--border-radius--full\);[^}]*color: var\(--wp--preset--color--on-accent\);/,
     );
     // Theme presets the variation doesn't touch are kept.
-    expect(stylesheet).toContain('--wp--preset--font-family--manrope: Manrope, sans-serif;');
+    expect(stylesheet).toContain(
+      '--wp--preset--font-family--platypi: Platypi, "Platypi Fallback", ui-serif, Georgia, serif;',
+    );
   });
 
   it('applies shared section variations from a style variation to block instances', () => {
-    const user = applyStyleVariation({ version: 3 }, variation('01-evening.json'));
+    const shared: StyleVariation = {
+      title: 'Shared sections',
+      styles: {
+        variations: {
+          'section-ink': {
+            elements: { button: { color: { background: 'var:preset|color|accent' } } },
+          },
+        },
+      },
+    } as StyleVariation;
+    const user = applyStyleVariation({ version: 3 }, shared);
     const resolved = resolveThemeJson({ theme, blockStyleVariations: partials, user });
     const raw = resolved.tree.getRawData();
-    // styles.variations.section-2 is unwrapped onto every block that registers it.
-    expect(
-      (raw.styles as Record<string, unknown> & { blocks: Record<string, { variations?: object }> })
-        .blocks['core/group']?.variations,
-    ).toMatchObject({
-      'section-2': {
-        elements: { button: { color: { background: 'var(--wp--preset--color--base)' } } },
-      },
-    });
+    // styles.variations.section-ink is unwrapped onto every block that registers it.
+    const blocks = (raw.styles as { blocks: Record<string, { variations?: object }> }).blocks;
+    for (const block of ['core/group', 'core/columns', 'core/column']) {
+      expect(blocks[block]?.variations, block).toMatchObject({
+        'section-ink': {
+          elements: { button: { color: { background: 'var(--wp--preset--color--accent)' } } },
+        },
+      });
+    }
   });
 
-  it('loads the fonts a typography variation brings, from the theme folder', () => {
-    const user = applyStyleVariation(
-      { version: 3 },
-      variation('typography/typography-preset-1.json'),
-    );
+  it('loads only the fonts a typography variation brings, from the theme folder', () => {
+    const user = applyStyleVariation({ version: 3 }, variation('typography/03-grotesk.json'));
     const { stylesheet, fontFaces } = stylesheetWith(user);
-    expect(stylesheet).toContain('--wp--preset--font-family--beiruti: Beiruti, sans-serif;');
     expect(stylesheet).toContain(
-      'body{background-color: var(--wp--preset--color--base);color: var(--wp--preset--color--contrast);font-family: var(--wp--preset--font-family--literata);',
+      'h1, h2, h3, h4, h5, h6{font-family: var(--wp--preset--font-family--manrope);font-weight: 700;letter-spacing: -0.035em;line-height: 1.1;}',
     );
     expect(fontFaces).toContain(
-      "@font-face{font-family:Beiruti;font-style:normal;font-weight:200 900;font-display:fallback;src:url('/t/assets/fonts/beiruti/Beiruti-VariableFont_wght.woff2') format('woff2');}",
+      "@font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:url('/t/assets/fonts/manrope/Manrope-VariableFont_wght.woff2') format('woff2');}",
     );
-    // The variation's families replace the theme's, so Manrope is no longer loaded.
-    expect(fontFaces).not.toContain('Manrope');
+    // The variation's families replace the theme's, so Platypi is no longer loaded.
+    expect(fontFaces).not.toContain('Platypi');
+    expect(stylesheet).not.toContain('--wp--preset--font-family--platypi');
   });
 
   it('combines a colour and a typography variation, keeping the other choices', () => {
-    let user = applyStyleVariation(
-      { version: 3 },
-      variation('typography/typography-preset-1.json'),
-    );
-    user = applyStyleVariation(user, variation('colors/02-noon.json'));
-    expect(isStyleVariationApplied(user, variation('typography/typography-preset-1.json'))).toBe(
-      true,
-    );
-    expect(isStyleVariationApplied(user, variation('colors/02-noon.json'))).toBe(true);
+    let user = applyStyleVariation({ version: 3 }, variation('typography/03-grotesk.json'));
+    user = applyStyleVariation(user, variation('colors/02-violet.json'));
+    expect(isStyleVariationApplied(user, variation('typography/03-grotesk.json'))).toBe(true);
+    expect(isStyleVariationApplied(user, variation('colors/02-violet.json'))).toBe(true);
     const { stylesheet } = stylesheetWith(user);
-    expect(stylesheet).toContain('--wp--preset--color--base: #F8F7F5;');
-    expect(stylesheet).toContain('--wp--preset--font-family--literata: Literata, serif;');
+    expect(stylesheet).toContain('--wp--preset--color--base: #f7f5fb;');
+    expect(stylesheet).toContain('--wp--preset--color--accent: #6236c9;');
+    expect(stylesheet).toContain(
+      'font-family: var(--wp--preset--font-family--manrope);font-weight: 700;',
+    );
 
     // Another colour variation replaces only the colours.
-    user = applyStyleVariation(user, variation('colors/01-evening.json'));
-    expect(isStyleVariationApplied(user, variation('colors/02-noon.json'))).toBe(false);
-    expect(isStyleVariationApplied(user, variation('typography/typography-preset-1.json'))).toBe(
-      true,
-    );
+    const sand = keyPresetsByOrigin(
+      {
+        version: 3,
+        title: 'Sand',
+        settings: { color: { palette: [{ color: '#f4efe6', name: 'Sand', slug: 'base' }] } },
+      },
+      'theme',
+    ) as StyleVariation;
+    user = applyStyleVariation(user, sand);
+    expect(isStyleVariationApplied(user, variation('colors/02-violet.json'))).toBe(false);
+    expect(isStyleVariationApplied(user, sand)).toBe(true);
+    expect(isStyleVariationApplied(user, variation('typography/03-grotesk.json'))).toBe(true);
+
     // A full variation replaces everything.
-    user = applyStyleVariation(user, variation('03-dusk.json'));
-    expect(isStyleVariationApplied(user, variation('typography/typography-preset-1.json'))).toBe(
-      false,
-    );
-    expect(areGlobalStyleConfigsEqual(user, variation('03-dusk.json'))).toBe(true);
+    user = applyStyleVariation(user, variation('01-midnight.json'));
+    expect(isStyleVariationApplied(user, variation('colors/02-violet.json'))).toBe(false);
+    expect(isStyleVariationApplied(user, variation('typography/03-grotesk.json'))).toBe(false);
+    expect(areGlobalStyleConfigsEqual(user, variation('01-midnight.json'))).toBe(true);
   });
 
   it('lists file:./ URLs with their resolved address', () => {
-    const uris = resolvedThemeUris(
-      variation('typography/typography-preset-1.json'),
-      (p) => `/t/${p}`,
-    );
+    const uris = resolvedThemeUris(variation('typography/03-grotesk.json'), (p) => `/t/${p}`);
     expect(uris[0]).toEqual({
-      name: 'file:./assets/fonts/beiruti/Beiruti-VariableFont_wght.woff2',
-      href: '/t/assets/fonts/beiruti/Beiruti-VariableFont_wght.woff2',
+      name: 'file:./assets/fonts/manrope/Manrope-VariableFont_wght.woff2',
+      href: '/t/assets/fonts/manrope/Manrope-VariableFont_wght.woff2',
       target: 'settings.typography.fontFamilies.theme.0.fontFace.0.src.0',
     });
   });
