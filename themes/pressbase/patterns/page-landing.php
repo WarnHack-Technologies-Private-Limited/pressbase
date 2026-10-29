@@ -14,7 +14,7 @@
  */
 
 ?>
-<!-- wp:pattern {"slug":"pressbase/hero"} /-->
+<!-- wp:pattern {"slug":"pressbase/hero-gradient"} /-->
 <!-- wp:pattern {"slug":"pressbase/marquee"} /-->
 <!-- wp:pattern {"slug":"pressbase/features-grid"} /-->
 <!-- wp:pattern {"slug":"pressbase/steps"} /-->

@@ -1,7 +1,7 @@
 <?php
 /**
  * Title: Hero with animated gradient
- * Slug: pressbase/hero
+ * Slug: pressbase/hero-gradient
  * Categories: pressbase, banner, featured
  * Keywords: hero, header, intro, gradient, aurora
  * Viewport Width: 1400
