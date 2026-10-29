@@ -42,6 +42,21 @@ export default function register(api) {
   });
 
   // plugin.json declares the simple settings; this one needs a sanitize callback.
+  // The post's one-line focus, edited in the editor's Writing sidebar
+  // (window.pressbase.editor.editPost({ meta })) and shown in the posts list.
+  api.meta.registerPostMeta('post', 'daily_tips_focus', {
+    type: 'string',
+    single: true,
+    default: '',
+    label: 'Focus',
+    description: 'What the post should leave the reader with, in one line.',
+    showInRest: true,
+    sanitizeCallback: (value) =>
+      String(value ?? '')
+        .trim()
+        .slice(0, 200),
+  });
+
   api.settings.register('own_tips', {
     control: 'textarea',
     label: 'Your tips',
@@ -83,6 +98,37 @@ export default function register(api) {
   api.rest.registerRoute('daily-tips/v1', '/tip', {
     permission: () => true,
     handler: async () => ({ tip: pick(await tips()) }),
+  });
+
+  // A block: "Daily tip", rendered on the server on every view (a dynamic block,
+  // like WordPress's render_callback). Its editor module, admin/tip.js, gives it
+  // a colour setting and a live preview. Its stylesheet loads only on pages that
+  // show it. Deactivating the plugin removes it from the site; the editor keeps
+  // the block in the post with a notice.
+  api.blocks.register('daily-tips/tip', {
+    title: 'Daily tip',
+    description: 'A writing tip that changes every day.',
+    category: 'widgets',
+    icon: 'lightbulb',
+    keywords: ['writing', 'advice'],
+    attributes: {
+      accent: { type: 'string', default: '#3858e9' },
+    },
+    supports: { align: ['wide', 'full'], anchor: true },
+    editorScript: 'admin/tip.js',
+    style: 'tip.css',
+    render: async (attributes, _content, block) => {
+      const list = await tips();
+      const tip = list[Math.floor(Date.now() / 86_400_000) % list.length];
+      // Attributes are checked against the schema above; the colour still needs its own check.
+      const accent = /^#[0-9a-f]{3,8}$/i.test(attributes.accent) ? attributes.accent : '#3858e9';
+      const wrapper = api.blocks.getBlockWrapperAttributes(block, {
+        style: `--daily-tip-accent: ${accent}`,
+      });
+      return `<aside ${wrapper}><p class="wp-block-daily-tips-tip__label">${api.blocks.escHtml(
+        api.i18n.__('Tip of the day'),
+      )}</p><p class="wp-block-daily-tips-tip__text">${api.blocks.escHtml(tip)}</p></aside>`;
+    },
   });
 
   // What the dashboard widget shows: a tip and the widget's colour.

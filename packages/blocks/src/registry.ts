@@ -47,6 +47,14 @@ export interface BlockTypeArgs<S = unknown> {
   example?: unknown;
   variations?: unknown[];
   textdomain?: string | null;
+  /**
+   * Script and style handles (WP_Block_Type's `editor_script_handles`,
+   * `style_handles`, `editor_style_handles`). The host enqueues
+   * `styleHandles` on pages that show the block, as WP_Block::render() does.
+   */
+  editorScriptHandles?: string[];
+  styleHandles?: string[];
+  editorStyleHandles?: string[];
   /** Makes the block dynamic. Called with prepared attributes, rendered inner content and the block. */
   render?: RenderCallback<S>;
 }
@@ -135,6 +143,9 @@ export class BlockType<S = unknown> {
   readonly example: unknown;
   readonly variations: unknown[];
   readonly textdomain: string | null;
+  readonly editorScriptHandles: string[];
+  readonly styleHandles: string[];
+  readonly editorStyleHandles: string[];
   readonly render: RenderCallback<S> | undefined;
 
   constructor(name: string, args: BlockTypeArgs<S>) {
@@ -156,6 +167,9 @@ export class BlockType<S = unknown> {
     this.example = args.example ?? null;
     this.variations = args.variations ?? [];
     this.textdomain = args.textdomain ?? null;
+    this.editorScriptHandles = args.editorScriptHandles ?? [];
+    this.styleHandles = args.styleHandles ?? [];
+    this.editorStyleHandles = args.editorStyleHandles ?? [];
     this.render = args.render;
 
     const attributes: Record<string, AttributeSchema> = { ...args.attributes };

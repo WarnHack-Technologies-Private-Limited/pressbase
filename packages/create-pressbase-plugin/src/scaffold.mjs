@@ -27,6 +27,7 @@ export const RESERVED_NAMES = new Set([
   'pressbase',
   'oembed',
   'wp-site-health',
+  'wp-abilities',
   'wp-block-editor',
 ]);
 

@@ -13,10 +13,11 @@ export interface DocumentTitleParts {
 
 declare module '@pressbase/hooks' {
   interface FilterRegistry {
-    pre_get_document_title: [title: string];
-    document_title_separator: [separator: string];
-    document_title_parts: [parts: DocumentTitleParts];
-    document_title: [title: string];
+    /** Pressbase passes the main query as a second argument (WordPress reads the global $wp_query). */
+    pre_get_document_title: [title: string, main: MainQuery];
+    document_title_separator: [separator: string, main: MainQuery];
+    document_title_parts: [parts: DocumentTitleParts, main: MainQuery];
+    document_title: [title: string, main: MainQuery];
   }
 }
 
@@ -30,7 +31,7 @@ declare module '@pressbase/hooks' {
  */
 export async function documentTitle(kernel: Kernel, main: MainQuery): Promise<string> {
   const hooks = kernel.hooks;
-  const pre = await hooks.applyFilters('pre_get_document_title', '');
+  const pre = await hooks.applyFilters('pre_get_document_title', '', main);
   if (typeof pre === 'string' && pre) return escHtml(pre);
 
   const name = await kernel.options.get<string>('blogname', '');
@@ -50,11 +51,11 @@ export async function documentTitle(kernel: Kernel, main: MainQuery): Promise<st
   if (front) parts.tagline = tagline;
   else parts.site = name;
 
-  const sep = await hooks.applyFilters('document_title_separator', '&#8211;');
-  const filtered = await hooks.applyFilters('document_title_parts', parts);
+  const sep = await hooks.applyFilters('document_title_separator', '&#8211;', main);
+  const filtered = await hooks.applyFilters('document_title_parts', parts, main);
   // implode( " $sep ", array_filter( $title ) ): in the parts' own order.
   const joined = Object.values(filtered ?? {})
     .filter((value): value is string => typeof value === 'string' && value !== '')
     .join(` ${sep} `);
-  return escHtml(await hooks.applyFilters('document_title', joined));
+  return escHtml(await hooks.applyFilters('document_title', joined, main));
 }

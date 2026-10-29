@@ -257,4 +257,22 @@ describe('public page hooks', () => {
     hooks.addFilter('pre_get_document_title', () => 'Custom & short');
     expect((await render(ctx, '/')).html).toContain('<title>Custom &amp; short</title>');
   });
+
+  it('passes the main query to wp_robots and the title filters', async () => {
+    const ctx = await site();
+    const { hooks } = ctx.kernel;
+    const seen: string[] = [];
+    hooks.addFilter('wp_robots', (robots, main) => {
+      seen.push(`robots:${main.isFrontPage}`);
+      return main.is404 ? { ...robots, noindex: true } : robots;
+    });
+    hooks.addFilter('pre_get_document_title', (title, main) => {
+      seen.push(`title:${main.is404}`);
+      return main.is404 ? 'Lost' : title;
+    });
+    const missing = await render(ctx, '/no-such-page/');
+    expect(missing.html).toContain('<title>Lost</title>');
+    expect(missing.html).toContain('noindex');
+    expect(seen).toEqual(['robots:false', 'title:true']);
+  });
 });

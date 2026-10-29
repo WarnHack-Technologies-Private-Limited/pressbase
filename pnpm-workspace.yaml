@@ -2,6 +2,7 @@ packages:
   - "apps/*"
   - "packages/*"
   - "e2e"
+  - "plugins/*"
 minimumReleaseAgeExclude:
   - "@electric-sql/pglite@0.5.12"
   - lucide-react@1.62.0
@@ -15,3 +16,6 @@ allowBuilds:
 # give core a second copy of drizzle-orm whose types do not match @pressbase/db.
 overrides:
   "drizzle-orm>mysql2": "-"
+  # @anthropic-ai/sdk (core's AI client) depends on @opentelemetry/api, an optional
+  # peer of drizzle-orm; pairing them would give core a second drizzle-orm as well.
+  "drizzle-orm>@opentelemetry/api": "-"

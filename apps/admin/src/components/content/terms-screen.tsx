@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { ApiError, api } from '@/lib/api';
 import type { RestTerm, TaxonomyScreen } from '@/lib/content';
+import { mergeMeta, metaChanges } from '@/lib/extensions/editor';
+import { appliesTo, SLOTS } from '@/lib/extensions/registry';
+import { RenderFill, useFills } from '../extensions/host';
 import { useCan } from '../shell/current-user';
 import { PageHeader } from '../shell/page-header';
 import { Button } from '../ui/button';
@@ -116,6 +119,8 @@ export function TermsScreen({
     id: number;
     draft: Draft;
     errors: Record<string, string>;
+    /** The term's meta with plugins' edits (TermEditFields). */
+    meta: Record<string, unknown>;
   } | null>(null);
   const [deleting, setDeleting] = useState<RestTerm | null>(null);
   const [problem, setProblem] = useState<string>();
@@ -174,9 +179,16 @@ export function TermsScreen({
     setBusy(true);
     try {
       const { name, slug, description, parent } = editing.draft;
+      const meta = metaChanges(terms?.find((t) => t.id === editing.id)?.meta, editing.meta);
       await api(`/wp/v2/${screen.base}/${editing.id}`, {
         method: 'POST',
-        body: { name, slug, description, ...(screen.hierarchical ? { parent } : {}) },
+        body: {
+          name,
+          slug,
+          description,
+          ...(screen.hierarchical ? { parent } : {}),
+          ...(Object.keys(meta).length ? { meta } : {}),
+        },
       });
       setEditing(null);
       toast(`${screen.singular} updated.`);
@@ -301,6 +313,13 @@ export function TermsScreen({
                               screen={screen}
                               parents={(terms ?? []).filter((t) => t.id !== term.id)}
                             />
+                            <TermPluginFields
+                              term={term}
+                              meta={editing.meta}
+                              editMeta={(edits) =>
+                                setEditing((e) => e && { ...e, meta: mergeMeta(e.meta, edits) })
+                              }
+                            />
                             <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
                               <Button type="submit" variant="primary" size="sm" loading={busy}>
                                 Save
@@ -337,6 +356,7 @@ export function TermsScreen({
                                   setEditing({
                                     id: term.id,
                                     errors: {},
+                                    meta: term.meta ?? {},
                                     draft: {
                                       name: term.name,
                                       slug: term.slug,
@@ -391,6 +411,31 @@ export function TermsScreen({
           ? 'Posts only in this category move to the default category. Subcategories move up a level.'
           : 'The tag is removed from every post that uses it.'}
       </ConfirmDialog>
+    </>
+  );
+}
+
+/** Plugins' fields in the edit form (slot `term.edit-fields`, `{taxonomy}_edit_form_fields`). */
+function TermPluginFields({
+  term,
+  meta,
+  editMeta,
+}: {
+  term: RestTerm;
+  meta: Record<string, unknown>;
+  editMeta: (edits: Record<string, unknown>) => void;
+}) {
+  const fills = useFills(SLOTS.termEditFields).filter((fill) => appliesTo(fill, term.taxonomy));
+  return (
+    <>
+      {fills.map((fill) => (
+        <RenderFill
+          key={fill.id}
+          fill={fill}
+          place="term fields"
+          fillProps={{ taxonomy: term.taxonomy, term, meta, editMeta }}
+        />
+      ))}
     </>
   );
 }

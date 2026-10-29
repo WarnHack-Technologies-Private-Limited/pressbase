@@ -24,3 +24,7 @@ To write one, copy [template.md](template.md) to `NNNN-short-title.md` and open 
 | [0014](0014-pressbase-cli.md)             | The pressbase CLI: in-process kernel, node:util parseArgs, a lock for the built-in database | Accepted |
 | [0015](0015-internationalisation.md) | Internationalisation with WordPress's translation files and @wordpress/i18n | Accepted |
 | [0016](0016-wordpress-database-migration.md) | Migrating from a WordPress database with mysql2, behind a query interface | Accepted |
+| [0017](0017-early-request-hooks-and-the-page-cache.md) | Early request hooks run inside the cached render; redirects win by purging the path | Accepted |
+| [0018](0018-editor-data-for-plugins.md) | Live editor data for plugins: a small store on window.pressbase, not a @wordpress/data store | Accepted |
+| [0019](0019-ai-client-and-abilities.md) | The AI client and the Abilities API in core: keys on the server, a usage table for caps | Accepted |
+| [0020](0020-plugin-blocks.md) | Plugin blocks: server registration through api.blocks, editor modules through window.pressbase.blocks | Accepted |

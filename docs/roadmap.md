@@ -96,7 +96,7 @@ Plan: [Pressbase SEO and the first-party plugins](plans/first-party-plugins.md).
 - [ ] Plugin API: register meta, live editor data and more admin slots for UI modules, early request hooks (`template_redirect`, 404), canonical filters, `api.cache.purge`, plugin files at the site root.
 - [ ] AI client and Abilities API, ported from WordPress 7.x (`wp_ai_client_prompt()`, `wp_register_ability()`), with Settings → AI.
 - [ ] Plugin blocks: `api.blocks.register()`, loaded at runtime.
-- [ ] Pressbase SEO: titles and meta (Yoast-compatible), search and social previews, checks, schema graph, sitemaps, redirects and 404 log, breadcrumbs, IndexNow, `llms.txt`, AI suggestions.
+- [ ] Pressbase SEO (in progress): built in [`plugins/pressbase-seo`](../plugins/pressbase-seo/README.md): titles and meta (Yoast-compatible), search and social previews, checks, schema graph, sitemaps, redirects and 404 log, breadcrumbs, IndexNow, `llms.txt`, AI suggestions on the core AI client. See [Pressbase SEO](architecture/seo-plugin.md). Left: checking Google's Rich Results test and Lighthouse on a real site, and a site-wide audit screen.
 - [ ] The next first-party plugins (Forms, Anti-spam, Analytics, Backups, Security): order to be decided.
 
 ## v1.0: Stable

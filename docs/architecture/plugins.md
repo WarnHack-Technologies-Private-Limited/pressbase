@@ -73,6 +73,17 @@ Plugins ship compiled JavaScript (`.js` or `.mjs`, ESM). Write TypeScript with [
 | `admin.addPage({ slug, title, parent, capability, entry })` | an admin page, top level or under Settings or Tools. See [Admin pages](#admin-pages) | `add_menu_page`, `add_options_page`, `add_management_page` |
 | `cli.addCommand(name, handler, { shortdesc, synopsis, longdesc })` | a `pressbase` command; `name` is the plugin's slug, then subcommand words. See [the CLI](../development/cli.md#plugin-commands) | `WP_CLI::add_command` |
 | `i18n.__ / _x / _n / _nx`, `i18n.locale()`, `i18n.isRtl()` | translations in the plugin's text domain (its slug), from its `languages/` folder. See [Internationalisation](i18n.md#plugins) | `__()`, `load_plugin_textdomain` |
+| `meta.register / registerPostMeta / registerTermMeta`, `meta.get / add / update / delete` | registered meta, shown under `meta` in REST with `showInRest`. See [Registered meta](#registered-meta) | `register_meta()`, `register_post_meta()`, `get_metadata()` & co. |
+| `hooks.removeAction('wp_head', 'rel_canonical')` | removes one of core's named callbacks; restored on deactivation. See [Head output](#head-output-and-canonical-urls) | `remove_action()` with a function name |
+| `content.permalink(post)`, `content.canonicalUrl(post)` | a post's URL, and its canonical URL after `get_canonical_url` | `get_permalink()`, `wp_get_canonical_url()` |
+| `content.mainQuery()` | the main query of the public page being rendered (`isSingular`, `queriedObject`, `paged`…), for block renders and hooks; `undefined` outside a render | the global `$wp_query` |
+| `content.termLink(term)`, `content.author(id)`, `content.attachmentImage(id, size?)` | a term's archive URL; an author's public fields (`name`, `nicename`, `description`, `url`); an image's `{ url, width, height, alt, mimeType }` (`full` or a sub-size), `false` for anything else | `get_term_link()`, `get_userdata()` + `get_author_posts_url()`, `wp_get_attachment_image_src()` |
+| `cache.purge(tags) / purgePaths(paths) / addTags(...) / pathTag(path)` | purge cached public pages. See [api.cache](#the-page-cache-apicache) | caching plugins' purge functions |
+| `public.addFile(path, handler, options)` | a file at a fixed root path (`/llms.txt`). See [Plugin files](#plugin-files-at-the-site-root) | a rewrite rule and a `template_redirect` callback |
+| `db.query(sql)` | one query's rows, on PostgreSQL and PGlite. See [Plugin tables](#plugin-tables-at-scale) | `$wpdb->get_results()` |
+| `blocks.register(name, args) / registerFromMetadata(path, args) / unregister / isRegistered` | blocks with a server render and an editor module, plus `escHtml`, `escAttr`, `escUrl`, `getBlockWrapperAttributes`. See [Blocks](#blocks) | `register_block_type()`, `register_block_type_from_metadata()` |
+| `ai.supportsAi()`, `ai.prompt(input)`, `ai.registerProvider(provider)` | the AI client, with requests logged under the plugin and held to its daily limit; off until Settings → AI turns it on. See [AI](ai.md#plugins) | `wp_supports_ai()`, `wp_ai_client_prompt()` |
+| `abilities.register(name, args)`, `abilities.registerCategory(slug, args)`, `abilities.get / all / execute / context / error` | abilities named `{slug}/{name}`, with a required `permissionCallback`; served at `/wp-abilities/v1` and usable as AI tools; removed on deactivation. See [AI](ai.md#the-abilities-api) | `wp_register_ability()`, `wp_register_ability_category()` |
 
 A route's `handler` receives Hono's context (`c.req.query()`, `await c.req.json()`, `c.json()`…) and returns a `Response` or any JSON value. `permission` is required, as WordPress requires `permission_callback`; returning anything but `true` answers 401 (logged out) or 403.
 
@@ -99,7 +110,7 @@ A route's `handler` receives Hono's context (`c.req.query()`, `await c.req.json(
 
 | Field | Required | Notes | WordPress header |
 | --- | --- | --- | --- |
-| `name` | yes | the slug: lowercase letters, numbers, dashes, at most 64. Must match the folder name. `wp`, `pressbase`, `oembed`, `wp-site-health`, `wp-block-editor` are reserved | folder name |
+| `name` | yes | the slug: lowercase letters, numbers, dashes, at most 64. Must match the folder name. `wp`, `pressbase`, `oembed`, `wp-site-health`, `wp-abilities`, `wp-block-editor` are reserved | folder name |
 | `title` | yes | shown in the admin | `Plugin Name` |
 | `version` | yes | semantic version | `Version` |
 | `description` | no | plain text | `Description` |
@@ -116,7 +127,7 @@ A route's `handler` receives Hono's context (`c.req.query()`, `await c.req.json(
 `get_plugins()` looks in two places:
 
 - `<dataDir>/plugins/<name>/` (default `.pressbase/plugins`): uploads land here, and these can be deleted;
-- the repository's `plugins/` folder: plugins bundled with Pressbase (the example). They can be activated but not deleted.
+- the repository's `plugins/` folder: plugins bundled with Pressbase (the example, and [Pressbase SEO](seo-plugin.md)). They can be activated but not deleted.
 
 A folder in the data directory wins over a bundled one with the same name. Folders that are symlinks are skipped. A folder with an invalid `plugin.json` is listed (with its error) so it can be deleted.
 
@@ -281,6 +292,183 @@ api.assets.url('logo.svg'); // → /wp-content/plugins/reading-time/logo.svg
 
 Registered outside a page render (in `register`), a handle is site-wide; it is dequeued and deregistered when the plugin is deactivated. Registered during a render, it belongs to that page only. Activating or deactivating a plugin purges the page cache (`site` tag), so cached pages don't keep a removed stylesheet.
 
+## Meta, requests, head output, the cache and files (v0.7)
+
+The server half of the plugin API gaps found while planning Pressbase SEO ([plan](../plans/first-party-plugins.md#platform-work-first-plugin-api-gaps), gaps 1 and 5 to 9). Tests: `apps/core/src/plugin-platform.test.ts`.
+
+### Registered meta
+
+`register_post_meta()`, `register_term_meta()` and `register_meta()` (`wordpress/wp-includes/meta.php`), with the REST `meta` field of `WP_REST_Meta_Fields` (`rest-api/fields/class-wp-rest-meta-fields.php`). Code: `content/meta.ts` (`kernel.meta`), `routes/meta-fields.ts`, `auth/meta-caps.ts`.
+
+```ts
+api.meta.registerPostMeta('', '_yoast_wpseo_title', {   // '' = every post type
+  type: 'string',
+  single: true,
+  showInRest: true,
+  sanitizeCallback: (value) => String(value).trim(),
+  // Protected keys (leading _) need this to be editable through REST.
+  authCallback: (allowed, key, postId, userId, cap, caps) => true,
+});
+api.meta.registerPostMeta('post', 'reading_level', {
+  type: 'integer', single: true, default: 3,
+  showInRest: { schema: { minimum: 1, maximum: 5 } },
+});
+api.meta.registerTermMeta('category', '_yoast_wpseo_bctitle', { single: true, showInRest: true, authCallback: () => true });
+
+await api.meta.get('post', 12, 'reading_level', true);   // 3 until something is stored
+await api.meta.update('post', 12, 'reading_level', 4);   // update_metadata()
+```
+
+| Argument | Notes | WordPress |
+| --- | --- | --- |
+| `type` | `string` (default), `boolean`, `integer`, `number`, `array`, `object`: the type of each value | `type` |
+| `single` | one value (true) or a list, one row per value (default false) | `single` |
+| `default` | returned while nothing is stored; must match the type | `default` |
+| `label`, `description` | in the REST schema | same |
+| `showInRest` | `true`, or `{ name, schema, prepareCallback }`. `array` values need `schema.items` | `show_in_rest` |
+| `sanitizeCallback(value, key, objectType, subtype)` | runs on every write, as the filter `sanitize_{type}_meta_{key}[_for_{subtype}]` | `sanitize_callback` |
+| `authCallback(allowed, key, objectId, userId, cap, caps)` | may the user add, edit or delete the key? As the filter `auth_{type}_meta_{key}[_for_{subtype}]` | `auth_callback` |
+
+| `api.meta.` | WordPress |
+| --- | --- |
+| `register(objectType, key, args)` (`post`, `term`, `user`, `comment`), `registerPostMeta(postType, key, args)`, `registerTermMeta(taxonomy, key, args)` | `register_meta()`, `register_post_meta()`, `register_term_meta()` |
+| `get(objectType, id, key, single?)` | `get_metadata()` (with `filter_default_metadata()`); `undefined` where WordPress gives `''` |
+| `add(objectType, id, key, value, unique?)` → row ID or `false` | `add_metadata()` |
+| `update(objectType, id, key, value, previous?)` → changed? | `update_metadata()` |
+| `delete(objectType, id, key, value?)` | `delete_metadata()` |
+
+**REST.** Keys registered with `showInRest` appear under `meta` in `/wp/v2/posts`, `/wp/v2/pages`, plugin post types that support `custom-fields`, and every taxonomy's terms, in the `view` and `edit` contexts (as in WordPress, they're readable by anyone who can read the object: don't register private data with `showInRest`). A single key shows its value or the default; a multi key a list; a stored value that doesn't fit the schema reads as `null`. Writes take `{ "meta": { "key": value } }`:
+
+- unregistered names are ignored; `null` (or `[]` for a multi key) deletes;
+- values are coerced (`"4"` → 4) and validated against the schema: `400 rest_invalid_param`, `data.params.meta` says why;
+- the user needs `edit_post_meta` / `delete_post_meta` (`…_term_meta`) for the key: `map_meta_cap()` maps them to `edit_post` (or `edit_term`), then asks the key's auth callback. Without one, an unprotected key is allowed and a protected one (`_yoast_wpseo_title`, anything starting with `_`, filter `is_protected_meta`) is refused: `rest_cannot_update` / `rest_cannot_delete`, 401 or 403, "Sorry, you are not allowed to edit the {key} custom field."
+
+Unlike WordPress, values and permissions are checked before the post or term is saved, so a refused meta write leaves nothing half-saved (a new object is created first, since the auth callback needs its ID). Writes fire `added_{type}_meta`, `updated_{type}_meta` and `deleted_{type}_meta`; a published post's meta change purges `post:{id}`, a term's `term:{id}`. Deactivating the plugin unregisters its keys and callbacks; stored values stay. Revisions of meta (`revisions_enabled`) and user and comment meta in REST are not built yet.
+
+### Early request hooks: template_redirect and 404s
+
+Code: `frontend/template-redirect.ts`, `frontend/render.ts`; the cache decision is [ADR 0017](../adr/0017-early-request-hooks-and-the-page-cache.md).
+
+```ts
+api.hooks.addAction('template_redirect', async (request) => {
+  const rule = await findRedirect(request.path);           // the plugin's own lookup
+  if (rule?.status === 410) request.notFound(410);
+  else if (rule) request.redirect(rule.target, rule.status); // 301, 302, 303, 307, 308
+});
+api.hooks.addAction('pressbase_404', ({ path, query, referrer }) => log404(path, referrer));
+api.hooks.addFilter('pre_handle_404', (preempt, main, url) => url.pathname === '/virtual/' || preempt);
+```
+
+| Hook | Type | Arguments | WordPress |
+| --- | --- | --- | --- |
+| `template_redirect` | action | `request`: `path`, `query`, `referrer`, `user`, `main()` (the main query, resolved on first use and shared with the render), `redirect(location, status = 302)`, `notFound(404 \| 410)`, `answer` | `template_redirect` in `template-loader.php`, with `wp_redirect()` + `exit` |
+| `pre_handle_404` | filter | `false, main, url`: anything but `false` keeps the URL from being a 404 (status 200) | `pre_handle_404` in `WP::handle_404()` (`class-wp.php`) |
+| `pressbase_404` | action | `{ path, query, referrer, user, main }`: a 404 is being served (pages, missing sitemaps and feeds, `notFound(404)`) | none: WordPress plugins check `is_404()` in `template_redirect` |
+
+`template_redirect` runs once per public render, before robots.txt, sitemaps, feeds, plugin files and pages; the first `redirect()` or `notFound()` wins (later calls return `false`). Locations must be `http(s)` URLs or paths starting with `/`; line breaks and unsafe characters are removed or encoded (`wp_sanitize_redirect()`). A plugin redirect wins over core's own canonical and old-permalink redirects.
+
+**With the page cache** ([ADR 0017](../adr/0017-early-request-hooks-and-the-page-cache.md)): these hooks run inside the render `apps/web` caches and shares with every anonymous visitor.
+
+- Decide from the URL and the site's data, never from the visitor (cookies, user agent, referrer).
+- When a rule changes, purge its source path: `await api.cache.purgePaths(['/old-post/'])`. Every answer carries a `path:{path}` tag, so this drops the cached page (and its `?query` variants) and the next request gets the redirect. Regex rules purge `site`.
+- While anything listens to `pressbase_404`, 404 answers are `no-store`, so every hit reaches the action (WordPress's `nocache_headers()`). Keep the callback quick, or queue the write with `api.jobs`.
+
+### Head output and canonical URLs
+
+Core's head callbacks carry WordPress's function names, so a plugin that prints its own tags removes core's by name, as `remove_action( 'wp_head', 'rel_canonical' )` does. Removed callbacks come back, in their place, when the plugin is deactivated (`core-callbacks.ts`).
+
+```ts
+api.hooks.removeAction('wp_head', 'rel_canonical');
+api.hooks.addAction('wp_head', async (out, page) => {
+  const object = page.main.queriedObject;
+  const url = object?.kind === 'post' && (await api.content.canonicalUrl(object.post));
+  if (url) out.print(`<link rel="canonical" href="${escapeAttribute(url)}" />`); // escape what you print
+}, 1);
+api.hooks.addFilter('get_canonical_url', (url, post) => url);   // or just filter core's
+```
+
+| Named callback on `wp_head` | Priority | Prints |
+| --- | --- | --- |
+| `_block_template_viewport_meta_tag` | 0 | viewport meta |
+| `wp_robots` | 1 | robots meta (filter `wp_robots` to change it rather than removing it) |
+| `_wp_render_title_tag` | 1 | `<title>` (filters `document_title_parts`, `pre_get_document_title`, `document_title_separator`) |
+| `wp_generator` | 1 | generator meta |
+| `rel_canonical` | 1 | `<link rel="canonical">` on published singular pages, from `wp_get_canonical_url()` |
+| `feed_links` | 2 | feed links (`feed_links()` and `feed_links_extra()`) |
+| `wp_site_icon` | 99 | site icon links |
+
+Core prints no meta description and no Open Graph or X tags, so a plugin adds its own without removing anything. `api.content.canonicalUrl(post)` is `wp_get_canonical_url()`: the permalink of a published post (with `comment-page-N/` when it's the page being rendered), through the `get_canonical_url` filter; `false` for anything unpublished. `api.content.permalink(post)` is `get_permalink()`.
+
+### The page cache: api.cache
+
+Output a plugin prints is cached ([ADR 0008](../adr/0008-public-page-caching.md)). Content changes and option changes (including the plugin's own `api.options` and settings) already purge what they affect. For anything else:
+
+| `api.cache.` | |
+| --- | --- |
+| `purge(tags)` | announces `pressbase_cache_purge (tags, 'plugin:{slug}')`, which reaches every `apps/web` instance: `site`, `post:{id}`, `term:{id}`, `posts:{type}`, `path:{path}`, or the plugin's own tags |
+| `purgePaths(paths)` | `purge()` with each path's tag |
+| `addTags(...tags)` | records tags on the render in progress (in `wp_head`, a block, a file handler) so a later `purge()` reaches it, e.g. `my-plugin:settings` |
+| `pathTag(path)` | `path:/old-post` (no trailing slash, no query) |
+
+Tags are 1 to 200 printable ASCII characters. Prefix your own with the plugin's slug.
+
+### Plugin files at the site root
+
+```ts
+api.public.addFile('/llms.txt', async () => {
+  const { posts } = await api.content.query({ post_type: 'post', posts_per_page: 20 });
+  return `# Posts\n${posts.map((p) => `- ${p.title}`).join('\n')}`;
+});
+api.public.addFile(`/${key}.txt`, () => key, { cache: false });  // IndexNow's key file
+```
+
+`addFile(path, handler, { contentType, cache })` returns a function that removes the file. The handler receives `{ path, query, user }` and returns the body as a string, `{ body, status, contentType, headers }`, or `null` for a 404. The content type defaults from the extension (`.txt` → `text/plain; charset=utf-8`, `.xml`, `.json`, `.md`, `.csv`, `.html`). A handler that throws answers 500 and is recorded against the plugin.
+
+- **Core wins:** `robots.txt`, `favicon.ico`, sitemap and feed addresses (as core parses them, pretty or plain), anything under `/wp-`, and the admin's paths (`/admin`, `/login`, `/install`, `/lost-password`, `/reset-password`, `/editor-assets`, `/_next`, `/_pressbase`) are refused when the file is added, so the plugin fails to activate rather than shadowing them. Paths are letters, numbers, `.`, `_`, `~` and `-` in `/`-separated segments (`/.well-known/thing.json` is fine); two plugins can't serve the same path.
+- **Only active plugins answer:** files are removed on deactivation, which also purges `site`.
+- **Caching:** answers are cached like pages, tagged with what the handler read (`api.content.query` records `posts:post`, so a new post refreshes `/llms.txt`), `site` and the file's path tag. Use `cache: false` (`private, no-store`) when the content can change without a purge; or call `api.cache.purgePaths([path])` when it does.
+
+Answers come from core's render endpoint, so they work on the public site and, through the admin's fallback rewrite, on the admin origin too.
+
+### Plugin tables at scale
+
+Plugin migrations are plain SQL ([Migrations](#migrations)), so indexes, unique constraints, partial indexes and foreign keys to the plugin's own tables all work. For tables that grow (redirects, form entries, logs):
+
+```sql
+-- migrations/0001-redirects.sql
+create table my_seo_redirects (
+  id bigserial primary key,
+  source text not null,
+  target text not null,
+  status smallint not null default 301,
+  hits bigint not null default 0,
+  last_hit timestamptz
+);
+create unique index my_seo_redirects_source_idx on my_seo_redirects (source);
+create index my_seo_redirects_last_hit_idx on my_seo_redirects (last_hit);
+```
+
+```ts
+const { db } = api; // needs the "database" permission
+const { sql } = db;
+// Upsert on the unique index: one statement, no race.
+await db.query(sql`insert into my_seo_redirects (source, target) values (${from}, ${to})
+                   on conflict (source) do update set target = excluded.target`);
+// Keyset pagination: "after the last id", never OFFSET (which reads every skipped row).
+const page = await db.query<{ id: string; source: string }>(
+  sql`select id, source from my_seo_redirects where id > ${after} order by id limit 50`);
+// Pruning in batches, from a daily cron event.
+api.cron.addAction('prune', () => db.query(sql`delete from my_seo_404s where id in (
+  select id from my_seo_404s where last_hit < now() - interval '90 days' limit 5000)`));
+```
+
+- `api.db.query(sql)` runs one query and returns its rows on PostgreSQL and PGlite alike (`api.db.db.execute()` returns `{ rows }` on one and an array on the other). `bigint` columns can come back as strings: convert with `Number()`.
+- Index every column you filter or sort on; keep a unique index on natural keys (a redirect's source) and use `on conflict` instead of check-then-insert.
+- Paginate with keyset conditions (`where id > $last order by id limit n`, or `(created, id) < ($c, $i)` for newest first) and return a cursor; `offset` gets slower with every page.
+- Cap logs: a daily `api.cron` event deleting old rows in batches (a few thousand per statement keeps locks short), and count with a capped `select count(*) from (… limit 10001)` rather than counting millions of rows.
+- `create index concurrently` can't run inside a transaction: on PostgreSQL put it alone in its own migration file (one statement runs outside an implicit transaction block). On PGlite it isn't needed.
+- Drop your tables in `uninstall`. Name them with the plugin's prefix.
+
 ## The SDK
 
 `@pressbase/plugin-sdk` (`packages/plugin-sdk`) gives TypeScript plugins `PluginApi` and every type it hands out, the hook registries (so `api.hooks.addFilter('wp_robots', …)` autocompletes and types its callback), and a few helpers that cost nothing at runtime:
@@ -316,7 +504,7 @@ The admin is a prebuilt Next.js app and plugins arrive at runtime, so nothing a 
 1. **Declarative settings** (most plugins): the plugin describes its settings on the server and the admin draws the page. No admin JavaScript.
 2. **UI modules** (the rest): a browser ES module the admin imports at runtime, which renders React into named **slots**: a page body, dashboard widgets, editor panels.
 
-Code: `apps/core/src/plugins/admin.ts` (registrations, validation), `apps/core/src/routes/plugin-admin.ts` (REST and module serving); in the admin, `src/lib/extensions/` (registry, pages, settings helpers) and `src/components/extensions/` (host API, slots, the generic settings form). The example plugin uses all of it: [`plugins/daily-tips`](../../plugins/daily-tips) has a settings page, a dashboard widget and an editor panel.
+Code: `apps/core/src/plugins/admin.ts` (registrations, validation), `apps/core/src/routes/plugin-admin.ts` (REST and module serving); in the admin, `src/lib/extensions/` (registry, pages, settings helpers) and `src/components/extensions/` (host API, slots, the generic settings form). The example plugin uses all of it: [`plugins/daily-tips`](../../plugins/daily-tips) has a settings page, a dashboard widget, an editor panel, a Writing sidebar that follows the post as it's typed, and a Words column in the posts list.
 
 ### Settings
 
@@ -423,7 +611,12 @@ Modules must use the admin's React through `window.pressbase`, not bundle their 
 | `registerPlugin(name, { render })`, `unregisterPlugin`, `getPlugins`, `usePluginContext` | `@wordpress/plugins`: `render` is a component that renders Fills |
 | `Fill`, `Slot`, `slots` | SlotFill: `<Fill name="dashboard">…</Fill>`; `slots` lists the names |
 | `DashboardWidget`, `PluginDocumentSettingPanel` | Fills for the two built-in places |
-| `components` | the admin's UI kit: `Button`, `Spinner`, `Card`, `Notice`, `Badge`, `EmptyState`, `TextField`, `TextAreaField`, `SelectField`, `Checkbox` |
+| `PluginSidebar`, `PluginSidebarMoreMenuItem`, `PluginPrePublishPanel` | Fills for the post editor: a sidebar tab, a top-bar button that opens it, a panel before publishing ([Slots](#slots)) |
+| `PostsListColumn`, `PostsListRowAction`, `PostsListFilter` | Fills for the posts and pages lists ([Slots](#slots)) |
+| `TermEditFields`, `UserProfileFields` | Fills for the category and tag edit form, and the profile and user edit screens ([Slots](#slots)) |
+| `editor` | the post being edited, live: `usePost(selector?)`, `getPost()`, `getEditedPostAttribute(name)`, `editPost(edits)`, `subscribe(listener)` ([Live editor data](#live-editor-data)) |
+| `blocks` | Gutenberg's `registerBlockType` and what a block's edit function needs, for blocks' editor modules ([Blocks](#blocks)) |
+| `components` | the admin's UI kit: `Button`, `Spinner`, `Card`, `Notice`, `Badge`, `EmptyState`, `TextField`, `TextAreaField`, `SelectField`, `Checkbox`, and `MediaPicker` (the media library dialog: `open`, `onClose`, `onSelect(media)` with the REST attachment, `allowedTypes: ['image']`, `title`, `selectLabel`, `selectedId`) |
 | `useToast()`, `useCurrentUser()` | the admin's toast (`toast('Saved.')`) and the user, with `capabilities` |
 
 Each `registerPlugin()` is attributed to the plugin whose module was loading (modules load one at a time). When the plugin is deactivated its plugins and fills disappear at the next navigation; a module can't be unloaded, so it reappears without a re-import if the plugin is reactivated. A new `version` gives a new URL and a fresh import.
@@ -435,10 +628,90 @@ Each `registerPlugin()` is attributed to the plugin whose module was loading (mo
 | `dashboard` (`DashboardWidget`) | a card on the Dashboard, after core's | `title`, `size` (`small`: a third of the width, `large`: two thirds), `order` | — |
 | `editor.document-settings` (`PluginDocumentSettingPanel`) | a panel in the post and page editor's Post tab, before Revisions | `title`, `order` | `{ postId, postType }` (`postId` is null for a new post) |
 | `plugin-page/{plugin}/{page}` (`slots.page(plugin, page)`) | a plugin page's body, after its `entry`'s component | `order` | `{ plugin, page }` |
+| `editor.sidebar` (`PluginSidebar`) | a tab in the post and page editor's sidebar, after Post and Block, shown as its icon (named by `title`); its panel has the title as a heading and renders only while open | `name` (unique in the plugin), `title`, `icon`, `order` | `{ postId, postType }` |
+| `editor.sidebar-more-menu` (`PluginSidebarMoreMenuItem`) | a button in the editor's top bar that opens (or closes) the sidebar `target`; the children are its label | `target`, `icon`, `order` | — |
+| `editor.pre-publish` (`PluginPrePublishPanel`) | a panel in "Ready to publish?", which opens before a first publish (or schedule) only when there are such panels; the Publish button there always works | `title`, `initialOpen` (default true), `order` | `{ postId, postType }` |
+| `posts-list.columns` (`PostsListColumn`) | a column after Date in the posts and pages lists (hidden on narrow screens), as `manage_posts_columns` | `title`, `postTypes`, `order` | the child is a function of `{ post, postType }`, called per row |
+| `posts-list.row-actions` (`PostsListRowAction`) | a link or button among a row's actions (not in the Trash), as `post_row_actions` | `label` (or a function of the post), `href(post)` or `onClick(post, { reload })`, `isVisible(post)`, `postTypes`, `order` | — |
+| `posts-list.filters` (`PostsListFilter`) | a select beside the category filter, as `restrict_manage_posts` | `id`, `label` (the "all" option), `options` (`[{ value, label }]`), `query(value)`, `postTypes`, `order` | — |
+| `term.edit-fields` (`TermEditFields`) | fields in a category's or tag's edit form, after Description, as `{taxonomy}_edit_form_fields` | `taxonomies` (`category`, `post_tag`), `order` | `{ taxonomy, term, meta, editMeta }` |
+| `user.profile-fields` (`UserProfileFields`) | a card on Profile and on a user's edit screen, after Account, as `show_user_profile` / `edit_user_profile` | `title`, `description`, `order` | `{ user, isSelf, meta, editMeta }` |
 
-Fills are ordered by `order` (default 10), then by registration. A fill's children can be elements or a function of the slot's props.
+Fills are ordered by `order` (default 10), then by registration. A fill's children can be elements or a function of the slot's props. `postTypes` and `taxonomies` take a name or a list; without them a fill shows everywhere its slot is.
+
+**Posts lists.** The lists load posts with `context=edit`, so a column's `post` is the whole REST post: `content.raw`, `meta` (registered with `show_in_rest`), the terms. No extra request is needed. A filter's chosen value goes in the URL as `?{id}=value` (so it survives reloads and links), and `query(value)` returns REST parameters for `/wp/v2/{type}`. The list's own parameters (`status`, `search`, `page`, `categories`…) can't be used, and ids that clash with them are ignored. On the server, read the parameters with the `rest_{post_type}_query` filter (as in WordPress) and return query arguments, e.g. a `meta_query`:
+
+```js
+// index.js (server)
+api.hooks.addFilter('rest_post_query', (args, params) =>
+  params['my-seo-description'] === 'missing'
+    ? { ...args, meta_query: [{ key: '_yoast_wpseo_metadesc', compare: 'NOT EXISTS' }] }
+    : args,
+);
+```
+
+```js
+// admin/index.js
+h(PostsListFilter, {
+  id: 'my-seo-description',
+  label: 'All descriptions',
+  options: [{ value: 'missing', label: 'Missing a description' }],
+  query: (value) => ({ 'my-seo-description': value }),
+});
+```
+
+**Term and profile fields** get the object's `meta` with unsaved edits and `editMeta(edits)`, which merges edits key by key. The edits save with the form (only the keys that changed are sent, as `meta` in the REST request); Discard and Cancel drop them. Register the meta on the server with `show_in_rest` so REST accepts it.
 
 **Errors are contained.** Every fill, page component and plugin `render` runs inside an error boundary. A fill that throws is replaced by "The {plugin} plugin ran into a problem, so this part can’t be shown." with the error under *Details*; the rest of the screen works. A module that fails to import, or a `render` that throws, shows a warning naming the plugin above the screen's content.
+
+### Live editor data
+
+`window.pressbase.editor` is the post being edited, live, for editor fills: Gutenberg's `select('core/editor')` and `editPost()` with Pressbase names ([ADR 0018](../adr/0018-editor-data-for-plugins.md)).
+
+| Member | What | Gutenberg |
+| --- | --- | --- |
+| `usePost()` | the post (below), re-rendering on every change; `null` outside the editor | `useSelect(select => select('core/editor').getCurrentPost())` |
+| `usePost(selector)` | one part, e.g. `usePost((post) => post.meta.my_key)`; re-renders only when it changes. Return primitives or stable references | `useSelect(select => …getEditedPostAttribute('meta'))` |
+| `getPost()`, `getEditedPostAttribute(name)` | the same, outside React | `select('core/editor').getEditedPostAttribute(name)` |
+| `editPost({ meta, slug, excerpt })` | changes the post; `meta` merges key by key. Returns false outside the editor; other keys throw | `dispatch('core/editor').editPost()` |
+| `subscribe(listener)` | called on every change; returns the unsubscribe | `subscribe()` |
+
+The post has REST field names, with the edits not yet saved:
+
+| Field | What |
+| --- | --- |
+| `id`, `type`, `status` | `id` is null and `status` is `auto-draft` until a new post is saved |
+| `title`, `excerpt`, `slug` | as typed |
+| `content` | serialised block markup; follows typing within about 300 ms |
+| `blocks` | the parsed blocks (`name`, `attributes`, `innerBlocks`), parsed from `content` when first read |
+| `featured_media` | attachment ID, 0 for none |
+| `categories`, `tags`, `terms` | term IDs, and `terms.categories` / `terms.tags` as `{ id, name }` (a tag typed but not yet created has `id` 0) |
+| `meta` | registered post meta (`show_in_rest`), with edits. A new post has only the keys plugins have edited until its first save, so read a missing key as its default |
+| `link`, `permalink` | the saved permalink, and the one the edited slug gives (where pretty permalinks make that knowable) |
+| `isDirty`, `isSaving` | unsaved changes; a save in progress |
+
+Edits through `editPost()` are unsaved changes like any other: the editor shows "Unsaved changes", warns before leaving, keeps them in the browser copy, and saves them with the post (only the meta keys that changed). The minute autosave stores the title, content and excerpt, as WordPress's does, so meta edits stay unsaved after it until the next save; the browser copy protects them meanwhile, and restoring it brings them back.
+
+```js
+const { element: { createElement: h }, editor, PluginSidebar, components: { TextAreaField } } = window.pressbase;
+
+function SearchPreview() {
+  const title = editor.usePost((post) => post.title);
+  const description = editor.usePost((post) => post.meta.my_seo_description ?? '');
+  return h('div', null,
+    h('p', null, title),
+    h(TextAreaField, {
+      label: 'Meta description',
+      value: description,
+      onChange: (e) => editor.editPost({ meta: { my_seo_description: e.target.value } }),
+    }),
+  );
+}
+
+registerPlugin('my-seo', {
+  render: () => h(PluginSidebar, { name: 'seo', title: 'SEO', icon: SeoIcon }, h(SearchPreview)),
+});
+```
 
 The editor panel is Pressbase's own sidebar, not Gutenberg's `@wordpress/edit-post` (the admin embeds the block editor, not the edit-post screen), so `PluginDocumentSettingPanel` here is a look-alike with the same purpose and props; `window.wp` is not provided.
 
@@ -448,6 +721,78 @@ The editor panel is Pressbase's own sidebar, not Gutenberg's `@wordpress/edit-po
 - Modules are served **only while the plugin is active**, only from the folders that hold declared modules (a module at the plugin's root is served alone), never the server `main` file, and only with allowed extensions (`.js`, `.mjs`, `.css`, images, fonts). Paths are decoded and checked segment by segment (`..`, encoded slashes, dot-files and symlinks out of the folder answer 404). Responses carry `X-Content-Type-Options: nosniff` and no CORS header. **Don't put secrets in a module's folder**: anything there is downloadable while the plugin is active.
 - **CSP.** Module URLs are same-origin (the admin proxies `/wp-content/plugins/*` to core, like `/wp-json`), loaded with `import()`: no inline scripts, `eval` or third-party origins. The admin doesn't send a Content-Security-Policy yet; when it does, `script-src 'self'` covers plugin modules.
 - **Caching.** With `?ver=` matching the plugin's version, modules are `Cache-Control: public, max-age=31536000, immutable`; otherwise `no-cache`. Bump the version when a module changes.
+
+## Blocks
+
+A plugin registers blocks on the server and gives them an editor module; both load at runtime, with no rebuild ([ADR 0020](../adr/0020-plugin-blocks.md), plan gap 4). Code: `apps/core/src/plugins/blocks.ts`, `apps/admin/src/lib/extensions/blocks.ts`, `apps/admin/src/components/block-editor/server-blocks.tsx`. Tests: `apps/core/src/plugin-blocks.test.ts`, `apps/admin/src/lib/extensions/blocks.test.ts`, `e2e/tests/plugin-blocks.spec.ts`. The example is Daily Tips' `daily-tips/tip`.
+
+### On the server: api.blocks
+
+```js
+// index.js
+api.blocks.register('daily-tips/tip', {
+  title: 'Daily tip',
+  category: 'widgets',          // text, media, design, widgets, theme or embed
+  icon: 'lightbulb',            // a Dashicon name
+  attributes: { accent: { type: 'string', default: '#3858e9' } },
+  supports: { align: ['wide', 'full'], anchor: true },
+  editorScript: 'admin/tip.js', // the editor module, in the plugin folder
+  style: 'tip.css',             // public/tip.css: on pages that show the block, and in the editor
+  render: async (attributes, content, block) =>
+    `<aside ${api.blocks.getBlockWrapperAttributes(block)}>${api.blocks.escHtml(attributes.accent)}</aside>`,
+});
+```
+
+| `api.blocks.` | | WordPress |
+| --- | --- | --- |
+| `register(name, args)` | `name` is `{plugin-slug}/{block}`. `args` are block.json's keys (`title`, `category`, `icon`, `description`, `keywords`, `attributes`, `supports`, `usesContext`, `providesContext`, `parent`, `ancestor`, `allowedBlocks`, `example`, `styles`, `variations`, `apiVersion`), plus `render`, `editorScript` (a `.js`/`.mjs` module path), `style` and `editorStyle` (files in `public/`, one or a list) | `register_block_type()` |
+| `registerFromMetadata(fileOrFolder, args?)` | reads `block.json` (a folder or the file, relative to the plugin folder) after the `block_type_metadata` filter. `file:` paths are relative to the block.json: `editorScript`, `style`/`editorStyle` (must be in `public/`; other values are style handles you registered with `api.styles`), and `render` (a module whose default export is the callback). `args` override the file. Async: `await` it in `register`. Returns the name | `register_block_type_from_metadata()` |
+| `unregister(name)`, `isRegistered(name)` | | `unregister_block_type()`, `WP_Block_Type_Registry::is_registered()` |
+| `escHtml`, `escAttr`, `escUrl`, `getBlockWrapperAttributes(block, extra)` | escaping, and the outer element's attributes with block supports' classes and styles ([Blocks](blocks.md#registering-a-block)) | `esc_html()`, `esc_attr()`, `esc_url()`, `get_block_wrapper_attributes()` |
+
+- **Validation.** Mistakes throw on registration and fail activation: a name outside the plugin's namespace, a duplicate, an attribute without a `type` (or `enum`), an unknown type, a default that doesn't match its schema, `providesContext` naming a missing attribute, non-list `keywords`, a style path outside `public/`, an editor module outside the plugin.
+- **Rendering.** The block renders through `render_block()` like core's: `pre_render_block`, `render_block_data`, `render_block_context`, then `render(attributes, content, block)`, then `render_block` and `render_block_{name}`. Attributes are prepared against the schema first: a value that doesn't match is dropped and its default used. `block.context` has the names in `usesContext` (`postId`, `postType`…). A render that throws is recorded against the plugin (the Plugins screen shows it) and renders nothing; a non-string result renders nothing.
+- **Trust.** The callback's output is used as it is, as WordPress uses a `render_callback`'s. Core's dynamic blocks escape every value they print, and plugins must too (`api.blocks.escHtml`…). There is no allow-list filter on the output: a form block needs `<form>` and `<input>`, and a plugin's server code is already fully trusted ([Security model](#security-model-and-limits)).
+- **Styles.** `style` files are registered as `{namespace}-{name}-style` (`-style-2`… for more; `generate_block_asset_handle()`) and enqueued only while a public page that shows the block renders, as `WP_Block::render()` does. `editorStyle` (`…-editor-style`) is for the editor canvas only. A REST render enqueues nothing.
+- **Deactivation** unregisters the block and its handles. Posts keep the block's markup. The public site renders it as WordPress renders an unregistered block: its saved HTML, which for a dynamic block is nothing.
+- **The page cache** is purged (`site`) when a plugin registers or unregisters a block (activation and deactivation purge it too).
+- **REST.** `/wp/v2/block-types` lists plugin blocks with `editor_script_handles`, `style_handles` and `editor_style_handles`; `/wp/v2/block-renderer/{name}` renders them for previews. `/pressbase/v1/admin-extensions` lists each block's editor module and canvas stylesheets under `blocks`.
+
+### In the editor: window.pressbase.blocks
+
+The editor module is a UI module ([above](#ui-modules)) that the editor imports before it parses the post, so saved blocks are never flagged invalid. It calls `registerBlockType` with `edit` (and `save` for a static block); the title, category, attributes, supports and context come from the server and can't be changed here.
+
+```js
+// admin/tip.js — no build step
+const {
+  element: { createElement: h, Fragment },
+  blocks: { registerBlockType, useBlockProps, InspectorControls, ServerSideRender, components: { PanelBody, TextControl } },
+} = window.pressbase;
+
+registerBlockType('daily-tips/tip', {
+  edit: ({ attributes, setAttributes }) =>
+    h(Fragment, null,
+      h(InspectorControls, null,
+        h(PanelBody, { title: 'Colour' },
+          h(TextControl, { type: 'color', label: 'Accent colour', value: attributes.accent, onChange: (accent) => setAttributes({ accent }) }))),
+      h('div', useBlockProps(), h(ServerSideRender, { block: 'daily-tips/tip', attributes }))),
+});
+```
+
+| `pressbase.blocks.` | Gutenberg |
+| --- | --- |
+| `registerBlockType(name, { edit, save, … })` | `wp.blocks.registerBlockType( metadata, settings )` |
+| `useBlockProps` (with `.save`), `useInnerBlocksProps`, `InspectorControls`, `BlockControls`, `RichText` (with `.Content`), `InnerBlocks` (with `.Content`) | `wp.blockEditor` |
+| `ServerSideRender` | `wp.serverSideRender` (previews through `/wp/v2/block-renderer`) |
+| `components.PanelBody`, `TextControl`, `ToggleControl`, `SelectControl`, `Placeholder` | `wp.components` |
+
+- **Dynamic blocks are the main path.** Without `save`, the block saves only its comment (`<!-- wp:daily-tips/tip {"accent":"#d63638"} /-->`) and the server renders it. A dynamic block with no editor module still works: the editor previews it with ServerSideRender.
+- **Static blocks** pass `save`; the server can still register them without `render` so `/wp/v2/block-types` knows them. Their saved HTML stays in posts after deactivation, as in WordPress.
+- **Blocks must use `useBlockProps()`** on their outer element: they're registered with `apiVersion: 3` for the iframed canvas.
+- The members are delegates, resolved when called or rendered, so a module can destructure them at load time. Outside the editor, calling one throws "pressbase.blocks.X is only available in the block editor."
+- Only blocks in the loading plugin's namespace can be registered. A module that fails to import is reported like any plugin module, and its dynamic blocks fall back to the preview.
+- **Inserter.** Blocks appear under their `category`; use one of WordPress's (`text`, `media`, `design`, `widgets`, `theme`, `embed`).
+- **Inactive plugins.** A block whose plugin isn't active opens as WordPress's `core/missing`, which keeps its markup exactly; the editor shows "This block’s plugin is inactive" in its place.
 
 ## Not yet
 

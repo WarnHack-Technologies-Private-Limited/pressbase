@@ -247,6 +247,27 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* A plugin's sidebar tab (PluginSidebar): its icon, labelled by aria-label. */
+.tab[data-icon] {
+  flex: 0 0 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pluginSidebarTitle {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+}
+
+.pluginSidebarBody {
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
 .sidebarClose {
   display: none;
 }

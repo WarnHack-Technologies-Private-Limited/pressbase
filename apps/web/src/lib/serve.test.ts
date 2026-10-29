@@ -81,6 +81,47 @@ describe('servePublicRequest', () => {
     expect(await third.text()).toBe('<p>v2</p>');
   });
 
+  it('lets a new redirect win over a cached page once core purges its path (ADR 0017)', async () => {
+    const core = fakeCore({
+      '/old/': { status: 200, html: '<p>old</p>', tags: ['site', 'path:/old', 'post:7'] },
+      '/old/?ref=x': { status: 200, html: '<p>old</p>', tags: ['site', 'path:/old', 'post:7'] },
+    });
+    const cache = new PageCache();
+    await servePublicRequest(get('/old/'), options(cache, core.fetch));
+    await servePublicRequest(get('/old/?ref=x'), options(cache, core.fetch));
+    const hit = await servePublicRequest(get('/old/'), options(cache, core.fetch));
+    expect(hit.headers.get('x-pressbase-cache')).toBe('HIT');
+
+    // A plugin adds a redirect for /old/ and purges path:/old (api.cache.purgePaths()).
+    const redirect = {
+      status: 301,
+      headers: { location: '/new/' },
+      html: '',
+      tags: ['site', 'path:/old'],
+    };
+    core.pages['/old/'] = redirect;
+    core.pages['/old/?ref=x'] = redirect;
+    expect(cache.purge(['path:/old'])).toBe(2);
+    for (const path of ['/old/', '/old/?ref=x']) {
+      const res = await servePublicRequest(get(path), options(cache, core.fetch));
+      expect(res.status).toBe(301);
+      expect(res.headers.get('location')).toBe('/new/');
+    }
+  });
+
+  it('passes the referrer on to core, for the 404 action', async () => {
+    const core = fakeCore({ '/missing/': { status: 404, html: 'gone', tags: ['site', '404'] } });
+    const cache = new PageCache();
+    await servePublicRequest(
+      get('/missing/', { referer: 'https://example.org/' }),
+      options(cache, core.fetch),
+    );
+    expect(core.calls[0]?.headers).toEqual({
+      accept: 'application/json',
+      referer: 'https://example.org/',
+    });
+  });
+
   it('answers conditional requests from the cache with 304', async () => {
     const core = fakeCore({
       '/': { status: 200, headers: { etag: 'W/"home"' }, html: 'home', tags: ['site'] },

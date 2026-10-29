@@ -1,18 +1,26 @@
-import type { Database } from '@pressbase/db';
+import { type Database, resultRows } from '@pressbase/db';
 import type {
   ActionCallback,
   ActionRegistry,
   FilterCallback,
   FilterRegistry,
 } from '@pressbase/hooks';
-import { sql } from 'drizzle-orm';
+import { type SQL, sql } from 'drizzle-orm';
 import type { Context, Hono } from 'hono';
 import { type CurrentUser, userCan } from '../auth/users';
+import { PURGE_ACTION } from '../cache/invalidation';
+import { addCacheTags, CacheTag } from '../cache/tags';
+import type { MetaObjectType, RegisterMetaArgs } from '../content/meta';
+import { permalink, permalinkContext } from '../content/permalinks';
 import type { PostType, PostTypeArgs } from '../content/post-types';
-import type { PostsService } from '../content/posts';
+import type { Post, PostsService } from '../content/posts';
 import { type QueryArgs, type QueryResult, queryPosts } from '../content/query';
 import type { Taxonomy, TaxonomyArgs } from '../content/taxonomies';
-import type { TermsService } from '../content/terms';
+import type { Term, TermsService } from '../content/terms';
+import { wpGetCanonicalUrl } from '../frontend/head';
+import { currentPage } from '../frontend/page';
+import type { PublicFileHandler, PublicFileOptions } from '../frontend/public-files';
+import type { MainQuery } from '../frontend/query';
 import { type AppEnv, restError } from '../http';
 import type { Kernel } from '../kernel';
 import { PRESSBASE_VERSION } from '../version';
@@ -22,9 +30,18 @@ import {
   type PluginSectionArgs,
   type PluginSettingArgs,
 } from './admin';
+import { createPluginAbilities, createPluginAi, type PluginAbilities, type PluginAi } from './ai';
 import { createAssets, type PluginAssets, type PluginScripts, type PluginStyles } from './assets';
 import { type Background, createBackground, type PluginCron, type PluginJobs } from './background';
+import { createPluginBlocks, type PluginBlocks } from './blocks';
 import type { PluginCliCommandArgs, PluginCliHandler } from './cli';
+import {
+  type AttachmentImage,
+  type ContentAuthor,
+  contentAttachmentImage,
+  contentAuthor,
+  contentTermLink,
+} from './content-links';
 import type { InstalledPlugin } from './discovery';
 import { createSubApp } from './dispatch';
 import { createPluginI18n, type PluginI18n } from './i18n';
@@ -87,8 +104,13 @@ export interface PluginApi {
       callback: ActionCallback<K>,
       priority?: number,
     ): () => void;
-    removeFilter(name: string, callback: AnyCallback, priority?: number): boolean;
-    removeAction(name: string, callback: AnyCallback, priority?: number): boolean;
+    /**
+     * Removes one of the plugin's callbacks, or one of core's named callbacks
+     * by its WordPress name (`removeAction('wp_head', 'rel_canonical')`),
+     * which comes back when the plugin is deactivated.
+     */
+    removeFilter(name: string, callback: AnyCallback | string, priority?: number): boolean;
+    removeAction(name: string, callback: AnyCallback | string, priority?: number): boolean;
     applyFilters(name: string, value: unknown, ...args: unknown[]): Promise<unknown>;
     doAction(name: string, ...args: unknown[]): Promise<void>;
     hasFilter(name: string): boolean;
@@ -127,11 +149,90 @@ export interface PluginApi {
     sql: typeof sql;
     /** Runs a script of SQL statements (simple query protocol). */
     exec(script: string): Promise<void>;
+    /** Runs one sql`` query and returns its rows, the same on PostgreSQL and PGlite. */
+    query<T = Record<string, unknown>>(query: SQL): Promise<T[]>;
   };
   readonly content: {
     posts: PostsService;
     terms: TermsService;
     query(args: QueryArgs): Promise<QueryResult>;
+    /** get_permalink(): the post's public URL. */
+    permalink(post: Post | number): Promise<string | false>;
+    /** wp_get_canonical_url(): the canonical URL of a published post, after `get_canonical_url`. */
+    canonicalUrl(post: Post | number): Promise<string | false>;
+    /**
+     * The main query of the public page being rendered (WordPress's global
+     * `$wp_query`), for block renders and hooks; undefined outside a page render.
+     */
+    mainQuery(): MainQuery | undefined;
+    /** get_term_link() */
+    termLink(term: Pick<Term, 'id' | 'slug' | 'taxonomy'>): Promise<string>;
+    /** get_userdata()'s public fields with get_author_posts_url(), or undefined. */
+    author(id: number): Promise<ContentAuthor | undefined>;
+    /** wp_get_attachment_image_src() with the alt text; false for anything but an image. */
+    attachmentImage(id: number, size?: string): Promise<AttachmentImage | false>;
+  };
+  /**
+   * register_meta() and the metadata API (content/meta.ts). Registered keys
+   * are unregistered, and their callbacks removed, on deactivation.
+   */
+  readonly meta: {
+    /** register_meta( $object_type, $meta_key, $args ) */
+    register(objectType: MetaObjectType, metaKey: string, args?: RegisterMetaArgs): void;
+    /** register_post_meta(): `postType` '' registers the key for every post type. */
+    registerPostMeta(postType: string, metaKey: string, args?: RegisterMetaArgs): void;
+    /** register_term_meta(): `taxonomy` '' registers the key for every taxonomy. */
+    registerTermMeta(taxonomy: string, metaKey: string, args?: RegisterMetaArgs): void;
+    /** get_metadata(): the first value (or the registered default) with `single`, else every value. */
+    get(
+      objectType: MetaObjectType,
+      id: number,
+      metaKey: string,
+      single?: boolean,
+    ): Promise<unknown>;
+    /** add_metadata(): the new row's ID, or false. */
+    add(
+      objectType: MetaObjectType,
+      id: number,
+      metaKey: string,
+      value: unknown,
+      unique?: boolean,
+    ): Promise<number | false>;
+    /** update_metadata(): false when nothing changed. */
+    update(
+      objectType: MetaObjectType,
+      id: number,
+      metaKey: string,
+      value: unknown,
+      previous?: unknown,
+    ): Promise<boolean>;
+    /** delete_metadata(): every value of the key, or only those equal to `value`. */
+    delete(
+      objectType: MetaObjectType,
+      id: number,
+      metaKey: string,
+      value?: unknown,
+    ): Promise<boolean>;
+  };
+  /** The public page cache (ADR 0008, 0017). */
+  readonly cache: {
+    /** Drops cached public pages carrying any of these tags (`site`, `post:12`, `path:/llms.txt`…). */
+    purge(tags: string[]): Promise<void>;
+    /** Drops every cached answer for these paths, whatever their query string. */
+    purgePaths(paths: string[]): Promise<void>;
+    /** Records tags on the render in progress (no-op outside one), to purge them later. */
+    addTags(...tags: string[]): void;
+    /** The tag of a path: `path:/old-page`. */
+    pathTag(path: string): string;
+  };
+  /** Files at fixed paths of the public site (frontend/public-files.ts). */
+  readonly public: {
+    /**
+     * Serves `path` (`/llms.txt`, `/.well-known/thing.json`) while the plugin
+     * is active. Core's paths (robots.txt, sitemaps, feeds, `/wp-…`) and
+     * another plugin's are refused. Returns a function that removes it.
+     */
+    addFile(path: string, handler: PublicFileHandler, options?: PublicFileOptions): () => void;
   };
   readonly rest: {
     /**
@@ -159,6 +260,8 @@ export interface PluginApi {
   readonly styles: PluginStyles;
   /** URLs of the plugin's static files (its `public/` folder). */
   readonly assets: PluginAssets;
+  /** register_block_type(): blocks with a server render and an editor module. See plugins/blocks.ts. */
+  readonly blocks: PluginBlocks;
   /**
    * The Settings API: register_setting() with its field, and
    * add_settings_section(). The admin draws the plugin's settings page from
@@ -189,6 +292,13 @@ export interface PluginApi {
    * `languages/` folder: `api.i18n.__('Daily tip')`. See plugins/i18n.ts.
    */
   readonly i18n: PluginI18n;
+  /**
+   * The AI client (v0.7): `kernel.ai.prompt()` attributed to the plugin for
+   * the usage log and daily limits. See docs/architecture/ai.md#plugins.
+   */
+  readonly ai: PluginAi;
+  /** The Abilities API (v0.7), namespaced by the plugin's slug. See plugins/ai.ts. */
+  readonly abilities: PluginAbilities;
 }
 
 /** What a plugin's main module exports. */
@@ -235,6 +345,17 @@ const METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
 const NAMESPACE = /^[a-z0-9-]+(?:\/[a-z0-9._-]+)*$/;
 const OPTION_NAME = /^[a-z0-9_]+$/;
 
+/** Valid cache tags: printable ASCII, at most 200 characters (apps/web's cleanTags()). */
+function cacheTags(tags: unknown[]): string[] {
+  if (!Array.isArray(tags)) throw new TypeError('Cache tags are a list of strings.');
+  for (const tag of tags) {
+    if (typeof tag !== 'string' || !/^[\x21-\x7e]{1,200}$/.test(tag)) {
+      throw new TypeError(`"${String(tag)}" isn't a cache tag: use 1 to 200 printable characters.`);
+    }
+  }
+  return tags as string[];
+}
+
 /** Plugin slug → option prefix: daily-tips → daily_tips_. */
 export function optionPrefix(slug: string): string {
   return `${slug.replace(/-/g, '_')}_`;
@@ -266,6 +387,8 @@ export class PluginRuntime {
   #wrapped = new Map<AnyCallback, { name: string; wrapped: AnyCallback; off: () => void }[]>();
   #disposed = false;
   #background: Background | undefined;
+  /** Identifies this plugin when it removes core callbacks. */
+  readonly #owner = Symbol('plugin');
 
   constructor(
     readonly kernel: Kernel,
@@ -379,7 +502,14 @@ export class PluginRuntime {
     this.#track(remove);
     return remove;
   }
-  #removeHook(name: string, callback: AnyCallback, priority?: number): boolean {
+  #removeHook(name: string, callback: AnyCallback | string, priority?: number): boolean {
+    if (typeof callback === 'string') {
+      // One of core's named callbacks (core-callbacks.ts), restored on deactivation.
+      const restore = this.kernel.coreCallbacks.remove(name, callback, priority, this.#owner);
+      if (!restore) return false;
+      this.#track(restore);
+      return true;
+    }
     let found = false;
     for (const entry of [...(this.#wrapped.get(callback) ?? [])]) {
       if (entry.name !== name) continue;
@@ -507,12 +637,60 @@ export class PluginRuntime {
             db: kernel.db,
             sql,
             exec: (script: string) => kernel.connection.exec(script),
+            query: async <T>(query: SQL) => resultRows<T>(await kernel.db.execute(query)),
           })
         : undefined,
       content: Object.freeze({
         posts: kernel.posts,
         terms: kernel.terms,
         query: (args: QueryArgs) => queryPosts(kernel, args),
+        permalink: async (post: Post | number) => {
+          const p = typeof post === 'number' ? await kernel.posts.get(post) : post;
+          return p ? permalink(kernel, p, await permalinkContext(kernel)) : false;
+        },
+        canonicalUrl: (post: Post | number) => wpGetCanonicalUrl(kernel, post),
+        mainQuery: () => currentPage()?.main,
+        termLink: (term: Pick<Term, 'id' | 'slug' | 'taxonomy'>) => contentTermLink(kernel, term),
+        author: (id: number) => contentAuthor(kernel, id),
+        attachmentImage: (id: number, size?: string) => contentAttachmentImage(kernel, id, size),
+      }),
+      meta: Object.freeze({
+        register: (objectType: MetaObjectType, metaKey: string, args?: RegisterMetaArgs) =>
+          this.#registerMeta(objectType, metaKey, args),
+        registerPostMeta: (postType: string, metaKey: string, args?: RegisterMetaArgs) =>
+          this.#registerMeta('post', metaKey, { ...args, objectSubtype: postType }),
+        registerTermMeta: (taxonomy: string, metaKey: string, args?: RegisterMetaArgs) =>
+          this.#registerMeta('term', metaKey, { ...args, objectSubtype: taxonomy }),
+        get: (objectType: MetaObjectType, id: number, metaKey: string, single = false) =>
+          single
+            ? kernel.meta.get(objectType, id, metaKey, true)
+            : kernel.meta.get(objectType, id, metaKey, false),
+        add: (
+          objectType: MetaObjectType,
+          id: number,
+          metaKey: string,
+          value: unknown,
+          unique?: boolean,
+        ) => kernel.meta.add(objectType, id, metaKey, value, unique),
+        update: (
+          objectType: MetaObjectType,
+          id: number,
+          metaKey: string,
+          value: unknown,
+          previous?: unknown,
+        ) => kernel.meta.update(objectType, id, metaKey, value, previous),
+        delete: (objectType: MetaObjectType, id: number, metaKey: string, value?: unknown) =>
+          kernel.meta.delete(objectType, id, metaKey, value),
+      }),
+      cache: Object.freeze({
+        purge: (tags: string[]) => this.#purge(tags),
+        purgePaths: (paths: string[]) => this.#purge(paths.map((p) => CacheTag.path(p))),
+        addTags: (...tags: string[]) => addCacheTags(...cacheTags(tags)),
+        pathTag: (path: string) => CacheTag.path(path),
+      }),
+      public: Object.freeze({
+        addFile: (path: string, handler: PublicFileHandler, options?: PublicFileOptions) =>
+          this.#addFile(path, handler, options),
       }),
       rest: Object.freeze({
         registerRoute: (namespace: string, route: string, args: PluginRouteArgs) =>
@@ -527,6 +705,14 @@ export class PluginRuntime {
       scripts,
       styles,
       assets,
+      blocks: createPluginBlocks({
+        kernel,
+        plugin,
+        admin: this.adminRegistrations,
+        track,
+        reportError: (during, error) => this.host.reportError(slug, during, error),
+        purge: (tags) => this.#purge(tags),
+      }),
       settings: Object.freeze({
         register: (name: string, args?: PluginSettingArgs) => {
           this.adminRegistrations.registerSetting(name, args);
@@ -562,8 +748,45 @@ export class PluginRuntime {
         },
       }),
       i18n: createPluginI18n({ kernel, slug, dir: plugin.dir, track }),
+      ai: createPluginAi(kernel, slug, () => !this.#disposed, track),
+      abilities: createPluginAbilities(kernel, slug, track),
     };
     return Object.freeze(api);
+  }
+
+  #registerMeta(objectType: MetaObjectType, metaKey: string, args: RegisterMetaArgs = {}) {
+    const off = this.kernel.meta.register(objectType, metaKey, args, (name, callback, priority) =>
+      this.#addHook(name, callback as AnyCallback, priority, true),
+    );
+    this.#track(off);
+  }
+
+  async #purge(tags: string[]) {
+    const clean = [...new Set(cacheTags(tags))];
+    if (clean.length) await this.kernel.hooks.doAction(PURGE_ACTION, clean, `plugin:${this.slug}`);
+  }
+
+  /** A plugin file: errors are recorded against the plugin and answer 500. */
+  #addFile(path: string, handler: PublicFileHandler, options?: PublicFileOptions) {
+    if (typeof handler !== 'function') throw new Error(`The file ${path} has no handler.`);
+    const title = this.plugin.manifest.title;
+    const safe: PublicFileHandler = async (request) => {
+      try {
+        return await handler(request);
+      } catch (error) {
+        this.host.reportError(this.slug, `file ${path}`, error);
+        return { status: 500, body: `The ${title} plugin couldn’t serve this file.` };
+      }
+    };
+    const off = this.kernel.publicFiles.add(path, safe, this.slug, options);
+    let removed = false;
+    const remove = () => {
+      if (removed) return;
+      removed = true;
+      off();
+    };
+    this.#track(remove);
+    return remove;
   }
 
   #registerRoute(namespace: string, route: string, args: PluginRouteArgs) {

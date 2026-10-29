@@ -11,6 +11,7 @@ import { renderBlocksAsStatic, stripTags } from '../content/sanitize';
 import { type AppEnv, invalidParams, readJson, restError } from '../http';
 import type { Kernel } from '../kernel';
 import { featuredMediaIds, isValidFeaturedMedia, setFeaturedMedia } from '../media/featured';
+import { authorizeRestMeta, parseRestMeta, readRestMeta, writeRestMeta } from './meta-fields';
 import {
   authStatus,
   boolParam,
@@ -48,6 +49,8 @@ interface Prepared {
   sticky: Set<number>;
   /** Featured image (_thumbnail_id) per post. */
   thumbnails: Map<number, number>;
+  /** Registered meta shown in REST (routes/meta-fields.ts), when the type supports custom fields. */
+  meta: Map<number, Record<string, unknown>> | undefined;
   password?: string;
 }
 
@@ -78,6 +81,9 @@ async function prepareContext(
     terms,
     sticky,
     thumbnails: await featuredMediaIds(kernel, ids),
+    meta: type.supports.has('custom-fields')
+      ? await readRestMeta(kernel, 'post', type.name, ids)
+      : undefined,
     password,
   };
 }
@@ -137,7 +143,7 @@ async function prepareItem(post: Post, p: Prepared): Promise<Record<string, unkn
     comment_status: post.commentStatus,
     ping_status: post.pingStatus,
     template: '',
-    meta: {},
+    meta: p.meta?.get(post.id) ?? {},
   };
   if (type.hierarchical) {
     item.parent = post.parentId ?? 0;
@@ -388,7 +394,14 @@ export function postsRoutes(type: PostType) {
       else args.post__not_in = [...(args.post__not_in ?? []), ...sticky];
     }
 
-    const result = await queryPosts(kernel, args);
+    // rest_{$post_type}_query (WP_REST_Posts_Controller::get_items()): plugins turn their own
+    // parameters (a posts-list filter's, say) into query arguments. They get every parameter.
+    const filtered = (await kernel.hooks.applyFilters(
+      `rest_${type.name}_query`,
+      args,
+      raw,
+    )) as QueryArgs;
+    const result = await queryPosts(kernel, filtered);
     if (q.page > result.maxPages && result.found > 0) {
       return restError(
         c,
@@ -594,6 +607,10 @@ export function postsRoutes(type: PostType) {
     };
   };
 
+  /** `meta` of a write, for types that support custom fields (WordPress ignores it otherwise). */
+  const metaInput = (c: Context<AppEnv>, meta: unknown) =>
+    type.supports.has('custom-fields') ? parseRestMeta(c, 'post', type.name, meta) : [];
+
   const setSticky = async (kernel: Kernel, id: number, sticky: boolean | undefined) => {
     if (sticky === undefined || type.name !== 'post') return;
     const current = await kernel.options.get<number[]>('sticky_posts', []);
@@ -616,10 +633,18 @@ export function postsRoutes(type: PostType) {
     }
     const input = await toInput(c);
     if (input instanceof Response) return input;
-    const { sticky, featured_media } =
-      ((await readJson(c)) as { sticky?: boolean; featured_media?: number } | undefined) ?? {};
+    const { sticky, featured_media, meta } =
+      ((await readJson(c)) as
+        | { sticky?: boolean; featured_media?: number; meta?: unknown }
+        | undefined) ?? {};
+    const metaWrites = metaInput(c, meta);
+    if (metaWrites instanceof Response) return metaWrites;
     try {
       const post = await kernel.posts.insert(type.name, input);
+      // The auth callbacks receive the post's ID, so a new post is checked once it exists.
+      const denied = await authorizeRestMeta(c, 'post', post.id, metaWrites);
+      if (denied) return denied;
+      await writeRestMeta(kernel, 'post', post.id, metaWrites);
       await setSticky(kernel, post.id, sticky);
       await kernel.hooks.doAction(`rest_insert_${type.name}`, post, await readJson(c), true);
       if (type.supports.has('thumbnail')) await setFeaturedMedia(kernel, post.id, featured_media);
@@ -648,12 +673,19 @@ export function postsRoutes(type: PostType) {
     }
     const input = await toInput(c, existing);
     if (input instanceof Response) return input;
-    const { sticky, featured_media } =
-      ((await readJson(c)) as { sticky?: boolean; featured_media?: number } | undefined) ?? {};
+    const { sticky, featured_media, meta } =
+      ((await readJson(c)) as
+        | { sticky?: boolean; featured_media?: number; meta?: unknown }
+        | undefined) ?? {};
+    const metaWrites = metaInput(c, meta);
+    if (metaWrites instanceof Response) return metaWrites;
+    const denied = await authorizeRestMeta(c, 'post', existing.id, metaWrites);
+    if (denied) return denied;
     try {
       // Changing the status of a trashed post restores it first, as the admin's "Restore" does.
       if (existing.status === 'trash' && input.status) await kernel.posts.untrash(existing.id);
       const post = await kernel.posts.update(existing.id, input);
+      await writeRestMeta(kernel, 'post', post.id, metaWrites);
       await setSticky(kernel, post.id, sticky);
       await kernel.hooks.doAction(`rest_insert_${type.name}`, post, await readJson(c), false);
       if (type.supports.has('thumbnail')) await setFeaturedMedia(kernel, post.id, featured_media);

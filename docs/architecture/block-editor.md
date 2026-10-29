@@ -59,8 +59,11 @@ ShortcutProvider (.root)
 
 - `onReady(handle)`: `handle.getContent()` serializes the blocks on demand (saving, autosave, switching to Code); `handle.baseline` is the first parse/serialize pass, so opening a post never counts as a change.
 - `onContentChange(markup)`: debounced (300 ms). It drives the "Unsaved changes" state, the word count and the browser copy.
+- `handle.parse(markup)`: `@wordpress/blocks`' `parse()`, kept by `PostEditor` (also in Code view) to give plugins the parsed blocks.
 - `handle.saveMenus()`: saves the `wp_navigation` menus a Navigation block edited through core-data; `PostEditor` calls it on every save.
 - `onSelectionChange`: selecting a block opens the Block tab, and clearing the selection returns to the Post tab, as in WordPress.
+
+`PostEditor` publishes the post to plugins' UI modules as `window.pressbase.editor` and applies their `editPost()` edits to its form state ([Plugins](plugins.md#live-editor-data), [ADR 0018](../adr/0018-editor-data-for-plugins.md)). Plugins' sidebars are tabs after Post and Block; selecting a block doesn't leave a plugin's tab.
 
 To replace the content (loading a revision, restoring an autosave), `PostEditor` remounts the editor with a new `key`. **Code** view is a textarea over the raw markup; switching back parses it again.
 
@@ -117,6 +120,10 @@ Static blocks (paragraph, image, gallery, cover, media & text, file, audio, vide
 - To hide a block for good, add it to `UNSUPPORTED_BLOCKS`. To tie it to a server feature, add a probe to `features.ts` and a rule to `unavailableReason()` in `blocks.ts`. Test the rule in `blocks.test.ts`.
 - New dynamic core blocks (no `save`) go in `DYNAMIC_BLOCKS`.
 - Plugin blocks that are only registered on the server appear automatically once `/wp/v2/block-types` reports them with `is_dynamic: true`.
+
+### Plugin blocks
+
+Before the editor parses the post, `BlockEditor` (the default export of `block-editor.tsx`) shows the skeleton while `preparePluginBlocks()` (`server-blocks.tsx`) imports active plugins' block editor modules (`blocks` in `/pressbase/v1/admin-extensions`), reads `/wp/v2/block-types` and registers each plugin block once, merging the server's metadata with the module's `edit`/`save` (`lib/extensions/blocks.ts`). Saved plugin blocks therefore parse as themselves. The blocks' `style` and `editorStyle` sheets join the canvas iframe's stylesheets. A `core/missing` block whose original name is outside `core/` shows "This block’s plugin is inactive" (an `editor.BlockEdit` filter) and keeps its markup. See [Plugins](plugins.md#blocks) and [ADR 0020](../adr/0020-plugin-blocks.md).
 
 ### Media
 

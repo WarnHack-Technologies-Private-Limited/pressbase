@@ -85,3 +85,66 @@ export const uninstall = defineLifecycle(async (api) => {
   await api.cron.unscheduleHook('cleanup');
   await api.options.delete('greeting');
 });
+
+// v0.7: registered meta, early request hooks, head output, the cache, files, tables.
+export const seo = definePlugin((api) => {
+  api.meta.registerPostMeta('', '_yoast_wpseo_title', {
+    type: 'string',
+    single: true,
+    showInRest: true,
+    authCallback: (allowed, _key, postId) => allowed || postId > 0,
+  });
+  // @ts-expect-error: not a meta type.
+  api.meta.register('post', 'x', { type: 'date' });
+  api.hooks.addAction('template_redirect', async (request) => {
+    if (request.path === '/old/') request.redirect('/new/', 301);
+    if ((await request.main()).is404) request.notFound(410);
+  });
+  api.hooks.addAction('pressbase_404', ({ path, referrer }) => api.logger.info(path, referrer));
+  api.hooks.addFilter('pre_handle_404', (preempt, _main, url) => preempt || url.pathname === '/v/');
+  api.hooks.addFilter('get_canonical_url', (url, post) => `${url}#${post.id}`);
+  api.hooks.removeAction('wp_head', 'rel_canonical');
+  api.public.addFile('/llms.txt', () => ({ body: '# Site', contentType: 'text/markdown' }));
+  api.cache.addTags(api.cache.pathTag('/llms.txt'));
+  void api.cache.purgePaths(['/old/']);
+  void api.db?.query<{ id: number }>(api.db.sql`select 1 as id`);
+});
+
+// v0.7: the AI client and the Abilities API.
+export const assistant = definePlugin((api) => {
+  api.abilities.registerCategory('assistant', { label: 'Assistant', description: 'Helpers.' });
+  api.abilities.register<{ text: string }, string>('shout', {
+    label: 'Shout',
+    description: 'Upper-cases text.',
+    category: 'assistant',
+    inputSchema: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] },
+    permissionCallback: (_input, context) => context.can('edit_posts'),
+    executeCallback: (input) => input.text.toUpperCase(),
+    meta: { annotations: { readonly: true }, showInRest: true },
+  });
+  // @ts-expect-error: permissionCallback is required.
+  api.abilities.register('nope', {
+    label: 'x',
+    description: 'x',
+    category: 'assistant',
+    executeCallback: () => 1,
+  });
+  api.hooks.addFilter('wp_supports_ai', (enabled) => enabled);
+  api.hooks.addAction('pressbase_ai_request', (entry) =>
+    api.logger.info(entry.model, entry.outputTokens),
+  );
+  void (async () => {
+    if (!(await api.ai.supportsAi())) return;
+    const result = await api.ai
+      .prompt('Suggest a title.')
+      .usingSystemInstruction('Be brief.')
+      .usingAbilities('core/get-site-info')
+      .generateTextResult();
+    api.logger.info(result.tokenUsage.totalTokens);
+    const json = await api.ai
+      .prompt('Titles?')
+      .asJsonResponse({ type: 'object', properties: { titles: { type: 'array' } } })
+      .generateJson<{ titles: string[] }>();
+    api.logger.info(json.titles.length);
+  })();
+});

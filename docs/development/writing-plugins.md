@@ -21,7 +21,7 @@ In a terminal it asks for a title, a description and whether to include a databa
 | `--sdk <spec>` | the `@pressbase/plugin-sdk` version to depend on |
 | `-y`, `--yes` | ask nothing, use the defaults |
 
-The name follows `plugin.json`'s rules: lowercase letters, numbers and single dashes, at most 64 characters, not one of the reserved names (`wp`, `pressbase`, `oembed`, `wp-site-health`, `wp-block-editor`). Nothing is downloaded while scaffolding.
+The name follows `plugin.json`'s rules: lowercase letters, numbers and single dashes, at most 64 characters, not one of the reserved names (`wp`, `pressbase`, `oembed`, `wp-site-health`, `wp-abilities`, `wp-block-editor`). Nothing is downloaded while scaffolding.
 
 You get:
 
@@ -75,3 +75,4 @@ Your `tsconfig.json` needs `"moduleResolution": "Bundler"` (or `NodeNext`) and N
 - `packages/plugin-sdk`: `pnpm --filter @pressbase/plugin-sdk build` regenerates `src/core.generated.d.ts` from `apps/core/src/plugins/sdk-types.ts` and compiles `dist/`. Turbo runs it before the SDK's typecheck and the scaffolder's tests. When you add a type plugins need, export it from `sdk-types.ts`; when a core module starts declaring hooks, add an `export type {} from …` line there (the build tells you).
 - `packages/create-pressbase-plugin`: the template is in `template/` with `__PLUGIN_SLUG__`, `__PLUGIN_TITLE__`, `__PLUGIN_DESCRIPTION__` and `__PLUGIN_PREFIX__` placeholders; lines between `// @database-start` and `// @database-end` (or `--` in SQL) are dropped with `--no-database`. Its test scaffolds a plugin, links the workspace's SDK, esbuild and TypeScript in place of `npm install`, builds, typechecks and packs it, then installs the `.zip` through core's installer and calls its routes.
 - The bundled example, `plugins/daily-tips`, stays plain JavaScript so it runs without a build step.
+- `plugins/pressbase-seo` is the first first-party plugin: TypeScript built with esbuild like the scaffolded template, a workspace package (`plugins/*`) so `pnpm build` and `pnpm dev` build it and turbo typechecks and tests it after the SDK. Its tests copy it into a test site's plugin folder and activate it through REST. See [Pressbase SEO](../architecture/seo-plugin.md).

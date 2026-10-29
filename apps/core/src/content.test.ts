@@ -89,6 +89,28 @@ describe('GET /wp/v2/posts', () => {
     expect(beyond.status).toBe(400);
     expect(beyond.body.code).toBe('rest_post_invalid_page_number');
   });
+
+  it('lets plugins read their own parameters through rest_{post_type}_query', async () => {
+    const { request, install, kernel } = await setup();
+    await install();
+    await request('POST', '/wp/v2/posts', { title: 'Short note', status: 'publish' });
+    const seen: unknown[] = [];
+    kernel.hooks.addFilter('rest_post_query', (args, params) => {
+      seen.push((params as Record<string, unknown>)['daily-tips-length']);
+      return (params as Record<string, unknown>)['daily-tips-length'] === 'note'
+        ? { ...(args as object), s: 'note' }
+        : args;
+    });
+    const res = await request('GET', '/wp/v2/posts?daily-tips-length=note');
+    expect(res.status).toBe(200);
+    expect(res.body.map((p: { title: { rendered: string } }) => p.title.rendered)).toEqual([
+      'Short note',
+    ]);
+    expect(seen).toEqual(['note']);
+    // Pages fire their own hook.
+    await request('GET', '/wp/v2/pages?daily-tips-length=note');
+    expect(seen).toEqual(['note']);
+  });
 });
 
 describe('writing posts', () => {
@@ -350,6 +372,20 @@ describe('categories and tags', () => {
     expect(deleted.body.deleted).toBe(true);
     // Children move up to the deleted term's parent.
     expect((await request('GET', `/wp/v2/categories/${child.body.id}`)).body.parent).toBe(0);
+  });
+
+  it('runs rest_prepare_{taxonomy} on each term', async () => {
+    const ctx = await installed();
+    ctx.kernel.hooks.addFilter('rest_prepare_post_tag', (item, term, context) => ({
+      ...(item as object),
+      extra: `${(term as { slug: string }).slug}:${context}`,
+    }));
+    const created = await ctx.request('POST', '/wp/v2/tags', { name: 'Green tea' });
+    expect(created.body.extra).toBe('green-tea:edit');
+    const list = await ctx.request('GET', '/wp/v2/tags');
+    expect(list.body[0].extra).toBe('green-tea:view');
+    const categories = await ctx.request('GET', '/wp/v2/categories');
+    expect(categories.body[0].extra).toBeUndefined();
   });
 
   it('protects the default category and re-homes orphaned posts', async () => {

@@ -423,6 +423,14 @@ declare module '@pressbase/hooks' {
   }
 }
 
+/** What the block editor loads for a plugin's block: paths in the plugin folder. */
+export interface PluginBlockAssets {
+  /** The editor module (`admin/tip.js`), served like a UI module. */
+  editorScript: string | null;
+  /** Stylesheets for the editor canvas (`style` then `editorStyle`), in `public/`. */
+  styles: string[];
+}
+
 /**
  * One plugin's settings, sections and pages. Created by its PluginRuntime,
  * which passes `track` so deactivation removes everything.
@@ -431,6 +439,8 @@ export class PluginAdmin {
   readonly settings = new Map<string, ResolvedSetting>();
   readonly sections = new Map<string, ResolvedSection>();
   readonly pages = new Map<string, ResolvedPage>();
+  /** The plugin's blocks' editor assets (api.blocks, plugins/blocks.ts), by block name. */
+  readonly blocks = new Map<string, PluginBlockAssets>();
   readonly prefix: string;
 
   constructor(
@@ -508,6 +518,12 @@ export class PluginAdmin {
     if (this.pages.size >= 20) throw new Error('A plugin can add at most 20 admin pages.');
     this.pages.set(page.slug, page);
     this.track(() => this.pages.delete(page.slug));
+  }
+
+  /** A block's editor module and stylesheets, for the block editor (plugins/blocks.ts). */
+  addBlock(name: string, assets: PluginBlockAssets): void {
+    this.blocks.set(name, assets);
+    this.track(() => this.blocks.delete(name));
   }
 
   /** What plugin.json's `admin` declares: registered before `register(api)` runs. */
@@ -601,6 +617,17 @@ export function moduleUrl(plugin: InstalledPlugin, file: string): string {
     .map((segment) => encodeURIComponent(segment))
     .join('/');
   return `/wp-content/plugins/${plugin.slug}/${path}?ver=${encodeURIComponent(plugin.manifest.version)}`;
+}
+
+/** A plugin block's editor assets as /pressbase/v1/admin-extensions lists them. */
+export function blockItem(admin: PluginAdmin, name: string, assets: PluginBlockAssets) {
+  return {
+    plugin: admin.slug,
+    title: admin.plugin.manifest.title,
+    name,
+    editor_script: assets.editorScript ? moduleUrl(admin.plugin, assets.editorScript) : null,
+    styles: assets.styles.map((file) => moduleUrl(admin.plugin, file)),
+  };
 }
 
 export function pageItem(admin: PluginAdmin, page: ResolvedPage) {

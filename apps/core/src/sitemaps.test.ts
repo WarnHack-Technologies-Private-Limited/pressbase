@@ -118,6 +118,39 @@ describe('XML sitemaps', () => {
     expect(locs(users.html)).toEqual(['http://localhost:3000/author/admin/']);
   });
 
+  it('runs the provider, entry and taxonomy query filters', async () => {
+    const ctx = await site();
+    const { hooks } = ctx.kernel;
+    const tag = await ctx.request('POST', '/wp/v2/tags', { name: 'Hidden' });
+    const shown = await ctx.request('POST', '/wp/v2/tags', { name: 'Shown' });
+    await post(ctx, { title: 'Tagged', tags: [tag.body.id, shown.body.id] });
+    hooks.addFilter('wp_sitemaps_add_provider', (provider, name) =>
+      name === 'users' ? false : provider,
+    );
+    hooks.addFilter('wp_sitemaps_taxonomies_query_args', (args, taxonomy) =>
+      taxonomy === 'post_tag' ? { ...args, exclude: [tag.body.id] } : args,
+    );
+    hooks.addFilter('wp_sitemaps_taxonomies_entry', (entry, term) => ({
+      ...entry,
+      lastmod: `2026-01-0${term.id % 9}T00:00:00+00:00`,
+    }));
+    hooks.addFilter('wp_sitemaps_posts_entry', (entry, p) =>
+      p.title === 'Tagged' ? { ...entry, changefreq: 'weekly', priority: 0.5 } : entry,
+    );
+
+    const index = await render(ctx, '/wp-sitemap.xml');
+    expect(locs(index.html)).not.toContain('http://localhost:3000/wp-sitemap-users-1.xml');
+    expect((await render(ctx, '/wp-sitemap-users-1.xml')).status).toBe(404);
+    const tags = await render(ctx, '/wp-sitemap-taxonomies-post_tag-1.xml');
+    expect(locs(tags.html)).toEqual(['http://localhost:3000/tag/shown/']);
+    expect(tags.html).toContain(`<lastmod>2026-01-0${shown.body.id % 9}T00:00:00+00:00</lastmod>`);
+    const posts = await render(ctx, '/wp-sitemap-posts-post-1.xml');
+    assertWellFormedXml(posts.html);
+    expect(posts.html).toMatch(
+      /<\/lastmod><changefreq>weekly<\/changefreq><priority>0.5<\/priority>/,
+    );
+  });
+
   it('answers 404 for unknown providers, subtypes and pages', async () => {
     const ctx = await site();
     for (const url of [

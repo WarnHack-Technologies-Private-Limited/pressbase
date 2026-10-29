@@ -20,16 +20,64 @@ export type {
   FilterCallback,
   FilterRegistry,
 } from '@pressbase/hooks';
+export type { JsonSchema } from '../abilities/json-schema';
+export type {
+  Ability,
+  AbilityAnnotations,
+  AbilityArgs,
+  AbilityCategory,
+  AbilityCategoryArgs,
+  AbilityContext,
+  AbilityError,
+  AbilityMeta,
+  AbilityQuery,
+} from '../abilities/registry';
+export type { AiAttribution, AiRequestLogEntry, AiSettings } from '../ai/client';
+export type { AiPromptBuilder } from '../ai/prompt-builder';
+export type {
+  AiError,
+  AiFinishReason,
+  AiFunctionDeclaration,
+  AiMessage,
+  AiMessagePart,
+  AiProvider,
+  AiProviderContext,
+  AiResult,
+  AiTextRequest,
+  AiTokenUsage,
+} from '../ai/types';
 export type { CurrentUser } from '../auth/users';
 export type {} from '../cache/invalidation';
+export type {
+  MetaObjectType,
+  MetaRestArgs,
+  MetaValueType,
+  RegisterMetaArgs,
+  RestMetaField,
+} from '../content/meta';
 export type { PostType, PostTypeArgs } from '../content/post-types';
 export type { Post, PostInput } from '../content/posts';
 export type { QueryArgs, QueryResult } from '../content/query';
 export type { Taxonomy, TaxonomyArgs } from '../content/taxonomies';
+export type { Term, TermListArgs } from '../content/terms';
 export type {} from '../frontend/dependencies';
 export type { HtmlOutput } from '../frontend/head';
 export type { PageRender } from '../frontend/page';
+export type {
+  PublicFileBody,
+  PublicFileHandler,
+  PublicFileOptions,
+  PublicFileRequest,
+  PublicFileResult,
+} from '../frontend/public-files';
+export type { MainQuery } from '../frontend/query';
 export type {} from '../frontend/render';
+export type { SitemapEntry, SitemapProvider, SitemapUser } from '../frontend/sitemaps';
+export type {
+  NotFoundRequest,
+  TemplateRedirectAnswer,
+  TemplateRedirectRequest,
+} from '../frontend/template-redirect';
 export type {} from '../frontend/title';
 export type {} from '../i18n/l10n';
 export type {} from '../i18n/language-packs';
@@ -70,6 +118,7 @@ export type {
   SettingControl,
   SettingType,
 } from './admin';
+export type { PluginAbilities, PluginAi } from './ai';
 export type {
   PluginAssets,
   PluginScripts,
@@ -79,12 +128,14 @@ export type {
   Version,
 } from './assets';
 export type { PluginCron, PluginJobContext, PluginJobHandler, PluginJobs } from './background';
+export type { PluginBlockArgs, PluginBlockRender, PluginBlocks } from './blocks';
 export type {
   PluginCliAssocArgs,
   PluginCliCommandArgs,
   PluginCliHandler,
   PluginCliIo,
 } from './cli';
+export type { AttachmentImage, ContentAuthor } from './content-links';
 export type { PluginI18n } from './i18n';
 export type {} from './manager';
 export type { PluginManifest, PluginManifestInput, PluginPermission } from './manifest';

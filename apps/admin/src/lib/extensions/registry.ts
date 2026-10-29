@@ -17,7 +17,31 @@ export const SLOTS = {
   dashboard: 'dashboard',
   /** Panels in the post editor's Post tab. Fill props: `title`. Fill gets { postId, postType }. */
   editorDocumentSettings: 'editor.document-settings',
+  /** Tabs in the post editor's sidebar, beside Post and Block. Fill props: `sidebar`, `title`, `icon`. */
+  editorSidebar: 'editor.sidebar',
+  /** Buttons in the editor's top bar that open a plugin sidebar. Fill props: `target`, `title`, `icon`. */
+  editorSidebarMoreMenu: 'editor.sidebar-more-menu',
+  /** Panels in the "Ready to publish?" step. Fill props: `title`, `initialOpen`. Fill gets the post. */
+  editorPrePublish: 'editor.pre-publish',
+  /** Extra columns in the posts and pages lists. Fill props: `title`, `postTypes`. Fill gets { post, postType }. */
+  postsListColumns: 'posts-list.columns',
+  /** Row actions in the posts and pages lists. Fill props: `label`, `href`, `onClick`, `isVisible`, `postTypes`. */
+  postsListRowActions: 'posts-list.row-actions',
+  /** Filters above the posts and pages lists. Fill props: `id`, `label`, `options`, `query`, `postTypes`. */
+  postsListFilters: 'posts-list.filters',
+  /** Fields in a category's or tag's edit form. Fill props: `title`, `taxonomies`. Fill gets { taxonomy, term, meta, editMeta }. */
+  termEditFields: 'term.edit-fields',
+  /** Cards on the profile and user edit screens. Fill props: `title`, `description`. Fill gets { user, isSelf, meta, editMeta }. */
+  userProfileFields: 'user.profile-fields',
 } as const;
+
+/** Whether a fill limited to some post types (or taxonomies) applies to `type`: its `postTypes` or `taxonomies` prop. */
+export function appliesTo(fill: { props: Record<string, unknown> }, type: string): boolean {
+  const limit = fill.props.postTypes ?? fill.props.taxonomies;
+  if (limit === undefined || limit === null) return true;
+  if (typeof limit === 'string') return limit === type;
+  return Array.isArray(limit) && limit.includes(type);
+}
 
 /** The body of a plugin's admin page: `plugin-page/{plugin}/{page}`. */
 export function pageSlot(plugin: string, page: string): string {

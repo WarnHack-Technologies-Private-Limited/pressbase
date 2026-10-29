@@ -52,6 +52,8 @@ Blocks render before the hooks run, so a block's render callback can enqueue a s
 
 WordPress prints the generator and canonical link at priority 10; Pressbase prints them at 1 so the head keeps the order it had before these hooks existed. A plugin's callback at the default priority 10 lands after the stylesheets and head scripts, as in WordPress.
 
+The `wp_head` callbacks above carry WordPress's function names, so a plugin can remove one by name: `api.hooks.removeAction('wp_head', 'rel_canonical')` (it comes back when the plugin is deactivated). See [Plugins](plugins.md#head-output-and-canonical-urls).
+
 ## Cache safety
 
 Everything printed through these hooks is part of the page `apps/web` caches and serves to every anonymous visitor ([ADR 0008](../adr/0008-public-page-caching.md)). So:
@@ -101,11 +103,11 @@ Not ported: script concatenation (`load-scripts.php`), script translations, cond
 | `script_loader_src`, `style_loader_src` | `src, handle` | an empty string skips the tag |
 | `script_loader_tag` | `tag, handle, src` | the whole tag, with its inline `before` / `after` scripts |
 | `style_loader_tag` | `tag, handle, href, media` | the `<link>` |
-| `wp_robots` | `robots` | `{ directive: true \| 'value' }`; defaults `max-image-preview: large`, or `noindex, nofollow` when the site discourages search engines |
-| `pre_get_document_title` | `title` | a non-empty string replaces the title |
-| `document_title_separator` | `separator` | default `&#8211;` |
-| `document_title_parts` | `parts` | `{ title, page?, tagline?, site? }`, joined in that order; plain text, escaped at the end |
-| `document_title` | `title` | the joined title, before escaping |
+| `wp_robots` | `robots`, `main` | `{ directive: true \| 'value' }`; defaults `max-image-preview: large`, or `noindex, nofollow` when the site discourages search engines |
+| `pre_get_document_title` | `title`, `main` | a non-empty string replaces the title |
+| `document_title_separator` | `separator`, `main` | default `&#8211;` |
+| `document_title_parts` | `parts`, `main` | `{ title, page?, tagline?, site? }`, joined in that order; plain text, escaped at the end |
+| `document_title` | `title`, `main` | the joined title, before escaping |
 | `the_generator` | `html, type` | the generator meta tag; return `''` to drop it |
 | `body_class` | `classes, extra` | the `<body>` classes (sanitised and de-duplicated after the filter) |
 | `language_attributes` | `output, doctype` | the `<html>` attributes, e.g. `lang="en-US"`; printed as returned, so escape what you add |

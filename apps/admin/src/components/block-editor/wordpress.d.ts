@@ -50,6 +50,19 @@ declare module '@wordpress/block-editor' {
     description?: string;
   }>;
   export function useBlockProps(props?: Record<string, unknown>): Record<string, unknown>;
+  // What plugins' block edit functions get through window.pressbase.blocks (ADR 0020).
+  export function useInnerBlocksProps(
+    props?: Record<string, unknown>,
+    options?: Record<string, unknown>,
+  ): Record<string, unknown>;
+  export const InspectorControls: ComponentType<Record<string, unknown>>;
+  export const BlockControls: ComponentType<Record<string, unknown>>;
+  export const RichText: ComponentType<Record<string, unknown>> & {
+    Content: ComponentType<Record<string, unknown>>;
+  };
+  export const InnerBlocks: ComponentType<Record<string, unknown>> & {
+    Content: ComponentType;
+  };
 }
 
 declare module '@wordpress/block-library' {

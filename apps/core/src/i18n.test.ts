@@ -426,10 +426,10 @@ describe('plugins', () => {
     );
     await writeFile(
       path.join(dir, 'languages', 'greeter-de_DE.po'),
-      po('de_DE', [
+      `${po('de_DE', [
         ['Good morning', 'Guten Morgen'],
         ['Post', 'Veröffentlichen', 'verb'],
-      ]) + '\nmsgid "%d tip"\nmsgid_plural "%d tips"\nmsgstr[0] "%d Tipp"\nmsgstr[1] "%d Tipps"\n',
+      ])}\nmsgid "%d tip"\nmsgid_plural "%d tips"\nmsgstr[0] "%d Tipp"\nmsgstr[1] "%d Tipps"\n`,
     );
     await german(ctx);
     await ctx.kernel.plugins.activate('greeter');

@@ -1,0 +1,23 @@
+{
+  "name": "pressbase-seo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pressbase SEO: titles, descriptions, canonicals, robots, social cards, schema, sitemaps, redirects and a calm content analysis. Bundled with Pressbase.",
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs --watch",
+    "typecheck": "tsc -p .",
+    "test": "node build.mjs && vitest run"
+  },
+  "devDependencies": {
+    "@pressbase/core": "workspace:*",
+    "@pressbase/plugin-sdk": "workspace:*",
+    "@types/node": "26.6.5",
+    "@types/react": "19.3.0",
+    "esbuild": "0.28.2",
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  }
+}

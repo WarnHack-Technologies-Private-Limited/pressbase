@@ -46,7 +46,12 @@ declare module '@pressbase/hooks' {
 /** Options whose changes never show on the public site. */
 const PRIVATE_OPTIONS = new Set(['pressbase_db_version', 'pressbase_comment_hash_key', 'cron']);
 const isPrivateOption = (name: string) =>
-  PRIVATE_OPTIONS.has(name) || name.startsWith('_transient') || name.startsWith('_site_transient');
+  PRIVATE_OPTIONS.has(name) ||
+  name.startsWith('_transient') ||
+  name.startsWith('_site_transient') ||
+  // Settings → AI and provider keys (ai/client.ts) never show on the public site.
+  name.startsWith('pressbase_ai_') ||
+  name.startsWith('connectors_ai_');
 
 /** Statuses an anonymous visitor can see (the only pages apps/web caches). */
 const isPublic = (status: string) => status === 'publish';
@@ -143,6 +148,22 @@ export function registerCacheInvalidation(kernel: Kernel): void {
     if (!isPublic(p.status)) return;
     await purge(siteWide(p.type) ? [CacheTag.site] : listingTags(p), 'deleted_post');
   });
+
+  // Meta written through the metadata API (content/meta.ts): what a page prints
+  // from it (an SEO title, a description) belongs to the post or term.
+  for (const action of ['added_post_meta', 'updated_post_meta', 'deleted_post_meta'] as const) {
+    hooks.addAction(action, async (...args: unknown[]) => {
+      const postId = args[1];
+      const post = await kernel.posts.get(Number(postId));
+      if (!post || !isPublic(post.status)) return;
+      await purge([siteWide(post.type) ? CacheTag.site : CacheTag.post(post.id)], action);
+    });
+  }
+  for (const action of ['added_term_meta', 'updated_term_meta', 'deleted_term_meta'] as const) {
+    hooks.addAction(action, async (...args: unknown[]) =>
+      purge([CacheTag.term(Number(args[1]))], action),
+    );
+  }
 
   // Media: alt text, captions and files of an attachment shown on pages.
   for (const action of ['edit_attachment', 'delete_attachment'] as const) {
