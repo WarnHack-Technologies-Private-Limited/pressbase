@@ -383,6 +383,7 @@ describe('DELETE /pressbase/v1/themes/{stylesheet}', () => {
     expect(Object.fromEntries(list.map((t) => [t.stylesheet, t.pressbase_deletable]))).toEqual({
       child: false,
       parent: false,
+      pressbase: false,
       twentytwentyfive: false,
     });
     expect(await exists(path.join(ctx.dataDir, 'themes', 'parent'))).toBe(true);

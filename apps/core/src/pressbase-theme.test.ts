@@ -5,6 +5,7 @@ import { type ParsedBlock, parseBlocks } from '@pressbase/blocks';
 import { applyStyleVariation, type StyleVariation } from '@pressbase/theme-json';
 import { describe, expect, it } from 'vitest';
 import { CORE_PATTERNS } from './blocks/patterns';
+import { setMeta } from './media/service';
 import { setup } from './test-utils';
 import { THEME_COMPAT } from './themes/compat';
 import { loadPhpPattern } from './themes/php-patterns';
@@ -184,7 +185,6 @@ describe('the Pressbase theme', () => {
     expect([...active.templates.keys()].sort()).toEqual([
       '404',
       'archive',
-      'front-page',
       'home',
       'index',
       'page',
@@ -267,7 +267,17 @@ describe('the Pressbase theme', () => {
     }
   });
 
-  it('renders the front page from its patterns, with no unknown blocks', async () => {
+  it('shows the latest posts on the home page, as Settings → Reading says', async () => {
+    const ctx = await site();
+    const { status, html } = await page(ctx, '/');
+    expect(status).toBe(200);
+    // No front-page template: the home page follows show_on_front.
+    expect(html).toContain('Hello world!');
+    expect(html).not.toContain('Publish ideas that <em>move</em> people.');
+    expect(html.match(/<h1[\s>]/g)?.length).toBe(1);
+  });
+
+  it('renders a static front page built from its patterns, with no unknown blocks', async () => {
     const ctx = await site();
     const warnings: string[] = [];
     const original = console.warn;
@@ -278,6 +288,27 @@ describe('the Pressbase theme', () => {
       console.warn = original;
     }
     expect(warnings.filter((w) => w.includes('pressbase'))).toEqual([]);
+
+    // A landing page as the static front page, as an owner would set it up.
+    const content = [
+      'page-landing',
+      'bento-grid',
+      'stats',
+      'code-showcase',
+      'posts-grid',
+    ]
+      .map((slug) => `<!-- wp:pattern {"slug":"pressbase/${slug}"} /-->`)
+      .join('\n');
+    const created = await ctx.request('POST', '/wp/v2/pages', {
+      title: 'Home',
+      status: 'publish',
+      content,
+    });
+    expect(created.status).toBe(201);
+    // REST doesn't take `template` yet (Studio's page panel, #29), so set the meta as an import would.
+    await setMeta(ctx.kernel, created.body.id, '_wp_page_template', 'page-no-title');
+    await ctx.kernel.options.set('show_on_front', 'page');
+    await ctx.kernel.options.set('page_on_front', created.body.id);
 
     const { status, html } = await page(ctx, '/');
     expect(status).toBe(200);

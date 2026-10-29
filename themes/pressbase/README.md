@@ -9,7 +9,7 @@ The default theme of Pressbase, and a standard WordPress block theme: the same f
 | `theme.json` | Schema 3. The "Paper" look: palette (`base`, `surface`, `contrast`, `muted`, `border`, `accent`, `accent-text`, `accent-soft`, `on-accent`, `violet`), gradients, fluid font sizes up to `display`, spacing `20`–`80`, shadows (`soft`, `lifted`, `glow`, `deep`), radius sizes, Manrope, Platypi (with italic), Fira Code and a system mono |
 | `style.css` | Theme header, motion and block style CSS (under 15 KB) |
 | `functions.php` | For WordPress: enqueues `style.css`, registers the block styles and the `pressbase` and `pressbase_page` pattern categories. Pressbase reproduces it from `THEME_COMPAT.pressbase` in `apps/core/src/themes/compat.ts` |
-| `templates/` | `index`, `home`, `front-page`, `single`, `page`, `page-no-title`, `archive`, `search`, `404` |
+| `templates/` | `index`, `home`, `single`, `page`, `page-no-title`, `archive`, `search`, `404` |
 | `parts/` | `header` (sticky glass header), `footer` |
 | `patterns/` | 29 patterns, 20 of them in the inserter; `hidden-*` ones are used by templates |
 | `styles/` | `01-midnight.json` (dark), `colors/02-violet.json`, `typography/03-grotesk.json`, and the section styles `sections/section-ink.json` and `sections/section-soft.json` |
@@ -43,4 +43,4 @@ The default theme of Pressbase, and a standard WordPress block theme: the same f
 - Fonts use `font-display: swap` with metric-matched local fallbacks (`Manrope Fallback`, `Platypi Fallback`), so the swap doesn't move text.
 - The hero's terminal card uses the system monospace, so Fira Code only loads where code appears.
 
-Lighthouse (mobile, the front page with sample content, Pressbase's production public app): performance 99, accessibility 100.
+Lighthouse (mobile, a landing-page front page with sample content, Pressbase's production public app): performance 99, accessibility 100.

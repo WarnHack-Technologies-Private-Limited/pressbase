@@ -13,7 +13,7 @@ Pressbase is the default theme of Pressbase, the open-source publishing platform
 
 All motion is CSS. Elements only animate their transform and opacity, so nothing shifts the layout; content is fully visible in browsers without scroll-driven animations; and everything stops when the visitor prefers reduced motion.
 
-The theme includes templates for the front page, blog, single posts, pages, archives, search results and 404s; a header and footer; twenty patterns in the inserter (hero, marquee, features, bento grid, stats, testimonials, three-tier pricing, questions and answers, team, posts grid, newsletter, calls to action and footers); four looks (Paper, Midnight, Violet and Grotesk); and block styles for groups, columns, images, covers and paragraphs (Reveal, Lift, Glass, Gradient, Marquee, Animated links and Pill).
+The theme includes templates for the blog, single posts, pages, archives, search results and 404s; a header and footer; twenty patterns in the inserter (a complete landing page, hero, marquee, features, bento grid, stats, testimonials, three-tier pricing, questions and answers, team, posts grid, newsletter, calls to action and footers); four looks (Paper, Midnight, Violet and Grotesk); and block styles for groups, columns, images, covers and paragraphs (Reveal, Lift, Glass, Gradient, Marquee, Animated links and Pill).
 
 == Changelog ==
 
