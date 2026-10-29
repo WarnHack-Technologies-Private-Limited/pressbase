@@ -33,7 +33,9 @@ ENV PRESSBASE_STANDALONE=1 \
 RUN pnpm --filter @pressbase/web build
 RUN pnpm --filter @pressbase/admin build
 # Bundled plugins with a build step (Pressbase SEO: TypeScript → dist/).
-RUN pnpm --filter "./plugins/*" build
+# They import @pressbase/plugin-sdk, which has to be built first.
+RUN pnpm --filter @pressbase/plugin-sdk build \
+ && pnpm --filter "./plugins/*" build
 
 # The standalone servers, with the static files they serve next to them.
 RUN mkdir -p /out \
