@@ -1,0 +1,21 @@
+{
+	"$schema": "https://schemas.wp.org/wp/6.7/theme.json",
+	"version": 3,
+	"title": "Violet",
+	"settings": {
+		"color": {
+			"palette": [
+				{ "color": "#f7f5fb", "name": "Paper", "slug": "base" },
+				{ "color": "#ffffff", "name": "Surface", "slug": "surface" },
+				{ "color": "#1d1a24", "name": "Ink", "slug": "contrast" },
+				{ "color": "#5d5868", "name": "Muted", "slug": "muted" },
+				{ "color": "#e4e0ec", "name": "Border", "slug": "border" },
+				{ "color": "#6236c9", "name": "Violet", "slug": "accent" },
+				{ "color": "#5a2fbf", "name": "Violet text", "slug": "accent-text" },
+				{ "color": "#f0ebfd", "name": "Violet soft", "slug": "accent-soft" },
+				{ "color": "#ffffff", "name": "On violet", "slug": "on-accent" },
+				{ "color": "#c2410c", "name": "Ember", "slug": "violet" }
+			]
+		}
+	}
+}

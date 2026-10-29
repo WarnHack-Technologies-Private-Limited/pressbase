@@ -78,6 +78,12 @@ a {
 	}
 }
 
+/* On coloured backgrounds, the accent is plain italic in the text colour. */
+:is(.has-background, .is-style-section-ink) :is(h1, h2, h3) em {
+	background: none;
+	color: inherit;
+}
+
 @media (forced-colors: active) {
 	:is(h1, h2, h3) em {
 		background: none;

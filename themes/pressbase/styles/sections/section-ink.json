@@ -1,0 +1,62 @@
+{
+	"$schema": "https://schemas.wp.org/wp/6.7/theme.json",
+	"version": 3,
+	"slug": "section-ink",
+	"title": "Ink",
+	"blockTypes": ["core/group", "core/columns", "core/column"],
+	"styles": {
+		"color": {
+			"background": "var:preset|color|contrast",
+			"text": "var:preset|color|base"
+		},
+		"elements": {
+			"link": {
+				"color": {
+					"text": "var:preset|color|base"
+				},
+				":hover": {
+					"color": {
+						"text": "var:preset|color|base"
+					}
+				}
+			},
+			"button": {
+				"color": {
+					"background": "var:preset|color|base",
+					"text": "var:preset|color|contrast"
+				},
+				":hover": {
+					"color": {
+						"background": "var:preset|color|base",
+						"text": "var:preset|color|contrast"
+					}
+				}
+			}
+		},
+		"blocks": {
+			"core/button": {
+				"variations": {
+					"outline": {
+						"border": {
+							"color": "var:preset|color|base"
+						},
+						"color": {
+							"background": "transparent",
+							"text": "var:preset|color|base"
+						}
+					}
+				}
+			},
+			"core/paragraph": {
+				"color": {
+					"text": "color-mix(in srgb, var(--wp--preset--color--base) 82%, transparent)"
+				}
+			},
+			"core/separator": {
+				"color": {
+					"text": "color-mix(in srgb, currentColor 25%, transparent)"
+				}
+			}
+		}
+	}
+}

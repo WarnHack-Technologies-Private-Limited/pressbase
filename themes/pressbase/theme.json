@@ -231,9 +231,6 @@
 				}
 			},
 			"heading": {
-				"color": {
-					"text": "var:preset|color|contrast"
-				},
 				"typography": {
 					"fontFamily": "var:preset|font-family|platypi",
 					"fontWeight": "600",
