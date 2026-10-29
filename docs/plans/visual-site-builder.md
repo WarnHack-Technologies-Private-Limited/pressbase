@@ -1,11 +1,11 @@
 # Plan: the visual site builder and building with AI
 
-Status: **proposed** 2026-10-29, for review. Written after v0.7. The [decisions to make](#decisions-to-make) are at the end.
+Status: **accepted** 2026-10-29, with the [decisions](#decisions) below. Written after v0.7. The work is split into GitHub issues in the **v0.8: Studio** milestone, so anyone can pick one up.
 
 ## Summary
 
 - **Build a visual site builder that a first-time site owner can use,** and let them start it from a prompt: "a site for my bakery in Pune, warm and friendly, with a menu and opening hours" becomes a draft site with a design, pages, header, footer and menu, ready to edit by hand.
-- **The builder is the site editor, done well,** not a page-builder format of our own. Everything it makes is standard block markup, `theme.json` global styles and `wp_template` / `wp_template_part` posts, so pages stay fast (server-rendered, no builder runtime), editable in the block editor, exportable as a block theme and portable to WordPress. This keeps the [vision](../vision.md#non-goals)'s line ("the block editor is the canvas") and the SEO plan's answer to Elementor ("the site editor is the answer").
+- **The builder is Pressbase Studio: the site editor, done well,** with the direct, drag-and-drop feel of Elementor, but not a page-builder format of our own. Everything it makes is standard block markup, `theme.json` global styles and `wp_template` / `wp_template_part` posts, so pages stay fast (server-rendered, no builder runtime), editable in the block editor, exportable as a block theme and portable to WordPress. This keeps the [vision](../vision.md#non-goals)'s line ("the block editor is the canvas") and the SEO plan's answer to Elementor ("the site editor is the answer").
 - **AI works on the same document as the person.** Every AI change is a set of ordinary edits: shown before it's applied, undoable, revisioned, and held in a draft (a changeset) until someone presses Publish. This is the lesson of Wix Harmony, Webflow and Puck AI ([research](#what-the-market-does-october-2026)).
 - **AI fills sections; code guarantees quality.** The model chooses patterns and writes their text; code turns that into valid blocks, computes accessible palettes, checks contrast and headings, and refuses invented facts. The model never writes raw CSS or free-form HTML in the default path.
 - **Built on what v0.7 shipped:** the core AI client and the Abilities API ([ADR 0019](../adr/0019-ai-client-and-abilities.md)). New site-building abilities also make Pressbase buildable by outside agents over MCP later ([roadmap: Later](../roadmap.md#later)).
@@ -56,7 +56,7 @@ Status: **proposed** 2026-10-29, for review. Written after v0.7. The [decisions 
 
 ### The screen
 
-`/admin/appearance/editor` (capability `edit_theme_options`; WordPress's Appearance → Editor). Opening a page from Pages with *Edit in site editor* lands on the same screen with that page selected.
+**Studio** is its own item in the admin menu, at `/admin/studio` (capability `edit_theme_options`; it does what WordPress's Appearance → Editor does, and Appearance → Editor redirects to it). It opens full-screen, like Elementor. Pages and the post editor get an **Edit with Studio** action that opens the same screen with that page selected. Authors without `edit_theme_options` can open their own pages in Studio, but the header, footer and site styles are locked for them.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
@@ -81,6 +81,26 @@ Status: **proposed** 2026-10-29, for review. Written after v0.7. The [decisions 
 - **Swap layout:** cycles the same section through other patterns of its category, keeping its text and images (headings, paragraphs, buttons and images are matched by role; see [slots](#slots)).
 - **Publish N:** the number of changed items in the changeset (styles, header, two pages…), listed on click.
 
+### Interactions taken from Elementor
+
+People who've used Elementor should feel at home. Each of these acts on blocks, so the saved result is still block markup:
+
+| Elementor | Studio |
+| --- | --- |
+| Widgets panel, dragged onto the page | **Elements** tab in the left rail: blocks as large tiles, dragged onto the canvas with a drop line between blocks and a highlighted drop area inside groups and columns |
+| Navigator | **Layers**, with drag to reorder and nest, rename, hide on a device |
+| Right-click menu | Context menu on any block or section: copy, paste, **paste style**, duplicate, save as section, Ask AI, delete |
+| Copy and paste style | Paste style copies a block's style attributes (presets only) onto another block of a compatible type |
+| Responsive mode | Desktop, Tablet and Mobile in the top bar; per-device values with a marker and a reset |
+| Spacing handles | Drag the padding and margin of a selected section on the canvas, snapping to the spacing presets (Advanced shows exact values) |
+| Column resize | Drag the gap between columns; widths snap to sensible fractions |
+| Site Settings (global colours and fonts) | **Styles**: the design system, with every use updated live |
+| History panel | **History**: this session's actions to step back to, then the published revisions |
+| Finder (⌘E) | Command palette (⌘K): jump to a page, add a section, run an AI request, toggle a setting |
+| Template kits | Starter sites |
+
+Elementor's weak points that we avoid on purpose: its own data format (lock-in), extra front-end CSS and JavaScript, and nested wrapper markup.
+
 ### Features and phases
 
 | Area | v1 (v0.8) | v2 | Later |
@@ -102,7 +122,7 @@ Status: **proposed** 2026-10-29, for review. Written after v0.7. The [decisions 
 
 ### The flow for a new site
 
-Offered on a fresh install (after the installer, when AI is set up) and from the site editor's AI panel. Each step can be edited before going on, and Back always works.
+Offered on a fresh install (after the installer, when AI is set up) and from Studio's AI panel. Each step can be edited before going on, and Back always works.
 
 1. **Describe.** One text box ("What's the site for?") and, optionally, the business name, location, contact details, logo and photos. Language defaults to the site language.
 2. **Clarify.** At most three short questions the model can't answer from the description (for example "Do you take orders online?"). Skippable.
@@ -110,7 +130,7 @@ Offered on a fresh install (after the installer, when AI is set up) and from the
 4. **Design direction.** Three directions shown as live mini previews of a hero in the site's theme: palette, font pair, corner style, spacing density. "Show three more", or pick and adjust colours and fonts directly.
 5. **Sitemap.** Pages with their ordered sections ("Home: hero, about, menu highlights, testimonials placeholder, opening hours, contact"), drag to reorder, add or remove sections and pages (up to 8 pages in v1).
 6. **Generate.** Pages build one by one with live progress (each page appears in the canvas as it's done). Runs as a job, so closing the tab doesn't lose it.
-7. **Review.** The site editor opens on the draft changeset with the "Before you publish" checklist: placeholders to fill, images to replace, checks that failed. Publish when ready.
+7. **Review.** Studio opens on the draft changeset with the "Before you publish" checklist: placeholders to fill, images to replace, checks that failed. Publish when ready.
 
 ### Pipeline
 
@@ -182,12 +202,12 @@ The same abilities serve the AI panel, the CLI (`pressbase ability run`) and, on
 
 ## Architecture
 
-- **Our own shell around `@wordpress/block-editor`,** like the post editor, not `@wordpress/edit-site`. Edit-site assumes WordPress's full core-data entities and PHP-registered settings; our post editor already shows that the lower-level packages work well in our admin. To record in an ADR.
+- **Studio is our own editor around `@wordpress/block-editor`,** like the post editor, not `@wordpress/edit-site`. Edit-site assumes WordPress's full core-data entities and PHP-registered settings; our post editor already shows that the lower-level packages work well in our admin. To record in an ADR.
 - **Templates and parts:** `wp_template` and `wp_template_part` post types with the `wp_theme` taxonomy and WordPress's REST routes (`/wp/v2/templates`, `/wp/v2/template-parts`, their revisions, `source: theme | custom`), resolved before theme files by the renderer, as `get_block_templates()` does. The template-part and post-content blocks leave `UNSUPPORTED_BLOCKS` inside the site editor.
 - **Changesets:** the `customize_changeset` post type (WordPress's name and status flow: `auto-draft`, `draft`, `future`, `publish`), its content a JSON map of pending entities (`wp_global_styles`, templates, parts, pages, menus, options). Preview renders with `?changeset_uuid=`, bypassing the page cache. Publishing applies the entries in one database transaction, then purges cache tags once.
 - **Responsive styles:** extend `@pressbase/theme-json` and block supports to WordPress 7.1's format: breakpoints in `settings.viewport` (default `mobile` 480px, `tablet` 782px) and `@tablet` / `@mobile` style states, ported from `WP_Theme_JSON::get_viewport_media_queries()`, plus the `blockVisibility` support. 7.1 themes then work unchanged; the renderer emits the media queries in the global stylesheet, not inline.
 - **Generation jobs:** the job queue ([ADR 0010](../adr/0010-job-queue.md)) runs the pipeline; the admin follows progress over Server-Sent Events from `/pressbase/v1/site-builder/runs/{id}`.
-- **Where it lives:** the site editor, changesets, responsive styles and abilities are core. The AI flow is core too, built only on `kernel.ai` and abilities, and hidden until AI is set up (see [decisions](#decisions-to-make)).
+- **Where it lives:** the site editor, changesets, responsive styles and abilities are core. The AI flow is core too, built only on `kernel.ai` and abilities, and hidden until AI is set up (see [decisions](#decisions)).
 
 ### New ADRs
 
@@ -224,14 +244,16 @@ Two agents at a time, each in a worktree with its own ports and ADR, as in v0.6 
 - AI publishing on its own, or changing settings outside appearance and content.
 - Multisite "site factory" generation for agencies.
 
-## Decisions to make
+## Decisions
 
-1. **Release:** the site builder as v0.8 before v1.0 (recommended: its extension points should be in the frozen API), or after v1.0.
-2. **Core or plugin for the AI flow:** core, hidden until AI is set up (recommended: it's the first-run experience and needs core changes anyway), or a first-party plugin like SEO, which proves the plugin API further but splits the feature.
-3. **Name in the admin:** "Editor" under Appearance, as WordPress (recommended: familiar first), or a product name such as "Studio".
-4. **Shell:** our own around `@wordpress/block-editor` (recommended) or WordPress's `@wordpress/edit-site`.
-5. **Openverse images in v1** (recommended), or uploads only.
-6. **A second, cheaper model setting for quick edits** (recommended), or one model for everything.
+Made on 2026-10-29:
+
+1. **Release:** v0.8, before v1.0, so Studio's extension points are part of the frozen plugin API.
+2. **AI in core:** the prompt-to-site flow, the AI panel and the site-building abilities are core, built only on `kernel.ai` and the Abilities API, and hidden until an administrator sets up AI.
+3. **Name:** **Studio**, its own item in the admin menu at `/admin/studio`. Appearance → Editor redirects there for people coming from WordPress.
+4. **Our own editor**, with Elementor's direct, drag-and-drop interactions ([above](#interactions-taken-from-elementor)), built around `@wordpress/block-editor`, not `@wordpress/edit-site`. Output stays block markup and `theme.json`.
+5. **Openverse images in v1**, with licence and attribution saved on the media item.
+6. **A second model setting for quick edits** (rewrites, small changes). Generation uses the main model.
 
 ## Sources
 
