@@ -110,10 +110,11 @@
 				{
 					"name": "Manrope",
 					"slug": "manrope",
-					"fontFamily": "Manrope, ui-sans-serif, system-ui, sans-serif",
+					"fontFamily": "Manrope, \"Manrope Fallback\", ui-sans-serif, system-ui, sans-serif",
 					"fontFace": [
 						{
 							"fontFamily": "Manrope",
+							"fontDisplay": "swap",
 							"fontStyle": "normal",
 							"fontWeight": "200 800",
 							"src": ["file:./assets/fonts/manrope/Manrope-VariableFont_wght.woff2"]
@@ -123,21 +124,28 @@
 				{
 					"name": "Platypi",
 					"slug": "platypi",
-					"fontFamily": "Platypi, ui-serif, Georgia, serif",
+					"fontFamily": "Platypi, \"Platypi Fallback\", ui-serif, Georgia, serif",
 					"fontFace": [
 						{
 							"fontFamily": "Platypi",
+							"fontDisplay": "swap",
 							"fontStyle": "normal",
 							"fontWeight": "300 800",
 							"src": ["file:./assets/fonts/platypi/Platypi-VariableFont_wght.woff2"]
 						},
 						{
 							"fontFamily": "Platypi",
+							"fontDisplay": "swap",
 							"fontStyle": "italic",
 							"fontWeight": "300 800",
 							"src": ["file:./assets/fonts/platypi/Platypi-Italic-VariableFont_wght.woff2"]
 						}
 					]
+				},
+				{
+					"name": "System mono",
+					"slug": "mono",
+					"fontFamily": "ui-monospace, SFMono-Regular, Menlo, Consolas, \"Liberation Mono\", monospace"
 				},
 				{
 					"name": "Fira Code",
@@ -146,6 +154,7 @@
 					"fontFace": [
 						{
 							"fontFamily": "\"Fira Code\"",
+							"fontDisplay": "swap",
 							"fontStyle": "normal",
 							"fontWeight": "300 700",
 							"src": ["file:./assets/fonts/fira-code/FiraCode-VariableFont_wght.woff2"]

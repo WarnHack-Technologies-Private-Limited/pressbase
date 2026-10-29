@@ -23,6 +23,35 @@ Tags: one-column, grid-layout, custom-colors, custom-menu, custom-logo, editor-s
 
 /* Base ------------------------------------------------------------------ */
 
+/* Fallbacks sized like the web fonts, so text doesn't shift when they arrive. */
+@font-face {
+	font-family: "Manrope Fallback";
+	src: local("Arial"), local("Liberation Sans"), local("Arimo");
+	size-adjust: 101.52%;
+	ascent-override: 105.4%;
+	descent-override: 29.55%;
+	line-gap-override: 0%;
+}
+
+@font-face {
+	font-family: "Platypi Fallback";
+	src: local("Times New Roman"), local("Liberation Serif"), local("Tinos");
+	size-adjust: 124.14%;
+	ascent-override: 91.03%;
+	descent-override: 20.14%;
+	line-gap-override: 0%;
+}
+
+@font-face {
+	font-family: "Platypi Fallback";
+	font-style: italic;
+	src: local("Times New Roman Italic"), local("Liberation Serif Italic"), local("Tinos Italic");
+	size-adjust: 116.5%;
+	ascent-override: 97%;
+	descent-override: 21.46%;
+	line-gap-override: 0%;
+}
+
 html {
 	scroll-padding-top: 6rem;
 }
@@ -60,6 +89,12 @@ a {
 
 :where(.wp-site-blocks) > footer {
 	margin-block-start: 0;
+}
+
+/* Sections below the first are rendered only as they near the viewport. */
+.wp-site-blocks > main > .alignfull:not(:first-child) {
+	content-visibility: auto;
+	contain-intrinsic-size: auto 40rem;
 }
 
 /* Italic accents in headings: Platypi italic, filled with the brand gradient. */

@@ -44,12 +44,12 @@
 
 	<!-- wp:group {"className":"is-style-glass","style":{"spacing":{"margin":{"top":"var:preset|spacing|60"},"padding":{"top":"var:preset|spacing|30","bottom":"var:preset|spacing|30","left":"var:preset|spacing|30","right":"var:preset|spacing|30"},"blockGap":"var:preset|spacing|20"}},"layout":{"type":"default"}} -->
 	<div class="wp-block-group is-style-glass" style="margin-top:var(--wp--preset--spacing--60);padding-top:var(--wp--preset--spacing--30);padding-right:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--30);padding-left:var(--wp--preset--spacing--30)">
-		<!-- wp:paragraph {"textColor":"muted","fontSize":"small","fontFamily":"fira-code"} -->
-		<p class="has-muted-color has-text-color has-fira-code-font-family has-small-font-size"><?php esc_html_e( '~/my-site — terminal', 'pressbase' ); ?></p>
+		<!-- wp:paragraph {"textColor":"muted","fontSize":"small","fontFamily":"mono"} -->
+		<p class="has-muted-color has-text-color has-mono-font-family has-small-font-size"><?php esc_html_e( '~/my-site — terminal', 'pressbase' ); ?></p>
 		<!-- /wp:paragraph -->
 
-		<!-- wp:code {"style":{"spacing":{"margin":{"top":"0","bottom":"0"}}}} -->
-		<pre class="wp-block-code" style="margin-top:0;margin-bottom:0"><code><?php esc_html_e( '$ site new "Field Notes"', 'pressbase' ); ?><br><?php esc_html_e( '  Creating your site…  done in 1.2s', 'pressbase' ); ?><br><?php esc_html_e( '$ site publish', 'pressbase' ); ?><br><?php esc_html_e( '  Live at https://fieldnotes.example', 'pressbase' ); ?></code></pre>
+		<!-- wp:code {"style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"fontFamily":"mono"} -->
+		<pre class="wp-block-code has-mono-font-family" style="margin-top:0;margin-bottom:0"><code><?php esc_html_e( '$ site new "Field Notes"', 'pressbase' ); ?><br><?php esc_html_e( '  Creating your site…  done in 1.2s', 'pressbase' ); ?><br><?php esc_html_e( '$ site publish', 'pressbase' ); ?><br><?php esc_html_e( '  Live at https://fieldnotes.example', 'pressbase' ); ?></code></pre>
 		<!-- /wp:code -->
 	</div>
 	<!-- /wp:group -->
