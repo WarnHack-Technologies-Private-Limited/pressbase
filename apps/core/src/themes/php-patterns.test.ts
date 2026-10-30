@@ -7,7 +7,7 @@ const context = {
   templateUri: 'https://example.com/wp-content/themes/parent',
   stylesheetUri: 'https://example.com/wp-content/themes/child',
 };
-const TT5 = path.resolve(import.meta.dirname, '../../../../themes/twentytwentyfive/patterns');
+const PATTERNS = path.resolve(import.meta.dirname, '../../../../themes/pressbase/patterns');
 
 const file = (body: string, headers = 'Title: Test\n * Slug: theme/test') =>
   `<?php\n/**\n * ${headers}\n */\n\n?>\n${body}`;
@@ -97,16 +97,25 @@ describe('PHP pattern loader', () => {
     expect(loadPhpPattern(file('x', 'Slug: theme/x'), context).ok).toBe(false);
   });
 
-  it('loads every Twenty Twenty-Five pattern', () => {
-    const files = readdirSync(TT5).filter((f) => f.endsWith('.php'));
+  it('loads every pattern of the Pressbase theme', () => {
+    const files = readdirSync(PATTERNS).filter((f) => f.endsWith('.php'));
     const failed = files
-      .map((f) => [f, loadPhpPattern(readFileSync(path.join(TT5, f), 'utf8'), context)] as const)
+      .map(
+        (f) => [f, loadPhpPattern(readFileSync(path.join(PATTERNS, f), 'utf8'), context)] as const,
+      )
       .filter(([, result]) => !result.ok);
     expect(failed).toEqual([]);
-    expect(files.length).toBeGreaterThan(90);
-    const header = loadPhpPattern(readFileSync(path.join(TT5, 'footer.php'), 'utf8'), context);
-    expect(header.ok && header.pattern.content).toContain(
-      '<!-- wp:navigation-link {"label":"Blog","url":"#"} /-->',
+    expect(files.length).toBeGreaterThan(20);
+    // sprintf(), wp_kses_post(), a comment and esc_url( get_template_directory_uri() ).
+    const powered = loadPhpPattern(
+      readFileSync(path.join(PATTERNS, 'hidden-powered-by.php'), 'utf8'),
+      context,
+    );
+    expect(powered.ok && powered.pattern.content).toContain(
+      'Powered by <a href="https://github.com/WarnHack-Technologies-Private-Limited/pressbase" rel="nofollow">Pressbase</a>',
+    );
+    expect(powered.ok && powered.pattern.content).toContain(
+      `src="${context.templateUri}/assets/images/pressbase-mark.svg"`,
     );
   });
 

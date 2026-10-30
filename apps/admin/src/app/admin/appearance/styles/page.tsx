@@ -46,7 +46,7 @@ export default async function StylesPage() {
       <>
         {header}
         <Notice tone="warning" title="This theme has no styles to edit.">
-          Styles work with block themes, such as Twenty Twenty-Five. Activate one in Themes.
+          Styles work with block themes, such as Pressbase. Activate one in Themes.
         </Notice>
       </>
     );

@@ -6,6 +6,7 @@ How Pressbase loads WordPress block themes, turns `theme.json` into CSS, and ren
 |---|---|---|
 | theme.json engine | `packages/theme-json` (`@pressbase/theme-json`) | `WP_Theme_JSON`, `WP_Theme_JSON_Resolver`, `wp_get_global_stylesheet()`, fluid typography, `wp_get_layout_style()`, `WP_Font_Face` |
 | Themes | `apps/core/src/themes/` (`kernel.themes`) | `WP_Theme`, `search_theme_directories()`, `switch_theme()`, `_register_theme_block_patterns()` |
+| Installing and deleting themes | `apps/core/src/themes/install.ts` | `Theme_Upgrader::install()`, `check_package()`, `delete_theme()` |
 | Style variations, sanitising user styles | `packages/theme-json/src/{style-variations,sanitize}.ts` | `get_style_variations()`, the site editor's variation logic, `remove_insecure_properties()`, `safecss_filter_attr()` |
 | User global styles | `apps/core/src/themes/global-styles.ts`, `routes/global-styles.ts` | `wp_global_styles`, `WP_REST_Global_Styles_Controller` (+ revisions) |
 | Site logo and icon | `apps/core/src/themes/site-identity.ts` | `get_custom_logo()`, `WP_Site_Icon`, `wp_site_icon()` |
@@ -68,7 +69,7 @@ What it does, as WordPress does:
 - **Fonts.** `fontFace` declarations become `@font-face` rules; `file:./` sources resolve to the theme's URL.
 - **Block style variations.** Variation styles are not in the global stylesheet: like WordPress 6.6+, they are generated per block instance (`blockStyleVariationInstanceStyles()`), scoped to a class such as `is-style-post-terms-1--2`.
 
-The tests in `packages/theme-json/src/theme-json.test.ts` compare the output for Twenty Twenty-Five with what WordPress 7.1 prints.
+The tests in `packages/theme-json/src/theme-json.test.ts` check the output for the Pressbase theme. The engine was first checked line by line against what WordPress 7.1 prints for Twenty Twenty-Five, when that theme was bundled (up to v0.7).
 
 Not ported yet: responsive (viewport) style states, duotone filters and background image uploads in global styles.
 
@@ -78,9 +79,51 @@ The package also holds the pieces of the site editor and of WordPress's save pat
 
 `kernel.themes` finds themes in two folders: the repository's `themes/` (bundled) and `<PRESSBASE_DATA_DIR>/themes` (installed; a folder there wins over a bundled one with the same name). A theme is a folder with a `style.css` header (`Theme Name`, `Version`, `Template`…); it can render if it has `templates/index.html` (a block theme). Child themes (`Template:` header) take templates, parts and patterns from the child first, then the parent, and merge the child's `theme.json` over the parent's.
 
-The active theme comes from the `stylesheet` and `template` options (the installer sets `twentytwentyfive`). A missing theme falls back to the default. `kernel.themes.active()` loads and caches it: templates, parts with their areas, `theme.json` resolved against the registered block types, the global stylesheet, patterns and the stylesheets to enqueue. `kernel.themes.activate(stylesheet)` switches, fires `switch_theme` and reloads. `kernel.themes.reload()` picks up edited theme files.
+The active theme comes from the `stylesheet` and `template` options (the installer sets `pressbase`, `DEFAULT_THEME`). A missing theme falls back to the default. `kernel.themes.active()` loads and caches it: templates, parts with their areas, `theme.json` resolved against the registered block types, the global stylesheet, patterns and the stylesheets to enqueue. `kernel.themes.activate(stylesheet)` switches, fires `switch_theme` and reloads. `kernel.themes.reload()` picks up edited theme files.
 
-Theme files are served at `/wp-content/themes/{theme}/…` with the uploads' safety rules: each path segment decoded and checked (no `..`, hidden files, encoded slashes or control characters), only static types (CSS, JS, images, fonts, video; never PHP, HTML, JSON or Markdown), the real path must stay in the theme folder, `nosniff`, a sandboxing CSP on SVG, `ETag` and `Last-Modified` with 304s.
+Theme files are served at `/wp-content/themes/{theme}/…` with the uploads' safety rules: each path segment decoded and checked (no `..`, hidden files, encoded slashes or control characters), only static types (CSS, JS, images, fonts, video; never PHP, HTML, JSON or Markdown), the real path must stay in the theme folder, `nosniff`, a sandboxing CSP on SVG, `ETag` and `Last-Modified` with 304s. The same rules apply to uploaded themes.
+
+## Installing and deleting themes
+
+Site owners add themes with **Appearance → Themes → Upload theme**, `POST /pressbase/v1/themes` or `pressbase theme install`, and remove them with the theme card's **Delete**, `DELETE /pressbase/v1/themes/{stylesheet}` or `pressbase theme delete`. All three call `kernel.themes.install()` and `kernel.themes.delete()` (`apps/core/src/themes/install.ts`), which run one at a time. The decision is [ADR 0025](../adr/0025-theme-install-and-delete.md).
+
+### Installing: `kernel.themes.install(zip, { overwrite, filename })`
+
+A port of `Theme_Upgrader::install()` and `check_package()` (`wp-admin/includes/class-theme-upgrader.php`) with `WP_Upgrader::install_package()`:
+
+1. **Size.** The archive may be as large as the upload limit (`PRESSBASE_MAX_UPLOAD_MB`), at most 32 MB, as for plugins (`413 rest_upload_file_too_big`); once unpacked, four times that.
+2. **The archive.** Read by the shared strict ZIP reader (`apps/core/src/files/zip.ts`, also used for plugins and language packs): zip-slip paths (`incompatible_archive_path`), links and special files (`incompatible_archive_symlink`), encryption, ZIP64, damaged entries, duplicates and more than 5,000 files (`incompatible_archive`), and zip bombs (`incompatible_archive_too_big`) are refused before anything is written. An empty archive is `incompatible_archive_empty`. `__MACOSX/` and `.DS_Store` are skipped.
+3. **Where the theme is.** As WordPress decides: when everything sits in one top-level folder, that folder is the theme; otherwise the archive's root is.
+4. **The theme.** `style.css` must exist (`incompatible_archive_theme_no_style`) and have a `Theme Name` header (`incompatible_archive_theme_no_name`). It must be a **block theme**, with `templates/index.html` (or the legacy `block-templates/index.html`). A classic theme, with `index.php` but no block template, is refused with `pressbase_theme_not_block_theme` and a message saying Pressbase runs block themes only; an archive with neither is `incompatible_archive_theme_no_index`. WordPress accepts a child theme without an index file; Pressbase needs `templates/index.html` in child themes too, because it only activates themes that have one. `Requires at least` and `Requires PHP` are not checked: they describe WordPress and PHP.
+5. **The folder name** (the theme's `stylesheet`): the top-level folder's name, else the uploaded file's name without `.zip`, else the theme's name, sanitised as `sanitize_file_name()` does and then limited to the characters Pressbase accepts in theme folder names (`A–Z a–z 0–9 _ -`; accents dropped, anything else becomes `-`). `My Theme (1)` becomes `My-Theme-1`.
+6. **An existing theme** with that folder name, uploaded or bundled, is `409 folder_exists` unless `overwrite` is set. The error's `data` holds the `current` and `uploaded` theme's name, version, author, parent (`template`) and `source`, for the admin's "Replace the installed theme?" step (WordPress's *Replace current with uploaded*, `Theme_Installer_Skin::do_overwrite()`).
+7. **Unpacking.** Files are written into a hidden staging folder in `<dataDir>/themes` (`.upload-…`; folders starting with a dot are never listed), then renamed into place. With `overwrite`, the old folder is renamed aside first and removed once the new one is in place, or moved back if the rename fails, so a half-written theme is never seen. A bundled theme is never touched: its replacement is installed in the data directory, which wins over the bundled folder, and deleting it brings the bundled copy back.
+8. **After.** If the theme is the active theme or the active theme's parent, it stays active: the `template` option follows a changed `Template:` header, the theme is reloaded, and the page cache is purged (`site` tag, reason `theme_overwrite`, from `cache/invalidation.ts`). Then `upgrader_process_complete (null, { action: 'install', type: 'theme', themes: [stylesheet] })` fires (WordPress passes its `WP_Upgrader`; Pressbase has none), and, when a theme was replaced, `upgrader_overwrote_package (filename, newThemeData, 'theme')` with the `check_package()` headers (`Name`, `Version`, `Author`, `Template`, `RequiresWP`, `RequiresPHP`).
+
+Installing never activates a theme; that's `activate()` (`switch_theme()`), as in WordPress. The CLI's `--activate` calls it after installing.
+
+### Deleting: `kernel.themes.delete(stylesheet)`
+
+`delete_theme()` (`wp-admin/includes/theme.php`) with the checks of `wp-admin/themes.php`:
+
+- **Refused:** the active theme (`rest_cannot_delete_active_theme`), the parent of the active child theme (`pressbase_cannot_delete_parent_theme`, WordPress's *delete-active-child*), and themes bundled with Pressbase (`pressbase_cannot_delete_bundled_theme`): they live in the repository's read-only `themes/` folder. The checks use both the `stylesheet` and `template` options and the theme actually loaded, which differ when the stored theme is missing and the default is used.
+- `delete_theme (stylesheet)` fires, the folder is removed, then `deleted_theme (stylesheet, deleted)`; a folder that can't be removed is `500 could_not_remove_theme`.
+- The theme's translations in `languages/themes` (`{stylesheet}-{locale}.po`, `.mo`, `.l10n.php`, `-{hash}.json`) are removed, as `delete_theme()` does.
+- The theme's `theme_mods_{stylesheet}` option and `wp_global_styles` post stay, as in WordPress: reinstalling the theme brings its saved styles back.
+
+Deleting an inactive theme changes nothing visitors see, so nothing is purged.
+
+### REST and the admin
+
+`/wp/v2/themes` items carry two extra fields: `pressbase_source` (`bundled` or `site`) and `pressbase_deletable` (true for an uploaded theme that is neither active nor the active theme's parent). The admin shows **Delete** in a theme card's menu only when `pressbase_deletable` is true and the user has `delete_themes`, and **Upload theme** only with `install_themes`. See [REST API](rest-api.md) for the endpoints and error codes.
+
+### Capabilities
+
+`POST /pressbase/v1/themes` checks `upload_themes`, which `map_meta_cap()` maps to `install_themes` (`upload_plugins` maps to `install_plugins` the same way; `apps/core/src/auth/meta-caps.ts`). Pressbase has no multisite and no `DISALLOW_FILE_MODS`, so nothing maps to `do_not_allow`. Deleting checks `delete_themes`. All three capabilities belong to administrators only.
+
+### What an uploaded theme can do
+
+Pressbase never runs a theme's PHP. It reads `style.css` headers, `theme.json`, `styles/`, HTML templates and parts, and interprets the small PHP subset of `patterns/*.php` described below; `functions.php` and any other `.php` file are ignored, and none of them is ever served. But a theme's templates, patterns, CSS and JavaScript reach every visitor (a template can contain an HTML block with a script), so only install themes you trust.
 
 ## Global styles
 
@@ -97,14 +140,14 @@ user global styles (wp_global_styles post) ─┘
 A block theme's `styles/` folder holds two kinds of partial theme.json files (`WP_Theme_JSON_Resolver::get_style_variations()`, read recursively, child theme first, a child file hiding a parent file with the same name, sorted by path):
 
 - **Block style variations** have `blockTypes` (`styles/blocks/*.json`, `styles/sections/*.json`). They register block styles such as `section-1` and are part of the theme layer (above).
-- **Theme style variations** don't. Twenty Twenty-Five ships 23: eight full ones (`01-evening.json` … `08-midnight.json`), eight colour-only (`styles/colors/*.json`) and seven typography-only (`styles/typography/*.json`). `kernel.themes.active().variations` lists them with presets keyed by the `theme` origin, as WordPress's REST API returns them; a file without `title` is named after itself.
+- **Theme style variations** don't. They are full (`styles/*.json`), colour-only (`styles/colors/*.json`) or typography-only (`styles/typography/*.json`); the Pressbase theme ships one of each (Midnight, Violet, Grotesk). `kernel.themes.active().variations` lists them with presets keyed by the `theme` origin, as WordPress's REST API returns them; a file without `title` is named after itself.
 
 As in the site editor, a variation is never "active" by reference. **Choosing one writes it into the user's global styles** (`applyStyleVariation()`):
 
 - a **full** variation replaces the user's settings and styles;
 - a **colour** (or **typography**) variation keeps every other user value, removes the user's colour (or typography) values (`removePropertiesFromObject()`) and deep-merges the variation's in (`mergeBaseAndUserConfigs()`, lists replaced).
 
-`styleVariationKind()` tells the kinds apart the way the editor does (`isVariationWithProperties(variation, ['color'])`: every value lives under a `color` key), and `isStyleVariationApplied()` recognises a variation inside a user config, so a screen can show which is in use. A variation's palette is stored as `settings.color.palette.theme`, so it **replaces** the theme's palette (same slugs, new colours) rather than adding to it; the same goes for a typography variation's `fontFamilies` — its fonts load, the theme's no longer do. The tests in `packages/theme-json/src/style-variations.test.ts` merge Evening, Noon and the typography presets over Twenty Twenty-Five and check the stylesheet.
+`styleVariationKind()` tells the kinds apart the way the editor does (`isVariationWithProperties(variation, ['color'])`: every value lives under a `color` key), and `isStyleVariationApplied()` recognises a variation inside a user config, so a screen can show which is in use. A variation's palette is stored as `settings.color.palette.theme`, so it **replaces** the theme's palette (same slugs, new colours) rather than adding to it; the same goes for a typography variation's `fontFamilies` — its fonts load, the theme's no longer do. The tests in `packages/theme-json/src/style-variations.test.ts` merge Midnight, Violet and Grotesk over the Pressbase theme and check the stylesheet.
 
 ### User global styles
 
@@ -142,13 +185,21 @@ The admin shows it in a sandboxed `iframe` (`srcdoc`, `sandbox="allow-same-origi
 - Deleting the image clears the option (`WP_Site_Icon::delete_attachment_data()`); the same goes for the logo.
 - The admin uses the icon as its favicon and in the sidebar, in place of the site's initial.
 
-### Twenty Twenty-Five
+### The Pressbase theme
 
-Bundled unchanged in `themes/twentytwentyfive` (GPL-2.0-or-later; see its `NOTICE.md`).
+`themes/pressbase` is Pressbase's own block theme and the default (`DEFAULT_THEME`), the only bundled theme since v0.8 (Twenty Twenty-Five, bundled until v0.7, can be uploaded like any WordPress block theme), built to the same rules as any other: it runs unchanged in WordPress 6.7–7.1 and uses only what this page describes. See its `README.md` for the full contents.
+
+- **Brand.** The admin's tokens: ink `#1b1b19` on paper `#f6f6f3`, indigo `#3b4cca` (`#5b6cf0` in Midnight). Platypi (with italic) for headings and accents, echoing the italic serif "P" of the logo; Manrope for text; Fira Code for code.
+- **Looks.** Paper (`theme.json`), Midnight (`styles/01-midnight.json`), Violet (colours) and Grotesk (typography), plus the section styles `section-ink` and `section-soft`. Every text pair passes WCAG 2.2 AA; the test checks the palettes.
+- **Templates and patterns.** There's no `front-page` template, so the home page follows Settings → Reading (latest posts, or the chosen page). The landing design is the **Landing page** pattern (hero, marquee, features, steps, statement, testimonials, team, pricing, questions and answers, call to action), offered when creating a page, with the *Page without title* template; 20 of the 29 patterns are in the inserter, in the `pressbase` category, the `pressbase_page` category or WordPress's.
+- **Motion, CSS only.** Block styles Reveal (scroll-driven, `animation-timeline: view()`), Lift, Glass, Gradient (a drifting aurora), Marquee (moves with the visitor's scrolling) and Animated links, and a header whose glass fades in with `animation-timeline: scroll()`. Only `transform` and `opacity` animate; anything that starts hidden sits inside `@supports (animation-timeline: …)`; `prefers-reduced-motion: reduce` stops it all.
+- **Speed.** Later sections use `content-visibility: auto`, fonts swap onto metric-matched local fallbacks (no layout shift), and the hero avoids the code font. Lighthouse, mobile, a landing-page front page: performance 99, accessibility 100.
+
+`apps/core/src/pressbase-theme.test.ts` checks that every pattern converts, every template and part parses into registered blocks, the variations load, the home page lists posts, a landing page and the other views render, and the CSS follows the motion rules.
 
 ### functions.php
 
-Pressbase never runs PHP. What block themes typically do in `functions.php` is listed per theme in `apps/core/src/themes/compat.ts`. For Twenty Twenty-Five:
+Pressbase never runs PHP. What block themes typically do in `functions.php` is listed per theme in `apps/core/src/themes/compat.ts`. Twenty Twenty-Five's entry stays for sites that upload it:
 
 | functions.php | Pressbase |
 |---|---|
@@ -159,6 +210,15 @@ Pressbase never runs PHP. What block themes typically do in `functions.php` is l
 | `add_editor_style()` | Not yet: the editor doesn't load theme styles. |
 | `register_block_bindings_source( 'twentytwentyfive/format' )` | Not yet: block bindings arrive later. |
 
+For Pressbase:
+
+| functions.php | Pressbase |
+|---|---|
+| `wp_enqueue_style( 'pressbase-style', style.css )` | Enqueued. |
+| `register_block_style()` × 12 (Reveal, Lift, Glass, Gradient, Marquee, Animated links, Pill) | Registered; their CSS is in `style.css`. |
+| `register_block_pattern_category()` × 2 | Registered. |
+| `add_editor_style( 'style.css' )` | Not yet: the editor doesn't load theme styles. |
+
 ### Patterns in PHP files
 
 Theme patterns are `patterns/*.php`: a header comment and block markup with small PHP snippets. `themes/php-patterns.ts` reads the headers WordPress reads (`Title`, `Slug`, `Description`, `Categories`, `Keywords`, `Block Types`, `Post Types`, `Template Types`, `Viewport Width`, `Inserter`) and **interprets** a tiny, safe subset of PHP instead of running it:
@@ -167,7 +227,7 @@ Theme patterns are `patterns/*.php`: a header comment and block markup with smal
 - expressions: quoted strings (no variable interpolation), `.` concatenation, and calls to `__()`, `_x()`, `esc_html__()`, `esc_attr__()`, `esc_html_x()`, `esc_attr_x()`, `esc_html()`, `esc_attr()`, `esc_url()`, `wp_kses_post()`, `sprintf()`, `get_template_directory_uri()`, `get_stylesheet_directory_uri()`, `get_theme_file_uri()`, `get_parent_theme_file_uri()`;
 - comments, and PHP's rule that a newline right after `?>` is swallowed.
 
-Translation functions translate through the theme's text domain in the site's language, and pattern titles and descriptions are translated as WordPress translates them (see [Internationalisation](i18n.md#themes)). Anything else — a variable, another function, `include`, backticks, `<?=` — makes the loader skip the whole pattern with a warning in the log. All 98 Twenty Twenty-Five patterns load.
+Translation functions translate through the theme's text domain in the site's language, and pattern titles and descriptions are translated as WordPress translates them (see [Internationalisation](i18n.md#themes)). Anything else — a variable, another function, `include`, backticks, `<?=` — makes the loader skip the whole pattern with a warning in the log. All of the Pressbase theme's patterns load, and so did Twenty Twenty-Five's 98.
 
 Theme URLs in patterns and font faces are root-relative (`/wp-content/themes/…`), so they work on every origin that proxies core.
 
@@ -175,7 +235,7 @@ Theme URLs in patterns and font faces are root-relative (`/wp-content/themes/…
 
 Some block supports need the active theme's settings, so core applies them as `render_block_data` / `render_block` filters (`themes/supports.ts`), for static blocks (Group, Columns…) as well as dynamic ones:
 
-- **Layout**: `is-layout-flow|constrained|flex|grid`, `wp-block-{name}-is-layout-*`, `has-global-padding` (root padding aware alignments), `is-content-justification-*`, `is-nowrap`, `is-vertical`, and a `wp-container-{block}-is-layout-{hash}` class with its generated CSS (content and wide sizes, full-width margins, flex alignment, grid columns, block gap). The hash is `wp_unique_id_from_values()`'s, so classes are stable between requests. Child layout (`selfStretch`, `flexSize`, grid spans) gets `wp-container-content-{hash}`.
+- **Layout**: `is-layout-flow|constrained|flex|grid`, `wp-block-{name}-is-layout-*`, `has-global-padding` (root padding aware alignments), `is-content-justification-*`, `is-nowrap`, `is-vertical`, and a `wp-container-{block}-is-layout-{hash}` class with its generated CSS (content and wide sizes, full-width margins, flex alignment, grid columns, block gap). The hash is `wp_unique_id_from_values()`'s, so classes are stable between requests. Child layout (`selfStretch`, `flexSize`, grid spans) gets `wp-container-content-{hash}`; in a responsive grid (a `minimumColumnWidth`, or no `columnCount`), a container query drops a span or start once the grid is too narrow for it, as `wp_get_child_layout_style_rules()` does.
 - **Elements**: link, heading and button colours set on a block get a `wp-elements-N` class and CSS.
 - **Position**: sticky and fixed, when the theme allows them.
 - **Typography**: custom font sizes become fluid.
@@ -248,7 +308,7 @@ With `/%postname%/`-style structures, pages are tried before posts ("verbose pag
 | `core/query`, `core/post-template` | `inherit: true` shows the main query; other queries run `build_query_vars_from_query_block()` and paginate with `?query-{id}-page=N`. Items get `get_post_class()`. |
 | `core/query-pagination` (+ `-previous`, `-next`, `-numbers`) | `paginate_links()` markup, arrows, `/page/N/` links. |
 | `core/query-title`, `core/query-no-results`, `core/term-description` | Archive titles with WordPress's prefixes (`Category: <span>…</span>`). |
-| `core/navigation`, `-link`, `-submenu`, `core/home-link`, `core/page-list` | WordPress's markup. A `wp_navigation` menu by `ref`; without a `ref` or items (Twenty Twenty-Five's header), the menu chosen in Appearance → Menus, else the newest menu, else a page list. Accessible submenu toggles (`aria-expanded`), the responsive overlay as a modal dialog, a small inline script instead of the Interactivity API, and a `<noscript>` style so menus work without JavaScript. Current items get `current-menu-item` and `aria-current`. See [Navigation](navigation.md). |
+| `core/navigation`, `-link`, `-submenu`, `core/home-link`, `core/page-list` | WordPress's markup. A `wp_navigation` menu by `ref`; without a `ref` or items (the Pressbase and Twenty Twenty-Five headers), the menu chosen in Appearance → Menus, else the newest menu, else a page list. Accessible submenu toggles (`aria-expanded`), the responsive overlay as a modal dialog, a small inline script instead of the Interactivity API, and a `<noscript>` style so menus work without JavaScript. Current items get `current-menu-item` and `aria-current`. See [Navigation](navigation.md). |
 | `core/post-featured-image` | `wp_get_attachment_image()` with `srcset`, aspect ratio, `fetchpriority="high"` on the first image, lazy loading after. |
 | `core/post-navigation-link` | Previous (older) and next (newer) posts, with arrows and labels. |
 | `core/read-more`, `core/post-author`, `core/avatar`, `core/site-logo` | Avatars are initials on a colour, as an inline SVG: no Gravatar request, so no reader's or author's email hash leaves the site. The site logo renders once `site_logo` is set (see *Site identity*). |
@@ -257,7 +317,7 @@ With `/%postname%/`-style structures, pages are tried before posts ("verbose pag
 
 Any WordPress block theme that keeps its logic in `theme.json`, templates and patterns works:
 
-1. A folder in `<PRESSBASE_DATA_DIR>/themes/` with `style.css` (header with at least `Theme Name`) and `templates/index.html`.
+1. A folder with `style.css` (header with at least `Theme Name`) and `templates/index.html`. Zip it and upload it in **Appearance → Themes**, or copy the folder into `<PRESSBASE_DATA_DIR>/themes/`.
 2. `theme.json` (schema 2 or 3), `parts/*.html` with areas declared in `templateParts`, `templates/*.html` named after the hierarchy, `styles/blocks/*.json` and `styles/sections/*.json` for block style variations.
 3. Patterns as `patterns/*.php`, using only the PHP subset above, or as plain block markup.
 4. Static assets referenced with `file:./` (fonts) or through `get_template_directory_uri()` in patterns.

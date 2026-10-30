@@ -27,7 +27,7 @@ Pressbase does **not** run PHP plugins or classic PHP themes. Compatibility mean
 1. **Concepts.** Posts, pages, custom post types, taxonomies, meta, roles and capabilities, options, actions and filters.
 2. **REST API.** `/wp-json/wp/v2/*` routes answer with WordPress's field names and shapes, so headless frontends and mobile apps keep working.
 3. **Data.** Import from a WordPress export (WXR) or straight from a WordPress database.
-4. **Block themes.** `theme.json` plus HTML block templates (for example Twenty Twenty-Five) render without changes. Their PHP is limited to `functions.php` niceties.
+4. **Block themes.** `theme.json` plus HTML block templates (for example Twenty Twenty-Five, or Pressbase's own theme) render without changes. Their PHP is limited to `functions.php` niceties.
 
 ## Product principles
 

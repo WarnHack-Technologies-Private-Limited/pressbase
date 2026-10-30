@@ -1,7 +1,7 @@
 import { mkdir, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { readZip, ZipError } from '../files/zip';
 import type { Kernel } from '../kernel';
-import { readZip, ZipError } from '../plugins/zip';
 import { isLocale, languageNames } from './locale';
 
 /**
@@ -14,7 +14,7 @@ import { isLocale, languageNames } from './locale';
  * `install_languages`; nothing is downloaded in the background. A core pack
  * holds WordPress's translations (`de_DE.mo`, `admin-de_DE.mo`) and the
  * block editor's script translations (`de_DE-{md5}.json`). Themes from
- * WordPress.org have packs too (Twenty Twenty-Five's go to `languages/themes`).
+ * WordPress.org have packs too (they go to `languages/themes`).
  * Only `.mo`, `.po` and `.json` files are written: Pressbase never runs the
  * packs' `.l10n.php` files.
  */
@@ -309,7 +309,8 @@ export class LanguagePacks {
       await this.kernel.hooks.doAction('pressbase_language_pack_installed', language, 'core', null);
     }
     for (const theme of await this.kernel.themes.all()) {
-      if (!theme.version) continue;
+      // Bundled themes aren't on WordPress.org: their translations ship with Pressbase.
+      if (!theme.version || theme.source === 'bundled') continue;
       try {
         const api = await this.translationsApi('themes', {
           slug: theme.stylesheet,

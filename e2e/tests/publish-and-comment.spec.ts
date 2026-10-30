@@ -29,7 +29,8 @@ test('writes a post in the block editor, publishes it, and a visitor’s comment
   await visitor.goto('/');
   await visitor.getByRole('link', { name: title }).first().click();
   await expect(visitor.getByRole('heading', { name: title, level: 1 })).toBeVisible();
-  await expect(visitor.getByText(body)).toBeVisible();
+  // The post's own content: the theme also lists the latest posts, with excerpts.
+  await expect(visitor.locator('.wp-block-post-content').getByText(body)).toBeVisible();
   const permalink = visitor.url();
 
   // Their first comment is held for moderation; they see a preview, nobody else does.
@@ -43,7 +44,7 @@ test('writes a post in the block editor, publishes it, and a visitor’s comment
   const otherContext = await browser.newContext();
   const other = await otherContext.newPage();
   await other.goto(permalink);
-  await expect(other.getByText(body)).toBeVisible();
+  await expect(other.locator('.wp-block-post-content').getByText(body)).toBeVisible();
   await expect(other.getByText(comment)).toHaveCount(0);
 
   // The administrator approves it.

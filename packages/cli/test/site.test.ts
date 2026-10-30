@@ -2,7 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import path from 'node:path';
 import { PURGE_ACTION } from '@pressbase/core/src/cache/invalidation';
-import { createZip } from '@pressbase/core/src/plugins/zip';
+import { createZip } from '@pressbase/core/src/files/zip';
 import { describe, expect, it } from 'vitest';
 import { site } from './helpers';
 
@@ -136,9 +136,9 @@ describe('theme and rewrite', () => {
   it('lists and activates themes, and sets the permalink structure', async () => {
     const s = await site();
     expect(await s.ok(['theme', 'list', '--format=json'])).toMatch(
-      /"name":"twentytwentyfive","status":"active"/,
+      /"name":"pressbase","status":"active"/,
     );
-    expect(await s.ok(['theme', 'activate', 'twentytwentyfive'])).toBe('');
+    expect(await s.ok(['theme', 'activate', 'pressbase'])).toBe('');
     expect((await s.cli(['theme', 'activate', 'nope'])).stderr).toMatch(/There’s no theme “nope”/);
 
     expect(await s.ok(['rewrite', 'structure', '/%postname%/', '--category-base=topics'])).toBe(
@@ -152,6 +152,75 @@ describe('theme and rewrite', () => {
     );
     const bad = await s.cli(['rewrite', 'structure', '/%nonsense%/']);
     expect(bad.code).toBe(1);
+  });
+});
+
+describe('theme install and delete', () => {
+  const STYLE = (version: string) => `/*\nTheme Name: Sunny\nVersion: ${version}\n*/`;
+  const zip = (version: string, folder = 'sunny') =>
+    createZip([
+      { name: `${folder}/style.css`, data: STYLE(version) },
+      { name: `${folder}/templates/index.html`, data: '<!-- wp:post-content /-->' },
+    ]);
+
+  it('installs, replaces with --force, activates and deletes themes', async () => {
+    const s = await site();
+    await writeFile(path.join(s.dataDir, 'sunny.zip'), zip('1.0'));
+    await writeFile(path.join(s.dataDir, 'sunny-1.1.zip'), zip('1.1'));
+
+    expect(await s.ok(['theme', 'install', 'sunny.zip'])).toBe(
+      'Installed Sunny 1.0 (sunny).\nSuccess: Installed 1 of 1 themes.\n',
+    );
+    expect((await s.cli(['theme', 'install', 'sunny-1.1.zip'])).stderr).toBe(
+      'Error: Sunny is already installed (in the “sunny” folder). Add --force to replace it.\n',
+    );
+    expect(await s.ok(['theme', 'install', 'sunny-1.1.zip', '--force', '--activate'])).toBe(
+      "Replaced Sunny with version 1.1 (sunny).\nSwitched to 'Sunny' theme.\nSuccess: Installed 1 of 1 themes.\n",
+    );
+    expect(await s.ok(['theme', 'list', '--fields=name,status,version', '--format=csv'])).toMatch(
+      /sunny,active,1\.1/,
+    );
+
+    // The active theme and bundled themes stay; --yes is needed without a terminal.
+    expect((await s.cli(['theme', 'delete', 'sunny'])).stderr).toMatch(/Add --yes/);
+    const active = await s.cli(['theme', 'delete', 'sunny', '--yes']);
+    expect(active.code).toBe(1);
+    expect(active.stderr).toMatch(
+      /Warning: Cannot delete the active theme\. .+\nError: Deleted 0 of 1 themes\./,
+    );
+    await s.ok(['theme', 'activate', 'pressbase']);
+    expect((await s.cli(['theme', 'delete', 'pressbase', '--yes'])).stderr).toMatch(
+      /ships with Pressbase/,
+    );
+    expect(await s.ok(['theme', 'delete', 'sunny', '--yes'])).toBe(
+      "Deleted 'sunny' theme.\nSuccess: Deleted 1 of 1 themes.\n",
+    );
+    expect((await s.cli(['theme', 'delete', 'sunny', '--yes'])).stderr).toMatch(
+      /There’s no theme “sunny”/,
+    );
+  });
+
+  it('refuses classic themes and users without the capabilities', async () => {
+    const s = await site();
+    await writeFile(
+      path.join(s.dataDir, 'classic.zip'),
+      createZip([
+        { name: 'classic/style.css', data: '/*\nTheme Name: Classic\n*/' },
+        { name: 'classic/index.php', data: '<?php' },
+      ]),
+    );
+    expect((await s.cli(['theme', 'install', 'classic.zip'])).stderr).toMatch(
+      /Classic is a classic theme.+Pressbase only runs block themes/,
+    );
+    expect((await s.cli(['theme', 'install', 'missing.zip'])).stderr).toMatch(/There’s no file/);
+    await s.loginAs('ed', 'editor');
+    await writeFile(path.join(s.dataDir, 'sunny.zip'), zip('1.0'));
+    expect((await s.cli(['theme', 'install', 'sunny.zip', '--user=ed'])).stderr).toBe(
+      'Error: ed isn’t allowed to install themes.\n',
+    );
+    expect((await s.cli(['theme', 'delete', 'sunny', '--user=ed', '--yes'])).stderr).toBe(
+      'Error: ed isn’t allowed to delete themes.\n',
+    );
   });
 });
 
@@ -270,7 +339,7 @@ describe('purges', () => {
     s.kernel.hooks.addAction(PURGE_ACTION, (t: string[]) => {
       tags.push(t);
     });
-    await s.ok(['theme', 'activate', 'twentytwentyfive']);
+    await s.ok(['theme', 'activate', 'pressbase']);
     await s.ok(['post', 'update', '1', '--post_title=Changed']);
     expect(tags.flat()).toContain('post:1');
   });

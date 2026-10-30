@@ -505,12 +505,25 @@ export class I18n {
       // (Pressbase has no separate admin request, so both are always loaded).
       return [path.join(lang, `${locale}.mo`), path.join(lang, `admin-${locale}.mo`)];
     }
-    if (domain === CORE_DOMAIN || domain === ADMIN_DOMAIN) {
+    if (domain === ADMIN_DOMAIN) {
       return [
         path.join(lang, 'pressbase', `${domain}-${locale}.mo`),
         path.join(BUNDLED_LANGUAGES_DIR, `${domain}-${locale}.mo`),
       ];
     }
+    if (domain === CORE_DOMAIN) {
+      // The Pressbase theme shares the domain: its translations come after core's.
+      return [
+        path.join(lang, 'pressbase', `${domain}-${locale}.mo`),
+        path.join(BUNDLED_LANGUAGES_DIR, `${domain}-${locale}.mo`),
+        ...this.#themeAndPluginFiles(domain, locale),
+      ];
+    }
+    return this.#themeAndPluginFiles(domain, locale);
+  }
+
+  #themeAndPluginFiles(domain: string, locale: string): string[] {
+    const lang = this.languagesDir;
     return [
       path.join(lang, 'plugins', `${domain}-${locale}.mo`),
       path.join(lang, 'themes', `${domain}-${locale}.mo`),

@@ -36,8 +36,8 @@ Menus are saved through `kernel.posts` like every other post, so `save_post`, `s
 `WP_Navigation_Block_Renderer::get_inner_blocks()`, in order:
 
 1. **`ref`**: the `wp_navigation` post with that ID, if it's published. (Blocks saved with the legacy `navigationMenuId` attribute still work.) A `ref` to a missing, draft or trashed menu falls through to the fallback, as in WordPress.
-2. **Inner blocks** saved inside the block itself (Twenty Twenty-Five's footer columns, for example).
-3. **The fallback** (`block_core_navigation_get_fallback_blocks()`), for a block with neither. Twenty Twenty-Five's header is one: `<!-- wp:navigation {"overlayBackgroundColor":"base","overlayTextColor":"contrast",…} /-->`.
+2. **Inner blocks** saved inside the block itself (as in Twenty Twenty-Five's footer columns, for example).
+3. **The fallback** (`block_core_navigation_get_fallback_blocks()`), for a block with neither. The Pressbase theme's header is one, as Twenty Twenty-Five's is: `<!-- wp:navigation {"overlayBackgroundColor":"base","overlayTextColor":"contrast",…} /-->`.
 
 The fallback is:
 

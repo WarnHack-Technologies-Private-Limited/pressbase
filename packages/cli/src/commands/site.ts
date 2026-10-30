@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import { PURGE_ACTION } from '@pressbase/core/src/cache/invalidation';
 import { CacheTag } from '@pressbase/core/src/cache/tags';
 import {
@@ -5,7 +7,9 @@ import {
   permalinkSettingsInput,
   savePermalinkSettings,
 } from '@pressbase/core/src/content/permalinks';
-import type { CommandSpec } from '../command';
+import { ThemeError } from '@pressbase/core/src/themes/install';
+import { CliError, type CommandSpec } from '../command';
+import { service } from './shared';
 
 /**
  * `pressbase theme`, `pressbase cache` and `pressbase rewrite`: the
@@ -57,7 +61,7 @@ export const themeCommands: CommandSpec[] = [
     shortdesc: 'Switches the site to another theme.',
     synopsis: '<theme>',
     options: { theme: 'The theme’s folder name (see “pressbase theme list”).' },
-    examples: [['pressbase theme activate twentytwentyfive', 'Switch theme']],
+    examples: [['pressbase theme activate pressbase', 'Switch theme']],
     needs: 'installed',
     async run(ctx) {
       await ctx.require(
@@ -83,6 +87,114 @@ export const themeCommands: CommandSpec[] = [
       await ctx.kernel.themes.activate(theme.stylesheet);
       ctx.changedServerState();
       ctx.success(`Switched to '${theme.name}' theme.`);
+    },
+  },
+  {
+    name: 'theme install',
+    shortdesc: 'Installs a block theme from a .zip file.',
+    synopsis: '<zip> [--force] [--activate]',
+    options: {
+      zip: 'Path to the theme’s .zip. The theme sits at its root or in one top-level folder.',
+      force: 'Replace a theme already installed with the same folder name.',
+      activate: 'Activate it once installed.',
+    },
+    longdesc:
+      'Goes through the same checks as Appearance → Themes → Upload theme: a safe archive, a style.css with a Theme Name, and templates/index.html (Pressbase runs block themes only). There is no theme directory to download from yet, so give a file.',
+    examples: [
+      ['pressbase theme install ./sunny.zip --activate', 'Install and activate'],
+      ['pressbase theme install ./sunny-1.1.zip --force', 'Replace the installed copy'],
+    ],
+    needs: 'installed',
+    async run(ctx) {
+      await ctx.require(
+        'upload_themes',
+        undefined,
+        `${ctx.user?.login} isn’t allowed to install themes.`,
+      );
+      const [file = ''] = ctx.args;
+      if (/^https?:\/\//.test(file)) {
+        ctx.error('Installing from a URL isn’t supported. Download the .zip and give its path.');
+      }
+      let data: Uint8Array;
+      try {
+        data = await readFile(ctx.resolvePath(file));
+      } catch {
+        ctx.error(`There’s no file at ${ctx.resolvePath(file)}.`);
+      }
+      const force = ctx.flag('force');
+      const { theme, replaced } = await service(async () => {
+        try {
+          return await ctx.kernel.themes.install(data, {
+            overwrite: force,
+            filename: path.basename(file),
+          });
+        } catch (error) {
+          if (error instanceof ThemeError && error.code === 'folder_exists') {
+            throw new CliError(
+              `${error.message.replace(/ Replace it.+$/, '')} Add --force to replace it.`,
+            );
+          }
+          throw error;
+        }
+      });
+      ctx.log(
+        replaced
+          ? `Replaced ${theme.name} with version ${theme.version || '—'} (${theme.stylesheet}).`
+          : `Installed ${theme.name} ${theme.version} (${theme.stylesheet}).`,
+      );
+      if (replaced) ctx.changedServerState();
+      if (ctx.flag('activate')) {
+        await ctx.require(
+          'switch_themes',
+          undefined,
+          `${ctx.user?.login} isn’t allowed to switch themes.`,
+        );
+        if ((await ctx.kernel.themes.activeStylesheet()) === theme.stylesheet) {
+          ctx.warning(`The '${theme.name}' theme is already active.`);
+        } else {
+          await ctx.kernel.themes.activate(theme.stylesheet);
+          ctx.changedServerState();
+          ctx.log(`Switched to '${theme.name}' theme.`);
+        }
+      }
+      ctx.success('Installed 1 of 1 themes.');
+    },
+  },
+  {
+    name: 'theme delete',
+    shortdesc: 'Deletes installed themes.',
+    synopsis: '<theme>...',
+    options: { theme: 'The themes’ folder names (see “pressbase theme list”).' },
+    longdesc:
+      'Asks first, unless --yes. The active theme, the active child theme’s parent and themes bundled with Pressbase can’t be deleted (wp-cli’s --force for the active theme isn’t offered). The theme’s saved styles stay, as in WordPress.',
+    examples: [['pressbase theme delete sunny --yes', 'Delete a theme']],
+    needs: 'installed',
+    async run(ctx) {
+      await ctx.require(
+        'delete_themes',
+        undefined,
+        `${ctx.user?.login} isn’t allowed to delete themes.`,
+      );
+      if (!ctx.args.length) ctx.error('Give the themes to delete.');
+      await ctx.confirm(`Delete ${ctx.args.join(', ')}? Their files are removed.`);
+      let done = 0;
+      for (const slug of ctx.args) {
+        try {
+          await ctx.kernel.themes.delete(slug);
+          ctx.log(`Deleted '${slug}' theme.`);
+          done += 1;
+        } catch (error) {
+          ctx.warning(
+            error instanceof ThemeError && error.code === 'rest_theme_not_found'
+              ? `There’s no theme “${slug}”.`
+              : (error as Error).message,
+          );
+        }
+      }
+      // wp-cli's report_batch_operation_results(): always the plural noun.
+      const message = `Deleted ${done} of ${ctx.args.length} themes.`;
+      if (done < ctx.args.length) ctx.error(message);
+      ctx.success(message);
     },
   },
 ];

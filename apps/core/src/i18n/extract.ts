@@ -2,6 +2,7 @@ import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
+import { loadPhpPattern } from '../themes/php-patterns';
 import { PRESSBASE_VERSION } from '../version';
 import { ADMIN_DOMAIN, CORE_DOMAIN } from './l10n';
 import { exportPo, type PoEntry } from './translation-file';
@@ -10,7 +11,9 @@ import { exportPo, type PoEntry } from './translation-file';
  * `pnpm i18n:extract`: writes the translation templates translators start
  * from, as `wp i18n make-pot` does for WordPress:
  *
- * - `languages/pressbase.pot`: core's strings (`apps/core/src`, domain `pressbase`);
+ * - `languages/pressbase.pot`: core's strings (`apps/core/src`, domain `pressbase`)
+ *   and the Pressbase theme's, which shares the domain: its patterns' text and
+ *   their titles and descriptions (`themes/pressbase/patterns/*.php`);
  * - `languages/pressbase-admin.pot`: the admin's (`apps/admin/src`, domain
  *   `pressbase-admin`), including strings marked with `msgid('…')` in static data.
  *
@@ -44,10 +47,17 @@ export interface ExtractTarget {
   pot: string;
   /** Also collect `msgid('…')` markers (static data translated where it's shown). */
   markers?: boolean;
+  /** Theme pattern folders (`patterns/*.php`) whose strings use this domain. */
+  themePatterns?: string[];
 }
 
 export const TARGETS: ExtractTarget[] = [
-  { domain: CORE_DOMAIN, dirs: ['apps/core/src'], pot: `languages/${CORE_DOMAIN}.pot` },
+  {
+    domain: CORE_DOMAIN,
+    dirs: ['apps/core/src'],
+    pot: `languages/${CORE_DOMAIN}.pot`,
+    themePatterns: ['themes/pressbase/patterns'],
+  },
   {
     domain: ADMIN_DOMAIN,
     dirs: ['apps/admin/src'],
@@ -194,6 +204,49 @@ export function extractStrings(target: ExtractTarget, root = ROOT): PoEntry[] {
         ts.forEachChild(node, visit);
       };
       visit(source);
+    }
+  }
+  for (const dir of target.themePatterns ?? []) {
+    for (const name of readdirSync(path.join(root, dir)).sort()) {
+      if (!name.endsWith('.php')) continue;
+      const relative = `${dir}/${name}`;
+      const add = (singular: string, context: string, domain: string) => {
+        if (domain !== target.domain || !singular) return;
+        const key = `${context}\u0004${singular}`;
+        const existing = found.get(key);
+        if (existing) {
+          if (!existing.references?.includes(relative)) {
+            existing.references = [...(existing.references ?? []), relative];
+          }
+        } else {
+          found.set(key, {
+            context,
+            singular,
+            translations: [],
+            references: [relative],
+            order: order++,
+          });
+        }
+      };
+      // Interpret the pattern as the theme loader does, noting every string it translates.
+      const result = loadPhpPattern(readFileSync(path.join(root, relative), 'utf8'), {
+        templateUri: '',
+        stylesheetUri: '',
+        gettext: (text, domain) => {
+          add(text, '', domain);
+          return text;
+        },
+        gettextWithContext: (text, context, domain) => {
+          add(text, context, domain);
+          return text;
+        },
+      });
+      if (!result.ok) continue;
+      // The theme loader translates pattern titles and descriptions with these contexts.
+      add(result.pattern.title, 'Pattern title', target.domain);
+      if (result.pattern.description) {
+        add(result.pattern.description, 'Pattern description', target.domain);
+      }
     }
   }
   return [...found.values()]

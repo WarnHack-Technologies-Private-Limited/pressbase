@@ -6,12 +6,12 @@ import path from 'node:path';
 import { Writable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
+import { readZip } from '@pressbase/core/src/files/zip';
 import { PLUGIN_MIGRATIONS } from '@pressbase/core/src/plugins/manager';
 import {
   RESERVED_NAMES as CORE_RESERVED,
   SLUG as CORE_SLUG,
 } from '@pressbase/core/src/plugins/manifest';
-import { readZip } from '@pressbase/core/src/plugins/zip';
 import { setup } from '@pressbase/core/src/test-utils';
 import { afterAll, describe, expect, it } from 'vitest';
 import {

@@ -73,3 +73,1017 @@ msgstr ""
 #: apps/core/src/i18n/language-packs.ts:322
 msgid "No translation for this language."
 msgstr ""
+
+#: themes/pressbase/patterns/bento-grid.php
+msgid "Built for the way <em>teams</em> actually publish."
+msgstr ""
+
+#: themes/pressbase/patterns/bento-grid.php
+msgid "From the first draft to the thousandth post, the details are already handled."
+msgstr ""
+
+#: themes/pressbase/patterns/bento-grid.php
+msgid "A writing room, <em>not</em> a cockpit."
+msgstr ""
+
+#: themes/pressbase/patterns/bento-grid.php
+msgid "Blocks, patterns and revisions, laid out so the words come first. Everything else waits a click away."
+msgstr ""
+
+#: themes/pressbase/patterns/bento-grid.php
+msgid "Draft saved · 2 collaborators · 1,284 words"
+msgstr ""
+
+#: themes/pressbase/patterns/bento-grid.php themes/pressbase/patterns/stats.php
+msgid "0.4s"
+msgstr ""
+
+#: themes/pressbase/patterns/bento-grid.php
+msgid "Median time to a fully loaded page, cached or not."
+msgstr ""
+
+#: themes/pressbase/patterns/bento-grid.php
+msgid "Global styles"
+msgstr ""
+
+#: themes/pressbase/patterns/bento-grid.php
+msgid "Change a colour or a typeface once. Every page follows."
+msgstr ""
+
+#: themes/pressbase/patterns/bento-grid.php
+msgid "Twenty-plus patterns"
+msgstr ""
+
+#: themes/pressbase/patterns/bento-grid.php
+msgid "Heroes, pricing tables, questions and answers: ready to drop in and make your own."
+msgstr ""
+
+#: themes/pressbase/patterns/bento-grid.php
+msgid "Open source"
+msgstr ""
+
+#: themes/pressbase/patterns/bento-grid.php
+msgid "Licensed under the GPL and built in the open. Read every line."
+msgstr ""
+
+#: themes/pressbase/patterns/bento-grid.php
+msgid "Bring your WordPress site along"
+msgstr ""
+
+#: themes/pressbase/patterns/bento-grid.php
+msgid "Import posts, pages, media and people from a WordPress export file in one go. Your old links keep working."
+msgstr ""
+
+#: themes/pressbase/patterns/bento-grid.php
+msgid "Any language"
+msgstr ""
+
+#: themes/pressbase/patterns/bento-grid.php
+msgid "Translated screens and right-to-left layouts, out of the box."
+msgstr ""
+
+#: themes/pressbase/patterns/bento-grid.php
+msgctxt "Pattern title"
+msgid "Bento grid"
+msgstr ""
+
+#: themes/pressbase/patterns/bento-grid.php
+msgctxt "Pattern description"
+msgid "Seven cards of different sizes in a responsive grid, led by a large ink card. Spans collapse to full width on narrow screens."
+msgstr ""
+
+#: themes/pressbase/patterns/code-showcase.php
+msgid "For developers"
+msgstr ""
+
+#: themes/pressbase/patterns/code-showcase.php
+msgid "An API that feels <em>familiar</em>."
+msgstr ""
+
+#: themes/pressbase/patterns/code-showcase.php
+msgid "Read and write everything over a clean REST API, extend it with typed plugins, and keep your content in plain, portable blocks."
+msgstr ""
+
+#: themes/pressbase/patterns/code-showcase.php
+msgid "Typed hooks and filters"
+msgstr ""
+
+#: themes/pressbase/patterns/code-showcase.php
+msgid "Webhooks for every change"
+msgstr ""
+
+#: themes/pressbase/patterns/code-showcase.php
+msgid "A command line for the busy days"
+msgstr ""
+
+#: themes/pressbase/patterns/code-showcase.php
+msgid "Read the docs"
+msgstr ""
+
+#: themes/pressbase/patterns/code-showcase.php
+msgid "publish.ts"
+msgstr ""
+
+#: themes/pressbase/patterns/code-showcase.php
+msgid "const post = await site.posts.create({"
+msgstr ""
+
+#: themes/pressbase/patterns/code-showcase.php
+msgid "  title: \"Hello, world\","
+msgstr ""
+
+#: themes/pressbase/patterns/code-showcase.php
+msgid "  status: \"publish\","
+msgstr ""
+
+#: themes/pressbase/patterns/code-showcase.php
+msgid "});"
+msgstr ""
+
+#: themes/pressbase/patterns/code-showcase.php
+msgid "console.log(post.link);"
+msgstr ""
+
+#: themes/pressbase/patterns/code-showcase.php
+msgctxt "Pattern title"
+msgid "Text and code card"
+msgstr ""
+
+#: themes/pressbase/patterns/code-showcase.php
+msgctxt "Pattern description"
+msgid "A heading, a short list and a button beside a glass card holding a code sample."
+msgstr ""
+
+#: themes/pressbase/patterns/cta-band.php
+msgid "Your next idea deserves a <em>beautiful</em> home."
+msgstr ""
+
+#: themes/pressbase/patterns/cta-band.php
+msgid "Start in minutes. Stay for years. Move on whenever you want, with everything you made."
+msgstr ""
+
+#: themes/pressbase/patterns/cta-band.php themes/pressbase/patterns/footer.php themes/pressbase/patterns/hero-gradient.php themes/pressbase/patterns/pricing.php
+msgid "Start for free"
+msgstr ""
+
+#: themes/pressbase/patterns/cta-band.php
+msgid "Book a demo"
+msgstr ""
+
+#: themes/pressbase/patterns/cta-band.php
+msgctxt "Pattern title"
+msgid "Call to action band"
+msgstr ""
+
+#: themes/pressbase/patterns/cta-band.php
+msgctxt "Pattern description"
+msgid "A rounded ink band with a large headline and two buttons."
+msgstr ""
+
+#: themes/pressbase/patterns/faq.php
+msgid "Questions, <em>answered</em>."
+msgstr ""
+
+#: themes/pressbase/patterns/faq.php
+msgid "Something else on your mind? Write to us and a person will reply."
+msgstr ""
+
+#: themes/pressbase/patterns/faq.php
+msgid "Is there really a free plan?"
+msgstr ""
+
+#: themes/pressbase/patterns/faq.php
+msgid "Yes. Personal sites are free for as long as you like, with every theme and pattern included. Paid plans add more sites, custom domains and team features."
+msgstr ""
+
+#: themes/pressbase/patterns/faq.php
+msgid "Can I bring my existing site?"
+msgstr ""
+
+#: themes/pressbase/patterns/faq.php
+msgid "Export your content from WordPress and import the file. Posts, pages, media, categories and people come across, and old links redirect to their new homes."
+msgstr ""
+
+#: themes/pressbase/patterns/faq.php
+msgid "Do I need to know how to code?"
+msgstr ""
+
+#: themes/pressbase/patterns/faq.php
+msgid "Not at all. Everything here is built from blocks you can click, type into and rearrange. Developers get a full API when they want one."
+msgstr ""
+
+#: themes/pressbase/patterns/faq.php
+msgid "How fast will my pages be?"
+msgstr ""
+
+#: themes/pressbase/patterns/faq.php
+msgid "Pages are rendered on the server, cached, and ship without theme JavaScript, so most load in well under a second, even on a phone."
+msgstr ""
+
+#: themes/pressbase/patterns/faq.php
+msgid "Who owns my content?"
+msgstr ""
+
+#: themes/pressbase/patterns/faq.php
+msgid "You do. Export everything at any time, in formats other tools understand."
+msgstr ""
+
+#: themes/pressbase/patterns/faq.php
+msgctxt "Pattern title"
+msgid "Questions and answers"
+msgstr ""
+
+#: themes/pressbase/patterns/faq.php
+msgctxt "Pattern description"
+msgid "A heading beside a list of questions that open to show their answers."
+msgstr ""
+
+#: themes/pressbase/patterns/features-grid.php themes/pressbase/patterns/footer.php
+msgid "Features"
+msgstr ""
+
+#: themes/pressbase/patterns/features-grid.php
+msgid "Everything you need, <em>nothing</em> you don’t."
+msgstr ""
+
+#: themes/pressbase/patterns/features-grid.php
+msgid "The tools of a full publishing platform, arranged so you only notice them when you need them."
+msgstr ""
+
+#: themes/pressbase/patterns/features-grid.php
+msgid "Fast by default"
+msgstr ""
+
+#: themes/pressbase/patterns/features-grid.php
+msgid "Pages are rendered on the server and cached at the edge, so readers never wait for a spinner."
+msgstr ""
+
+#: themes/pressbase/patterns/features-grid.php
+msgid "Blocks you already know"
+msgstr ""
+
+#: themes/pressbase/patterns/features-grid.php
+msgid "Write with familiar blocks and patterns. Your layouts stay portable, your content stays yours."
+msgstr ""
+
+#: themes/pressbase/patterns/features-grid.php
+msgid "Writing that flows"
+msgstr ""
+
+#: themes/pressbase/patterns/features-grid.php
+msgid "A distraction-free editor with autosave, revisions and comments for the whole team."
+msgstr ""
+
+#: themes/pressbase/patterns/features-grid.php
+msgid "Ready for every language"
+msgstr ""
+
+#: themes/pressbase/patterns/features-grid.php
+msgid "Translate the interface and your content, with right-to-left support built in."
+msgstr ""
+
+#: themes/pressbase/patterns/features-grid.php
+msgid "Secure without the chores"
+msgstr ""
+
+#: themes/pressbase/patterns/features-grid.php
+msgid "Roles, strong sessions and careful defaults keep your site safe while you focus on writing."
+msgstr ""
+
+#: themes/pressbase/patterns/features-grid.php
+msgid "Insights, not noise"
+msgstr ""
+
+#: themes/pressbase/patterns/features-grid.php
+msgid "See what readers love with privacy-friendly numbers, no cookie banners required."
+msgstr ""
+
+#: themes/pressbase/patterns/features-grid.php
+msgctxt "Pattern title"
+msgid "Features grid"
+msgstr ""
+
+#: themes/pressbase/patterns/features-grid.php
+msgctxt "Pattern description"
+msgid "A heading and six cards with gradient icons. The cards lift on hover and reveal one after another as they scroll into view."
+msgstr ""
+
+#: themes/pressbase/patterns/footer-ink.php
+msgid "Keep writing."
+msgstr ""
+
+#: themes/pressbase/patterns/footer-ink.php themes/pressbase/patterns/footer-minimal.php themes/pressbase/patterns/footer.php
+msgid "About"
+msgstr ""
+
+#: themes/pressbase/patterns/footer-ink.php themes/pressbase/patterns/footer.php
+msgid "Contact"
+msgstr ""
+
+#: themes/pressbase/patterns/footer-ink.php themes/pressbase/patterns/footer-minimal.php
+msgid "Feed"
+msgstr ""
+
+#: themes/pressbase/patterns/footer-ink.php
+msgctxt "Pattern title"
+msgid "Footer, ink with a big sign-off"
+msgstr ""
+
+#: themes/pressbase/patterns/footer-ink.php
+msgctxt "Pattern description"
+msgid "A dark footer with an oversized italic sign-off, the site's tagline, a few links and \"Powered by Pressbase\"."
+msgstr ""
+
+#: themes/pressbase/patterns/footer-minimal.php
+msgid "Privacy"
+msgstr ""
+
+#: themes/pressbase/patterns/footer-minimal.php
+msgctxt "Pattern title"
+msgid "Footer, minimal"
+msgstr ""
+
+#: themes/pressbase/patterns/footer-minimal.php
+msgctxt "Pattern description"
+msgid "One quiet row: the site title, a few links and \"Powered by Pressbase\"."
+msgstr ""
+
+#: themes/pressbase/patterns/footer.php
+msgid "Ready when <em>you</em> are."
+msgstr ""
+
+#: themes/pressbase/patterns/footer.php
+msgid "Set up a site in minutes. Bring your words, we will handle the rest."
+msgstr ""
+
+#: themes/pressbase/patterns/footer.php themes/pressbase/patterns/pricing.php
+msgid "Talk to us"
+msgstr ""
+
+#: themes/pressbase/patterns/footer.php
+msgid "Product"
+msgstr ""
+
+#: themes/pressbase/patterns/footer.php
+msgid "Pricing"
+msgstr ""
+
+#: themes/pressbase/patterns/footer.php
+msgid "Changelog"
+msgstr ""
+
+#: themes/pressbase/patterns/footer.php
+msgid "Resources"
+msgstr ""
+
+#: themes/pressbase/patterns/footer.php
+msgid "Blog"
+msgstr ""
+
+#: themes/pressbase/patterns/footer.php
+msgid "Guides"
+msgstr ""
+
+#: themes/pressbase/patterns/footer.php
+msgid "Help center"
+msgstr ""
+
+#: themes/pressbase/patterns/footer.php
+msgid "Company"
+msgstr ""
+
+#: themes/pressbase/patterns/footer.php
+msgid "Careers"
+msgstr ""
+
+#: themes/pressbase/patterns/footer.php
+msgid "Made for people who publish."
+msgstr ""
+
+#: themes/pressbase/patterns/footer.php
+msgctxt "Pattern title"
+msgid "Footer"
+msgstr ""
+
+#: themes/pressbase/patterns/footer.php
+msgctxt "Pattern description"
+msgid "A call-to-action card, four columns of links with the site's name and tagline, and a small \"Powered by Pressbase\"."
+msgstr ""
+
+#: themes/pressbase/patterns/header.php
+msgid "Get started"
+msgstr ""
+
+#: themes/pressbase/patterns/header.php
+msgctxt "Pattern title"
+msgid "Header"
+msgstr ""
+
+#: themes/pressbase/patterns/header.php
+msgctxt "Pattern description"
+msgid "A sticky glass header with the site logo and title, navigation and a call-to-action button."
+msgstr ""
+
+#: themes/pressbase/patterns/hero-gradient.php
+msgid "New: version 2.0 is here"
+msgstr ""
+
+#: themes/pressbase/patterns/hero-gradient.php
+msgid "Publish ideas that <em>move</em> people."
+msgstr ""
+
+#: themes/pressbase/patterns/hero-gradient.php
+msgid "A calm, fast home for everything you write. Draft together, launch in a click and watch every page load before your readers can blink."
+msgstr ""
+
+#: themes/pressbase/patterns/hero-gradient.php
+msgid "See how it works"
+msgstr ""
+
+#: themes/pressbase/patterns/hero-gradient.php
+msgid "No credit card. Free for personal sites, forever."
+msgstr ""
+
+#: themes/pressbase/patterns/hero-gradient.php
+msgid "~/my-site — terminal"
+msgstr ""
+
+#: themes/pressbase/patterns/hero-gradient.php
+msgid "$ site new \"Field Notes\""
+msgstr ""
+
+#: themes/pressbase/patterns/hero-gradient.php
+msgid "  Creating your site…  done in 1.2s"
+msgstr ""
+
+#: themes/pressbase/patterns/hero-gradient.php
+msgid "$ site publish"
+msgstr ""
+
+#: themes/pressbase/patterns/hero-gradient.php
+msgid "  Live at https://fieldnotes.example"
+msgstr ""
+
+#: themes/pressbase/patterns/hero-gradient.php
+msgctxt "Pattern title"
+msgid "Hero with animated gradient"
+msgstr ""
+
+#: themes/pressbase/patterns/hero-gradient.php
+msgctxt "Pattern description"
+msgid "A large headline over a drifting indigo and violet aurora, with two buttons and a glass card showing a terminal."
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-404.php
+msgctxt "404 error label"
+msgid "Error 404"
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-404.php
+msgctxt "404 error message"
+msgid "This page took <em>another</em> road."
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-404.php
+msgctxt "404 error message"
+msgid "The page you are looking for does not exist, or it has moved. Try a search, or start again from the home page."
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-404.php
+msgid "Back to the home page"
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-404.php
+msgctxt "Pattern title"
+msgid "Page not found"
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-404.php
+msgctxt "Pattern description"
+msgid "The 404 page: a large serif \"404\" over the animated gradient, a message, a search field and a way home."
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-blog-heading.php
+msgid "Journal"
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-blog-heading.php
+msgid "Notes, essays and <em>news</em>."
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-blog-heading.php
+msgid "What we are building, what we are learning, and the stories behind both."
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-blog-heading.php
+msgctxt "Pattern title"
+msgid "Blog heading"
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-blog-heading.php
+msgctxt "Pattern description"
+msgid "The heading of the blog's list of posts, over the animated gradient."
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-comments.php
+msgctxt "Pattern title"
+msgid "Comments"
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-comments.php
+msgctxt "Pattern description"
+msgid "The comments of a post, their pagination and the comment form."
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-no-results.php
+msgid "Nothing here yet"
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-no-results.php
+msgctxt "Message shown when a query has no results."
+msgid "Sorry, nothing matched. Try a search with different words."
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-no-results.php
+msgctxt "Pattern title"
+msgid "No results"
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-no-results.php
+msgctxt "Pattern description"
+msgid "The message shown when a query finds nothing."
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-post-meta.php
+msgctxt "Pattern title"
+msgid "Post meta"
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-post-meta.php
+msgctxt "Pattern description"
+msgid "The author's avatar and name, and the date, under a post's title."
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-post-navigation.php
+msgid "Post navigation"
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-post-navigation.php
+msgctxt "Pattern title"
+msgid "Post navigation"
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-post-navigation.php
+msgctxt "Pattern description"
+msgid "Links to the previous and next posts."
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-powered-by.php
+#, js-format
+msgid "Powered by %s"
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-powered-by.php
+msgctxt "Pattern title"
+msgid "Powered by Pressbase"
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-powered-by.php
+msgctxt "Pattern description"
+msgid "The small \"Powered by Pressbase\" line used in the footers."
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-query-loop.php
+msgctxt "Pattern title"
+msgid "Posts of the current view"
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-query-loop.php
+msgctxt "Pattern description"
+msgid "The main query (blog, archives, search) as a grid of cards, with pagination."
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-search.php
+msgctxt "search form label"
+msgid "Search"
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-search.php
+msgctxt "search form placeholder"
+msgid "Search posts and pages…"
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-search.php
+msgctxt "search form button"
+msgid "Search"
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-search.php
+msgctxt "Pattern title"
+msgid "Search form"
+msgstr ""
+
+#: themes/pressbase/patterns/hidden-search.php
+msgctxt "Pattern description"
+msgid "A search field with a button."
+msgstr ""
+
+#: themes/pressbase/patterns/marquee.php
+msgid "One platform for every kind of site"
+msgstr ""
+
+#: themes/pressbase/patterns/marquee.php
+msgid "Magazines"
+msgstr ""
+
+#: themes/pressbase/patterns/marquee.php
+msgid "Newsletters"
+msgstr ""
+
+#: themes/pressbase/patterns/marquee.php
+msgid "Portfolios"
+msgstr ""
+
+#: themes/pressbase/patterns/marquee.php
+msgid "Documentation"
+msgstr ""
+
+#: themes/pressbase/patterns/marquee.php
+msgid "Shops"
+msgstr ""
+
+#: themes/pressbase/patterns/marquee.php
+msgid "Podcasts"
+msgstr ""
+
+#: themes/pressbase/patterns/marquee.php
+msgid "Landing pages"
+msgstr ""
+
+#: themes/pressbase/patterns/marquee.php
+msgid "Personal blogs"
+msgstr ""
+
+#: themes/pressbase/patterns/marquee.php
+msgctxt "Pattern title"
+msgid "Marquee strip"
+msgstr ""
+
+#: themes/pressbase/patterns/marquee.php
+msgctxt "Pattern description"
+msgid "A strip of words that glides sideways as the page scrolls. It wraps, and stays still, where scroll-driven animation isn't available or motion is reduced."
+msgstr ""
+
+#: themes/pressbase/patterns/newsletter.php
+msgid "Newsletter"
+msgstr ""
+
+#: themes/pressbase/patterns/newsletter.php
+msgid "Notes, <em>once a month</em>."
+msgstr ""
+
+#: themes/pressbase/patterns/newsletter.php
+msgid "One short letter with what we shipped, what we learned and what we are reading. No tracking, no spam, unsubscribe in one click."
+msgstr ""
+
+#: themes/pressbase/patterns/newsletter.php
+msgid "Subscribe by email"
+msgstr ""
+
+#: themes/pressbase/patterns/newsletter.php
+msgid "Follow the feed"
+msgstr ""
+
+#: themes/pressbase/patterns/newsletter.php
+msgctxt "Pattern title"
+msgid "Newsletter and contact"
+msgstr ""
+
+#: themes/pressbase/patterns/newsletter.php
+msgctxt "Pattern description"
+msgid "A glass card inviting readers to follow along by feed or email, over the animated gradient."
+msgstr ""
+
+#: themes/pressbase/patterns/page-landing.php
+msgctxt "Pattern title"
+msgid "Landing page"
+msgstr ""
+
+#: themes/pressbase/patterns/page-landing.php
+msgctxt "Pattern description"
+msgid "A complete landing page: hero, marquee, features, how it works, a statement, testimonials, team, pricing, questions and a call to action."
+msgstr ""
+
+#: themes/pressbase/patterns/posts-grid.php
+msgid "From the <em>journal</em>"
+msgstr ""
+
+#: themes/pressbase/patterns/posts-grid.php
+msgctxt "Pattern title"
+msgid "Latest posts grid"
+msgstr ""
+
+#: themes/pressbase/patterns/posts-grid.php
+msgctxt "Pattern description"
+msgid "A heading and the three latest posts in lifted cards, with images, categories, excerpts and dates."
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "Simple plans that <em>grow</em> with you."
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "Start free, upgrade when you need to, cancel whenever you like."
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "Starter"
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "Free"
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "forever"
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "For personal sites and first experiments."
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "One site"
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "Every theme and pattern"
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "Community support"
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "Most popular"
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "Studio"
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "$12"
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "per month"
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "For creators who publish every week."
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "Five sites"
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "Custom domains"
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "Newsletters and analytics"
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "Priority support"
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "Choose Studio"
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "Team"
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "$39"
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "For newsrooms, docs teams and agencies."
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "Unlimited sites"
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "Roles and review flows"
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgid "Single sign-on"
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgctxt "Pattern title"
+msgid "Pricing, three tiers"
+msgstr ""
+
+#: themes/pressbase/patterns/pricing.php
+msgctxt "Pattern description"
+msgid "Three plans side by side; the middle one is highlighted on an ink card."
+msgstr ""
+
+#: themes/pressbase/patterns/statement.php
+msgid "We believe the web is better when publishing is calm, fast and owned by the people who write."
+msgstr ""
+
+#: themes/pressbase/patterns/statement.php
+msgid "From our founding notes"
+msgstr ""
+
+#: themes/pressbase/patterns/statement.php
+msgctxt "Pattern title"
+msgid "Big statement"
+msgstr ""
+
+#: themes/pressbase/patterns/statement.php
+msgctxt "Pattern description"
+msgid "One large italic serif sentence, centred, with a short attribution."
+msgstr ""
+
+#: themes/pressbase/patterns/stats.php
+msgid "12k"
+msgstr ""
+
+#: themes/pressbase/patterns/stats.php
+msgid "Sites published in the first year"
+msgstr ""
+
+#: themes/pressbase/patterns/stats.php
+msgid "99.9%"
+msgstr ""
+
+#: themes/pressbase/patterns/stats.php
+msgid "Uptime, measured every minute"
+msgstr ""
+
+#: themes/pressbase/patterns/stats.php
+msgid "Median page load on a phone"
+msgstr ""
+
+#: themes/pressbase/patterns/stats.php
+msgid "40+"
+msgstr ""
+
+#: themes/pressbase/patterns/stats.php
+msgid "Languages, right to left included"
+msgstr ""
+
+#: themes/pressbase/patterns/stats.php
+msgctxt "Pattern title"
+msgid "Stats"
+msgstr ""
+
+#: themes/pressbase/patterns/stats.php
+msgctxt "Pattern description"
+msgid "Four large figures with short labels on a soft indigo band."
+msgstr ""
+
+#: themes/pressbase/patterns/steps.php
+msgid "Live in <em>three</em> steps."
+msgstr ""
+
+#: themes/pressbase/patterns/steps.php
+msgid "01"
+msgstr ""
+
+#: themes/pressbase/patterns/steps.php
+msgid "Pick a look"
+msgstr ""
+
+#: themes/pressbase/patterns/steps.php
+msgid "Choose a style variation, then make the colours and type your own."
+msgstr ""
+
+#: themes/pressbase/patterns/steps.php
+msgid "02"
+msgstr ""
+
+#: themes/pressbase/patterns/steps.php
+msgid "Write and arrange"
+msgstr ""
+
+#: themes/pressbase/patterns/steps.php
+msgid "Drop in patterns, type over the placeholders and preview as you go."
+msgstr ""
+
+#: themes/pressbase/patterns/steps.php
+msgid "03"
+msgstr ""
+
+#: themes/pressbase/patterns/steps.php
+msgid "Publish"
+msgstr ""
+
+#: themes/pressbase/patterns/steps.php
+msgid "One click and it is live, cached and fast for every reader."
+msgstr ""
+
+#: themes/pressbase/patterns/steps.php
+msgctxt "Pattern title"
+msgid "How it works"
+msgstr ""
+
+#: themes/pressbase/patterns/steps.php
+msgctxt "Pattern description"
+msgid "Three numbered steps in glass cards, revealed one after another."
+msgstr ""
+
+#: themes/pressbase/patterns/team.php
+msgid "A small team with <em>big</em> opinions."
+msgstr ""
+
+#: themes/pressbase/patterns/team.php
+msgid "We write, design and ship from four time zones, and read every message ourselves."
+msgstr ""
+
+#: themes/pressbase/patterns/team.php
+msgid "Placeholder portrait"
+msgstr ""
+
+#: themes/pressbase/patterns/team.php
+msgid "Team member name"
+msgstr ""
+
+#: themes/pressbase/patterns/team.php
+msgid "Founder and editor"
+msgstr ""
+
+#: themes/pressbase/patterns/team.php
+msgid "Head of design"
+msgstr ""
+
+#: themes/pressbase/patterns/team.php
+msgid "Lead engineer"
+msgstr ""
+
+#: themes/pressbase/patterns/team.php
+msgid "Community and support"
+msgstr ""
+
+#: themes/pressbase/patterns/team.php
+msgctxt "Pattern title"
+msgid "Team"
+msgstr ""
+
+#: themes/pressbase/patterns/team.php
+msgctxt "Pattern description"
+msgid "A heading and four people in lifted cards, with placeholder portraits, names and roles."
+msgstr ""
+
+#: themes/pressbase/patterns/testimonials.php
+msgid "Loved by people who <em>write</em> for a living."
+msgstr ""
+
+#: themes/pressbase/patterns/testimonials.php
+msgid "“We moved our newsroom over in an afternoon. Pages load instantly and the editors stopped asking me for help.”"
+msgstr ""
+
+#: themes/pressbase/patterns/testimonials.php
+msgid "Customer name"
+msgstr ""
+
+#: themes/pressbase/patterns/testimonials.php
+msgid "Managing editor, Company name"
+msgstr ""
+
+#: themes/pressbase/patterns/testimonials.php
+msgid "“The first platform where the defaults already look the way I would have designed them.”"
+msgstr ""
+
+#: themes/pressbase/patterns/testimonials.php
+msgid "Designer, Studio name"
+msgstr ""
+
+#: themes/pressbase/patterns/testimonials.php
+msgid "“Our docs, blog and changelog finally live in one place, and it is fast everywhere our readers are.”"
+msgstr ""
+
+#: themes/pressbase/patterns/testimonials.php
+msgid "Head of docs, Company name"
+msgstr ""
+
+#: themes/pressbase/patterns/testimonials.php
+msgctxt "Pattern title"
+msgid "Testimonials"
+msgstr ""
+
+#: themes/pressbase/patterns/testimonials.php
+msgctxt "Pattern description"
+msgid "Three quotes in lifted cards, each with a placeholder portrait, a name and a role."
+msgstr ""

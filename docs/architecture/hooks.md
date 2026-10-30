@@ -185,6 +185,9 @@ Plugins see the same declarations through `@pressbase/plugin-sdk`, whose types a
 | `deactivate_plugin` / `deactivated_plugin` | action | `slug` | before / after a plugin is switched off and its registrations removed |
 | `pre_uninstall_plugin` | action | `slug, manifest` | before an inactive plugin's `uninstall` runs and its folder is deleted |
 | `deleted_plugin` | action | `slug, deleted` | after a plugin was deleted (`deleted` is false if its files couldn't be removed) |
+| `upgrader_process_complete` | action | `null, { action: 'install', type: 'theme', themes }` | after a theme was installed from a .zip (WordPress passes its `WP_Upgrader`; Pressbase passes `null`). The page cache is purged when the theme is in use. See [Themes](themes.md#installing-and-deleting-themes) |
+| `upgrader_overwrote_package` | action | `packageName, newThemeData, 'theme'` | after an upload replaced an installed theme (`overwrite`) |
+| `delete_theme` / `deleted_theme` | action | `stylesheet` / `stylesheet, deleted` | before / after a theme's folder is removed |
 | `pressbase_plugin_error` | action | `slug, error` | a plugin failed to load or activate, or one of its hooks or routes threw; `error` is `{ message, during, time }` |
 | `register_setting` / `unregister_setting` | action | `optionGroup, optionName[, args]` | a plugin registered a setting (the group is the plugin's slug) / it was removed on deactivation. See [Plugins](plugins.md#settings) |
 | `sanitize_option_{option}` | filter | `value, option, originalValue` | a setting's value after its validation and `sanitize` callback, before it's stored (settings pages, `/wp/v2/settings`, `api.settings.set`) |

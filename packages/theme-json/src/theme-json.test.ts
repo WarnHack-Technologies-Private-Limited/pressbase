@@ -20,62 +20,61 @@ import {
   typographyFontSizeValue,
 } from './index';
 
-const TT5 = path.resolve(import.meta.dirname, '../../../themes/twentytwentyfive');
+const PRESSBASE = path.resolve(import.meta.dirname, '../../../themes/pressbase');
 const readJson = (file: string) => JSON.parse(readFileSync(file, 'utf8')) as ThemeJsonData;
 
-function tt5() {
-  const partials = ['blocks', 'sections'].flatMap((dir) =>
-    readdirSync(path.join(TT5, 'styles', dir)).map((f) =>
-      readJson(path.join(TT5, 'styles', dir, f)),
-    ),
-  );
+function pressbaseTheme() {
+  const sections = path.join(PRESSBASE, 'styles', 'sections');
   return resolveThemeJson({
-    theme: readJson(path.join(TT5, 'theme.json')),
-    blockStyleVariations: partials,
+    theme: readJson(path.join(PRESSBASE, 'theme.json')),
+    blockStyleVariations: readdirSync(sections).map((f) => readJson(path.join(sections, f))),
   });
 }
 
-describe('global stylesheet for Twenty Twenty-Five (compared with WordPress 7.1 output)', () => {
-  const resolved = tt5();
+describe('global stylesheet for the Pressbase theme', () => {
+  const resolved = pressbaseTheme();
   const { stylesheet, fontFaces } = getGlobalStylesheet(resolved, {
-    resolveFileUri: (p) => `https://example.com/wp-content/themes/twentytwentyfive/${p}`,
+    resolveFileUri: (p) => `https://example.com/wp-content/themes/pressbase/${p}`,
   });
 
   it('starts with the preset custom properties on :root, fluid font sizes included', () => {
     expect(stylesheet.startsWith(':root{--wp--preset--aspect-ratio--square: 1;')).toBe(true);
-    expect(stylesheet).toContain('--wp--preset--color--base: #FFFFFF;');
-    expect(stylesheet).toContain(
-      '--wp--preset--color--accent-6: color-mix(in srgb, currentColor 20%, transparent);',
-    );
+    expect(stylesheet).toContain('--wp--preset--color--base: #f6f6f3;');
     expect(stylesheet).toContain('--wp--preset--font-size--small: 0.875rem;');
     expect(stylesheet).toContain(
-      '--wp--preset--font-size--medium: clamp(1rem, 1rem + ((1vw - 0.2rem) * 0.196), 1.125rem);',
+      '--wp--preset--font-size--medium: clamp(1rem, 1rem + ((1vw - 0.2rem) * 0.115), 1.0625rem);',
     );
     expect(stylesheet).toContain(
-      '--wp--preset--font-size--xx-large: clamp(2.15rem, 2.15rem + ((1vw - 0.2rem) * 1.333), 3rem);',
+      '--wp--preset--font-size--display: clamp(2.625rem, 2.625rem + ((1vw - 0.2rem) * 5.682), 5.75rem);',
     );
-    expect(stylesheet).toContain('--wp--preset--font-family--fira-code: "Fira Code", monospace;');
-    expect(stylesheet).toContain('--wp--preset--spacing--50: clamp(30px, 5vw, 50px);');
+    expect(stylesheet).toContain(
+      '--wp--preset--font-family--fira-code: "Fira Code", ui-monospace, monospace;',
+    );
+    expect(stylesheet).toContain('--wp--preset--spacing--50: clamp(1.5rem, 4vw, 2.5rem);');
+    // The default shadows stay alongside the theme's.
     expect(stylesheet).toContain('--wp--preset--shadow--natural: 6px 6px 9px rgba(0, 0, 0, 0.2);');
+    expect(stylesheet).toContain(
+      '--wp--preset--shadow--soft: 0 1px 2px rgb(20 20 18 / 0.05), 0 6px 20px -6px rgb(20 20 18 / 0.08);',
+    );
     // Block-level presets go on the block's selector.
     expect(stylesheet).toContain('.wp-block-button{--wp--preset--dimension--25: 25%;');
   });
 
   it('prints the root layout rules with root padding aware alignments', () => {
     expect(stylesheet).toContain(
-      ':root { --wp--style--global--content-size: 645px;--wp--style--global--wide-size: 1340px; }:where(body) { margin: 0; }',
+      ':root { --wp--style--global--content-size: 720px;--wp--style--global--wide-size: 1200px; }:where(body) { margin: 0; }',
     );
     expect(stylesheet).toContain(
       '.has-global-padding { padding-right: var(--wp--style--root--padding-right); padding-left: var(--wp--style--root--padding-left); }',
     );
     expect(stylesheet).toContain(
-      ':where(.wp-site-blocks) > * { margin-block-start: 1.2rem; margin-block-end: 0; }',
+      ':where(.wp-site-blocks) > * { margin-block-start: 1.25rem; margin-block-end: 0; }',
     );
-    expect(stylesheet).toContain(':root { --wp--style--block-gap: 1.2rem; }');
+    expect(stylesheet).toContain(':root { --wp--style--block-gap: 1.25rem; }');
     expect(stylesheet).toContain(
-      ':root :where(.is-layout-flow) > *{margin-block-start: 1.2rem;margin-block-end: 0;}',
+      ':root :where(.is-layout-flow) > *{margin-block-start: 1.25rem;margin-block-end: 0;}',
     );
-    expect(stylesheet).toContain(':root :where(.is-layout-flex){gap: 1.2rem;}');
+    expect(stylesheet).toContain(':root :where(.is-layout-flex){gap: 1.25rem;}');
     expect(stylesheet).toContain('body .is-layout-flex{display: flex;}');
     expect(stylesheet).toContain(
       '.is-layout-constrained > :where(:not(.alignleft):not(.alignright):not(.alignfull)){max-width: var(--wp--style--global--content-size);margin-left: auto !important;margin-right: auto !important;}',
@@ -84,38 +83,50 @@ describe('global stylesheet for Twenty Twenty-Five (compared with WordPress 7.1 
 
   it('styles the body, swapping root padding for custom properties', () => {
     expect(stylesheet).toContain(
-      'body{background-color: var(--wp--preset--color--base);color: var(--wp--preset--color--contrast);font-family: var(--wp--preset--font-family--manrope);font-size: var(--wp--preset--font-size--large);font-weight: 300;letter-spacing: -0.1px;line-height: 1.4;--wp--style--root--padding-top: 0px;--wp--style--root--padding-right: var(--wp--preset--spacing--50);--wp--style--root--padding-bottom: 0px;--wp--style--root--padding-left: var(--wp--preset--spacing--50);}',
+      'body{background-color: var(--wp--preset--color--base);color: var(--wp--preset--color--contrast);font-family: var(--wp--preset--font-family--manrope);font-size: var(--wp--preset--font-size--medium);font-weight: 400;letter-spacing: -0.005em;line-height: 1.65;--wp--style--root--padding-top: 0px;--wp--style--root--padding-right: var(--wp--preset--spacing--40);--wp--style--root--padding-bottom: 0px;--wp--style--root--padding-left: var(--wp--preset--spacing--40);}',
     );
   });
 
   it('styles elements with zero-specificity selectors and pseudo states', () => {
-    expect(stylesheet).toContain('a:where(:not(.wp-element-button)){color: currentColor;}');
     expect(stylesheet).toContain(
-      ':root :where(a:where(:not(.wp-element-button)):hover){text-decoration: none;}',
+      'a:where(:not(.wp-element-button)){color: var(--wp--preset--color--accent-text);text-decoration: underline;}',
     );
-    expect(stylesheet).toContain('h1{font-size: var(--wp--preset--font-size--xx-large);}');
     expect(stylesheet).toContain(
-      ':root :where(.wp-element-button:hover, .wp-block-button__link:hover){background-color: color-mix(in srgb, var(--wp--preset--color--contrast) 85%, transparent);border-color: transparent;color: var(--wp--preset--color--base);}',
+      ':root :where(a:where(:not(.wp-element-button)):hover){color: var(--wp--preset--color--contrast);}',
+    );
+    expect(stylesheet).toContain(
+      'h1, h2, h3, h4, h5, h6{font-family: var(--wp--preset--font-family--platypi);font-weight: 600;letter-spacing: -0.02em;line-height: 1.1;}',
+    );
+    expect(stylesheet).toContain('h1{font-size: var(--wp--preset--font-size--xxx-large);}');
+    expect(stylesheet).toContain(
+      ':root :where(.wp-element-button:hover, .wp-block-button__link:hover){background-color: var(--wp--preset--color--accent);color: var(--wp--preset--color--on-accent);}',
+    );
+    expect(stylesheet).toContain(
+      ':root :where(.wp-element-button:focus, .wp-block-button__link:focus){background-color: var(--wp--preset--color--accent);color: var(--wp--preset--color--on-accent);}',
     );
   });
 
   it('styles blocks: feature selectors, block gap per layout, elements and custom CSS', () => {
-    expect(stylesheet).toContain(':root :where(.wp-block-avatar img){border-radius: 100px;}');
     expect(stylesheet).toContain(
-      ':root :where(.wp-block-columns-is-layout-flex){gap: var(--wp--preset--spacing--50);}',
+      ':root :where(.wp-block-avatar img){border-radius: var(--wp--preset--border-radius--full);}',
     );
     expect(stylesheet).toContain(
-      ':root :where(.wp-block-post-date a:where(:not(.wp-element-button)):hover){text-decoration: underline;}',
+      ':root :where(.wp-block-columns-is-layout-flex){gap: var(--wp--preset--spacing--40);}',
     );
-    expect(stylesheet).toContain(':root :where(.wp-block-post-terms a){white-space: nowrap;}');
+    expect(stylesheet).toContain(':root :where(.wp-block-buttons-is-layout-grid){gap: 0.75rem;}');
     expect(stylesheet).toContain(
-      ':root :where(.wp-block-quote.has-text-align-right ){border-width: 0 2px 0 0;}',
-    );
-    expect(stylesheet).toContain(
-      ':root :where(.wp-block-search .wp-element-button, .wp-block-search .wp-block-button__link){border-radius: 3.125rem;margin-left: 1.125rem;}',
+      ':root :where(.wp-block-post-date a:where(:not(.wp-element-button))){color: var(--wp--preset--color--muted);text-decoration: none;}',
     );
     expect(stylesheet).toContain(
-      ':root :where(.wp-block-separator){border-color: currentColor;border-width: 0 0 1px 0;border-style: solid;color: var(--wp--preset--color--accent-6);}',
+      ':root :where(.wp-block-quote){border-left-color: var(--wp--preset--color--accent);border-left-width: 3px;border-left-style: solid;',
+    );
+    // Block custom CSS: each `&` rule is scoped to the block, as process_blocks_custom_css() does.
+    expect(stylesheet).toContain(
+      ':root :where(.wp-block-details summary){font-weight:600;font-size:var(--wp--preset--font-size--large);cursor:pointer;}',
+    );
+    expect(stylesheet).toContain(':root :where(.wp-block-post-comments-form textarea){');
+    expect(stylesheet).toContain(
+      ':root :where(.wp-block-post-comments-form label){font-size:var(--wp--preset--font-size--small);font-weight:600;}',
     );
   });
 
@@ -136,54 +147,77 @@ describe('global stylesheet for Twenty Twenty-Five (compared with WordPress 7.1 
   });
 
   it('leaves block style variations out of the global stylesheet (they render per instance)', () => {
-    expect(stylesheet).not.toContain('is-style-outline');
-    expect(stylesheet).not.toContain('is-style-section-1');
+    expect(stylesheet).not.toContain('is-style-section-ink');
+    expect(stylesheet).not.toContain('is-style-section-soft');
   });
 
-  it('writes @font-face rules with theme file URLs', () => {
+  it('writes @font-face rules with theme file URLs, italic faces included', () => {
+    const url = (file: string) =>
+      `url('https://example.com/wp-content/themes/pressbase/assets/fonts/${file}') format('woff2')`;
     expect(fontFaces).toBe(
-      "@font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:fallback;src:url('https://example.com/wp-content/themes/twentytwentyfive/assets/fonts/manrope/Manrope-VariableFont_wght.woff2') format('woff2');}\n" +
-        "@font-face{font-family:\"Fira Code\";font-style:normal;font-weight:300 700;font-display:fallback;src:url('https://example.com/wp-content/themes/twentytwentyfive/assets/fonts/fira-code/FiraCode-VariableFont_wght.woff2') format('woff2');}",
+      [
+        `@font-face{font-family:Manrope;font-style:normal;font-weight:200 800;font-display:swap;src:${url('manrope/Manrope-VariableFont_wght.woff2')};}`,
+        `@font-face{font-family:Platypi;font-style:normal;font-weight:300 800;font-display:swap;src:${url('platypi/Platypi-VariableFont_wght.woff2')};}`,
+        `@font-face{font-family:Platypi;font-style:italic;font-weight:300 800;font-display:swap;src:${url('platypi/Platypi-Italic-VariableFont_wght.woff2')};}`,
+        `@font-face{font-family:"Fira Code";font-style:normal;font-weight:300 700;font-display:swap;src:${url('fira-code/FiraCode-VariableFont_wght.woff2')};}`,
+      ].join('\n'),
     );
   });
 
   it('registers style variations from theme.json partials', () => {
-    expect(resolved.variations['core/post-terms']).toContain('post-terms-1');
-    expect(resolved.variations['core/group']).toEqual(
-      expect.arrayContaining(['section-1', 'section-5']),
-    );
-    expect(resolved.blocks['core/group']?.styleVariations['section-1']).toBe(
-      '.wp-block-group.is-style-section-1',
+    expect(resolved.variations['core/group']).toEqual(['section-ink', 'section-soft']);
+    expect(resolved.variations['core/columns']).toEqual(['section-ink', 'section-soft']);
+    expect(resolved.blocks['core/group']?.styleVariations['section-ink']).toBe(
+      '.wp-block-group.is-style-section-ink',
     );
   });
 
   it('builds per-instance styles for a variation that styles inner elements', () => {
     const css = blockStyleVariationInstanceStyles(
       resolved,
-      'core/post-terms',
-      'post-terms-1',
-      'post-terms-1--1',
+      'core/group',
+      'section-ink',
+      'section-ink--1',
     );
     expect(css).toContain(
-      ':root :where(.is-style-post-terms-1--1 a:where(:not(.wp-element-button))){border-radius: 20px;border-color: var(--wp--preset--color--accent-6);border-width: 0.8px;',
+      ':root :where(.is-style-section-ink--1 a:where(:not(.wp-element-button))){color: var(--wp--preset--color--base);}',
     );
     expect(css).toContain(
-      ':root :where(.is-style-post-terms-1--1 a:where(:not(.wp-element-button)):hover){text-decoration: underline;}',
+      ':root :where(.is-style-section-ink--1 .wp-element-button, .is-style-section-ink--1 .wp-block-button__link){background-color: var(--wp--preset--color--base);color: var(--wp--preset--color--contrast);}',
     );
+    expect(css).toContain(
+      ':root :where(.wp-block-group.is-style-section-ink--1){background-color: var(--wp--preset--color--contrast);color: var(--wp--preset--color--base);}',
+    );
+    expect(blockStyleVariationInstanceStyles(resolved, 'core/group', 'nope', 'nope--1')).toBe('');
+  });
+
+  it("appends a variation's custom CSS without `&` to the selector as is, as WordPress does", () => {
+    const withCss = resolveThemeJson({
+      theme: {
+        version: 3,
+        styles: {
+          blocks: {
+            'core/button': {
+              variations: {
+                outline: {
+                  css: ':not(.has-background):hover{background-color:red;}',
+                  elements: { link: { color: { text: 'currentColor' } } },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
     const outline = blockStyleVariationInstanceStyles(
-      resolved,
+      withCss,
       'core/button',
       'outline',
       'outline--2',
     );
     expect(outline).toContain(
-      ':root :where(.wp-block-button.is-style-outline--2 .wp-block-button__link){background: transparent none;border-color: currentColor;border-width: 1px;border-style: solid;color: currentColor;',
+      ':root :where(.wp-block-button.is-style-outline--2 .wp-block-button__link:not(.has-background):hover){background-color:red;}',
     );
-    expect(outline).toContain(
-      // TT5's variation CSS has no `&`, so WordPress appends it to the selector as is.
-      ':root :where(.wp-block-button.is-style-outline--2 .wp-block-button__link.wp-block-button__link:not(.has-background):hover ){background-color:color-mix(',
-    );
-    expect(blockStyleVariationInstanceStyles(resolved, 'core/group', 'nope', 'nope--1')).toBe('');
   });
 });
 
@@ -402,6 +436,30 @@ describe('layout support styles (wp_get_layout_style)', () => {
     expect(getChildLayoutStyle('.x', { selfStretch: 'fill' })).toBe('.x{flex-grow:1;}');
     expect(getChildLayoutStyle('.x', { selfStretch: 'fixed', flexSize: '200px' })).toBe(
       '.x{flex-basis:200px;box-sizing:border-box;}',
+    );
+  });
+  it('child layout: spans in a responsive grid collapse below the span (container query)', () => {
+    // wp_get_child_layout_style_rules(): 2 × 18rem + 1 × 1.5rem gap = 37.5rem.
+    expect(
+      getChildLayoutStyle(
+        '.x',
+        { columnSpan: 2, rowSpan: 2 },
+        { columnCount: 4, minimumColumnWidth: '18rem' },
+      ),
+    ).toBe(
+      '.x{grid-column:span 2;grid-row:span 2;}' +
+        '@container (max-width: 37.5rem ){.x{grid-column:1/-1;grid-row:auto;}}',
+    );
+    // No minimumColumnWidth but no columnCount either: 12rem columns; px widths use a 24px gap.
+    expect(getChildLayoutStyle('.x', { columnStart: 3 })).toBe(
+      '.x{grid-column:3;}@container (max-width: 39rem ){.x{grid-column:auto;grid-row:auto;}}',
+    );
+    expect(getChildLayoutStyle('.x', { columnSpan: 3 }, { minimumColumnWidth: '200px' })).toBe(
+      '.x{grid-column:span 3;}@container (max-width: 648px ){.x{grid-column:1/-1;grid-row:auto;}}',
+    );
+    // A fixed grid (columnCount without minimumColumnWidth) keeps its spans.
+    expect(getChildLayoutStyle('.x', { columnSpan: 2 }, { columnCount: 3 })).toBe(
+      '.x{grid-column:span 2;}',
     );
   });
 });

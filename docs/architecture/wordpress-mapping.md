@@ -51,7 +51,10 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | `WP::parse_request()`, `WP_Rewrite` rules, the main `WP_Query`, `redirect_canonical()` | `apps/core/src/frontend/query.ts` | |
 | `template-loader.php`, `get_*_template()` | `apps/core/src/frontend/hierarchy.ts` | |
 | `template-canvas.php`, `get_the_block_template_html()`, `wp_get_document_title()`, `get_body_class()` | `apps/core/src/frontend/render.ts` | |
-| `WP_REST_Themes_Controller` | `apps/core/src/routes/themes.ts` | Plus theme activation. |
+| `WP_REST_Themes_Controller` | `apps/core/src/routes/themes.ts` | Plus theme activation, upload (`POST /pressbase/v1/themes`) and deletion, and the `pressbase_source` / `pressbase_deletable` fields. |
+| `Theme_Upgrader::install()`, `check_package()`, `WP_Upgrader::install_package()`, `delete_theme()` | `apps/core/src/themes/install.ts` (`kernel.themes.install()`, `kernel.themes.delete()`) | Block themes only; the folder name is sanitised to `[A-Za-z0-9_-]`; bundled themes can't be deleted; `theme_mods_{stylesheet}` is removed with the theme. See [Themes](themes.md#installing-and-deleting-themes). |
+| `unzip_file()` (PclZip / ZipArchive) | `apps/core/src/files/zip.ts` | One strict reader for plugin, theme and language-pack archives. |
+| `map_meta_cap()` for `upload_themes` / `upload_plugins` | `apps/core/src/auth/meta-caps.ts` | → `install_themes` / `install_plugins`. |
 | `feed-rss2.php`, `feed-rss2-comments.php`, `feed-atom.php`, `feed-atom-comments.php`, `do_feed()`, `feed_links()`, `feed_links_extra()` | `apps/core/src/frontend/feeds.ts` | RSS 2.0 and Atom; `rss` and `rdf` answer RSS 2.0. See [The public site](public-site.md). |
 | `WP_Sitemaps` and its providers, `WP_Sitemaps_Stylesheet` | `apps/core/src/frontend/sitemaps.ts` | Same URLs and 2,000-URL pages; password-protected posts are left out. |
 | `do_robots()` | `apps/core/src/frontend/robots.ts` | Disallows `/admin/`. |
@@ -62,7 +65,7 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | `get_plugins()`, `activate_plugin()`, `deactivate_plugins()`, `delete_plugins()`, `uninstall_plugin()`, plugin file headers | `apps/core/src/plugins/` (`kernel.plugins`), `plugin.json` | ES modules; tracked registrations instead of a fresh process per request. See [Plugins](plugins.md). |
 | `WP_REST_Plugins_Controller`, `Plugin_Upgrader` (upload) | `apps/core/src/routes/plugins.ts` | `plugin` is the folder name; installs from an uploaded .zip only. |
 | `plugins.php`, `plugin-install.php?tab=upload` | `/admin/plugins` | |
-| `themes.php` | `/admin/appearance` | |
+| `themes.php`, `theme-install.php?upload`, `update.php?action=upload-theme` | `/admin/appearance` | **Upload theme** dialog with the "Replace the installed theme?" step; **Delete** in each theme card's menu. |
 | `register_post_type( 'wp_navigation' )`, `WP_Navigation_Fallback`, `WP_REST_Navigation_Fallback_Controller` | `apps/core/src/content/post-types.ts`, `content/navigation.ts`, `routes/navigation.ts` | The header's menu is chosen with the `pressbase_navigation_fallback` option. See [Navigation](navigation.md). |
 | `blocks/navigation.php`, `navigation-link.php`, `navigation-submenu.php`, `home-link.php`, `view.js` | `apps/core/src/blocks/library/navigation.ts` | A small inline script instead of the Interactivity API. |
 | Site editor → Navigation, `nav-menus.php` | `/admin/appearance/menus` | |
@@ -73,7 +76,7 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | Site editor → Styles | `/admin/appearance/styles` | The essentials: variations, colours, type, layout, revisions, live preview. |
 | `site_logo`, `site_icon`, `get_custom_logo()`, `WP_Site_Icon`, `get_site_icon_url()`, `wp_site_icon()` | `apps/core/src/themes/site-identity.ts`, `blocks/library/post-media.ts` (`core/site-logo`) | Icon crops are sub-sizes of the chosen image (`site_icon-512` … `site_icon-32`), not a separate cropped attachment. |
 | Customizer → Site Identity, `options-general.php` site icon | Settings → General, *Site identity* card | |
-| `wp-content/themes/twentytwentyfive` | `themes/twentytwentyfive` | Bundled, unchanged. |
+| `wp-content/themes/twentytwentyfive` (the default theme) | `themes/pressbase` | Pressbase's own default block theme, which also runs in WordPress. Twenty Twenty-Five can be uploaded (Appearance → Upload theme). |
 | `upload.php`, `options-media.php`, the media modal | `/admin/media`, `/admin/settings/media`, `MediaPicker` | |
 | `wp_insert_user`, `wp_update_user`, `wp_delete_user` (with reassign), `validate_username`, `is_email`, `count_users`, `count_many_users_posts` | `apps/core/src/people/users.ts`, `validation.ts` | See [People](people.md). |
 | `WP_Application_Passwords`, `wp_authenticate_application_password`, `WP_REST_Application_Passwords_Controller` | `apps/core/src/people/application-passwords.ts`, `routes/application-passwords.ts` | `Authorization: Basic` middleware; SHA-256 digests like WordPress 6.8's `wp_fast_hash`. |

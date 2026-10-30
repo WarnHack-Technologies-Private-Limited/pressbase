@@ -161,7 +161,7 @@ What isolation can't catch: an infinite loop, a callback that never resolves, or
 
 ## Installing from a .zip
 
-`POST /wp/v2/plugins` (multipart, field `file`; optional `status=active` and `permissions=a,b`) or **Plugins → Upload plugin**. Needs `install_plugins` (and `activate_plugins` to activate). The archive is read by Pressbase's own strict ZIP reader (`plugins/zip.ts`) and refused when it has:
+`POST /wp/v2/plugins` (multipart, field `file`; optional `status=active` and `permissions=a,b`) or **Plugins → Upload plugin**. Needs `install_plugins` (and `activate_plugins` to activate). The archive is read by Pressbase's own strict ZIP reader (`files/zip.ts`) and refused when it has:
 
 - a path that could escape the folder: `..`, an absolute path, a drive letter, a backslash or a control character (zip-slip): `incompatible_archive_path`;
 - a symbolic link or other special file: `incompatible_archive_symlink`;

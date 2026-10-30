@@ -101,7 +101,7 @@ packages/
   hooks/                 HookBus
   blocks/                block parser, registry, renderer, block supports
   theme-json/            theme.json engine: merging, global stylesheet, layout styles
-themes/                  bundled block themes (Twenty Twenty-Five)
+themes/                  bundled block themes (Pressbase, the default)
 plugins/                 bundled plugins (the Daily Tips example)
 apps/web/                the public site (Next.js route handler)
 docs/                    you are here

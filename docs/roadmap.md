@@ -67,7 +67,7 @@ Twenty Twenty-Five renders the home page, posts, pages, archives, search, commen
 - [x] Logins with WordPress password hashes (phpass and bcrypt) (#6).
 - [x] Playwright end-to-end tests in CI (#7) and a Docker image (#8).
 - [ ] Duotone, responsive style states. → later
-- [ ] Studio (`/admin/studio`): templates and template parts (`wp_template`, `wp_template_part`). → later
+- [ ] Site editor: templates and template parts (`wp_template`, `wp_template_part`). → v0.8 (Studio)
 - [x] Settings → Permalinks screen (the routing already follows `permalink_structure`). → done in v0.5
 
 ## v0.5: Plugins ✅
@@ -104,6 +104,8 @@ Plan: [Pressbase SEO and the first-party plugins](plans/first-party-plugins.md).
 
 Plan: [The visual site builder and building with AI](plans/visual-site-builder.md). Issues: the [v0.8: Studio milestone](https://github.com/WarnHack-Technologies-Private-Limited/pressbase/milestone/1).
 
+- [x] The **Pressbase theme**, the new default: a modern, animated block theme in Pressbase's brand (CSS-only motion, Paper and Midnight looks, a landing page pattern) that also runs in WordPress. Twenty Twenty-Five is no longer bundled. See [Themes](architecture/themes.md#the-pressbase-theme).
+- [x] Theme upload and delete: Appearance, `POST`/`DELETE /pressbase/v1/themes`, `pressbase theme install|delete`. See [ADR 0025](adr/0025-theme-install-and-delete.md).
 - [ ] Studio (`/admin/studio`): templates and template parts (`wp_template`, `wp_template_part`), header and footer edited in place, page tree, Simple and Advanced modes, Elementor-style drag and drop.
 - [ ] Changesets (`customize_changeset`): one draft across styles, templates, pages and menus; Preview, Publish, Discard.
 - [ ] Design: section library with Swap layout, style book, per-block styles, Additional CSS, responsive styles and breakpoints (WordPress 7.1), starter sites, export as a block theme.

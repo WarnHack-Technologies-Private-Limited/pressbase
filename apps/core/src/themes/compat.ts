@@ -6,7 +6,8 @@ import type { BlockPatternCategory } from '../blocks/patterns';
  * effects that matter on the front end are listed here. Other themes get
  * none of them — the vision's promise is theme.json plus HTML templates.
  *
- * Twenty Twenty-Five's functions.php (WordPress 7.1.3):
+ * Twenty Twenty-Five's functions.php (WordPress 7.1.3). It no longer ships
+ * with Pressbase; the entry stays for sites that upload it:
  * - add_theme_support( 'post-formats', … ): reproduced (`postFormats`), but
  *   Pressbase has no post formats yet, so posts are always "standard".
  * - add_editor_style( 'assets/css/editor-style.css' ): editor only; the
@@ -19,6 +20,14 @@ import type { BlockPatternCategory } from '../blocks/patterns';
  * - register_block_bindings_source( 'twentytwentyfive/format' ): not
  *   reproduced (block bindings arrive later); the binding-format pattern
  *   renders its fallback text.
+ *
+ * Pressbase's functions.php (themes/pressbase):
+ * - add_editor_style( 'style.css' ): editor only, not reproduced yet.
+ * - wp_enqueue_style( 'pressbase-style', style.css ): reproduced.
+ * - register_block_style() for the motion and surface styles (Reveal, Lift,
+ *   Glass, Gradient, Marquee, Animated links, Pill): reproduced; their CSS is
+ *   in style.css, so they have no inline style.
+ * - register_block_pattern_category( pressbase / pressbase_page ): reproduced.
  */
 export interface ThemeCompat {
   /** Stylesheets the theme enqueues, relative to its folder. */
@@ -53,5 +62,31 @@ export const THEME_COMPAT: Record<string, ThemeCompat> = {
       },
     ],
     postFormats: ['aside', 'audio', 'chat', 'gallery', 'image', 'link', 'quote', 'status', 'video'],
+  },
+  pressbase: {
+    stylesheets: ['style.css'],
+    blockStyles: [
+      { block: 'core/group', name: 'reveal', label: 'Reveal' },
+      { block: 'core/group', name: 'lift', label: 'Lift' },
+      { block: 'core/group', name: 'glass', label: 'Glass' },
+      { block: 'core/group', name: 'gradient', label: 'Gradient' },
+      { block: 'core/group', name: 'marquee', label: 'Marquee' },
+      { block: 'core/group', name: 'links', label: 'Animated links' },
+      { block: 'core/columns', name: 'reveal', label: 'Reveal' },
+      { block: 'core/column', name: 'lift', label: 'Lift' },
+      { block: 'core/column', name: 'glass', label: 'Glass' },
+      { block: 'core/image', name: 'reveal', label: 'Reveal' },
+      { block: 'core/cover', name: 'gradient', label: 'Gradient' },
+      { block: 'core/paragraph', name: 'pill', label: 'Pill' },
+    ],
+    patternCategories: [
+      {
+        name: 'pressbase',
+        label: 'Pressbase',
+        description: 'Sections from the Pressbase theme: heroes, features, pricing and more.',
+      },
+      { name: 'pressbase_page', label: 'Pages', description: 'Full page layouts.' },
+    ],
+    postFormats: [],
   },
 };
