@@ -30,7 +30,7 @@ Status: **accepted** 2026-10-29, with the [decisions](#decisions) below. Written
 | Have | Missing for a site builder |
 | --- | --- |
 | Gutenberg for posts and pages (`@wordpress/block-editor` in our own shell), patterns, synced patterns, plugin blocks | Templates and template parts: storage, REST, editing (`wp_template`, `wp_template_part`) |
-| `theme.json` engine, Twenty Twenty-Five (98 patterns, 8 style variations), Appearance → Styles with variations, colours, type, layout, revisions, live preview | Per-block styles, shadows, borders, the style book and Additional CSS in the admin; responsive styles; style states; a font library |
+| `theme.json` engine, the Pressbase theme (29 patterns, 4 looks; Twenty Twenty-Five until v0.7) and theme upload, Appearance → Styles with variations, colours, type, layout, revisions, live preview | Per-block styles, shadows, borders, the style book and Additional CSS in the admin; responsive styles; style states; a font library |
 | Menus (Appearance → Menus), site logo and icon | Editing the header and footer in place; a page tree |
 | AI client: text and JSON output, ability tool loop (5 rounds), daily caps, usage log, 30 s timeout | Streaming, longer and per-call timeouts, image input (screenshots), image generation |
 | Abilities API: one core ability, `core/get-site-info` | Site-building abilities (read the page structure, insert a section, change global styles…) |

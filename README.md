@@ -13,7 +13,7 @@ Pressbase keeps what made WordPress win — posts and pages, custom post types, 
   <img alt="The Pressbase dashboard: post, draft, page and comment counts, a setup checklist and site health" src="docs/assets/screenshots/dashboard.png">
 </picture>
 
-> **Status: developer preview (v0.7).** Write in the Gutenberg block editor and publish with the Twenty Twenty-Five theme. Install plugins at runtime, move a WordPress site over with its users and passwords, and get a built-in SEO plugin and an optional AI assistant. See the [roadmap](docs/roadmap.md).
+> **Status: developer preview (v0.7).** Write in the Gutenberg block editor and publish with Pressbase's own animated block theme. Install plugins at runtime, move a WordPress site over with its users and passwords, and get a built-in SEO plugin and an optional AI assistant. See the [roadmap](docs/roadmap.md).
 >
 > Pressbase is an independent project. It isn't affiliated with or endorsed by the WordPress Foundation or Automattic; "WordPress" is their trademark.
 
@@ -25,11 +25,13 @@ Gutenberg runs inside Pressbase: slash commands, the inserter, patterns, list vi
 
 ![Writing a post in the Pressbase block editor: a title, a paragraph, a heading and a quote, then publishing](docs/assets/screenshots/editor.gif)
 
-### WordPress block themes, unchanged
+### A modern theme, and WordPress block themes unchanged
 
-Twenty Twenty-Five ships in the box and renders without changes, using its own `theme.json`, templates, parts and patterns. No PHP runs: Pressbase reads the theme files directly. Pick a style variation, change colours and type, and see the result in a live preview before you save.
+The **Pressbase** theme ships in the box. It has big serif type, soft gradients, glass cards and scroll-in reveals, all in CSS: no theme JavaScript, and no motion for visitors who ask for less. It comes with Paper and Midnight looks, a Violet palette, a Grotesk type set and 20 patterns, including a full landing page. It is a real WordPress block theme, so it runs in WordPress too.
 
-![Switching between Twenty Twenty-Five style variations in Appearance → Styles, with a live preview of the home page](docs/assets/screenshots/styles.gif)
+Any other WordPress block theme works as well. **Upload a theme's .zip** in Appearance, and Pressbase renders it from its own `theme.json`, templates, parts and patterns. No PHP runs: Pressbase reads the theme files directly. Pick a style variation, change colours and type, and see the result in a live preview before you save.
+
+![Switching the Pressbase theme between Default and Midnight in Appearance → Styles, with a live preview of the home page](docs/assets/screenshots/styles.gif)
 
 ### A fast public site
 
@@ -37,8 +39,8 @@ The public site has WordPress permalinks, archives, search, threaded comments, R
 
 <table>
   <tr>
-    <td><img alt="The public home page of a Pressbase site using Twenty Twenty-Five" src="docs/assets/screenshots/home.png"></td>
-    <td><img alt="A single post on the public site, with author, category, tags and post navigation" src="docs/assets/screenshots/post.png"></td>
+    <td><img alt="The home page of a site using the Pressbase theme: a large serif heading over a soft gradient, then posts as cards" src="docs/assets/screenshots/home.png"></td>
+    <td><img alt="A single post in the Pressbase theme: category pill, large serif title, author and date, and a wide featured image" src="docs/assets/screenshots/post.png"></td>
   </tr>
 </table>
 
@@ -175,7 +177,7 @@ Open <http://localhost:3000> and follow the installer. Configuration, SMTP and h
 | `packages/cli`        | The `pressbase` command line, similar to wp-cli: install, posts, users, options, plugins, import, export and migrate. |
 | `packages/plugin-sdk` | Types and helpers for writing plugins; `packages/create-pressbase-plugin` scaffolds a new one.                       |
 | `plugins/`            | Bundled plugins: Pressbase SEO, and Daily Tips, an example plugin.                                                   |
-| `themes/`             | Bundled block themes (Twenty Twenty-Five).                                                                          |
+| `themes/`             | The bundled Pressbase block theme, the default.                                                                     |
 | `docs/`               | Vision, roadmap, architecture, design system, decision records and contributor guides.                              |
 
 ## Documentation
