@@ -69,7 +69,7 @@ What it does, as WordPress does:
 - **Fonts.** `fontFace` declarations become `@font-face` rules; `file:./` sources resolve to the theme's URL.
 - **Block style variations.** Variation styles are not in the global stylesheet: like WordPress 6.6+, they are generated per block instance (`blockStyleVariationInstanceStyles()`), scoped to a class such as `is-style-post-terms-1--2`.
 
-The tests in `packages/theme-json/src/theme-json.test.ts` compare the output for Twenty Twenty-Five with what WordPress 7.1 prints.
+The tests in `packages/theme-json/src/theme-json.test.ts` check the output for the Pressbase theme. The engine was first checked line by line against what WordPress 7.1 prints for Twenty Twenty-Five, when that theme was bundled (up to v0.7).
 
 Not ported yet: responsive (viewport) style states, duotone filters and background image uploads in global styles.
 
@@ -79,7 +79,7 @@ The package also holds the pieces of the site editor and of WordPress's save pat
 
 `kernel.themes` finds themes in two folders: the repository's `themes/` (bundled) and `<PRESSBASE_DATA_DIR>/themes` (installed; a folder there wins over a bundled one with the same name). A theme is a folder with a `style.css` header (`Theme Name`, `Version`, `Template`…); it can render if it has `templates/index.html` (a block theme). Child themes (`Template:` header) take templates, parts and patterns from the child first, then the parent, and merge the child's `theme.json` over the parent's.
 
-The active theme comes from the `stylesheet` and `template` options (the installer sets `twentytwentyfive`). A missing theme falls back to the default. `kernel.themes.active()` loads and caches it: templates, parts with their areas, `theme.json` resolved against the registered block types, the global stylesheet, patterns and the stylesheets to enqueue. `kernel.themes.activate(stylesheet)` switches, fires `switch_theme` and reloads. `kernel.themes.reload()` picks up edited theme files.
+The active theme comes from the `stylesheet` and `template` options (the installer sets `pressbase`, `DEFAULT_THEME`). A missing theme falls back to the default. `kernel.themes.active()` loads and caches it: templates, parts with their areas, `theme.json` resolved against the registered block types, the global stylesheet, patterns and the stylesheets to enqueue. `kernel.themes.activate(stylesheet)` switches, fires `switch_theme` and reloads. `kernel.themes.reload()` picks up edited theme files.
 
 Theme files are served at `/wp-content/themes/{theme}/…` with the uploads' safety rules: each path segment decoded and checked (no `..`, hidden files, encoded slashes or control characters), only static types (CSS, JS, images, fonts, video; never PHP, HTML, JSON or Markdown), the real path must stay in the theme folder, `nosniff`, a sandboxing CSP on SVG, `ETag` and `Last-Modified` with 304s. The same rules apply to uploaded themes.
 
@@ -140,14 +140,14 @@ user global styles (wp_global_styles post) ─┘
 A block theme's `styles/` folder holds two kinds of partial theme.json files (`WP_Theme_JSON_Resolver::get_style_variations()`, read recursively, child theme first, a child file hiding a parent file with the same name, sorted by path):
 
 - **Block style variations** have `blockTypes` (`styles/blocks/*.json`, `styles/sections/*.json`). They register block styles such as `section-1` and are part of the theme layer (above).
-- **Theme style variations** don't. Twenty Twenty-Five ships 23: eight full ones (`01-evening.json` … `08-midnight.json`), eight colour-only (`styles/colors/*.json`) and seven typography-only (`styles/typography/*.json`). `kernel.themes.active().variations` lists them with presets keyed by the `theme` origin, as WordPress's REST API returns them; a file without `title` is named after itself.
+- **Theme style variations** don't. They are full (`styles/*.json`), colour-only (`styles/colors/*.json`) or typography-only (`styles/typography/*.json`); the Pressbase theme ships one of each (Midnight, Violet, Grotesk). `kernel.themes.active().variations` lists them with presets keyed by the `theme` origin, as WordPress's REST API returns them; a file without `title` is named after itself.
 
 As in the site editor, a variation is never "active" by reference. **Choosing one writes it into the user's global styles** (`applyStyleVariation()`):
 
 - a **full** variation replaces the user's settings and styles;
 - a **colour** (or **typography**) variation keeps every other user value, removes the user's colour (or typography) values (`removePropertiesFromObject()`) and deep-merges the variation's in (`mergeBaseAndUserConfigs()`, lists replaced).
 
-`styleVariationKind()` tells the kinds apart the way the editor does (`isVariationWithProperties(variation, ['color'])`: every value lives under a `color` key), and `isStyleVariationApplied()` recognises a variation inside a user config, so a screen can show which is in use. A variation's palette is stored as `settings.color.palette.theme`, so it **replaces** the theme's palette (same slugs, new colours) rather than adding to it; the same goes for a typography variation's `fontFamilies` — its fonts load, the theme's no longer do. The tests in `packages/theme-json/src/style-variations.test.ts` merge Evening, Noon and the typography presets over Twenty Twenty-Five and check the stylesheet.
+`styleVariationKind()` tells the kinds apart the way the editor does (`isVariationWithProperties(variation, ['color'])`: every value lives under a `color` key), and `isStyleVariationApplied()` recognises a variation inside a user config, so a screen can show which is in use. A variation's palette is stored as `settings.color.palette.theme`, so it **replaces** the theme's palette (same slugs, new colours) rather than adding to it; the same goes for a typography variation's `fontFamilies` — its fonts load, the theme's no longer do. The tests in `packages/theme-json/src/style-variations.test.ts` merge Midnight, Violet and Grotesk over the Pressbase theme and check the stylesheet.
 
 ### User global styles
 
@@ -185,25 +185,21 @@ The admin shows it in a sandboxed `iframe` (`srcdoc`, `sandbox="allow-same-origi
 - Deleting the image clears the option (`WP_Site_Icon::delete_attachment_data()`); the same goes for the logo.
 - The admin uses the icon as its favicon and in the sidebar, in place of the site's initial.
 
-### Twenty Twenty-Five
-
-Bundled unchanged in `themes/twentytwentyfive` (GPL-2.0-or-later; see its `NOTICE.md`).
-
 ### The Pressbase theme
 
-`themes/pressbase` is Pressbase's own block theme, built to the same rules as any other: it runs unchanged in WordPress 6.7–7.1 and uses only what this page describes. See its `README.md` for the full contents.
+`themes/pressbase` is Pressbase's own block theme and the default (`DEFAULT_THEME`), the only bundled theme since v0.8 (Twenty Twenty-Five, bundled until v0.7, can be uploaded like any WordPress block theme), built to the same rules as any other: it runs unchanged in WordPress 6.7–7.1 and uses only what this page describes. See its `README.md` for the full contents.
 
 - **Brand.** The admin's tokens: ink `#1b1b19` on paper `#f6f6f3`, indigo `#3b4cca` (`#5b6cf0` in Midnight). Platypi (with italic) for headings and accents, echoing the italic serif "P" of the logo; Manrope for text; Fira Code for code.
 - **Looks.** Paper (`theme.json`), Midnight (`styles/01-midnight.json`), Violet (colours) and Grotesk (typography), plus the section styles `section-ink` and `section-soft`. Every text pair passes WCAG 2.2 AA; the test checks the palettes.
 - **Templates and patterns.** There's no `front-page` template, so the home page follows Settings → Reading (latest posts, or the chosen page). The landing design is the **Landing page** pattern (hero, marquee, features, steps, statement, testimonials, team, pricing, questions and answers, call to action), offered when creating a page, with the *Page without title* template; 20 of the 29 patterns are in the inserter, in the `pressbase` category, the `pressbase_page` category or WordPress's.
 - **Motion, CSS only.** Block styles Reveal (scroll-driven, `animation-timeline: view()`), Lift, Glass, Gradient (a drifting aurora), Marquee (moves with the visitor's scrolling) and Animated links, and a header whose glass fades in with `animation-timeline: scroll()`. Only `transform` and `opacity` animate; anything that starts hidden sits inside `@supports (animation-timeline: …)`; `prefers-reduced-motion: reduce` stops it all.
-- **Speed.** Later sections use `content-visibility: auto`, fonts swap onto metric-matched local fallbacks (no layout shift), and the hero avoids the code font. Lighthouse, mobile, front page: performance 99, accessibility 100.
+- **Speed.** Later sections use `content-visibility: auto`, fonts swap onto metric-matched local fallbacks (no layout shift), and the hero avoids the code font. Lighthouse, mobile, a landing-page front page: performance 99, accessibility 100.
 
-`apps/core/src/pressbase-theme.test.ts` checks that every pattern converts, every template and part parses into registered blocks, the variations load, the front page and the other views render, and the CSS follows the motion rules.
+`apps/core/src/pressbase-theme.test.ts` checks that every pattern converts, every template and part parses into registered blocks, the variations load, the home page lists posts, a landing page and the other views render, and the CSS follows the motion rules.
 
 ### functions.php
 
-Pressbase never runs PHP. What block themes typically do in `functions.php` is listed per theme in `apps/core/src/themes/compat.ts`. For Twenty Twenty-Five:
+Pressbase never runs PHP. What block themes typically do in `functions.php` is listed per theme in `apps/core/src/themes/compat.ts`. Twenty Twenty-Five's entry stays for sites that upload it:
 
 | functions.php | Pressbase |
 |---|---|
@@ -231,7 +227,7 @@ Theme patterns are `patterns/*.php`: a header comment and block markup with smal
 - expressions: quoted strings (no variable interpolation), `.` concatenation, and calls to `__()`, `_x()`, `esc_html__()`, `esc_attr__()`, `esc_html_x()`, `esc_attr_x()`, `esc_html()`, `esc_attr()`, `esc_url()`, `wp_kses_post()`, `sprintf()`, `get_template_directory_uri()`, `get_stylesheet_directory_uri()`, `get_theme_file_uri()`, `get_parent_theme_file_uri()`;
 - comments, and PHP's rule that a newline right after `?>` is swallowed.
 
-Translation functions translate through the theme's text domain in the site's language, and pattern titles and descriptions are translated as WordPress translates them (see [Internationalisation](i18n.md#themes)). Anything else — a variable, another function, `include`, backticks, `<?=` — makes the loader skip the whole pattern with a warning in the log. All 98 Twenty Twenty-Five patterns load.
+Translation functions translate through the theme's text domain in the site's language, and pattern titles and descriptions are translated as WordPress translates them (see [Internationalisation](i18n.md#themes)). Anything else — a variable, another function, `include`, backticks, `<?=` — makes the loader skip the whole pattern with a warning in the log. All of the Pressbase theme's patterns load, and so did Twenty Twenty-Five's 98.
 
 Theme URLs in patterns and font faces are root-relative (`/wp-content/themes/…`), so they work on every origin that proxies core.
 
@@ -312,7 +308,7 @@ With `/%postname%/`-style structures, pages are tried before posts ("verbose pag
 | `core/query`, `core/post-template` | `inherit: true` shows the main query; other queries run `build_query_vars_from_query_block()` and paginate with `?query-{id}-page=N`. Items get `get_post_class()`. |
 | `core/query-pagination` (+ `-previous`, `-next`, `-numbers`) | `paginate_links()` markup, arrows, `/page/N/` links. |
 | `core/query-title`, `core/query-no-results`, `core/term-description` | Archive titles with WordPress's prefixes (`Category: <span>…</span>`). |
-| `core/navigation`, `-link`, `-submenu`, `core/home-link`, `core/page-list` | WordPress's markup. A `wp_navigation` menu by `ref`; without a `ref` or items (Twenty Twenty-Five's header), the menu chosen in Appearance → Menus, else the newest menu, else a page list. Accessible submenu toggles (`aria-expanded`), the responsive overlay as a modal dialog, a small inline script instead of the Interactivity API, and a `<noscript>` style so menus work without JavaScript. Current items get `current-menu-item` and `aria-current`. See [Navigation](navigation.md). |
+| `core/navigation`, `-link`, `-submenu`, `core/home-link`, `core/page-list` | WordPress's markup. A `wp_navigation` menu by `ref`; without a `ref` or items (the Pressbase and Twenty Twenty-Five headers), the menu chosen in Appearance → Menus, else the newest menu, else a page list. Accessible submenu toggles (`aria-expanded`), the responsive overlay as a modal dialog, a small inline script instead of the Interactivity API, and a `<noscript>` style so menus work without JavaScript. Current items get `current-menu-item` and `aria-current`. See [Navigation](navigation.md). |
 | `core/post-featured-image` | `wp_get_attachment_image()` with `srcset`, aspect ratio, `fetchpriority="high"` on the first image, lazy loading after. |
 | `core/post-navigation-link` | Previous (older) and next (newer) posts, with arrows and labels. |
 | `core/read-more`, `core/post-author`, `core/avatar`, `core/site-logo` | Avatars are initials on a colour, as an inline SVG: no Gravatar request, so no reader's or author's email hash leaves the site. The site logo renders once `site_logo` is set (see *Site identity*). |

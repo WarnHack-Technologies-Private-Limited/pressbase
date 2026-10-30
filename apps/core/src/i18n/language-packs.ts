@@ -309,7 +309,8 @@ export class LanguagePacks {
       await this.kernel.hooks.doAction('pressbase_language_pack_installed', language, 'core', null);
     }
     for (const theme of await this.kernel.themes.all()) {
-      if (!theme.version) continue;
+      // Bundled themes aren't on WordPress.org: their translations ship with Pressbase.
+      if (!theme.version || theme.source === 'bundled') continue;
       try {
         const api = await this.translationsApi('themes', {
           slug: theme.stylesheet,

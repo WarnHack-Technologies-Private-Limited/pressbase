@@ -34,9 +34,9 @@ describe('sortThemes', () => {
     const sorted = sortThemes([
       theme('zeta', 'Zeta', 'inactive'),
       theme('alpha', 'Alpha', 'inactive'),
-      theme('tt5', 'Twenty Twenty-Five', 'active'),
+      theme('pressbase', 'Pressbase', 'active'),
     ]);
-    expect(sorted.map((t) => t.stylesheet)).toEqual(['tt5', 'alpha', 'zeta']);
+    expect(sorted.map((t) => t.stylesheet)).toEqual(['pressbase', 'alpha', 'zeta']);
   });
 });
 

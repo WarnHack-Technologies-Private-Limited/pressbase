@@ -656,7 +656,7 @@ describe('GET /pressbase/v1/site-health/info', () => {
     ]);
     const { info } = res.body;
     expect(info['wp-core'].fields.version.value).toBe('0.1.0');
-    expect(info['wp-active-theme'].fields.name.value).toContain('twentytwentyfive');
+    expect(info['wp-active-theme'].fields.name.value).toContain('pressbase');
     expect(info['wp-server'].fields.node_version.value).toBe(process.versions.node);
     expect(info['wp-database'].fields.extension.debug).toBe('pglite');
     expect(info['wp-filesystem'].fields.data.value).toBe('Writable');

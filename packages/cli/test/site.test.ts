@@ -136,9 +136,9 @@ describe('theme and rewrite', () => {
   it('lists and activates themes, and sets the permalink structure', async () => {
     const s = await site();
     expect(await s.ok(['theme', 'list', '--format=json'])).toMatch(
-      /"name":"twentytwentyfive","status":"active"/,
+      /"name":"pressbase","status":"active"/,
     );
-    expect(await s.ok(['theme', 'activate', 'twentytwentyfive'])).toBe('');
+    expect(await s.ok(['theme', 'activate', 'pressbase'])).toBe('');
     expect((await s.cli(['theme', 'activate', 'nope'])).stderr).toMatch(/There’s no theme “nope”/);
 
     expect(await s.ok(['rewrite', 'structure', '/%postname%/', '--category-base=topics'])).toBe(
@@ -188,8 +188,8 @@ describe('theme install and delete', () => {
     expect(active.stderr).toMatch(
       /Warning: Cannot delete the active theme\. .+\nError: Deleted 0 of 1 themes\./,
     );
-    await s.ok(['theme', 'activate', 'twentytwentyfive']);
-    expect((await s.cli(['theme', 'delete', 'twentytwentyfive', '--yes'])).stderr).toMatch(
+    await s.ok(['theme', 'activate', 'pressbase']);
+    expect((await s.cli(['theme', 'delete', 'pressbase', '--yes'])).stderr).toMatch(
       /ships with Pressbase/,
     );
     expect(await s.ok(['theme', 'delete', 'sunny', '--yes'])).toBe(
@@ -339,7 +339,7 @@ describe('purges', () => {
     s.kernel.hooks.addAction(PURGE_ACTION, (t: string[]) => {
       tags.push(t);
     });
-    await s.ok(['theme', 'activate', 'twentytwentyfive']);
+    await s.ok(['theme', 'activate', 'pressbase']);
     await s.ok(['post', 'update', '1', '--post_title=Changed']);
     expect(tags.flat()).toContain('post:1');
   });

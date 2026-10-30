@@ -66,4 +66,32 @@ export function Page({ n, name }: { n: number; name: string }) {
     expect(entries.find((e) => e.singular === 'Twice')?.references).toHaveLength(2);
     expect(withoutReferences('#: a.ts:1\nmsgid "x"')).toBe('msgid "x"');
   });
+
+  it("collects a theme's pattern text, titles and descriptions in its domain", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'pressbase-extract-'));
+    dirs.push(root);
+    await mkdir(path.join(root, 'theme/patterns'), { recursive: true });
+    await writeFile(
+      path.join(root, 'theme/patterns/cta.php'),
+      `<?php
+/**
+ * Title: Call to action
+ * Slug: theme/cta
+ * Description: A heading and a button.
+ */
+?>
+<h2><?php esc_html_e( 'Ready?', 'pressbase' ); ?></h2>
+<p><?php echo esc_html_x( 'Start', 'button', 'pressbase' ); ?> <?php esc_html_e( 'Elsewhere', 'other' ); ?></p>`,
+    );
+    const entries = extractStrings(
+      { domain: 'pressbase', dirs: [], pot: 'x.pot', themePatterns: ['theme/patterns'] },
+      root,
+    );
+    expect(entries.map((e) => [e.context, e.singular, e.references])).toEqual([
+      ['', 'Ready?', ['theme/patterns/cta.php']],
+      ['button', 'Start', ['theme/patterns/cta.php']],
+      ['Pattern title', 'Call to action', ['theme/patterns/cta.php']],
+      ['Pattern description', 'A heading and a button.', ['theme/patterns/cta.php']],
+    ]);
+  });
 });

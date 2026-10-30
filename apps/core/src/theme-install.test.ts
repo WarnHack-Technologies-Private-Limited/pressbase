@@ -148,7 +148,7 @@ describe('POST /pressbase/v1/themes', () => {
       pressbase_source: string;
     }[];
     expect(list.find((t) => t.stylesheet === 'upload-test')?.pressbase_deletable).toBe(true);
-    expect(list.find((t) => t.stylesheet === 'twentytwentyfive')).toMatchObject({
+    expect(list.find((t) => t.stylesheet === 'pressbase')).toMatchObject({
       pressbase_source: 'bundled',
       pressbase_deletable: false,
     });
@@ -260,12 +260,12 @@ describe('POST /pressbase/v1/themes', () => {
 
   it('treats a bundled theme’s name as taken, and installs an overwrite beside it', async () => {
     const ctx = await site();
-    const zip = themeZip('twentytwentyfive', { name: 'My TT5' });
+    const zip = themeZip('pressbase', { name: 'My Pressbase' });
     const clash = await upload(ctx, zip);
     expect(clash.status).toBe(409);
     expect(clash.body.data.current).toMatchObject({
       source: 'bundled',
-      name: 'Twenty Twenty-Five',
+      name: 'Pressbase',
     });
   });
 
@@ -326,7 +326,7 @@ describe('DELETE /pressbase/v1/themes/{stylesheet}', () => {
     await ctx.request('POST', '/pressbase/v1/themes/gone/activate');
     await ctx.request('GET', '/wp/v2/themes');
     expect(await userGlobalStylesPost(ctx.kernel, 'gone')).toBeTruthy();
-    await ctx.request('POST', '/pressbase/v1/themes/twentytwentyfive/activate');
+    await ctx.request('POST', '/pressbase/v1/themes/pressbase/activate');
     await ctx.kernel.options.set('theme_mods_gone', { header_textcolor: 'blank' });
     const languages = path.join(ctx.kernel.i18n.languagesDir, 'themes');
     await mkdir(languages, { recursive: true });
@@ -357,7 +357,7 @@ describe('DELETE /pressbase/v1/themes/{stylesheet}', () => {
 
   it('refuses the active theme, its parent and bundled themes', async () => {
     const ctx = await site();
-    expect(await ctx.request('DELETE', '/pressbase/v1/themes/twentytwentyfive')).toMatchObject({
+    expect(await ctx.request('DELETE', '/pressbase/v1/themes/pressbase')).toMatchObject({
       status: 400,
       body: { code: 'pressbase_cannot_delete_bundled_theme' },
     });
@@ -384,7 +384,6 @@ describe('DELETE /pressbase/v1/themes/{stylesheet}', () => {
       child: false,
       parent: false,
       pressbase: false,
-      twentytwentyfive: false,
     });
     expect(await exists(path.join(ctx.dataDir, 'themes', 'parent'))).toBe(true);
   });

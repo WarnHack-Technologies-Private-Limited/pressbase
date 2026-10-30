@@ -48,21 +48,21 @@ async function filteredAdmin(ctx: Ctx) {
 describe('theme global styles and style variations', () => {
   it('serves the theme’s settings and styles, for the active theme only', async () => {
     const ctx = await site();
-    const res = await ctx.request('GET', '/wp/v2/global-styles/themes/twentytwentyfive');
+    const res = await ctx.request('GET', '/wp/v2/global-styles/themes/pressbase');
     expect(res.status).toBe(200);
     expect(res.body.settings.color.palette.theme).toContainEqual({
-      color: '#FFFFFF',
-      name: 'Base',
+      color: '#f6f6f3',
+      name: 'Paper',
       slug: 'base',
     });
-    expect(res.body.settings.layout).toEqual({ contentSize: '645px', wideSize: '1340px' });
+    expect(res.body.settings.layout).toEqual({ contentSize: '720px', wideSize: '1200px' });
     expect(res.body.styles.color).toEqual({
       background: 'var:preset|color|base',
       text: 'var:preset|color|contrast',
     });
     expect(res.body._links['wp:theme-file'][0]).toMatchObject({
       name: 'file:./assets/fonts/manrope/Manrope-VariableFont_wght.woff2',
-      href: 'http://localhost:3000/wp-content/themes/twentytwentyfive/assets/fonts/manrope/Manrope-VariableFont_wght.woff2',
+      href: 'http://localhost:3000/wp-content/themes/pressbase/assets/fonts/manrope/Manrope-VariableFont_wght.woff2',
     });
     const other = await ctx.request('GET', '/wp/v2/global-styles/themes/twentytwentyfour');
     expect(other.status).toBe(404);
@@ -71,23 +71,18 @@ describe('theme global styles and style variations', () => {
 
   it('lists the theme’s style variations: full, colour and typography', async () => {
     const ctx = await site();
-    const res = await ctx.request('GET', '/wp/v2/global-styles/themes/twentytwentyfive/variations');
+    const res = await ctx.request('GET', '/wp/v2/global-styles/themes/pressbase/variations');
     expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(23);
-    expect(res.body.map((v: { title: string }) => v.title).slice(0, 8)).toEqual([
-      'Evening',
-      'Noon',
-      'Dusk',
-      'Afternoon',
-      'Twilight',
-      'Morning',
-      'Sunrise',
+    // Sorted by path, as WordPress sorts them: styles/*.json, then colors/, then typography/.
+    expect(res.body.map((v: { title: string }) => v.title)).toEqual([
       'Midnight',
+      'Violet',
+      'Grotesk',
     ]);
     // No block style variations (styles/blocks, styles/sections) in the list.
     expect(res.body.some((v: { blockTypes?: unknown }) => v.blockTypes)).toBe(false);
-    const typography = res.body.find((v: { slug?: string }) => v.slug === 'typography-preset-1');
-    expect(typography.settings.typography.fontFamilies.theme[0].slug).toBe('beiruti');
+    const typography = res.body.find((v: { title: string }) => v.title === 'Grotesk');
+    expect(typography.settings.typography.fontFamilies.theme[0].slug).toBe('manrope');
     expect(typography._links['wp:theme-file'].length).toBeGreaterThan(0);
   });
 
@@ -96,7 +91,7 @@ describe('theme global styles and style variations', () => {
     const author = await ctx.loginAs('writer', 'author');
     const subscriber = await ctx.loginAs('reader', 'subscriber');
     const anonymous = ctx.client();
-    const url = '/wp/v2/global-styles/themes/twentytwentyfive';
+    const url = '/wp/v2/global-styles/themes/pressbase';
     expect((await author.request('GET', url)).status).toBe(200);
     const denied = await subscriber.request('GET', `${url}/variations`);
     expect(denied.status).toBe(403);
@@ -126,7 +121,7 @@ describe('user global styles (/wp/v2/global-styles/{id})', () => {
     expect(post).toMatchObject({
       type: 'wp_global_styles',
       status: 'publish',
-      slug: 'wp-global-styles-twentytwentyfive',
+      slug: 'wp-global-styles-pressbase',
     });
     expect(JSON.parse(post?.content ?? '')).toEqual({
       version: 3,
@@ -164,7 +159,7 @@ describe('user global styles (/wp/v2/global-styles/{id})', () => {
       fired.push(args);
     });
     const before = globalCss((await page(ctx)).html);
-    expect(before).toContain('--wp--preset--color--base: #FFFFFF;');
+    expect(before).toContain('--wp--preset--color--base: #f6f6f3;');
 
     const res = await ctx.request('POST', `/wp/v2/global-styles/${id}`, {
       settings: {
@@ -176,7 +171,7 @@ describe('user global styles (/wp/v2/global-styles/{id})', () => {
             ],
           },
         },
-        layout: { contentSize: '720px' },
+        layout: { contentSize: '760px' },
       },
       styles: {
         typography: { fontSize: '19px' },
@@ -186,16 +181,19 @@ describe('user global styles (/wp/v2/global-styles/{id})', () => {
     expect(res.status).toBe(200);
     expect(res.body.styles.typography).toEqual({ fontSize: '19px' });
     expect(fired).toHaveLength(1);
-    expect(fired[0]?.[0]).toBe('twentytwentyfive');
+    expect(fired[0]?.[0]).toBe('pressbase');
 
     const after = globalCss((await page(ctx)).html);
     expect(after).toContain('--wp--preset--color--base: #101820;');
-    expect(after).toContain('--wp--style--global--content-size: 720px;');
+    expect(after).toContain('--wp--style--global--content-size: 760px;');
     // Fluid typography applies to the user's base size too, as in WordPress.
-    expect(after).toContain('font-size: clamp(14px, 0.875rem + ((1vw - 3.2px) * 0.49), 19px);');
+    // The theme's wide size (1200px) is the largest viewport: (19 - 14) / (1200 - 320) * 100.
+    expect(after).toContain('font-size: clamp(14px, 0.875rem + ((1vw - 3.2px) * 0.568), 19px);');
     expect(after).toContain('a:where(:not(.wp-element-button)){color: #F2AA4C;');
     // The theme's other presets are untouched.
-    expect(after).toContain('--wp--preset--font-family--manrope: Manrope, sans-serif;');
+    expect(after).toContain(
+      '--wp--preset--font-family--manrope: Manrope, "Manrope Fallback", ui-sans-serif, system-ui, sans-serif;',
+    );
 
     // A request without styles keeps the stored ones (prepare_item_for_database()).
     const title = await ctx.request('POST', `/wp/v2/global-styles/${id}`, {

@@ -2,10 +2,10 @@
 
 Pressbase speaks your language in two layers:
 
-1. **WordPress's translations.** The block editor, block titles, dates, Twenty Twenty-Five and every string Pressbase shares with WordPress come from WordPress's language packs, translated by the WordPress community on [translate.wordpress.org](https://translate.wordpress.org). An administrator installs a pack in **Settings → General → Add a language…**. To improve those strings, contribute to WordPress's translation team for your language; Pressbase picks up the change with the next pack.
+1. **WordPress's translations.** The block editor, block titles, dates, WordPress.org themes and every string Pressbase shares with WordPress come from WordPress's language packs, translated by the WordPress community on [translate.wordpress.org](https://translate.wordpress.org). An administrator installs a pack in **Settings → General → Add a language…**. To improve those strings, contribute to WordPress's translation team for your language; Pressbase picks up the change with the next pack.
 2. **Pressbase's own strings**, in two text domains, translated here, in this repository:
    - `pressbase-admin`: the admin (`languages/pressbase-admin.pot`);
-   - `pressbase`: messages from the server, such as REST errors (`languages/pressbase.pot`).
+   - `pressbase`: messages from the server, such as REST errors, and the text of the Pressbase theme's patterns (`languages/pressbase.pot`).
 
 How it works is in [Internationalisation](../architecture/i18n.md).
 

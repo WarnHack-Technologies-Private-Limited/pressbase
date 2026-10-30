@@ -186,7 +186,7 @@ describe('invalidation', () => {
     ctx.purged();
     await ctx.request('POST', `/wp/v2/posts/${created.id}`, { sticky: true });
     expect(ctx.purged()).toContain('posts:post');
-    await ctx.request('POST', '/pressbase/v1/themes/twentytwentyfive/activate');
+    await ctx.request('POST', '/pressbase/v1/themes/pressbase/activate');
     expect(ctx.purged()).toContain('site');
   });
 });

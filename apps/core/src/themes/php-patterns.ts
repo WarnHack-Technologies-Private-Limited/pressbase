@@ -6,7 +6,7 @@ import { PATTERN_HEADERS, readFileHeaders } from './file-headers';
  * Block theme patterns are PHP files (`patterns/*.php`): a header comment,
  * then block markup with small PHP snippets for translation and URLs, e.g.
  *
- *   <h2><?php esc_html_e( 'Blog', 'twentytwentyfive' ); ?></h2>
+ *   <h2><?php esc_html_e( 'Blog', 'pressbase' ); ?></h2>
  *   <img src="<?php echo esc_url( get_template_directory_uri() ); ?>/assets/a.webp" />
  *
  * Pressbase never runs PHP. This loader *interprets* the tiny subset of PHP

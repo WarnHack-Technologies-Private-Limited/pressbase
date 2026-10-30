@@ -290,13 +290,7 @@ describe('the Pressbase theme', () => {
     expect(warnings.filter((w) => w.includes('pressbase'))).toEqual([]);
 
     // A landing page as the static front page, as an owner would set it up.
-    const content = [
-      'page-landing',
-      'bento-grid',
-      'stats',
-      'code-showcase',
-      'posts-grid',
-    ]
+    const content = ['page-landing', 'bento-grid', 'stats', 'code-showcase', 'posts-grid']
       .map((slug) => `<!-- wp:pattern {"slug":"pressbase/${slug}"} /-->`)
       .join('\n');
     const created = await ctx.request('POST', '/wp/v2/pages', {
@@ -372,6 +366,19 @@ describe('the Pressbase theme', () => {
       expect(html, url).toContain(text);
       expect(html.match(/<h1[\s>]/g)?.length, url).toBe(1);
       expect(html, url).not.toContain('<!-- wp:');
+    }
+  });
+
+  it("writes block custom CSS that WordPress's `&` splitting keeps whole", async () => {
+    // process_blocks_custom_css() splits on every `&`, so `& a, & b{…}` would leave a stray
+    // `a,` behind: each nested selector needs its own rule.
+    const theme = JSON.parse(await readFile(path.join(THEME_DIR, 'theme.json'), 'utf8'));
+    const blocks = Object.entries(theme.styles.blocks as Record<string, { css?: string }>);
+    for (const [name, { css }] of blocks) {
+      if (!css) continue;
+      for (const part of css.split('&').filter((p) => p.trim())) {
+        expect(part, name).toMatch(/^[^{},]+\{[^{}]*\}\s*$/);
+      }
     }
   });
 

@@ -341,10 +341,11 @@ describe('the public site in the site’s language', () => {
     await german(ctx);
     await writeLanguageFile(
       ctx,
-      'themes/twentytwentyfive-de_DE.po',
+      // The Pressbase theme shares core's `pressbase` domain; its files come after core's.
+      'themes/pressbase-de_DE.po',
       po('de_DE', [
-        ['Page not found', 'Seite nicht gefunden', '404 error message'],
-        ['404', '404 (Fehler)', 'Pattern title'],
+        ['Error 404', 'Fehler 404', '404 error label'],
+        ['Page not found', 'Seite nicht gefunden', 'Pattern title'],
       ]),
     );
     const created = await ctx.request('POST', '/wp/v2/posts', {
@@ -360,17 +361,15 @@ describe('the public site in the site’s language', () => {
       );
       return ((await res.json()) as { html: string }).html;
     };
-    expect(await render('/no-such-page/')).toContain('Page not found');
+    expect(await render('/no-such-page/')).toContain('Error 404');
 
     await ctx.request('POST', '/wp/v2/settings', { language: 'de_DE' });
     const missing = await render('/no-such-page/');
-    expect(missing).toContain('Seite nicht gefunden');
+    expect(missing).toContain('Fehler 404');
     expect(missing).toContain('<html lang="de-DE">');
     expect(missing).toContain('Zum Inhalt springen');
-    const pattern = ctx.kernel.blocks
-      .patterns()
-      .find((p) => p.name === 'twentytwentyfive/hidden-404');
-    expect(pattern?.title).toBe('404 (Fehler)');
+    const pattern = ctx.kernel.blocks.patterns().find((p) => p.name === 'pressbase/hidden-404');
+    expect(pattern?.title).toBe('Seite nicht gefunden');
 
     const single = await render(new URL(created.body.link).pathname);
     expect(single).toContain('Oktober 12, 2026');
@@ -480,7 +479,7 @@ describe('language packs (wp_download_language_pack)', () => {
   ]);
   const THEME_ZIP = createZip([
     {
-      name: 'twentytwentyfive-de_DE.mo',
+      name: 'sunny-de_DE.mo',
       data: compileMo({}, [
         { singular: 'Page not found', context: '404 error message', translations: ['Nicht da'] },
       ]),
@@ -515,20 +514,20 @@ describe('language packs (wp_download_language_pack)', () => {
         const slug = new URL(url).searchParams.get('slug');
         return Response.json({
           translations:
-            slug === 'twentytwentyfive'
+            slug === 'sunny'
               ? [
                   {
                     language: 'de_DE',
                     version: '1.5',
                     package:
-                      'https://downloads.wordpress.org/translation/theme/twentytwentyfive/1.5/de_DE.zip',
+                      'https://downloads.wordpress.org/translation/theme/sunny/1.5/de_DE.zip',
                   },
                 ]
               : [],
         });
       }
       if (url.endsWith('/core/7.1.3/de_DE.zip')) return new Response(CORE_ZIP);
-      if (url.endsWith('/twentytwentyfive/1.5/de_DE.zip')) return new Response(THEME_ZIP);
+      if (url.endsWith('/sunny/1.5/de_DE.zip')) return new Response(THEME_ZIP);
       return new Response('Not found', { status: 404 });
     };
     return requests;
@@ -549,10 +548,16 @@ describe('language packs (wp_download_language_pack)', () => {
 
   it('installs a core pack and the themes’ packs, then serves them', async () => {
     const ctx = await site();
+    // A theme from WordPress.org, installed in the site's themes folder.
+    const sunny = path.join(ctx.dataDir, 'themes', 'sunny');
+    await mkdir(path.join(sunny, 'templates'), { recursive: true });
+    await writeFile(path.join(sunny, 'style.css'), '/*\nTheme Name: Sunny\nVersion: 1.5\n*/');
+    await writeFile(path.join(sunny, 'templates', 'index.html'), '<!-- wp:post-content /-->');
+    await ctx.kernel.themes.reload();
     const requests = mockNetwork(ctx);
     const res = await ctx.request('POST', '/pressbase/v1/languages', { language: 'de_DE' });
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ language: 'de_DE', core: true, themes: ['twentytwentyfive'] });
+    expect(res.body).toMatchObject({ language: 'de_DE', core: true, themes: ['sunny'] });
     expect(res.body.installed.map((l: { language: string }) => l.language)).toEqual([
       'en_US',
       'de_DE',
@@ -564,10 +569,10 @@ describe('language packs (wp_download_language_pack)', () => {
       'de_DE.po',
       'themes',
     ]);
-    expect(
-      existsSync(path.join(ctx.dataDir, 'languages', 'themes', 'twentytwentyfive-de_DE.mo')),
-    ).toBe(true);
-    expect(requests.some((r) => r.includes('slug=twentytwentyfive'))).toBe(true);
+    expect(existsSync(path.join(ctx.dataDir, 'languages', 'themes', 'sunny-de_DE.mo'))).toBe(true);
+    expect(requests.some((r) => r.includes('slug=sunny'))).toBe(true);
+    // The bundled Pressbase theme isn't on WordPress.org; its translations ship with Pressbase.
+    expect(requests.some((r) => r.includes('slug=pressbase'))).toBe(false);
 
     expect((await ctx.request('POST', '/wp/v2/settings', { language: 'de_DE' })).status).toBe(200);
     expect(ctx.kernel.i18n.__('Posts')).toBe('Beiträge');

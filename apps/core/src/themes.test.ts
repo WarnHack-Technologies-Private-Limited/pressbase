@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { setup } from './test-utils';
 
 /**
- * Themes and the public site: Twenty Twenty-Five rendering the home page,
+ * Themes and the public site: the Pressbase theme rendering the home page,
  * single posts, pages, archives, search and 404s through
  * /pressbase/v1/render, plus theme listing, activation and asset serving.
  */
@@ -41,17 +41,17 @@ describe('themes', () => {
     const ctx = await site();
     const res = await ctx.request('GET', '/wp/v2/themes');
     expect(res.status).toBe(200);
-    const tt5 = res.body.find((t: { stylesheet: string }) => t.stylesheet === 'twentytwentyfive');
-    expect(tt5).toMatchObject({
-      stylesheet: 'twentytwentyfive',
-      template: 'twentytwentyfive',
-      name: { raw: 'Twenty Twenty-Five' },
-      version: '1.5',
+    const theme = res.body.find((t: { stylesheet: string }) => t.stylesheet === 'pressbase');
+    expect(theme).toMatchObject({
+      stylesheet: 'pressbase',
+      template: 'pressbase',
+      name: { raw: 'Pressbase' },
+      version: '1.0.0',
       status: 'active',
       is_block_theme: true,
-      screenshot: 'http://localhost:3000/wp-content/themes/twentytwentyfive/screenshot.png',
+      screenshot: 'http://localhost:3000/wp-content/themes/pressbase/screenshot.png',
     });
-    expect(tt5.tags.raw).toContain('full-site-editing');
+    expect(theme.tags.raw).toContain('full-site-editing');
   });
 
   it('needs switch_themes to list themes, edit_posts for the active one', async () => {
@@ -60,7 +60,7 @@ describe('themes', () => {
     expect((await author.request('GET', '/wp/v2/themes')).status).toBe(403);
     expect((await author.request('GET', '/wp/v2/themes?status=active')).status).toBe(200);
     expect(
-      (await author.request('POST', '/pressbase/v1/themes/twentytwentyfive/activate')).body.code,
+      (await author.request('POST', '/pressbase/v1/themes/pressbase/activate')).body.code,
     ).toBe('rest_cannot_manage_themes');
   });
 
@@ -88,26 +88,27 @@ describe('themes', () => {
       name: string;
       content: string;
     }[];
-    const footer = patterns.find((p) => p.name === 'twentytwentyfive/footer');
+    const footer = patterns.find((p) => p.name === 'pressbase/footer');
     expect(footer?.content).toContain(
-      'Designed with <a href="https://wordpress.org" rel="nofollow">WordPress</a>',
+      'Powered by <a href="https://github.com/WarnHack-Technologies-Private-Limited/pressbase" rel="nofollow">Pressbase</a>',
     );
+    expect(footer?.content).toContain('src="/wp-content/themes/pressbase/assets/images/');
     expect(patterns.some((p) => p.content.includes('<?php'))).toBe(false);
     const categories = (await ctx.request('GET', '/wp/v2/block-patterns/categories')).body;
-    expect(categories.map((c: { name: string }) => c.name)).toContain('twentytwentyfive_page');
+    expect(categories.map((c: { name: string }) => c.name)).toContain('pressbase_page');
   });
 
   it('serves theme files safely', async () => {
     const ctx = await site();
     const font = await ctx.app.request(
-      '/wp-content/themes/twentytwentyfive/assets/fonts/manrope/Manrope-VariableFont_wght.woff2',
+      '/wp-content/themes/pressbase/assets/fonts/manrope/Manrope-VariableFont_wght.woff2',
     );
     expect(font.status).toBe(200);
     expect(font.headers.get('content-type')).toBe('font/woff2');
     expect(font.headers.get('x-content-type-options')).toBe('nosniff');
     const etag = font.headers.get('etag') ?? '';
     const again = await ctx.app.request(
-      '/wp-content/themes/twentytwentyfive/assets/fonts/manrope/Manrope-VariableFont_wght.woff2',
+      '/wp-content/themes/pressbase/assets/fonts/manrope/Manrope-VariableFont_wght.woff2',
       { headers: { 'if-none-match': etag } },
     );
     expect(again.status).toBe(304);
@@ -117,14 +118,14 @@ describe('themes', () => {
 
     // Source files, unknown themes and traversal are 404s.
     for (const url of [
-      '/wp-content/themes/twentytwentyfive/functions.php',
-      '/wp-content/themes/twentytwentyfive/theme.json',
-      '/wp-content/themes/twentytwentyfive/templates/index.html',
-      '/wp-content/themes/twentytwentyfive/patterns/footer.php',
+      '/wp-content/themes/pressbase/functions.php',
+      '/wp-content/themes/pressbase/theme.json',
+      '/wp-content/themes/pressbase/templates/index.html',
+      '/wp-content/themes/pressbase/patterns/footer.php',
       '/wp-content/themes/nope/style.css',
-      '/wp-content/themes/twentytwentyfive/..%2F..%2Fpackage.json',
-      '/wp-content/themes/twentytwentyfive/assets%2F..%2F..%2Fstyle.css',
-      '/wp-content/themes/twentytwentyfive/.hidden.css',
+      '/wp-content/themes/pressbase/..%2F..%2Fpackage.json',
+      '/wp-content/themes/pressbase/assets%2F..%2F..%2Fstyle.css',
+      '/wp-content/themes/pressbase/.hidden.css',
       '/wp-includes/../package.json',
       '/wp-includes/css/dist/block-library/missing.css',
     ]) {
@@ -144,7 +145,7 @@ describe('themes', () => {
   });
 });
 
-describe('public site with Twenty Twenty-Five', () => {
+describe('public site with the Pressbase theme', () => {
   it('renders the home page: header, latest posts through core/query, footer', async () => {
     const ctx = await site();
     await post(ctx, {
@@ -158,9 +159,9 @@ describe('public site with Twenty Twenty-Five', () => {
     expect(html.startsWith('<!DOCTYPE html>')).toBe(true);
     expect(html).toContain('<title>Test Site</title>');
     expect(html).toContain("id='global-styles-inline-css'");
-    expect(html).toContain('--wp--preset--color--accent-1: #FFEE58;');
+    expect(html).toContain('--wp--preset--color--accent: #3b4cca;');
     expect(html).toContain("<style class='wp-fonts-local'>");
-    expect(html).toContain('/wp-content/themes/twentytwentyfive/style.min.css?ver=1.5');
+    expect(html).toContain('/wp-content/themes/pressbase/style.css?ver=1.0.0');
     expect(html).toContain('<body class="home blog');
     expect(html).toContain('<div class="wp-site-blocks">');
     expect(html).toContain('<header class="wp-block-template-part">');
@@ -169,26 +170,28 @@ describe('public site with Twenty Twenty-Five', () => {
     );
     // Main and its layout support classes and generated container CSS.
     expect(html).toMatch(
-      /<main id="wp--skip-link--target" class="wp-block-group has-global-padding is-layout-constrained wp-block-group-is-layout-constrained"/,
+      /<main id="wp--skip-link--target" class="wp-block-group is-layout-flow wp-container-core-group-is-layout-[0-9a-f]{8} wp-block-group-is-layout-flow"/,
     );
     expect(html).toContain('Skip to content');
     expect(html).toMatch(
-      /class="wp-block-group alignwide is-content-justification-space-between is-nowrap is-layout-flex wp-container-core-group-is-layout-[0-9a-f]{8} wp-block-group-is-layout-flex"/,
+      /class="wp-block-group is-content-justification-right is-nowrap is-layout-flex wp-container-core-group-is-layout-[0-9a-f]{8} wp-block-group-is-layout-flex"/,
     );
     expect(html).toMatch(
-      /id='core-block-supports-inline-css'>\n[^<]*\.wp-container-core-group-is-layout-[0-9a-f]{8}\{flex-wrap:nowrap;justify-content:space-between;\}/,
+      /id='core-block-supports-inline-css'>\n[^<]*\.wp-container-core-group-is-layout-[0-9a-f]{8}\{flex-wrap:nowrap;gap:var\(--wp--preset--spacing--40\);justify-content:flex-end;\}/,
     );
-    // Hidden blog heading, the posts and the footer pattern.
-    expect(html).toContain('<h1 class="wp-block-heading has-text-align-left">Blog</h1>');
+    // The blog heading, the posts in a grid and the footer pattern.
+    expect(html).toContain(
+      '<h1 class="wp-block-heading has-text-align-center has-display-font-size">Notes, essays and <em>news</em>.</h1>',
+    );
     expect(html).toMatch(
-      /<ul class="alignfull wp-block-post-template is-layout-flow wp-block-post-template-is-layout-flow"><li class="wp-block-post post-\d+ post type-post status-publish format-standard hentry category-uncategorized">/,
+      /<ul class="columns-3 has-native-responsive-grid is-style-reveal wp-block-post-template is-layout-grid wp-container-core-post-template-is-layout-[0-9a-f]{8} wp-block-post-template-is-layout-grid"><li class="wp-block-post post-\d+ post type-post status-publish format-standard hentry category-uncategorized"/,
     );
     expect(html).toContain('Second story');
     expect(html).toContain('Body two');
     expect(html.indexOf('Second story')).toBeLessThan(html.indexOf('Hello world!'));
     expect(html).toContain('<footer class="wp-block-template-part">');
     expect(html).toContain(
-      'Designed with <a href="https://wordpress.org" rel="nofollow">WordPress</a>',
+      'Powered by <a href="https://github.com/WarnHack-Technologies-Private-Limited/pressbase" rel="nofollow">Pressbase</a>',
     );
     // Navigation falls back to the page list, with the responsive overlay.
     expect(html).toContain(
@@ -261,20 +264,21 @@ describe('public site with Twenty Twenty-Five', () => {
     expect(html).toMatch(
       /<body class="wp-singular post-template-default single single-post postid-\d+ single-format-standard/,
     );
-    expect(html).toContain('<h1 class="wp-block-post-title">A walk <em>outside</em></h1>');
+    expect(html).toContain(
+      '<h1 class="wp-block-post-title has-xxx-large-font-size">A walk <em>outside</em></h1>',
+    );
     expect(html).toMatch(
-      /<figure class="wp-block-post-featured-image"><img width="1200" height="800" src="http:\/\/localhost:3000\/wp-content\/uploads\/\d{4}\/\d{2}\/cover\.jpg" class="attachment-post-thumbnail size-post-thumbnail wp-post-image" alt="" style="aspect-ratio:3\/2;width:100%;object-fit:cover;"|<figure class="wp-block-post-featured-image"><img width="1200" height="800"/,
+      /<figure class="alignwide wp-block-post-featured-image" style="margin-top:var\(--wp--preset--spacing--50\);margin-bottom:var\(--wp--preset--spacing--50\);"><img width="1200" height="800" src="http:\/\/localhost:3000\/wp-content\/uploads\/\d{4}\/\d{2}\/cover\.jpg" class="attachment-post-thumbnail size-post-thumbnail wp-post-image" alt="" style="aspect-ratio:16\/9;width:100%;object-fit:cover;" decoding="async" fetchpriority="high"/,
     );
     expect(html).toContain('srcset=');
     expect(html).toContain(
       '<div class="entry-content alignfull wp-block-post-content has-global-padding is-layout-constrained wp-block-post-content-is-layout-constrained"><p>Leaves everywhere.</p></div>',
     );
-    expect(html).toContain('Written by');
     expect(html).toMatch(/class="wp-block-post-author-name__link">admin<\/a>/);
     expect(html).toContain('rel="tag">Gardens</a>');
-    expect(html).toContain('is-style-post-terms-1');
-    // The pill style of the post-terms-1 variation is generated per instance.
-    expect(html).toMatch(/is-style-post-terms-1--\d/);
+    expect(html).toContain('<div class="taxonomy-post_tag is-style-links wp-block-post-terms"');
+    // Block style variations (the outline buttons) are generated per instance.
+    expect(html).toMatch(/is-style-outline--\d/);
     expect(html).toContain("id='block-style-variation-styles-inline-css'");
     // Previous post link to the sample post; no next.
     expect(html).toMatch(
@@ -286,11 +290,11 @@ describe('public site with Twenty Twenty-Five', () => {
     expect(html).toMatch(
       /<link rel="canonical" href="http:\/\/localhost:3000\/\d{4}\/\d{2}\/\d{2}\/a-walk-outside\/" \/>/,
     );
-    // TT5's comments area renders, with the reply form posting to /wp-comments-post.
+    // The comments area renders, with the reply form posting to /wp-comments-post.
     expect(html).toContain('<div class="wp-block-comments');
     expect(html).toContain('id="respond"');
     expect(html).toMatch(/<form[^>]+action="[^"]*\/wp-comments-post(\.php)?"/);
-    expect(mainOf(html)).toContain('More posts');
+    expect(mainOf(html)).toContain('From the <em>journal</em>');
   });
 
   it('redirects ?p= and missing trailing slashes to the permalink, and keeps drafts private', async () => {
@@ -359,9 +363,9 @@ describe('public site with Twenty Twenty-Five', () => {
     expect(html).toMatch(
       /<body class="wp-singular page-template-default page page-id-\d+ page-child parent-pageid-\d+/,
     );
-    expect(html).toContain('<h1 class="wp-block-post-title">Our team</h1>');
+    expect(html).toContain('<h1 class="wp-block-post-title has-display-font-size">Our team</h1>');
     expect(html).toContain('We are three.');
-    expect(html).not.toContain('Written by');
+    expect(html).not.toContain('wp-block-post-author-name__link');
     expect((await page(ctx, '/our-team/')).status).toBe(404);
   });
 
@@ -378,8 +382,12 @@ describe('public site with Twenty Twenty-Five', () => {
     expect(status).toBe(200);
     expect(html).toContain('<title>Recipes &#8211; Test Site</title>');
     expect(html).toMatch(/<body class="archive category category-recipes category-\d+/);
-    expect(html).toContain('<h1 class="wp-block-query-title">Category: <span>Recipes</span></h1>');
-    expect(html).toContain('<div class="wp-block-term-description"><p>Things to cook.</p>');
+    expect(html).toContain(
+      '<h1 class="has-text-align-center wp-block-query-title has-xxx-large-font-size">Category: <span>Recipes</span></h1>',
+    );
+    expect(html).toContain(
+      '<div class="has-text-align-center wp-block-term-description has-large-font-size"><p>Things to cook.</p>',
+    );
     expect(mainOf(html)).toContain('Soup');
     expect(mainOf(html)).not.toContain('Hello world!');
     expect((await page(ctx, '/category/nothing-here/')).status).toBe(404);
@@ -397,15 +405,13 @@ describe('public site with Twenty Twenty-Five', () => {
     );
     expect(found.html).toMatch(/<body class="search search-results/);
     expect(found.html).toContain(
-      '<h1 class="wp-block-query-title">Search results for: &#8220;tomato&#8221;</h1>',
+      '<h1 class="has-text-align-center wp-block-query-title has-xxx-large-font-size">Search results for: &#8220;tomato&#8221;</h1>',
     );
     expect(mainOf(found.html)).toContain('Tomato season');
-    expect(found.html).not.toContain('Sorry, but nothing was found');
+    expect(found.html).not.toContain('Sorry, nothing matched.');
     const none = await page(ctx, '/?s=zucchini');
     expect(none.html).toMatch(/<body class="search search-no-results/);
-    expect(none.html).toContain(
-      'Sorry, but nothing was found. Please try a search with different keywords.',
-    );
+    expect(none.html).toContain('Sorry, nothing matched. Try a search with different words.');
     expect(none.html).toContain('wp-block-search__input');
   });
 
@@ -416,8 +422,8 @@ describe('public site with Twenty Twenty-Five', () => {
     expect(headers['content-type']).toBe('text/html; charset=utf-8');
     expect(html).toContain('<title>Page not found &#8211; Test Site</title>');
     expect(html).toContain('<body class="error404');
-    expect(html).toContain('Page not found');
-    expect(html).toContain('/wp-content/themes/twentytwentyfive/assets/images/404-image.webp');
+    expect(html).toContain('This page took <em>another</em> road.');
+    expect(html).toContain('Error 404');
   });
 
   it('honours a static front page and a posts page (Settings → Reading)', async () => {

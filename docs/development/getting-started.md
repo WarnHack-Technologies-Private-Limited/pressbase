@@ -23,7 +23,7 @@ pnpm dev
 | Admin    | <http://localhost:3000>         | `@pressbase/admin:dev` |
 | Public site | <http://localhost:3001>      | `@pressbase/web:dev`   |
 
-Open <http://localhost:3000> and follow the installer. Afterwards <http://localhost:3000> shows the public site (the admin forwards every path it doesn't own to the public app, so the site and `/admin` share the address you installed with, as in WordPress), and <http://localhost:3001> shows the same site directly. The site uses the bundled Twenty Twenty-Five theme; switch themes in **Appearance**.
+Open <http://localhost:3000> and follow the installer. Afterwards <http://localhost:3000> shows the public site (the admin forwards every path it doesn't own to the public app, so the site and `/admin` share the address you installed with, as in WordPress), and <http://localhost:3001> shows the same site directly. The site uses the bundled Pressbase theme; upload and switch themes in **Appearance**.
 
 ## Using PostgreSQL
 
