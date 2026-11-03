@@ -72,6 +72,8 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | `WP_Theme_JSON_Resolver::get_style_variations()`, the site editor's style variation logic | `packages/theme-json/src/style-variations.ts`, `kernel.themes` (`active().variations`) | Full, colour and typography variations; choosing one writes the user's global styles, as in WordPress. |
 | `wp_global_styles` post type, `get_user_data_from_wp_global_styles()`, `get_user_global_styles_post_id()` | `apps/core/src/themes/global-styles.ts` | One post per theme, slug `wp-global-styles-{stylesheet}` (no `wp_theme` term). |
 | `WP_REST_Global_Styles_Controller`, `WP_REST_Global_Styles_Revisions_Controller` | `apps/core/src/routes/global-styles.ts` | Plus `/pressbase/v1/global-styles/preview`. |
+| `wp_template`, `wp_template_part`, `wp_theme`, `wp_template_part_area` (`create_initial_post_types()`, `create_initial_taxonomies()`), `get_block_templates()`, `get_block_template()`, `get_block_file_template()`, `_build_block_template_result_from_post()`, `resolve_block_template()`, `locate_block_template()`, `wp_filter_wp_template_unique_post_slug()` | `apps/core/src/themes/templates.ts` | A customised copy is a published post tagged with the theme's `wp_theme` term, read through `queryPosts()`; `saveBlockTemplate()` / `deleteBlockTemplate()` hold the REST controller's write logic. See [Themes](themes.md#templates-and-template-parts) and [ADR 0021](../adr/0021-site-editor-and-templates-storage.md). |
+| `WP_REST_Templates_Controller`, `WP_REST_Template_Revisions_Controller`, `WP_REST_Template_Autosaves_Controller` | `apps/core/src/routes/templates.ts` | `/wp/v2/templates` and `/wp/v2/template-parts`; `lookup` is not ported yet. |
 | `WP_Theme_JSON::remove_insecure_properties()`, `wp_filter_global_styles_post()`, `safecss_filter_attr()`, `validate_custom_css()` | `packages/theme-json/src/sanitize.ts` | |
 | Site editor → Styles | `/admin/appearance/styles` | The essentials: variations, colours, type, layout, revisions, live preview. |
 | `site_logo`, `site_icon`, `get_custom_logo()`, `WP_Site_Icon`, `get_site_icon_url()`, `wp_site_icon()` | `apps/core/src/themes/site-identity.ts`, `blocks/library/post-media.ts` (`core/site-logo`) | Icon crops are sub-sizes of the chosen image (`site_icon-512` … `site_icon-32`), not a separate cropped attachment. |
@@ -96,7 +98,7 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | WordPress                                      | Pressbase (planned)                             | Release |
 | ---------------------------------------------- | ------------------------------------------- | ------- |
 | Autosave | Autosaves endpoint, with the block editor | v0.3 |
-| Site editor (`wp_template`, `wp_global_styles`) | Admin site editor | later |
+| Site editor (`wp_template`, `wp_global_styles`) | Studio (`/admin/studio`); storage and REST shipped, see [ADR 0021](../adr/0021-site-editor-and-templates-storage.md) | v0.8 |
 | Classic menus (`nav_menu`, `/wp/v2/menus`, `WP_Classic_To_Block_Menu_Converter`) | Converted to `wp_navigation` by the importer | v0.6 |
 | Importer, wp-cli                               | Migration tool, `pressbase` CLI                 | v0.6    |
 | `__()`, text domains                           | `@wordpress/i18n`, `.po`/`.mo`              | v0.6    |

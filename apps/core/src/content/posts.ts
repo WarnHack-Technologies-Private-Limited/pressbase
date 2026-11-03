@@ -72,6 +72,18 @@ export class PostsService {
     parentId: number | null,
     exceptId?: number,
   ): Promise<string> {
+    // pre_wp_unique_post_slug (override, slug, postId, status, type, parent): a
+    // string answers instead (templates are unique per theme, themes/templates.ts).
+    const override = await this.kernel.hooks.applyFilters(
+      'pre_wp_unique_post_slug',
+      null,
+      slug,
+      exceptId ?? 0,
+      '',
+      type,
+      parentId ?? 0,
+    );
+    if (typeof override === 'string' && override) return override;
     const hierarchical = this.kernel.postTypes.get(type)?.hierarchical ?? false;
     for (let n = 1; ; n++) {
       const candidate = n === 1 ? slug : `${slug}-${n}`;

@@ -147,6 +147,12 @@ Plugins see the same declarations through `@pressbase/plugin-sdk`, whose types a
 | `save_post_wp_global_styles` | action | `postId, post, update` | user global styles saved (REST, a restored revision, or code); core re-resolves the active theme's styles on it |
 | `pressbase_global_styles_updated` | action | `stylesheet, post, config` | **after** a theme's user global styles changed and the active theme's stylesheet was rebuilt. Pressbase's own hook (WordPress only cleans its theme.json caches here): the one to listen to for invalidating cached pages after a style change. `switch_theme` and `updated_option` (`site_logo`, `site_icon`, `blogname`…) cover the other appearance changes. |
 | `site_icon_meta_tags` | filter | `tags` | the icon tags `wp_site_icon()` prints in the public page head |
+| `pre_get_block_templates`, `get_block_templates` | filter | `templates, query, type` | before (return an array to skip the lookup) and after `getBlockTemplates()` (themes/templates.ts) |
+| `pre_get_block_template`, `get_block_template`, `pre_get_block_file_template`, `get_block_file_template` | filter | `template, id, type` | before and after looking up one template or part by `theme//slug` |
+| `default_template_types`, `default_wp_template_part_areas` | filter | `types` / `areas` | the hierarchy's template titles and descriptions; the allowed template part areas |
+| `pre_wp_unique_post_slug` | filter | `override, slug, postId, status, type, parent` | a string replaces the unique slug `PostsService` would pick (`status` is empty); core uses it to keep template slugs unique per theme |
+| `render_block_core_template_part_post`, `_file`, `_none` | action | `id, attributes, post \| path, content` | a template part rendered from a customised copy, from the theme's file, or not found |
+| `rest_after_insert_wp_template`, `rest_after_insert_wp_template_part` | action | `post, body, creating` | after a template or part is saved through REST |
 | `pressbase_cache_purge` | action | `tags, reason` | a change made public pages stale; `tags` are cache tags (`post:12`, `site`…). Core forwards them to `apps/web`; a CDN integration can listen too. See [The public site](public-site.md#page-caching) |
 | `do_robotstxt` / `robots_txt` | action / filter | — / `output, public` | before / after `/robots.txt` is built |
 | `wp_title_rss`, `the_title_rss`, `the_permalink_rss`, `the_excerpt_rss`, `the_content_feed` | filter | `title, format` / `title` / `link` / `excerpt` / `html, format` | feed channel title and items |

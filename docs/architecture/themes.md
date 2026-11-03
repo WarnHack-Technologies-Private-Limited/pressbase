@@ -13,6 +13,7 @@ How Pressbase loads WordPress block themes, turns `theme.json` into CSS, and ren
 | Block supports needing the theme | `apps/core/src/themes/supports.ts` | `block-supports/layout.php`, `elements.php`, `position.php`, `typography.php`, `block-style-variations.php` |
 | Request routing, main query | `apps/core/src/frontend/query.ts` | `WP::parse_request()`, `WP_Rewrite`, `WP_Query` main query, `redirect_canonical()` |
 | Template hierarchy | `apps/core/src/frontend/hierarchy.ts` | `template-loader.php`, `get_*_template()` |
+| Templates and parts: theme files and customised copies | `apps/core/src/themes/templates.ts`, `routes/templates.ts` | `wp_template`, `wp_template_part`, `get_block_templates()`, `resolve_block_template()`, `WP_REST_Templates_Controller` (+ revisions, autosaves) |
 | Document | `apps/core/src/frontend/render.ts` | `get_the_block_template_html()`, `template-canvas.php`, `wp_get_document_title()`, `get_body_class()` |
 | Template blocks | `apps/core/src/blocks/library/{template,query,navigation,post-media}.ts` | `wp-includes/blocks/*.php` |
 | Public app | `apps/web` | the web server in front of `index.php` |
@@ -231,6 +232,45 @@ Translation functions translate through the theme's text domain in the site's la
 
 Theme URLs in patterns and font faces are root-relative (`/wp-content/themes/…`), so they work on every origin that proxies core.
 
+## Templates and template parts
+
+A site owner's changes to a template or part are stored as WordPress stores them, and the theme's files never change. The decision is [ADR 0021](../adr/0021-site-editor-and-templates-storage.md).
+
+### Storage
+
+- **Post types** `wp_template` and `wp_template_part` (`create_initial_post_types()`): not public, at `/wp/v2/templates` and `/wp/v2/template-parts`, every capability mapped to `edit_theme_options`, with revisions.
+- **Taxonomies** `wp_theme` (the term's *name* is the theme's stylesheet) and `wp_template_part_area` (`header`, `footer`, `navigation-overlay`, `uncategorized`), not public and not in REST (`create_initial_taxonomies()`).
+- **A customised copy** is a published post: slug = the template's slug (unique per theme, case and `_` kept), title, excerpt = description, content = block markup, a `wp_theme` term, an area term for parts, and the meta `origin: theme` when it started from a theme file. A **custom template** (one with no file, such as `single-post-opening-hours`) is the same without `origin`.
+
+### Resolution
+
+`themes/templates.ts` ports `block-template-utils.php` and `block-template.php`:
+
+| Function | WordPress | Use |
+|---|---|---|
+| `getBlockTemplates(kernel, query?, type?)` | `get_block_templates()` | The active theme's templates or parts: published posts first, then the files no post replaces. `query`: `slug__in`, `slug__not_in`, `wp_id`, `area`, `post_type`. |
+| `getBlockTemplate(kernel, 'theme//slug', type?)` | `get_block_template()` | One template: the post (any status but trashed) else the file. |
+| `getBlockFileTemplate(kernel, id, type?)` | `get_block_file_template()` | The theme's file only. |
+| `resolveBlockTemplate(kernel, hierarchy)` / `locateBlockTemplate()` | `resolve_block_template()`, `locate_block_template()` | The renderer's choice for a view. |
+| `templatePartForRender(kernel, slug, themeAttr)` | `render_block_core_template_part()`'s lookup | `core/template-part`. |
+| `saveBlockTemplate(kernel, type, id \| null, changes, options)` | the REST controller's `prepare_item_for_database()`, `update_item()`, `create_item()` | Saves without HTTP: a theme file becomes a copy, a copy is updated, `id: null` creates. |
+| `deleteBlockTemplate(kernel, type, id, force?)` | `delete_item()` | Trashes or deletes a custom template; for a copy, this is the reset. |
+| `buildBlockTemplatesFromPosts()` | `_build_block_template_result_from_post()` | Posts and revisions → `BlockTemplate`. |
+
+Templates come back as `BlockTemplate` (`WP_Block_Template`): `id` (`theme//slug`), `theme`, `slug`, `source` (`theme` or `custom`), `origin`, `type`, `title`, `description`, `content`, `status`, `wpId`, `hasThemeFile`, `isCustom` (false for the hierarchy's templates), `author`, `area`, `postTypes`, `modified`, `date`. Theme files get WordPress's titles and descriptions (`get_default_block_template_types()`, filter `default_template_types`), `customTemplates` titles and post types from `theme.json`, and parts their `templateParts` title and area.
+
+Custom copies are always read with `queryPosts()` (`tax_query` on `wp_theme` by name), never cached: `content_query_args` applies to them, and so will a changeset preview. Filters keep WordPress's names: `pre_get_block_templates`, `get_block_templates`, `pre_get_block_template`, `get_block_template`, `pre_get_block_file_template`, `get_block_file_template`, `default_wp_template_part_areas`, and `pre_wp_unique_post_slug` (new in `PostsService`, which makes template slugs unique per theme).
+
+When a customised template is empty, logged-in users see WordPress's "This page is blank because the template is empty" notice, and visitors see the theme's file.
+
+### Page cache
+
+Templates and parts are not public, so saving, trashing or deleting a published one purges the `site` tag, like menus and global styles (`cache/invalidation.ts`).
+
+### REST
+
+`/wp/v2/templates` and `/wp/v2/template-parts` follow `WP_REST_Templates_Controller` and its revisions and autosaves controllers. See [REST API](rest-api.md#templates-and-template-parts).
+
 ## Block supports at render time
 
 Some block supports need the active theme's settings, so core applies them as `render_block_data` / `render_block` filters (`themes/supports.ts`), for static blocks (Group, Columns…) as well as dynamic ones:
@@ -273,7 +313,7 @@ With `/%postname%/`-style structures, pages are tried before posts ("verbose pag
 
 ## The template hierarchy
 
-`templateHierarchy()` lists candidates in `template-loader.php`'s order; the first template the theme has wins, `index` is last:
+`templateHierarchy()` lists candidates in `template-loader.php`'s order; the first template that exists wins, as a customised copy or a theme file (see [Templates and template parts](#templates-and-template-parts)), and `index` is last:
 
 | View | Candidates |
 |---|---|
@@ -293,7 +333,7 @@ With `/%postname%/`-style structures, pages are tried before posts ("verbose pag
 `renderPublicPage()`:
 
 1. Runs the main query; a redirect answers immediately.
-2. Picks the template and renders it with `kernel.blocks.render()`, inside a `PageRender` (`frontend/page.ts`) that travels with the render through `AsyncLocalStorage`: the main query (for `core/query` with `inherit`, pagination, titles), unique IDs, the collected CSS and scripts, the request's path and cookies. Singular views render with the post as context.
+2. Picks the template (`locateBlockTemplate()`: a customised copy before the theme's file) and renders it with `kernel.blocks.render()`, inside a `PageRender` (`frontend/page.ts`) that travels with the render through `AsyncLocalStorage`: the main query (for `core/query` with `inherit`, pagination, titles), unique IDs, the collected CSS and scripts, the request's path and cookies. Singular views render with the post as context.
 3. Wraps the result in `<div class="wp-site-blocks">`, adds the skip link (`#wp--skip-link--target` on the first `<main>`), and runs `wp_enqueue_scripts`, `wp_head`, `wp_body_open` and `wp_footer` ([Scripts and styles](scripts-and-styles.md)). Core's own callbacks build the head: `<title>` (`wp_get_document_title()`), robots meta, canonical link, the block library CSS (`/wp-includes/css/dist/block-library/style.min.css`, WordPress 7.1.3's), global styles, variation and block support CSS, the theme's stylesheets (enqueued with `kernel.styles`) and `@font-face` rules. `<body>` gets `get_body_class()`'s classes.
 4. Answers `404` for 404s, with `Cache-Control: public, max-age=0, must-revalidate` (private for logged-in visitors, unlocked protected posts and held-comment previews) and an `ETag`; a matching `If-None-Match` gives 304. The head links the site's feeds (`feed_links()`, `feed_links_extra()`).
 5. Returns the cache tags of everything the render read (`tags`), for `apps/web`'s page cache ([ADR 0008](../adr/0008-public-page-caching.md)).
@@ -302,7 +342,7 @@ With `/%postname%/`-style structures, pages are tried before posts ("verbose pag
 
 | Block | Notes |
 |---|---|
-| `core/template-part` | The theme's `parts/{slug}.html`; the tag comes from the part's area (`header`, `footer`, else `div`). Recursion-guarded. |
+| `core/template-part` | The active theme's customised copy (a `wp_template_part` post), else the theme's `parts/{slug}.html`; the tag comes from the part's area (`header`, `footer`, else `div`). Fires `render_block_core_template_part_post`, `_file` or `_none`. Recursion-guarded. |
 | `core/pattern` | A registered pattern's blocks, rendered in place with the surrounding context. |
 | `core/post-content` | The post's blocks in `<div class="entry-content wp-block-post-content">`; the password form when locked. |
 | `core/query`, `core/post-template` | `inherit: true` shows the main query; other queries run `build_query_vars_from_query_block()` and paginate with `?query-{id}-page=N`. Items get `get_post_class()`. |
@@ -327,7 +367,7 @@ Anything a theme does in `functions.php` doesn't happen; keep styles in `theme.j
 
 ## Not yet
 
-- The site editor: editing templates and parts (`wp_template`, `wp_template_part`). Global styles have the essentials (Appearance → Styles); per-block styles, shadows, borders, the style book and "Additional CSS" in the admin are still to come (the REST API takes them already).
+- The site editor: Studio, the screen that edits templates and parts (storage and REST are in place, see above). `/wp/v2/templates/lookup`, `register_block_template()` and block hooks inside templates. Global styles have the essentials (Appearance → Styles); per-block styles, shadows, borders, the style book and "Additional CSS" in the admin are still to come (the REST API takes them already).
 - Responsive style states, duotone; the image cropper for the site icon (the centre is used).
 - The admin bar, oEmbed.
 - Post formats, sticky-post styling beyond ordering, attachment pages, custom post type archives.

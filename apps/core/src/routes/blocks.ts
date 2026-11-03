@@ -257,7 +257,7 @@ function blockRendererRoutes() {
  * pattern's blocks so the editor doesn't have to; unknown patterns stay,
  * recursive ones are dropped.
  */
-function resolvePatternBlocks(
+export function resolvePatternBlocks(
   blocks: ParsedBlock[],
   patterns: Map<string, BlockPattern>,
   seen = new Set<string>(),

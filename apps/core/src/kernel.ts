@@ -32,6 +32,7 @@ import { registerGlobalStylesHooks, registerGlobalStylesPostType } from './theme
 import { ThemesService } from './themes/service';
 import { registerSiteIdentityHooks, registerSiteIdentitySettings } from './themes/site-identity';
 import { registerThemeSupports } from './themes/supports';
+import { registerTemplatePostTypes } from './themes/templates';
 import { DB_VERSION } from './version';
 
 /**
@@ -105,6 +106,9 @@ export class Kernel {
     registerGlobalStylesHooks(this);
     registerSiteIdentitySettings(this.settings);
     registerSiteIdentityHooks(this);
+    // Templates and template parts (v0.8, Studio): wp_template, wp_template_part,
+    // wp_theme, wp_template_part_area. See docs/architecture/themes.md#templates-and-template-parts.
+    registerTemplatePostTypes(this);
     // Public page caching: content changes announce the cache tags they make stale.
     registerCacheInvalidation(this);
     // Job queue and cron (v0.5): publish_future_post and the daily chores.

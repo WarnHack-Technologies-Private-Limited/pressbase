@@ -97,6 +97,7 @@ export type {} from '../mail/mailer';
 export type {} from '../people/application-passwords';
 export type {} from '../people/password-reset';
 export type {} from '../people/users';
+export type {} from '../routes/templates';
 export type {} from '../routes/users';
 export type {
   DebugField,
@@ -110,6 +111,12 @@ export type {
   SiteStatusTests,
 } from '../site-health/types';
 export type { ThemeSummary, UploadedThemeData } from '../themes/install';
+export type {
+  BlockTemplate,
+  BlockTemplatesQuery,
+  TemplatePartArea,
+  TemplateType,
+} from '../themes/templates';
 export type {
   PageParent,
   PluginPageArgs,
