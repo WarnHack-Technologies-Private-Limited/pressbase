@@ -960,7 +960,7 @@ msgstr ""
 msgid "Skip to the page"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:731
+#: apps/admin/src/components/studio/studio.tsx:749
 msgid "every page"
 msgstr ""
 

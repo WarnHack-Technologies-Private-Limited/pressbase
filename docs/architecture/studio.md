@@ -132,6 +132,10 @@ Studio never saves to the live site on its own. Until #31 saves every edit to a 
 - Under 900px the inspector becomes a drawer opened by *Settings* in the top bar (Escape closes it), panels slide over the canvas, and the device switch and Ask AI are hidden. Under 600px the rail shows icons only and the canvas uses the whole width.
 - Animations stop under `prefers-reduced-motion`.
 
+| Dark | Mobile |
+| --- | --- |
+| ![Studio in dark mode, with the Pages panel open](../assets/screenshots/studio-dark.png) | ![Studio on a phone](../assets/screenshots/studio-mobile.png) |
+
 ## Where the next issues plug in
 
 | Issue | Where |
