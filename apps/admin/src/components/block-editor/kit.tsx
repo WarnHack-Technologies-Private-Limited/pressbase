@@ -28,7 +28,7 @@ import {
   type EditorStylesheet,
   UI_STYLESHEETS,
 } from './assets';
-import { allowedBlockTypes } from './blocks';
+import { allowedBlockTypes, type EditorContext } from './blocks';
 import { type EditorFeatures, loadEditorFeatures, NO_FEATURES, toEditorPattern } from './features';
 import { fetchLinkSuggestions } from './link-suggestions';
 import {
@@ -147,17 +147,20 @@ export function editorSettings({
   canUnfilteredHtml,
   postId,
   assets,
+  context = 'post',
 }: {
   features: EditorFeatures;
   canUnfilteredHtml: boolean;
   postId?: number;
   assets: ResolvedAssets;
+  /** Studio also offers the site-editing blocks (blocks.ts STUDIO_BLOCKS). */
+  context?: EditorContext;
 }) {
   const names = getBlockTypes().map((type) => type.name);
   return {
     alignWide: true,
     bodyPlaceholder: __('Type / to choose a block'),
-    allowedBlockTypes: allowedBlockTypes(names, features),
+    allowedBlockTypes: allowedBlockTypes(names, features, context),
     __experimentalBlockPatterns: features.patterns.map(toEditorPattern),
     __experimentalBlockPatternCategories: features.patternCategories,
     __experimentalReusableBlocks: features.syncedPatterns ?? [],

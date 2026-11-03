@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { allowedBlockTypes, countWords, readingMinutes, unavailableReason } from './blocks';
+import {
+  allowedBlockTypes,
+  countWords,
+  readingMinutes,
+  STUDIO_BLOCKS,
+  UNSUPPORTED_BLOCKS,
+  unavailableReason,
+} from './blocks';
 import { NO_FEATURES, namespaceListed, toEditorPattern } from './features';
 
 const REGISTERED = [
@@ -85,6 +92,56 @@ describe('allowedBlockTypes', () => {
     expect(unavailableReason('core/latest-posts', NO_FEATURES)).toBe('needs the block engine');
     expect(unavailableReason('core/freeform', NO_FEATURES)).toMatch(/not supported/);
     expect(unavailableReason('core/paragraph', NO_FEATURES)).toBeNull();
+  });
+});
+
+describe('site-editing blocks (Studio only)', () => {
+  const SITE = [
+    'core/template-part',
+    'core/post-content',
+    'core/site-logo',
+    'core/site-title',
+    'core/site-tagline',
+  ];
+
+  it('keeps them out of the post editor', () => {
+    for (const name of SITE) {
+      expect(unavailableReason(name, NO_FEATURES), name).toBe(
+        'not supported in the post editor yet',
+      );
+      expect(unavailableReason(name, NO_FEATURES, 'post'), name).toMatch(/not supported/);
+    }
+    expect(allowedBlockTypes([...SITE, 'core/paragraph'], NO_FEATURES)).toEqual(['core/paragraph']);
+  });
+
+  it('offers them in Studio', () => {
+    for (const name of SITE)
+      expect(unavailableReason(name, NO_FEATURES, 'studio'), name).toBeNull();
+    expect(allowedBlockTypes([...SITE, 'core/paragraph'], NO_FEATURES, 'studio')).toEqual([
+      ...SITE,
+      'core/paragraph',
+    ]);
+  });
+
+  it('only lifts blocks the post editor leaves out, and nothing else', () => {
+    for (const name of STUDIO_BLOCKS) expect(UNSUPPORTED_BLOCKS.has(name), name).toBe(true);
+    for (const name of [
+      'core/freeform',
+      'core/footnotes',
+      'core/pattern',
+      'core/navigation-overlay-close',
+    ]) {
+      expect(unavailableReason(name, NO_FEATURES, 'studio'), name).toBe(
+        'not supported in Studio yet',
+      );
+    }
+    // Studio still needs the server for dynamic and navigation blocks.
+    expect(unavailableReason('core/latest-posts', NO_FEATURES, 'studio')).toBe(
+      'needs the block engine',
+    );
+    expect(unavailableReason('core/navigation', NO_FEATURES, 'studio')).toBe(
+      'needs navigation menus',
+    );
   });
 });
 

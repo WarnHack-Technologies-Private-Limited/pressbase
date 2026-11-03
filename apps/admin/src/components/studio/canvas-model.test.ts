@@ -6,6 +6,9 @@ import {
   editingModes,
   findRegions,
   pageBlocks,
+  partOf,
+  regionBlocks,
+  withoutNavigationRef,
 } from './canvas-model';
 
 let next = 0;
@@ -78,13 +81,13 @@ describe('findRegions and editingModes', () => {
     ]);
   });
 
-  it('locks the template and the parts’ blocks, and opens the page’s content', () => {
+  it('locks the template, and the parts’ blocks for people who can’t change the design', () => {
     const title = block('core/site-title');
     const nav = block('core/navigation');
     const canvas = composeCanvas(pageTemplate(), parts({ header: [title, nav] }), []);
     const [header, main] = canvas as [CanvasBlock, CanvasBlock];
     const postContent = main.innerBlocks[1] as CanvasBlock;
-    const modes = new Map(editingModes(canvas));
+    const modes = new Map(editingModes(canvas, { partsEditable: false }));
     expect(modes.get('')).toBe('disabled');
     expect(modes.get(header.clientId)).toBe('default');
     expect(modes.get(title.clientId)).toBe('disabled');
@@ -94,10 +97,11 @@ describe('findRegions and editingModes', () => {
     expect(modes.has(main.clientId)).toBe(false);
   });
 
-  it('leaves the parts’ blocks to inherit once parts are editable (#30)', () => {
+  it('leaves the parts’ blocks to inherit when parts are editable, the default (#30)', () => {
     const title = block('core/site-title');
     const canvas = composeCanvas(pageTemplate(), parts({ header: [title] }), []);
-    const modes = new Map(editingModes(canvas, { partsEditable: true }));
+    const modes = new Map(editingModes(canvas));
+    expect(modes).toEqual(new Map(editingModes(canvas, { partsEditable: true })));
     expect(modes.has(title.clientId)).toBe(false);
     expect(modes.get(canvas[0]?.clientId as string)).toBe('default');
   });
@@ -110,9 +114,49 @@ describe('findRegions and editingModes', () => {
       null,
     );
     const credits = canvas[0]?.innerBlocks[0]?.innerBlocks[0] as CanvasBlock;
-    const modes = new Map(editingModes(canvas));
+    const modes = new Map(editingModes(canvas, { partsEditable: false }));
     expect(modes.get(credits.clientId)).toBe('default');
     expect(modes.get(inner.clientId)).toBe('disabled');
+  });
+});
+
+describe('regionBlocks, partOf and withoutNavigationRef', () => {
+  it('maps each region to what it saves to, the first copy of a part only', () => {
+    const header = [block('core/site-title')];
+    const page = [block('core/paragraph', { content: 'Hello' })];
+    const canvas = composeCanvas(
+      [...pageTemplate(), part('header')],
+      parts({ header, footer: [block('core/group', {}, [part('credits')])], credits: [] }),
+      page,
+    );
+    const regions = regionBlocks(canvas);
+    expect(regions.content).toEqual(page);
+    expect([...regions.parts.keys()]).toEqual(['header', 'footer', 'credits']);
+    expect(regions.parts.get('header')).toEqual({ clientId: canvas[0]?.clientId, blocks: header });
+  });
+
+  it('finds the part a block sits in, but not through the page', () => {
+    const header = part('header');
+    const group = block('core/group');
+    const paragraph = block('core/paragraph');
+    expect(partOf([header, group, paragraph])).toEqual({
+      clientId: header.clientId,
+      slug: 'header',
+    });
+    expect(partOf([header])).toEqual({ clientId: header.clientId, slug: 'header' });
+    expect(partOf([block('core/group'), content(), paragraph])).toBeNull();
+    expect(partOf([])).toBeNull();
+  });
+
+  it('drops only the fallback menu’s ref', () => {
+    const fallback = block('core/navigation', { ref: 7, overlayMenu: 'mobile' });
+    const chosen = block('core/navigation', { ref: 9 });
+    const tree = [block('core/group', {}, [fallback, chosen])];
+    const out = withoutNavigationRef(tree, 7);
+    expect(out[0]?.innerBlocks[0]?.attributes).toEqual({ overlayMenu: 'mobile' });
+    expect(out[0]?.innerBlocks[1]).toBe(chosen);
+    // Nothing to drop: the same objects come back.
+    expect(withoutNavigationRef([chosen], 7)[0]).toBe(chosen);
   });
 });
 

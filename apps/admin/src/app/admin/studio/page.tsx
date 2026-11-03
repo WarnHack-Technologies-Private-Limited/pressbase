@@ -8,7 +8,7 @@ import { coreGet, type Me, type SiteIndex } from '@/lib/core';
 
 export const metadata: Metadata = { title: 'Studio' };
 
-type Props = { searchParams: Promise<{ page?: string }> };
+type Props = { searchParams: Promise<{ page?: string; changeset_uuid?: string }> };
 
 /** The pages Studio can open: every status an editor works with, as the page picker lists them. */
 const PAGES =
@@ -24,7 +24,7 @@ export default async function StudioScreen({ searchParams }: Props) {
   const [me, site, reading, pages] = await Promise.all([
     coreGet<Me>('/wp/v2/users/me?context=edit'),
     coreGet<SiteIndex>('/'),
-    coreGet<ReadingSettings>('/wp/v2/settings'),
+    coreGet<ReadingSettings & { timezone?: string }>('/wp/v2/settings'),
     coreGet<StudioPage[]>(PAGES),
   ]);
   if (me.status === 401) redirect('/login');
@@ -47,7 +47,8 @@ export default async function StudioScreen({ searchParams }: Props) {
     );
   }
 
-  const requested = Number((await searchParams).page) || undefined;
+  const query = await searchParams;
+  const requested = Number(query.page) || undefined;
   return (
     <Studio
       site={{ name: site.data.name, url: site.data.url }}
@@ -55,8 +56,10 @@ export default async function StudioScreen({ searchParams }: Props) {
         show_on_front: reading.status === 200 ? reading.data.show_on_front : 'posts',
         page_on_front: reading.status === 200 ? Number(reading.data.page_on_front) || 0 : 0,
       }}
+      timeZone={reading.status === 200 ? String(reading.data.timezone ?? '') : ''}
       pages={pages.status === 200 ? pages.data : []}
       requestedPage={requested}
+      requestedChangeset={query.changeset_uuid}
       canUnfilteredHtml={Boolean(me.data.capabilities.unfiltered_html)}
     />
   );

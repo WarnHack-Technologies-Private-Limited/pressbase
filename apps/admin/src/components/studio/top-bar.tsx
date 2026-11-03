@@ -1,7 +1,9 @@
 'use client';
 
 import {
+  AlertCircle,
   ArrowLeft,
+  Check,
   ChevronDown,
   Eye,
   Monitor,
@@ -12,12 +14,14 @@ import {
   Tablet,
   Undo2,
 } from 'lucide-react';
-import { useId } from 'react';
+import { type ReactNode, useId } from 'react';
 import { useI18n } from '@/lib/i18n/context';
 import { Button } from '../ui/button';
 import { DEVICES, type Device } from './layout-model';
+import { type PendingChange, PublishButton } from './publish-panel';
 import { type CanvasTarget, pageTitle, pageTree, type StudioPage } from './site-model';
 import styles from './studio.module.css';
+import type { DraftStatus } from './use-draft';
 
 const DEVICE_ICONS = { desktop: Monitor, tablet: Tablet, mobile: Smartphone } as const;
 
@@ -35,11 +39,15 @@ export interface TopBarProps {
   onUndo: () => void;
   onRedo: () => void;
   onAskAi: () => void;
-  /** Preview and Publish: what they can do now. */
-  canPublish: boolean;
-  busy: 'preview' | 'publish' | null;
+  /** The draft: what Publish lists, and whether the latest edits are saved in it. */
+  changes: PendingChange[];
+  draftStatus: DraftStatus;
+  onRetrySave: () => void;
+  busy: 'preview' | 'publish' | 'discard' | 'revert' | null;
   onPreview: () => void;
-  onPublish: () => void;
+  onPublish: () => Promise<boolean>;
+  onRevert: (key: string) => void;
+  onDiscardAll: () => void;
   /** Narrow screens: the inspector is a drawer this button opens. */
   inspectorOpen: boolean;
   onToggleInspector: () => void;
@@ -51,8 +59,8 @@ const targetValue = (target: CanvasTarget) =>
 
 /**
  * Studio's top bar: back to the admin, the page being edited, the preview
- * size, undo and redo, Ask AI, Preview and Publish. Publish N with the list
- * of changes, and Discard, are #31; Ask AI is #63.
+ * size, undo and redo, Ask AI (#63), whether the draft is saved, Preview,
+ * and Publish N with the list of changes and Discard all (#31).
  */
 export function TopBar(props: TopBarProps) {
   const { __, sprintf } = useI18n();
@@ -166,6 +174,7 @@ export function TopBar(props: TopBarProps) {
         <span className={styles.collapsible}>{__('Ask AI', 'pressbase-admin')}</span>
         <span className={styles.soon}>{__('Coming soon', 'pressbase-admin')}</span>
       </Button>
+      <SaveStatus status={props.draftStatus} onRetry={props.onRetrySave} />
       <Button
         size="sm"
         variant="secondary"
@@ -177,17 +186,14 @@ export function TopBar(props: TopBarProps) {
       >
         <span className={styles.collapsible}>{__('Preview', 'pressbase-admin')}</span>
       </Button>
-      <Button
-        size="sm"
-        variant="primary"
-        loading={props.busy === 'publish'}
-        aria-disabled={!props.canPublish}
+      <PublishButton
+        changes={props.changes}
+        busy={props.busy === 'preview' ? null : props.busy}
         disabled={props.disabled}
-        title={props.canPublish ? undefined : __('No changes to publish yet', 'pressbase-admin')}
-        onClick={() => props.canPublish && props.onPublish()}
-      >
-        {__('Publish', 'pressbase-admin')}
-      </Button>
+        onPublish={props.onPublish}
+        onRevert={props.onRevert}
+        onDiscardAll={props.onDiscardAll}
+      />
       <Button
         size="sm"
         variant="ghost"
@@ -199,5 +205,33 @@ export function TopBar(props: TopBarProps) {
         onClick={props.onToggleInspector}
       />
     </header>
+  );
+}
+
+/** "Saving…", "Draft saved", or what went wrong with a way to try again. Announced politely. */
+function SaveStatus({ status, onRetry }: { status: DraftStatus; onRetry: () => void }) {
+  const { __ } = useI18n();
+  let content: ReactNode = null;
+  if (status === 'pending' || status === 'saving') {
+    content = __('Saving…', 'pressbase-admin');
+  } else if (status === 'saved') {
+    content = (
+      <>
+        <Check size={14} aria-hidden="true" />
+        {__('Draft saved', 'pressbase-admin')}
+      </>
+    );
+  } else if (status === 'error') {
+    content = (
+      <button type="button" className={styles.saveRetry} onClick={onRetry}>
+        <AlertCircle size={14} aria-hidden="true" />
+        {__('Couldn’t save. Try again', 'pressbase-admin')}
+      </button>
+    );
+  }
+  return (
+    <span className={styles.saveStatus} role="status" data-status={status}>
+      {content}
+    </span>
   );
 }

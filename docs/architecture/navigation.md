@@ -49,7 +49,7 @@ Then `block_core_navigation_render_fallback` and `block_core_navigation_render_i
 
 ### Why an option
 
-Block themes have no menu locations. In WordPress you'd point the header at a menu by editing the header template part in the site editor, which stores a customised copy of the part (`wp_template_part`) with a `ref`. Pressbase doesn't customise templates yet, so the choice is recorded where the renderer already looks when a theme's block has no `ref`: the fallback. That keeps theme files untouched, works for any block theme whose header uses a ref-less Navigation block, and is easy to undo (set it to 0 and the newest menu shows again). Once the site editor arrives, editing the header part can write a real `ref`, and the option keeps working for themes that don't.
+Block themes have no menu locations. In WordPress you'd point the header at a menu by editing the header template part in the site editor, which stores a customised copy of the part (`wp_template_part`) with a `ref`. Pressbase doesn't customise templates yet, so the choice is recorded where the renderer already looks when a theme's block has no `ref`: the fallback. That keeps theme files untouched, works for any block theme whose header uses a ref-less Navigation block, and is easy to undo (set it to 0 and the newest menu shows again). In Studio, editing the header part writes a real `ref`: the Navigation block fills in the menu it shows, and once anything in the header is edited, the part is saved with it (Studio ignores that `ref` on its own, so opening the header changes nothing). Choosing another menu in the block's settings writes its `ref` too. The option keeps working for themes and headers that have none.
 
 The `GET /wp-block-editor/v1/navigation-fallback` endpoint returns the same menu, so a Navigation block inserted in the block editor without a menu picks the header's menu, as it would in WordPress.
 
@@ -104,7 +104,7 @@ The tree model and its operations are pure functions in `apps/admin/src/lib/menu
 
 ## The Navigation block in the block editor
 
-`core/navigation`, `navigation-link`, `navigation-submenu`, `home-link`, `page-list` and `page-list-item` are offered once the `navigation` feature probe finds `/wp/v2/navigation` (and, being dynamic, once core reports them in `/wp/v2/block-types`). The block's own menu selector lists menus from `/wp/v2/navigation`, checks permissions with `OPTIONS` (the `Allow` header), and a new block without a menu starts from `/wp-block-editor/v1/navigation-fallback`, which is the header's menu. `core/navigation-overlay-close` (custom overlays) stays hidden. When the post is saved, menus the block edited are saved too (`BlockEditorHandle.saveMenus()`).
+`core/navigation`, `navigation-link`, `navigation-submenu`, `home-link`, `page-list` and `page-list-item` are offered once the `navigation` feature probe finds `/wp/v2/navigation` (and, being dynamic, once core reports them in `/wp/v2/block-types`). The block's own menu selector lists menus from `/wp/v2/navigation`, checks permissions with `OPTIONS` (the `Allow` header), and a new block without a menu starts from `/wp-block-editor/v1/navigation-fallback`, which is the header's menu. `core/navigation-overlay-close` (custom overlays) stays hidden. When the post is saved, menus the block edited are saved too (`BlockEditorHandle.saveMenus()`). In Studio they aren't saved: menu edits go into the user's draft as `wp_navigation:{id}` entries, and go live with Publish ([Studio](studio.md#what-the-canvas-saves)).
 
 ## Not yet
 

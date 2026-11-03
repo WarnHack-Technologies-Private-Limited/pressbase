@@ -9,16 +9,16 @@ import {
 } from '@wordpress/block-editor';
 import { store as blocksStore } from '@wordpress/blocks';
 import { PanelBody, __experimentalUseSlotFills as useSlotFills } from '@wordpress/components';
-import { useSelect } from '@wordpress/data';
+import { useDispatch, useSelect } from '@wordpress/data';
 import { __ as wp__ } from '@wordpress/i18n';
-import { Lock, X } from 'lucide-react';
+import { LayoutTemplate, RotateCcw, X } from 'lucide-react';
 import { type KeyboardEvent as ReactKeyboardEvent, type ReactNode, useId, useRef } from 'react';
 import { useI18n } from '@/lib/i18n/context';
 import { lightScope } from '../block-editor';
 import { Button } from '../ui/button';
 import { TEMPLATE_PART } from './canvas-model';
 import { INSPECTOR_TABS, type InspectorTab, type InspectorTabId } from './layout-model';
-import type { PartInfo } from './regions';
+import { type PartInfo, useSelectedPart } from './regions';
 import styles from './studio.module.css';
 
 export interface PageSummary {
@@ -40,6 +40,9 @@ interface InspectorProps {
   parts: ReadonlyMap<string, PartInfo>;
   tab: InspectorTabId;
   onTab: (tab: InspectorTabId) => void;
+  /** Whether a part can go back to the theme's design, and doing it. */
+  canReset: (slug: string) => boolean;
+  onReset: (slug: string) => void;
   /** Narrow screens: the inspector is a drawer with a close button. */
   onClose?: () => void;
 }
@@ -54,8 +57,8 @@ const select = (s: unknown) =>
 /**
  * The inspector: what's selected and its settings, in Content, Style and
  * Layout tabs (layout-model.ts lists which WordPress control groups each tab
- * holds). With nothing selected it describes the page; a template part
- * says what it is and when it becomes editable (#30).
+ * holds). With nothing selected it describes the page; a template part says
+ * that it's on every page, with Reset to theme for a customised one (#30).
  */
 export function Inspector(props: InspectorProps) {
   const { __ } = useI18n();
@@ -72,12 +75,34 @@ export function Inspector(props: InspectorProps) {
     [clientId, name],
   );
 
+  const inPart = useSelectedPart();
+  const { selectBlock } = useDispatch(blockEditorStore) as unknown as {
+    selectBlock: (clientId: string) => void;
+  };
+
   let body: ReactNode;
   if (!clientId) body = <PageInfo page={props.page} />;
   else if (name === TEMPLATE_PART) {
-    body = <PartInfoView info={props.parts.get(partSlug)} slug={partSlug} />;
+    body = (
+      <PartInfoView
+        info={props.parts.get(partSlug)}
+        slug={partSlug}
+        canReset={props.canReset(partSlug)}
+        onReset={() => props.onReset(partSlug)}
+      />
+    );
   } else {
-    body = <BlockSettings clientId={clientId} tab={props.tab} onTab={props.onTab} />;
+    body = (
+      <>
+        {inPart && (
+          <PartNote
+            title={props.parts.get(inPart.slug)?.title ?? inPart.slug}
+            onSelectPart={() => selectBlock(inPart.clientId)}
+          />
+        )}
+        <BlockSettings clientId={clientId} tab={props.tab} onTab={props.onTab} />
+      </>
+    );
   }
 
   return (
@@ -156,21 +181,64 @@ function PageInfo({ page }: { page: PageSummary }) {
   );
 }
 
-function PartInfoView({ info, slug }: { info?: PartInfo; slug: string }) {
+function PartInfoView({
+  info,
+  slug,
+  canReset,
+  onReset,
+}: {
+  info?: PartInfo;
+  slug: string;
+  canReset: boolean;
+  onReset: () => void;
+}) {
   const { __ } = useI18n();
   return (
     <div className={styles.inspectorIntro}>
-      <p className={styles.eyebrow}>{__('Shown on every page', 'pressbase-admin')}</p>
+      <p className={styles.eyebrow}>{__('On all pages', 'pressbase-admin')}</p>
       <h2 className={styles.inspectorTitle}>{info?.title || slug}</h2>
       <p className={styles.lockNote}>
-        <Lock size={16} aria-hidden="true" />
+        <LayoutTemplate size={16} aria-hidden="true" />
         <span>
           {__(
-            'Editing the header and footer here arrives with #30. Until then they show exactly as visitors see them, and changes to this page leave them as they are.',
+            'This part of your design is on every page. Click any text in it to change it; your changes show on every page once you publish.',
             'pressbase-admin',
           )}
         </span>
       </p>
+      {canReset && (
+        <div className={styles.resetBox}>
+          <p className={styles.muted}>
+            {info?.customised
+              ? __('You’ve changed this from the theme’s design.', 'pressbase-admin')
+              : __('Your draft changes this.', 'pressbase-admin')}
+          </p>
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={<RotateCcw size={16} aria-hidden="true" />}
+            onClick={onReset}
+          >
+            {__('Reset to theme', 'pressbase-admin')}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Above a block's settings when it sits in a template part. */
+function PartNote({ title, onSelectPart }: { title: string; onSelectPart: () => void }) {
+  const { __, sprintf } = useI18n();
+  return (
+    <div className={styles.partNote}>
+      <LayoutTemplate size={14} aria-hidden="true" />
+      <span>
+        {sprintf(__('In the %s: changes show on every page.', 'pressbase-admin'), title)}{' '}
+        <button type="button" className={styles.partNoteLink} onClick={onSelectPart}>
+          {sprintf(__('Select the whole %s', 'pressbase-admin'), title)}
+        </button>
+      </span>
     </div>
   );
 }

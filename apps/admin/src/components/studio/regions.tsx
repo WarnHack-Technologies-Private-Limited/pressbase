@@ -1,10 +1,21 @@
 'use client';
 
-import { useBlockProps, useInnerBlocksProps } from '@wordpress/block-editor';
+import {
+  store as blockEditorStore,
+  useBlockProps,
+  useInnerBlocksProps,
+} from '@wordpress/block-editor';
 import { createHigherOrderComponent } from '@wordpress/compose';
+import { useSelect } from '@wordpress/data';
 import { addFilter } from '@wordpress/hooks';
-import { type ComponentType, createContext, type ElementType, useContext } from 'react';
-import { POST_CONTENT, TEMPLATE_PART } from './canvas-model';
+import {
+  type ComponentType,
+  createContext,
+  type ElementType,
+  type ReactNode,
+  useContext,
+} from 'react';
+import { POST_CONTENT, partOf, TEMPLATE_PART } from './canvas-model';
 
 /**
  * How `core/template-part` and `core/post-content` edit inside Studio.
@@ -21,12 +32,14 @@ import { POST_CONTENT, TEMPLATE_PART } from './canvas-model';
 export interface PartInfo {
   title: string;
   area: string;
+  /** Visitors see a customised copy of the theme's part ("Reset to theme" goes back). */
+  customised?: boolean;
 }
 
 export interface StudioRegionsValue {
   /** The template parts, by slug, from /wp/v2/template-parts. */
   parts: ReadonlyMap<string, PartInfo>;
-  /** "Header · every page", for the outline label and screen readers. */
+  /** "Header · all pages", for the outline label and screen readers. */
   partLabel: (slug: string) => string;
 }
 
@@ -53,8 +66,18 @@ function TemplatePartEdit({ attributes, regions }: EditProps & { regions: Studio
     className: 'pressbase-studio-part',
     'data-studio-label': regions.partLabel(slug),
   });
-  const innerBlocksProps = useInnerBlocksProps(blockProps, { renderAppender: false });
-  return <TagName {...innerBlocksProps} />;
+  const { children, ...innerBlocksProps } = useInnerBlocksProps(blockProps, {
+    renderAppender: false,
+  }) as { children?: ReactNode; [prop: string]: unknown };
+  return (
+    <TagName {...innerBlocksProps}>
+      {/* Clicking the label selects the part as a whole ("Header · all pages"). */}
+      <span className="pressbase-studio-part__label" aria-hidden="true" contentEditable={false}>
+        {regions.partLabel(slug)}
+      </span>
+      {children}
+    </TagName>
+  );
 }
 
 function PostContentEdit({ attributes }: EditProps) {
@@ -82,4 +105,29 @@ export function registerStudioRegions(): void {
   if (registered) return;
   registered = true;
   addFilter('editor.BlockEdit', 'pressbase/studio/regions', withStudioRegions);
+}
+
+/**
+ * The template part holding the selection (the part itself, or a block in
+ * it), or null. Inside Studio's BlockEditorProvider.
+ */
+export function useSelectedPart(): { clientId: string; slug: string } | null {
+  const json = useSelect((select) => {
+    const editor = select(blockEditorStore) as unknown as {
+      getSelectedBlockClientId: () => string | null;
+      getBlockParents: (id: string) => string[];
+      getBlockName: (id: string) => string | null;
+      getBlockAttributes: (id: string) => Record<string, unknown> | null;
+    };
+    const selected = editor.getSelectedBlockClientId();
+    if (!selected) return '';
+    const chain = [...editor.getBlockParents(selected), selected].map((clientId) => ({
+      clientId,
+      name: editor.getBlockName(clientId) ?? '',
+      attributes: editor.getBlockAttributes(clientId) ?? {},
+    }));
+    const part = partOf(chain);
+    return part ? JSON.stringify(part) : '';
+  }, []);
+  return json ? (JSON.parse(json) as { clientId: string; slug: string }) : null;
 }

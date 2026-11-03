@@ -4,7 +4,8 @@ import { logInAsAdmin, unique } from './helpers';
 /**
  * Studio, the site editor (#28): the page in the theme with its header and
  * footer, inline editing with undo and redo, the keyboard, and Publish
- * through a changeset.
+ * through a changeset. Saving, Preview, Discard and the header and footer
+ * are in studio-saving.spec.ts (#30, #31).
  */
 
 const writeHeaders = { 'x-pressbase-request': '1' };
@@ -28,6 +29,14 @@ test('Studio shows a page in the theme and edits it inline, with undo, redo and 
   await logInAsAdmin(page);
   const title = unique('Opening hours');
   const id = await createPage(page, title, 'Open from seven every morning.');
+
+  // No draft left over from other tests: Publish counts this one's change only.
+  const open = await page.request.get('/wp-json/pressbase/v1/changesets');
+  for (const { uuid } of (await open.json()) as { uuid: string }[]) {
+    await page.request.delete(`/wp-json/pressbase/v1/changesets/${uuid}`, {
+      headers: writeHeaders,
+    });
+  }
 
   try {
     // Appearance → Editor, as in WordPress, leads to Studio.
@@ -64,32 +73,43 @@ test('Studio shows a page in the theme and edits it inline, with undo, redo and 
     const breadcrumb = page.getByRole('navigation', { name: 'Breadcrumb' });
     await expect(breadcrumb).toContainText(title);
     await expect(breadcrumb).toContainText('Paragraph');
-    const publish = page.getByRole('button', { name: 'Publish', exact: true });
-    await expect(publish).not.toHaveAttribute('aria-disabled', 'true');
+    // The edit is saved to the draft: Publish counts it.
+    const publish = page.getByRole('button', { name: 'Publish, 1 change' });
+    await expect(publish).toBeVisible();
 
-    // Undo and redo, from the top bar and the keyboard.
+    // Undo and redo, from the top bar and the keyboard. Back to the start: nothing to publish.
     await page.getByRole('button', { name: 'Undo' }).click();
     await expect(canvas.getByText('Open from seven every morning.', { exact: true })).toBeVisible();
-    await expect(publish).toHaveAttribute('aria-disabled', 'true');
+    await expect(page.getByRole('button', { name: 'Publish', exact: true })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
     await page.keyboard.press('ControlOrMeta+Shift+z');
     await expect(
       canvas.getByText('Open from seven every morning. Closed on Mondays.'),
     ).toBeVisible();
 
-    // The header is shown, locked, until #30.
-    await canvas.locator('header.wp-block-template-part').click({ position: { x: 5, y: 5 } });
+    // The header can be selected as a whole, and says it's on every page.
+    await canvas.locator('header.wp-block-template-part').hover({ position: { x: 300, y: 10 } });
+    await canvas.locator('header .pressbase-studio-part__label').click();
     await expect(page.getByRole('complementary', { name: 'Settings' })).toContainText(
-      'arrives with #30',
+      'On all pages',
     );
+    await expect(breadcrumb).toContainText('Header');
 
-    // Publish goes through a changeset; nothing was saved before.
+    // Publish goes through a changeset; nothing was saved to the page before.
+    await expect(page.getByText('Draft saved')).toBeVisible();
     const before = await page.request.get(`/wp-json/wp/v2/pages/${id}?context=edit`);
     expect((await before.json()).content.raw).not.toContain('Closed on Mondays');
     await publish.click();
+    await page.getByRole('button', { name: 'Publish 1 change' }).click();
     await expect(page.getByText('Published. Your changes are live.')).toBeVisible();
     const after = await page.request.get(`/wp-json/wp/v2/pages/${id}?context=edit`);
     expect((await after.json()).content.raw).toContain('Closed on Mondays.');
-    await expect(publish).toHaveAttribute('aria-disabled', 'true');
+    await expect(page.getByRole('button', { name: 'Publish', exact: true })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
   } finally {
     await page.request.delete(`/wp-json/wp/v2/pages/${id}?force=true`, { headers: writeHeaders });
   }
@@ -111,7 +131,7 @@ test('Studio works from the keyboard: skip to the page, move with arrows, type',
     await page.keyboard.press('Enter');
     await page.keyboard.press('Tab');
     // The header is the first block; the page's paragraph is reached with the arrow keys.
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 40; i++) {
       const crumbs = await page.getByRole('navigation', { name: 'Breadcrumb' }).textContent();
       if (crumbs?.includes('Paragraph')) break;
       await page.keyboard.press('ArrowDown');
