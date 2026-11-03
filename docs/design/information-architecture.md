@@ -8,9 +8,11 @@ Pressbase keeps WordPress's menu **order**, so muscle memory transfers, and adds
 | ------- | ----------------------------- | --------------------------------------------------------------- |
 | —       | Dashboard                     | `read`                                                          |
 | Content | Posts, Pages, Media, Comments | `edit_posts`, `edit_pages`, `upload_files`, `moderate_comments` |
-| Design  | Appearance                    | `switch_themes`                                                 |
+| Design  | Studio, Appearance            | `edit_theme_options`, `switch_themes`                           |
 | Extend  | Plugins                       | `activate_plugins`                                              |
 | Manage  | Users, Tools, Settings        | `list_users`, `edit_posts`, `manage_options`                    |
+
+Studio is WordPress's *Appearance → Editor* (the site editor), promoted to its own item because it's where people build their site. It opens full-screen, without the admin's sidebar; Appearance → Editor leads there too.
 
 WordPress puts Media between Posts and Pages. Pressbase puts it after Pages, so the two _writing_ destinations sit together. This is the only reordering, and it's deliberate.
 
@@ -33,6 +35,7 @@ Items the user can't access are **hidden, not disabled**, as in WordPress. Items
 | `/lost-password`, `/reset-password?key=…&login=…` | Forgot your password, choose a new one (linked from `/login`) |
 | `/admin/comments`        | Comments. Filters in the URL: `?comment_status=moderated&s=spam&paged=2`; `?c=12` opens one comment for editing (themes' "Edit" links) |
 | `/admin/appearance`      | Themes (WordPress's `themes.php`)                                  |
+| `/admin/studio`          | Studio, the full-screen site editor (`edit_theme_options`). `?page={id}` opens a page; without it, the home page. `/admin/appearance/editor` redirects here. See [Studio](../architecture/studio.md) |
 | `/admin/appearance/styles` | Styles: style variations, colours, type and layout with a live preview, and revisions (`edit_theme_options`). Reached from the Appearance tabs and the active theme's *Edit styles* button |
 | `/admin/{section}`       | Sections that aren't built yet show what's coming                  |
 | `/admin/settings/{plugin}[/{page}]`, `/admin/tools/{plugin}[/{page}]`, `/admin/plugin/{plugin}[/{page}]` | Plugins' pages: under Settings (after core's screens, set apart by a rule), listed on Tools (which stops showing "coming soon" once it has one), or top level in the Extend group. See [Plugins](../architecture/plugins.md#admin-pages) |
@@ -55,7 +58,7 @@ Settings follow WordPress's screens one to one: General, Writing, Reading, Discu
 
 ## Appearance
 
-Appearance has tabs, like Posts: **Themes** (`switch_themes`), **Styles** and **Menus** (both `edit_theme_options`). Themes is where you choose a theme; Styles is where you tune the one you have; Menus is WordPress's *Appearance → Menus*, rebuilt for block themes: it edits `wp_navigation` menus and chooses the one the theme's header shows, without opening a site editor. See [Navigation](../architecture/navigation.md).
+Appearance has tabs, like Posts: **Themes** (`switch_themes`), **Editor**, **Styles** and **Menus** (all three `edit_theme_options`). Editor opens Studio, full-screen. Themes is where you choose a theme; Styles is where you tune the one you have; Menus is WordPress's *Appearance → Menus*, rebuilt for block themes: it edits `wp_navigation` menus and chooses the one the theme's header shows, without opening a site editor. See [Navigation](../architecture/navigation.md).
 
 **Styles** answers "how does my site look?" in WordPress's own vocabulary (style variations, palette, typography, layout), but on one screen instead of the site editor's drill-down panels: a controls panel beside a preview of the real public site. The panel has five tabs, ordered from the broadest choice to the finest: _Styles_ (complete looks), _Colours_, _Type_, _Layout_, _History_. Nothing goes live until **Save**; _Discard_ returns to what's live, _Reset to theme defaults_ to the theme's own styles, and _History_ brings back any saved version (into the preview first, then Save).
 
