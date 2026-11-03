@@ -96,6 +96,7 @@ const revisionsQuery = z.object({
 });
 
 type ContextName = 'view' | 'edit' | 'embed';
+type RestErrorResponse = ReturnType<typeof restError>;
 
 /** _sanitize_template_id(): `theme/slug` becomes `theme//slug`. */
 export function sanitizeTemplateId(id: string): string {
@@ -314,13 +315,18 @@ export function templatesRoutes(kernel: Kernel) {
     });
   };
 
-  const json = async (c: Context<AppEnv>): Promise<Record<string, unknown> | Response> => {
+  /** The JSON body (empty when there is none), or the error to answer with. */
+  const json = async (
+    c: Context<AppEnv>,
+  ): Promise<{ body: Record<string, unknown> } | { error: RestErrorResponse }> => {
     const body = await readJson(c);
-    if (body === undefined) return {};
+    if (body === undefined) return { body: {} };
     if (!body || typeof body !== 'object' || Array.isArray(body)) {
-      return restError(c, 400, 'rest_invalid_json', 'The request body must be a JSON object.');
+      return {
+        error: restError(c, 400, 'rest_invalid_json', 'The request body must be a JSON object.'),
+      };
     }
-    return body as Record<string, unknown>;
+    return { body: body as Record<string, unknown> };
   };
 
   for (const type of [TEMPLATE_POST_TYPE, TEMPLATE_PART_POST_TYPE] as TemplateType[]) {
@@ -352,8 +358,9 @@ export function templatesRoutes(kernel: Kernel) {
 
     app.post(collection, async (c) => {
       if (!canEditTemplates(c.get('user'))) return cannotManage(c);
-      const body = await json(c);
-      if (body instanceof Response) return body;
+      const read = await json(c);
+      if ('error' in read) return read.error;
+      const body = read.body;
       const parsed = itemBody.safeParse(body);
       if (!parsed.success) return invalidParams(c, parsed.error);
       if (!parsed.data.slug) {
@@ -424,8 +431,9 @@ export function templatesRoutes(kernel: Kernel) {
     const updateItem = async (c: Context<AppEnv>, id: string) => {
       const user = c.get('user');
       if (!canEditTemplates(user)) return cannotManage(c);
-      const body = await json(c);
-      if (body instanceof Response) return body;
+      const read = await json(c);
+      if ('error' in read) return read.error;
+      const body = read.body;
       const parsed = itemBody.safeParse(body);
       if (!parsed.success) return invalidParams(c, parsed.error);
       const template = await getBlockTemplate(kernel, id, type);
@@ -458,8 +466,9 @@ export function templatesRoutes(kernel: Kernel) {
     /** delete_item(): a customised copy goes, and the theme's file shows again. */
     const deleteItem = async (c: Context<AppEnv>, id: string) => {
       if (!canEditTemplates(c.get('user'))) return cannotManage(c);
-      const body = await json(c);
-      if (body instanceof Response) return body;
+      const read = await json(c);
+      if ('error' in read) return read.error;
+      const body = read.body;
       const force = boolParam.safeParse(c.req.query('force') ?? body.force ?? false);
       if (!force.success) return invalidParams(c, force.error);
       try {
@@ -479,32 +488,37 @@ export function templatesRoutes(kernel: Kernel) {
       c: Context<AppEnv>,
       id: string,
       denied: string,
-    ): Promise<Post | Response> => {
+    ): Promise<{ post: Post } | { error: RestErrorResponse }> => {
       const template = await getBlockTemplate(kernel, id, type);
       if (!template) {
-        return restError(c, 404, 'rest_post_invalid_parent', 'Invalid template parent ID.');
+        return {
+          error: restError(c, 404, 'rest_post_invalid_parent', 'Invalid template parent ID.'),
+        };
       }
       const post = template.wpId ? await kernel.posts.get(template.wpId) : undefined;
       if (!post) {
-        return restError(
-          c,
-          400,
-          'rest_invalid_template',
-          "Templates based on theme files can't have revisions.",
-        );
+        return {
+          error: restError(
+            c,
+            400,
+            'rest_invalid_template',
+            "Templates based on theme files can't have revisions.",
+          ),
+        };
       }
       if (!(await currentUserCan(kernel, c.get('user'), 'edit_post', post.id))) {
-        return restError(c, authStatus(c), 'rest_cannot_read', denied);
+        return { error: restError(c, authStatus(c), 'rest_cannot_read', denied) };
       }
-      return post;
+      return { post };
     };
     const revisionsDenied = 'Sorry, you are not allowed to view revisions of this post.';
     const autosavesDenied = 'Sorry, you are not allowed to view autosaves of this post.';
 
     /** WP_REST_Revisions_Controller::get_items() */
     const listRevisions = async (c: Context<AppEnv>, id: string) => {
-      const parent = await loadParent(c, id, revisionsDenied);
-      if (parent instanceof Response) return parent;
+      const loaded = await loadParent(c, id, revisionsDenied);
+      if ('error' in loaded) return loaded.error;
+      const parent = loaded.post;
       const query = revisionsQuery.safeParse(c.req.query());
       if (!query.success) return invalidParams(c, query.error);
       const { page, per_page: perPage, offset, context } = query.data;
@@ -540,38 +554,47 @@ export function templatesRoutes(kernel: Kernel) {
     };
 
     /** get_revision(): a revision of this parent. */
-    const loadRevision = async (c: Context<AppEnv>, parent: Post, revisionId: number) => {
+    const loadRevision = async (
+      c: Context<AppEnv>,
+      parent: Post,
+      revisionId: number,
+    ): Promise<{ revision: Post } | { error: RestErrorResponse }> => {
       const revision = await kernel.posts.get(revisionId);
       if (revision?.type !== 'revision') {
-        return restError(c, 404, 'rest_post_invalid_id', 'Invalid revision ID.');
+        return { error: restError(c, 404, 'rest_post_invalid_id', 'Invalid revision ID.') };
       }
       if (revision.parentId !== parent.id) {
-        return restError(
-          c,
-          404,
-          'rest_revision_parent_id_mismatch',
-          `The revision does not belong to the specified parent with id of "${parent.id}"`,
-        );
+        return {
+          error: restError(
+            c,
+            404,
+            'rest_revision_parent_id_mismatch',
+            `The revision does not belong to the specified parent with id of "${parent.id}"`,
+          ),
+        };
       }
-      return revision;
+      return { revision };
     };
 
     /** WP_REST_Revisions_Controller::get_item() */
     const getRevision = async (c: Context<AppEnv>, id: string, revisionId: number) => {
-      const parent = await loadParent(c, id, revisionsDenied);
-      if (parent instanceof Response) return parent;
+      const loaded = await loadParent(c, id, revisionsDenied);
+      if ('error' in loaded) return loaded.error;
+      const parent = loaded.post;
       const query = z.object({ context: contextParam }).safeParse(c.req.query());
       if (!query.success) return invalidParams(c, query.error);
-      const revision = await loadRevision(c, parent, revisionId);
-      if (revision instanceof Response) return revision;
+      const found = await loadRevision(c, parent, revisionId);
+      if ('error' in found) return found.error;
+      const revision = found.revision;
       const item = await prepareChild(c, revision, base, 'revisions', query.data.context);
       return item ? c.json(item) : notFound(c);
     };
 
     /** WP_REST_Template_Revisions_Controller::delete_item(): `force` is required. */
     const deleteRevision = async (c: Context<AppEnv>, id: string, revisionId: number) => {
-      const parent = await loadParent(c, id, revisionsDenied);
-      if (parent instanceof Response) return parent;
+      const loaded = await loadParent(c, id, revisionsDenied);
+      if ('error' in loaded) return loaded.error;
+      const parent = loaded.post;
       const user = c.get('user');
       if (
         !(await currentUserCan(kernel, user, 'delete_post', parent.id)) ||
@@ -584,8 +607,9 @@ export function templatesRoutes(kernel: Kernel) {
           'Sorry, you are not allowed to delete this revision.',
         );
       }
-      const revision = await loadRevision(c, parent, revisionId);
-      if (revision instanceof Response) return revision;
+      const found = await loadRevision(c, parent, revisionId);
+      if ('error' in found) return found.error;
+      const revision = found.revision;
       const force = boolParam.safeParse(c.req.query('force') ?? false);
       if (!force.success) return invalidParams(c, force.error);
       if (!force.data) {
@@ -603,8 +627,9 @@ export function templatesRoutes(kernel: Kernel) {
 
     /** WP_REST_Autosaves_Controller::get_items() */
     const listAutosavesOf = async (c: Context<AppEnv>, id: string) => {
-      const parent = await loadParent(c, id, autosavesDenied);
-      if (parent instanceof Response) return parent;
+      const loaded = await loadParent(c, id, autosavesDenied);
+      if ('error' in loaded) return loaded.error;
+      const parent = loaded.post;
       const query = z.object({ context: contextParam }).safeParse(c.req.query());
       if (!query.success) return invalidParams(c, query.error);
       const out = [];
@@ -617,8 +642,9 @@ export function templatesRoutes(kernel: Kernel) {
 
     /** WP_REST_Template_Autosaves_Controller::get_item(): the newest autosave. */
     const getAutosaveOf = async (c: Context<AppEnv>, id: string) => {
-      const parent = await loadParent(c, id, revisionsDenied);
-      if (parent instanceof Response) return parent;
+      const loaded = await loadParent(c, id, revisionsDenied);
+      if ('error' in loaded) return loaded.error;
+      const parent = loaded.post;
       const query = z.object({ context: contextParam }).safeParse(c.req.query());
       if (!query.success) return invalidParams(c, query.error);
       const autosave = await getAutosave(kernel, parent.id);
@@ -641,10 +667,12 @@ export function templatesRoutes(kernel: Kernel) {
     const createAutosave = async (c: Context<AppEnv>, id: string) => {
       const user = c.get('user');
       if (!user || !canEditTemplates(user)) return cannotManage(c);
-      const parent = await loadParent(c, id, autosavesDenied);
-      if (parent instanceof Response) return parent;
-      const body = await json(c);
-      if (body instanceof Response) return body;
+      const loaded = await loadParent(c, id, autosavesDenied);
+      if ('error' in loaded) return loaded.error;
+      const parent = loaded.post;
+      const read = await json(c);
+      if ('error' in read) return read.error;
+      const body = read.body;
       const parsed = itemBody.safeParse(body);
       if (!parsed.success) return invalidParams(c, parsed.error);
       const changes = changesFrom(parsed.data);

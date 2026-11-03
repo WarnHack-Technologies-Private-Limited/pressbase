@@ -466,6 +466,7 @@ async function buildFromFile(
   kernel: Kernel,
   theme: ActiveTheme,
   file: TemplateFileItem,
+  types?: Record<string, { title: string; description: string }>,
 ): Promise<BlockTemplate> {
   const stylesheet = theme.info.stylesheet;
   const template: BlockTemplate = {
@@ -487,7 +488,7 @@ async function buildFromFile(
     date: null,
   };
   if (file.type === TEMPLATE_POST_TYPE) {
-    const defaults = (await defaultTemplateTypes(kernel))[file.slug];
+    const defaults = (types ?? (await defaultTemplateTypes(kernel)))[file.slug];
     if (defaults) {
       template.title = defaults.title;
       template.description = defaults.description;
@@ -815,9 +816,9 @@ export async function getBlockTemplates(
     const defaults = await defaultTemplateTypes(kernel);
     for (const file of await templateFiles(kernel, active, type, fileQuery)) {
       if (postType === undefined || file.postTypes?.includes(postType)) {
-        result.push(await buildFromFile(kernel, active, file));
+        result.push(await buildFromFile(kernel, active, file, defaults));
       } else if (!file.postTypes && !(file.slug in defaults)) {
-        result.push(await buildFromFile(kernel, active, file));
+        result.push(await buildFromFile(kernel, active, file, defaults));
       }
     }
   }
