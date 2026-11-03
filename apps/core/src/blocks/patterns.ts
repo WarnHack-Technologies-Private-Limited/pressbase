@@ -1,3 +1,5 @@
+import type { SlotDeclarations } from '@pressbase/slots';
+
 /**
  * Block patterns — WP_Block_Patterns_Registry and
  * WP_Block_Pattern_Categories_Registry (wordpress/wp-includes/class-wp-block-patterns-registry.php,
@@ -23,6 +25,8 @@ export interface BlockPattern {
   inserter?: boolean;
   /** 'core' for Pressbase's own, 'plugin' or 'theme' for others. */
   source?: string;
+  /** Pressbase: declared slots, overriding the inferred ones (see @pressbase/slots). */
+  slots?: SlotDeclarations;
 }
 
 export interface BlockPatternCategory {

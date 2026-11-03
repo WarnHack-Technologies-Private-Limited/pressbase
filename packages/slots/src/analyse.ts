@@ -95,10 +95,22 @@ export function slugify(text: string): string {
 }
 
 /** Finds runs of alike siblings: [start, count] pairs. */
-function runsOf(block: ParsedBlock): [number, number][] {
+function runsOf(block: ParsedBlock, groups: ReadonlySet<string>): [number, number][] {
   const kids = block.innerBlocks;
   if (block.blockName && block.blockName in COLLECTIONS) {
     return kids.length > 0 && kids.some(holdsSlots) ? [[0, kids.length]] : [];
+  }
+  // Containers that hold only alike items stay a group when one item is left:
+  // columns, grids, and containers declared as groups (minItems or maxItems).
+  const name = blockName(block);
+  const layout = (block.attrs.layout as { type?: unknown } | undefined)?.type;
+  if (
+    kids.length > 0 &&
+    (block.blockName === 'core/columns' || layout === 'grid' || (name && groups.has(slugify(name)))) &&
+    kids.every((kid) => kid.blockName && !SINGLE_SLOT_BLOCKS.has(kid.blockName) && holdsSlots(kid)) &&
+    kids.every((kid) => signature(kid) === signature(kids[0] as ParsedBlock))
+  ) {
+    return [[0, kids.length]];
   }
   const runs: [number, number][] = [];
   let i = 0;
@@ -115,7 +127,7 @@ function runsOf(block: ParsedBlock): [number, number][] {
   return runs;
 }
 
-function walkBlock(block: ParsedBlock, path: number[], out: Node[]): void {
+function walkBlock(block: ParsedBlock, path: number[], out: Node[], groups: ReadonlySet<string>): void {
   if (block.blockName === null || OPAQUE_BLOCKS.has(block.blockName)) return;
   const leaves = leavesOf(block);
   const name = blockName(block);
@@ -130,12 +142,12 @@ function walkBlock(block: ParsedBlock, path: number[], out: Node[]): void {
     ...(single && name ? { name } : {}),
   });
   for (const leaf of leaves.before) out.push(leafNode(leaf));
-  walkChildren(block, path, out);
+  walkChildren(block, path, out, groups);
   for (const leaf of leaves.after) out.push(leafNode(leaf));
 }
 
-function walkChildren(block: ParsedBlock, path: number[], out: Node[]): void {
-  const runs = runsOf(block);
+function walkChildren(block: ParsedBlock, path: number[], out: Node[], groups: ReadonlySet<string>): void {
+  const runs = runsOf(block, groups);
   const kids = block.innerBlocks;
   let r = 0;
   for (let i = 0; i < kids.length; i++) {
@@ -145,7 +157,7 @@ function walkChildren(block: ParsedBlock, path: number[], out: Node[]): void {
       const collection = !!block.blockName && block.blockName in COLLECTIONS;
       const items: Node[][] = [];
       for (let k = start; k < start + count; k++) {
-        items.push(analyseItem(kids[k] as ParsedBlock, [...path, k]));
+        items.push(analyseItem(kids[k] as ParsedBlock, [...path, k], groups));
       }
       const name = start === 0 && count === kids.length ? blockName(block) : undefined;
       out.push({
@@ -164,13 +176,13 @@ function walkChildren(block: ParsedBlock, path: number[], out: Node[]): void {
       r++;
       continue;
     }
-    walkBlock(kids[i] as ParsedBlock, [...path, i], out);
+    walkBlock(kids[i] as ParsedBlock, [...path, i], out, groups);
   }
 }
 
-function analyseItem(item: ParsedBlock, path: number[]): Node[] {
+function analyseItem(item: ParsedBlock, path: number[], groups: ReadonlySet<string>): Node[] {
   const nodes: Node[] = [];
-  walkBlock(item, path, nodes);
+  walkBlock(item, path, nodes, groups);
   return finishScope(nodes);
 }
 
@@ -214,10 +226,20 @@ function declare(nodes: Node[], declarations: SlotDeclarations, prefix: string):
   return kept;
 }
 
+/** Slot IDs declared as groups (with minItems or maxItems): the last segment of each key. */
+function declaredGroups(declarations: SlotDeclarations): Set<string> {
+  const ids = new Set<string>();
+  for (const [key, d] of Object.entries(declarations)) {
+    if (d.minItems !== undefined || d.maxItems !== undefined) ids.add(key.split('.').pop() as string);
+  }
+  return ids;
+}
+
 export function analyse(blocks: ParsedBlock[], declarations: SlotDeclarations = {}): Node[] {
   const nodes: Node[] = [];
+  const groups = declaredGroups(declarations);
   blocks.forEach((block, index) => {
-    walkBlock(block, [index], nodes);
+    walkBlock(block, [index], nodes, groups);
   });
   return declare(finishScope(nodes), declarations, '');
 }
@@ -229,8 +251,9 @@ export function analyseGroupItems(
   key: string,
 ): Node[][] {
   const items: Node[][] = [];
+  const groups = declaredGroups(declarations);
   for (let k = group.start; k < group.start + group.count; k++) {
-    const item = analyseItem(group.parent.innerBlocks[k] as ParsedBlock, [...group.path, k]);
+    const item = analyseItem(group.parent.innerBlocks[k] as ParsedBlock, [...group.path, k], groups);
     items.push(declare(item, declarations, `${key}.`));
   }
   return items;

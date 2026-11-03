@@ -54,4 +54,6 @@ export const PATTERN_HEADERS = {
   blockTypes: 'Block Types',
   postTypes: 'Post Types',
   templateTypes: 'Template Types',
+  /** Pressbase: declared slots, one line of JSON (see @pressbase/slots). */
+  slots: 'Slots',
 } as const;

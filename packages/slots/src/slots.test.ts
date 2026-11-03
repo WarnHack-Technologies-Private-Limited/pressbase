@@ -210,6 +210,21 @@ describe('fillSlots', () => {
     expect(serializeBlocks(more)).not.toContain('Fourth');
   });
 
+  it('keeps one column a group, so it can grow again', () => {
+    const one = fillSlots(parseBlocks(FEATURES), { items: [{ title: 'Only' }] });
+    const slots = extractSlots(one);
+    expect(slots.map((s) => s.id)).toEqual(['title', 'items', 'list']);
+    // Columns hold as many items as they were designed with, unless declared.
+    expect((slots[1] as GroupSlot).maxItems).toBe(1);
+    const three = fillSlots(
+      one,
+      { items: [{}, { title: 'Two' }, { title: 'Three' }] },
+      { declarations: { items: { maxItems: 3 } } },
+    );
+    expect(serializeBlocks(three).match(/<!-- wp:column /g)).toHaveLength(3);
+    expect(serializeBlocks(three)).toContain('<h3 class="wp-block-heading">Three</h3>');
+  });
+
   it('writes images, dropping the old attachment ID', () => {
     const markup = `<!-- wp:image {"id":12,"sizeSlug":"large"} -->
 <figure class="wp-block-image size-large"><img src="/old.jpg" alt="" class="wp-image-12"/></figure>
