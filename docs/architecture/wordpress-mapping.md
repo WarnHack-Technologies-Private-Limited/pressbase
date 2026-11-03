@@ -50,6 +50,7 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | `WP_Theme_JSON`, `WP_Theme_JSON_Resolver`, `wp_get_global_stylesheet()`, `wp_get_typography_font_size_value()`, `wp_get_layout_style()`, `WP_Font_Face` | `packages/theme-json` | See [Themes](themes.md). |
 | `WP_Theme`, `wp_get_themes()`, `switch_theme()`, `_register_theme_block_patterns()` | `apps/core/src/themes/` (`kernel.themes`) | Pattern PHP is interpreted, never run. |
 | `block-supports/layout.php`, `elements.php`, `position.php`, `block-style-variations.php` | `apps/core/src/themes/supports.ts` | Render filters. |
+| `WP_Theme_JSON::get_viewport_media_queries()`, `sanitize_viewport_settings()`, `@mobile` / `@tablet` style states; `block-supports/states.php`, `block-visibility.php`; `WP_Style_Engine::parse_block_styles()` | `packages/theme-json/src/{viewport,style-engine}.ts`, `apps/core/src/themes/{states,block-visibility}.ts` | WordPress 7.1's responsive styles; responsive layout not yet. See [ADR 0023](../adr/0023-responsive-styles-and-breakpoints.md). |
 | `WP::parse_request()`, `WP_Rewrite` rules, the main `WP_Query`, `redirect_canonical()` | `apps/core/src/frontend/query.ts` | |
 | `template-loader.php`, `get_*_template()` | `apps/core/src/frontend/hierarchy.ts` | |
 | `template-canvas.php`, `get_the_block_template_html()`, `wp_get_document_title()`, `get_body_class()` | `apps/core/src/frontend/render.ts` | |

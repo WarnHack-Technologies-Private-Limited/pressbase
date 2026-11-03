@@ -11,6 +11,7 @@ How Pressbase loads WordPress block themes, turns `theme.json` into CSS, and ren
 | User global styles | `apps/core/src/themes/global-styles.ts`, `routes/global-styles.ts` | `wp_global_styles`, `WP_REST_Global_Styles_Controller` (+ revisions) |
 | Site logo and icon | `apps/core/src/themes/site-identity.ts` | `get_custom_logo()`, `WP_Site_Icon`, `wp_site_icon()` |
 | Block supports needing the theme | `apps/core/src/themes/supports.ts` | `block-supports/layout.php`, `elements.php`, `position.php`, `typography.php`, `block-style-variations.php` |
+| Responsive styles: breakpoints, `@mobile` / `@tablet`, per-instance states, block visibility | `packages/theme-json/src/viewport.ts`, `apps/core/src/themes/{states,block-visibility}.ts` | `WP_Theme_JSON::get_viewport_media_queries()`, `block-supports/states.php`, `block-visibility.php` (WordPress 7.1) |
 | Request routing, main query | `apps/core/src/frontend/query.ts` | `WP::parse_request()`, `WP_Rewrite`, `WP_Query` main query, `redirect_canonical()` |
 | Template hierarchy | `apps/core/src/frontend/hierarchy.ts` | `template-loader.php`, `get_*_template()` |
 | Templates and parts: theme files and customised copies | `apps/core/src/themes/templates.ts`, `routes/templates.ts` | `wp_template`, `wp_template_part`, `get_block_templates()`, `resolve_block_template()`, `WP_REST_Templates_Controller` (+ revisions, autosaves) |
@@ -69,12 +70,75 @@ What it does, as WordPress does:
 - **Fluid typography.** Font sizes become `clamp()` values when `settings.typography.fluid` is on, exactly as `wp_get_typography_font_size_value()` computes them.
 - **Fonts.** `fontFace` declarations become `@font-face` rules; `file:./` sources resolve to the theme's URL.
 - **Block style variations.** Variation styles are not in the global stylesheet: like WordPress 6.6+, they are generated per block instance (`blockStyleVariationInstanceStyles()`), scoped to a class such as `is-style-post-terms-1--2`.
+- **Responsive styles.** `@mobile` and `@tablet` states of blocks, their pseudo states and elements print in the breakpoint's media query, right after the rules they override (see [Responsive styles](#responsive-styles-and-breakpoints)).
 
 The tests in `packages/theme-json/src/theme-json.test.ts` check the output for the Pressbase theme. The engine was first checked line by line against what WordPress 7.1 prints for Twenty Twenty-Five, when that theme was bundled (up to v0.7).
 
-Not ported yet: responsive (viewport) style states, duotone filters and background image uploads in global styles.
+Not ported yet: duotone filters and background image uploads in global styles.
 
 The package also holds the pieces of the site editor and of WordPress's save path that global styles need: `style-variations.ts` (sorting, applying and recognising style variations) and `sanitize.ts` (`removeInsecureProperties()`, `isSafeCssDeclaration()`, `validateCustomCss()`). Both are described below.
+
+## Responsive styles and breakpoints
+
+WordPress 7.1's responsive block styles, ported as they are ([ADR 0023](../adr/0023-responsive-styles-and-breakpoints.md)).
+
+**Breakpoints** are `settings.viewport` (global only; per-block values are dropped):
+
+```json
+{ "settings": { "viewport": { "mobile": "480px", "tablet": "782px" } } }
+```
+
+Those are the defaults. Values must be `px`, `em` or `rem` lengths; with no valid value the defaults apply, a single valid value stands alone, and `tablet` is dropped unless it is larger than `mobile`. `getViewportMediaQueries()` turns them into non-overlapping ranges:
+
+| State | Media query (defaults) |
+|---|---|
+| `@mobile` | `@media (width <= 480px)` |
+| `@tablet` | `@media (480px < width <= 782px)` |
+| `@desktop` (block visibility only) | `@media (width > 782px)` |
+
+A tablet value doesn't apply to phones: set both when both should change.
+
+**In theme.json and global styles**, a block's styles may hold `@mobile` and `@tablet`, which may hold elements and the block's pseudo states:
+
+```json
+"core/heading": {
+  "typography": { "fontSize": "3rem" },
+  "@mobile": { "typography": { "fontSize": "2rem" }, "elements": { "link": { ":hover": { "color": { "text": "red" } } } } }
+}
+```
+
+```css
+:root :where(.wp-block-heading){font-size: 3rem;}
+@media (width <= 480px){:root :where(.wp-block-heading){font-size: 2rem;}}
+@media (width <= 480px){:root :where(.wp-block-heading a:where(:not(.wp-element-button)):hover){color: red;}}
+```
+
+Block style variations take them too (printed per instance). Root and top-level element styles don't, as in WordPress.
+
+**On a block** (what Studio's responsive mode writes), the `style` attribute holds the states:
+
+```json
+{ "style": {
+    "typography": { "fontSize": "3rem" },
+    "@mobile": { "typography": { "fontSize": "2rem" }, "elements": { "link": { "color": { "text": "red" } } } },
+    "@tablet": { "spacing": { "padding": { "top": "var:preset|spacing|40" } } },
+    ":hover": { "color": { "background": "var:preset|color|accent" } } } }
+```
+
+The base values stay inline as before. The states become rules under a class made from a hash of the rules (`wp-states-1a2b3c4d`, the class WordPress prints), with `!important` so they beat the inline style and preset classes, printed in `core-block-supports-inline-css`:
+
+```css
+@media (width <= 480px){.wp-states-1a2b3c4d{font-size:2rem !important;}}
+```
+
+Pseudo states (`:hover`, `:focus`, `:focus-visible`, `:active`) are allowed on Button and Navigation link only (`VALID_BLOCK_PSEUDO_SELECTORS`), at the top level or inside a breakpoint. Feature selectors from `block.json` decide which element a value targets (a Button's colours go to `.wp-block-button__link`). Layout inside a state (`@mobile.layout`) is not applied yet.
+
+**Block visibility** is the block's `metadata.blockVisibility`:
+
+- `false` hides the block everywhere (it renders nothing);
+- `{ "viewport": { "mobile": false, "tablet": false, "desktop": false } }` hides it on those devices: `wp-block-hidden-mobile` (sorted, one per device) with `@media (width <= 480px){.wp-block-hidden-mobile{display:none !important;}}`, and its images get `fetchpriority="auto"`.
+
+Blocks whose `supports.visibility` is `false` (HTML, Pattern, More, Page break, Shortcode…) ignore the per-device form.
 
 ## Themes in core
 
@@ -280,6 +344,7 @@ Some block supports need the active theme's settings, so core applies them as `r
 - **Position**: sticky and fixed, when the theme allows them.
 - **Typography**: custom font sizes become fluid.
 - **Style variations**: per-instance variation styles (above).
+- **Block visibility** and **state styles**: `metadata.blockVisibility` and the `style` attribute's `@mobile`, `@tablet` and pseudo states (see [Responsive styles](#responsive-styles-and-breakpoints)).
 
 Generated CSS is collected by the page render and printed in the head (`core-block-supports-inline-css`, `block-style-variation-styles-inline-css`), as WordPress does. In REST responses (`content.rendered`) the classes apply and the CSS is dropped.
 
@@ -368,6 +433,6 @@ Anything a theme does in `functions.php` doesn't happen; keep styles in `theme.j
 ## Not yet
 
 - The site editor: Studio, the screen that edits templates and parts (storage and REST are in place, see above). `/wp/v2/templates/lookup`, `register_block_template()` and block hooks inside templates. Global styles have the essentials (Appearance → Styles); per-block styles, shadows, borders, the style book and "Additional CSS" in the admin are still to come (the REST API takes them already).
-- Responsive style states, duotone; the image cropper for the site icon (the centre is used).
+- Responsive layout (`@mobile.layout`: flex orientation, grid columns, block gap per device), duotone; the image cropper for the site icon (the centre is used).
 - The admin bar, oEmbed.
 - Post formats, sticky-post styling beyond ordering, attachment pages, custom post type archives.
