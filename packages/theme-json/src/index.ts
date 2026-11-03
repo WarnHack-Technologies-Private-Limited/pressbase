@@ -73,3 +73,13 @@ export {
   typographyValueAndUnit,
 } from './typography';
 export { arrayGet, convertCustomProperties, isObject, toKebabCase } from './util';
+export {
+  DEFAULT_VIEWPORT_BREAKPOINTS,
+  getViewportMediaQueries,
+  sanitizeViewportSettings,
+  VIEWPORT_STATES,
+  type ViewportBreakpoints,
+  type ViewportMediaQueryOptions,
+  type ViewportName,
+  type ViewportState,
+} from './viewport';
