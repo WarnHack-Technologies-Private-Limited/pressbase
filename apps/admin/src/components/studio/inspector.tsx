@@ -11,7 +11,7 @@ import { store as blocksStore } from '@wordpress/blocks';
 import { PanelBody, __experimentalUseSlotFills as useSlotFills } from '@wordpress/components';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { __ as wp__ } from '@wordpress/i18n';
-import { LayoutTemplate, RotateCcw, X } from 'lucide-react';
+import { LayoutTemplate, Lock, RotateCcw, X } from 'lucide-react';
 import { type KeyboardEvent as ReactKeyboardEvent, type ReactNode, useId, useRef } from 'react';
 import { useI18n } from '@/lib/i18n/context';
 import { lightScope } from '../block-editor';
@@ -33,6 +33,11 @@ export interface PageSummary {
   editLink?: string;
   /** False for the latest posts, which have no content of their own. */
   hasContent: boolean;
+  /** The custom template chosen ('' for the default), and the ones the page may use (#29). */
+  templateSlug?: string;
+  templates?: { slug: string; title: string }[];
+  /** Picks another template; absent when the page can't change it here. */
+  onTemplate?: (slug: string) => void;
 }
 
 interface InspectorProps {
@@ -45,6 +50,8 @@ interface InspectorProps {
   onReset: (slug: string) => void;
   /** Narrow screens: the inspector is a drawer with a close button. */
   onClose?: () => void;
+  /** The header and footer can't be changed by this person (no `edit_theme_options`, #29). */
+  partsLocked?: boolean;
 }
 
 const select = (s: unknown) =>
@@ -87,8 +94,9 @@ export function Inspector(props: InspectorProps) {
       <PartInfoView
         info={props.parts.get(partSlug)}
         slug={partSlug}
-        canReset={props.canReset(partSlug)}
+        canReset={!props.partsLocked && props.canReset(partSlug)}
         onReset={() => props.onReset(partSlug)}
+        locked={props.partsLocked}
       />
     );
   } else {
@@ -131,6 +139,7 @@ export function Inspector(props: InspectorProps) {
 
 function PageInfo({ page }: { page: PageSummary }) {
   const { __ } = useI18n();
+  const templateId = useId();
   return (
     <div className={styles.inspectorIntro}>
       <p className={styles.eyebrow}>
@@ -144,13 +153,35 @@ function PageInfo({ page }: { page: PageSummary }) {
             <dd>{page.status}</dd>
           </>
         )}
-        {page.template && (
+        {page.template && !page.onTemplate && (
           <>
             <dt>{__('Template', 'pressbase-admin')}</dt>
             <dd>{page.template}</dd>
           </>
         )}
       </dl>
+      {page.onTemplate && (
+        <div className={styles.templateField}>
+          <label htmlFor={templateId}>{__('Template', 'pressbase-admin')}</label>
+          <select
+            id={templateId}
+            className={styles.select}
+            value={page.templateSlug ?? ''}
+            aria-describedby={`${templateId}-hint`}
+            onChange={(event) => page.onTemplate?.(event.target.value)}
+          >
+            <option value="">{__('Default', 'pressbase-admin')}</option>
+            {(page.templates ?? []).map((t) => (
+              <option key={t.slug} value={t.slug}>
+                {t.title}
+              </option>
+            ))}
+          </select>
+          <p id={`${templateId}-hint`} className={styles.muted}>
+            {__('How the page is laid out around its sections.', 'pressbase-admin')}
+          </p>
+        </div>
+      )}
       {page.hasContent ? (
         <p>
           {__(
@@ -186,11 +217,13 @@ function PartInfoView({
   slug,
   canReset,
   onReset,
+  locked,
 }: {
   info?: PartInfo;
   slug: string;
   canReset: boolean;
   onReset: () => void;
+  locked?: boolean;
 }) {
   const { __ } = useI18n();
   return (
@@ -198,12 +231,21 @@ function PartInfoView({
       <p className={styles.eyebrow}>{__('On all pages', 'pressbase-admin')}</p>
       <h2 className={styles.inspectorTitle}>{info?.title || slug}</h2>
       <p className={styles.lockNote}>
-        <LayoutTemplate size={16} aria-hidden="true" />
+        {locked ? (
+          <Lock size={16} aria-hidden="true" />
+        ) : (
+          <LayoutTemplate size={16} aria-hidden="true" />
+        )}
         <span>
-          {__(
-            'This part of your design is on every page. Click any text in it to change it; your changes show on every page once you publish.',
-            'pressbase-admin',
-          )}
+          {locked
+            ? __(
+                'This part of your design is on every page, so only people who can change the site’s design can edit it. Ask an administrator if it needs a change.',
+                'pressbase-admin',
+              )
+            : __(
+                'This part of your design is on every page. Click any text in it to change it; your changes show on every page once you publish.',
+                'pressbase-admin',
+              )}
         </span>
       </p>
       {canReset && (

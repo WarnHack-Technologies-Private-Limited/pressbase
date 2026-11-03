@@ -34,9 +34,10 @@ import { Popover } from '@wordpress/components';
 import { useStateWithHistory } from '@wordpress/compose';
 import { useDispatch, useRegistry } from '@wordpress/data';
 import { ShortcutProvider } from '@wordpress/keyboard-shortcuts';
-import { Info, X } from 'lucide-react';
+import { Info, Lock, X } from 'lucide-react';
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, api } from '@/lib/api';
+import type { SiteIndex } from '@/lib/core';
 import { useI18n } from '@/lib/i18n/context';
 import { lightScope } from '../block-editor';
 import { CANVAS_STYLESHEETS, type EditorStylesheet } from '../block-editor/assets';
@@ -81,6 +82,19 @@ import {
 import { useEntityEdits } from './entity-edits';
 import { Inspector, type PageSummary } from './inspector';
 import { DEVICES, type Device, type InspectorTabId, type RailPanelId } from './layout-model';
+import {
+  arrangementChanges,
+  draftPages,
+  draftReading,
+  editablePages,
+  fieldChange,
+  homePageEntries,
+  movePage,
+  newPageEntry,
+  newPageLink,
+  refOfKey,
+} from './pages-model';
+import { PagesPanel } from './pages-panel';
 import type { PendingChange } from './publish-panel';
 import { Rail, RailPanelView } from './rail';
 import {
@@ -93,10 +107,12 @@ import {
   type CanvasTarget,
   initialTarget,
   isHome,
+  isNewPage,
   pageTitle,
   pickTemplate,
   type ReadingSettings,
   type StudioPage,
+  sameTarget,
   templateCandidates,
 } from './site-model';
 import styles from './studio.module.css';
@@ -139,6 +155,8 @@ interface LivePart {
 interface Library {
   theme: ThemeEditorSettings;
   templates: RestTemplate[];
+  /** The custom templates a page may choose (`/wp/v2/templates?post_type=page`). */
+  pageTemplates: { slug: string; title: string }[];
   /** The menu a Navigation block without one shows (and fills in as its `ref`). */
   navigationFallback: number | null;
 }
@@ -183,7 +201,25 @@ export interface StudioProps {
   /** `?changeset_uuid=` from the URL: *Back to Studio* in a preview. */
   requestedChangeset?: string;
   canUnfilteredHtml: boolean;
+  /** Who's editing, and what they may change (#29). */
+  user: StudioUser;
 }
+
+/** What the person in Studio may do. Without `edit_theme_options`, the header, footer and styles are read-only. */
+export interface StudioUser {
+  id: number;
+  canEditTheme: boolean;
+  /** `manage_options`: choosing the home page. */
+  canManageOptions: boolean;
+  /** `publish_pages`: adding pages, which go live on Publish. */
+  canPublishPages: boolean;
+  /** `edit_others_pages`: without it, only the person's own pages open. */
+  canEditOthersPages: boolean;
+}
+
+/** The pages Studio lists: every status an editor works with, as the page picker shows them. */
+const PAGES_PATH =
+  '/wp/v2/pages?context=edit&per_page=100&status=publish,draft,pending,private,future&orderby=menu_order&order=asc';
 
 /** Studio's iframe: WordPress's content styles and Studio's outlines; no stand-in theme. */
 const STUDIO_CANVAS_STYLESHEETS: EditorStylesheet[] = [
@@ -324,8 +360,15 @@ export default function Studio(props: StudioProps) {
   const [opened, setOpened] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   const [target, setTarget] = useState<CanvasTarget>(() =>
-    initialTarget(props.requestedPage, props.reading, props.pages),
+    initialTarget(
+      props.requestedPage,
+      props.reading,
+      editablePages(props.pages, { id: props.user.id, editOthers: props.user.canEditOthersPages }),
+    ),
   );
+  // The pages and reading settings as visitors see them; the draft's changes are laid over below.
+  const [livePages, setLivePages] = useState<StudioPage[]>(props.pages);
+  const [liveReading, setLiveReading] = useState<ReadingSettings>(props.reading);
   const [reloadKey, setReloadKey] = useState(0);
   const [doc, setDoc] = useState<CanvasDoc | null>(null);
   const [device, setDevice] = useState<Device>('desktop');
@@ -344,8 +387,25 @@ export default function Studio(props: StudioProps) {
   // The canvas holds edits not handed to the draft yet (the editor reports them after a pause).
   const editing = useRef(false);
 
-  const postsOnFront = props.reading.show_on_front !== 'page' || !props.reading.page_on_front;
-  const frontPageId = Number(props.reading.page_on_front) || 0;
+  // The site's pages and home page as the draft leaves them (#29).
+  const allPages = useMemo(() => draftPages(livePages, draft.entries), [livePages, draft.entries]);
+  const pages = useMemo(
+    () => editablePages(allPages, { id: props.user.id, editOthers: props.user.canEditOthersPages }),
+    [allPages, props.user.id, props.user.canEditOthersPages],
+  );
+  const reading = useMemo(
+    () => draftReading(liveReading, draft.entries),
+    [liveReading, draft.entries],
+  );
+  const pagesRef = useRef(allPages);
+  pagesRef.current = allPages;
+  const readingRef = useRef(reading);
+  readingRef.current = reading;
+
+  const postsOnFront = reading.show_on_front !== 'page' || !reading.page_on_front;
+  const frontPageId = Number(reading.page_on_front) || 0;
+  const homeTarget = (): CanvasTarget =>
+    initialTarget(undefined, readingRef.current, pagesRef.current);
 
   // Narrow screens: the inspector becomes a drawer.
   useEffect(() => {
@@ -365,12 +425,23 @@ export default function Studio(props: StudioProps) {
       loadLiveParts(),
       api<{ id: number }>('/wp-block-editor/v1/navigation-fallback').catch(() => null),
       api<Changeset[]>('/pressbase/v1/changesets').catch(() => [] as Changeset[]),
+      api<RestTemplate[]>('/wp/v2/templates?post_type=page&context=edit').catch(
+        () => [] as RestTemplate[],
+      ),
     ])
-      .then(([theme, templates, parts, fallback, open]) => {
+      .then(([theme, templates, parts, fallback, open, forPages]) => {
         if (!live) return;
         const changeset = open.find((c) => c.uuid === props.requestedChangeset) ?? open[0] ?? null;
         draftRef.current.resume(changeset);
-        setLibrary({ theme, templates, navigationFallback: fallback?.id || null });
+        setLibrary({
+          theme,
+          templates,
+          pageTemplates: forPages.map((t) => ({
+            slug: t.slug,
+            title: t.title.raw || t.title.rendered || t.slug,
+          })),
+          navigationFallback: fallback?.id || null,
+        });
         setLiveParts(parts);
         setOpened(true);
         if (changeset?.count) {
@@ -400,15 +471,26 @@ export default function Studio(props: StudioProps) {
     let live = true;
     setDoc(null);
     const load = async () => {
-      const page =
-        target.kind === 'page'
-          ? await api<EditablePage>(`/wp/v2/pages/${target.id}?context=edit`)
-          : undefined;
+      let page: EditablePage | undefined;
+      if (target.kind === 'page') {
+        // The page as the draft leaves it: its template may be a draft change (#29).
+        const drafted = pagesRef.current.find((p) => p.id === target.id);
+        if (isNewPage(target.id)) {
+          // A page the draft adds: nothing on it yet but what the draft holds.
+          if (!drafted) {
+            throw new Error(__('This page isn’t in your draft any more.', 'pressbase-admin'));
+          }
+          page = { ...drafted, content: { raw: '' } };
+        } else {
+          const fetched = await api<EditablePage>(`/wp/v2/pages/${target.id}?context=edit`);
+          page = { ...fetched, template: drafted?.template ?? fetched.template };
+        }
+      }
       const next = buildDoc(
         target,
         library,
         liveParts,
-        props.reading,
+        readingRef.current,
         draftRef.current.entries,
         page,
       );
@@ -418,15 +500,16 @@ export default function Studio(props: StudioProps) {
     load().catch((error) => live && setFailed(errorMessage(error)));
     // Keep the address in step, so a reload opens the same page.
     const url = new URL(window.location.href);
-    if (target.kind === 'page') url.searchParams.set('page', String(target.id));
-    else url.searchParams.delete('page');
+    if (target.kind === 'page' && !isNewPage(target.id)) {
+      url.searchParams.set('page', String(target.id));
+    } else url.searchParams.delete('page');
     url.searchParams.delete('changeset_uuid');
     window.history.replaceState(window.history.state, '', url);
     return () => {
       live = false;
     };
-    // liveParts changes after a publish without rebuilding the canvas: it's read when a page opens.
-  }, [library, opened, target, reloadKey, props.reading, __]);
+    // liveParts and the reading settings are read when a page opens; a change to them doesn't rebuild the canvas.
+  }, [library, opened, target, reloadKey, __]);
 
   // Edits not in the draft yet: the browser asks before leaving.
   useEffect(() => {
@@ -445,12 +528,7 @@ export default function Studio(props: StudioProps) {
   }, []);
 
   const chooseTarget = async (next: CanvasTarget) => {
-    if (
-      next.kind === target.kind &&
-      (next.kind === 'posts' || (target.kind === 'page' && next.id === target.id))
-    ) {
-      return;
-    }
+    if (sameTarget(next, target)) return;
     try {
       // Saved first, so the page opens with the header as just edited.
       await saveNow();
@@ -472,8 +550,20 @@ export default function Studio(props: StudioProps) {
     [library, plugins.blockStyles],
   );
 
+  /** Saves the canvas to the draft, then opens the page again (a new template, say). */
+  const reloadCanvas = async () => {
+    try {
+      await saveNow();
+      setReloadKey((k) => k + 1);
+    } catch (error) {
+      toast(errorMessage(error), { tone: 'danger' });
+    }
+  };
+
   const preview = async () => {
-    const link = doc?.page?.link ?? props.site.url;
+    const link = doc?.page
+      ? doc.page.link || newPageLink(props.site.url, pagesRef.current, doc.page.id)
+      : props.site.url;
     // Opened now, while the click still counts as the user's: popup blockers allow it.
     const win = window.open('about:blank', '_blank');
     if (win) win.opener = null;
@@ -512,6 +602,21 @@ export default function Studio(props: StudioProps) {
       loadLiveParts()
         .then(setLiveParts)
         .catch(() => {});
+      // The pages and home page as published; a page the draft added has its ID now.
+      const openedTarget = target;
+      Promise.all([api<StudioPage[]>(PAGES_PATH), api<SiteIndex>('/')])
+        .then(([nextPages, index]) => {
+          setLivePages(nextPages);
+          setLiveReading({
+            show_on_front: index.show_on_front ?? 'posts',
+            page_on_front: Number(index.page_on_front) || 0,
+          });
+          if (openedTarget.kind === 'page' && isNewPage(openedTarget.id)) {
+            const created = nextPages.find((p) => p.slug === openedTarget.id);
+            if (created) setTarget({ kind: 'page', id: created.id });
+          }
+        })
+        .catch(() => {});
       return true;
     } catch (error) {
       toast(errorMessage(error), { tone: 'danger' });
@@ -525,8 +630,16 @@ export default function Studio(props: StudioProps) {
     setBusy('revert');
     try {
       // On the canvas: put the region back (one undo step); the draft follows.
-      if (handle.current?.revertRegion(key)) await saveNow();
-      else await draft.revert(key);
+      const onCanvas = handle.current?.revertRegion(key) ?? false;
+      if (onCanvas) await saveNow();
+      // A page's entry also holds the Pages panel's changes (title, place, template).
+      const ref = refOfKey(key);
+      const fields = (draft.entries[key]?.value ?? {}) as { template?: string };
+      if (!onCanvas || ref !== null) await draft.revert(key);
+      if (ref !== null && target.kind === 'page' && target.id === ref) {
+        if (isNewPage(ref)) setTarget(homeTarget());
+        else if (fields.template !== undefined) setReloadKey((k) => k + 1);
+      }
     } catch (error) {
       toast(errorMessage(error), { tone: 'danger' });
     } finally {
@@ -540,7 +653,9 @@ export default function Studio(props: StudioProps) {
       handle.current?.discardEdits();
       await draft.discard();
       setStale([]);
-      setReloadKey((k) => k + 1);
+      // A page the draft added is gone with it.
+      if (target.kind === 'page' && isNewPage(target.id)) setTarget(homeTarget());
+      else setReloadKey((k) => k + 1);
       toast(
         __('Your changes were discarded. The page shows what visitors see.', 'pressbase-admin'),
       );
@@ -552,15 +667,31 @@ export default function Studio(props: StudioProps) {
     }
   };
 
+  const drafted = doc?.page ? allPages.find((p) => p.id === doc.page?.id) : undefined;
   const summary: PageSummary | null = doc
     ? {
-        title: doc.page ? pageTitle(doc.page) : __('Latest posts', 'pressbase-admin'),
-        isHome: isHome(doc.target, props.reading),
-        status: doc.page ? statusLabel(doc.page.status, __) : undefined,
+        title: doc.page ? pageTitle(drafted ?? doc.page) : __('Latest posts', 'pressbase-admin'),
+        isHome: isHome(doc.target, reading),
+        status: doc.page
+          ? isNewPage(doc.page.id)
+            ? __('New: goes live when you publish', 'pressbase-admin')
+            : statusLabel(drafted?.status ?? doc.page.status, __)
+          : undefined,
         template: doc.template.title.raw || doc.template.title.rendered || doc.template.slug,
-        editLink: doc.page ? `/admin/pages/${doc.page.id}` : undefined,
+        editLink: doc.page && !isNewPage(doc.page.id) ? `/admin/pages/${doc.page.id}` : undefined,
         hasContent:
           Boolean(doc.page) && pageBlocks(doc.blocks as unknown as CanvasBlock[]) !== null,
+        templateSlug: drafted?.template ?? doc.page?.template ?? '',
+        templates: library?.pageTemplates,
+        onTemplate:
+          doc.page && library?.pageTemplates.length
+            ? (slug) => {
+                const ref = doc.page?.id;
+                if (ref === undefined) return;
+                draft.wantFields(fieldChange(ref, 'template', slug, livePages));
+                reloadCanvas();
+              }
+            : undefined,
       }
     : null;
 
@@ -587,7 +718,7 @@ export default function Studio(props: StudioProps) {
       draft.entries[key],
       {
         page: (id) => {
-          const found = props.pages.find((p) => p.id === id);
+          const found = allPages.find((p) => p.id === id);
           return found ? pageTitle(found) : undefined;
         },
         part: (slug) => parts.get(slug)?.title,
@@ -601,7 +732,7 @@ export default function Studio(props: StudioProps) {
   const chrome: Chrome = {
     topBar: (editor) => (
       <TopBar
-        pages={props.pages}
+        pages={pages}
         target={target}
         postsOnFront={postsOnFront}
         frontPageId={frontPageId}
@@ -640,14 +771,57 @@ export default function Studio(props: StudioProps) {
       <RailPanelView
         id={panel}
         onClose={() => setPanel(null)}
-        pages={props.pages}
-        target={target}
-        postsOnFront={postsOnFront}
-        frontPageId={frontPageId}
-        onTarget={(next) => {
-          chooseTarget(next);
-          if (narrow) setPanel(null);
-        }}
+        note={
+          panel === 'styles' && !props.user.canEditTheme ? (
+            <p className={styles.panelNote}>
+              <Lock size={16} aria-hidden="true" />
+              <span>
+                {__(
+                  'Only people who can change the site’s design can change its styles. You can edit your pages.',
+                  'pressbase-admin',
+                )}
+              </span>
+            </p>
+          ) : undefined
+        }
+        content={
+          panel === 'pages' ? (
+            <PagesPanel
+              pages={pages}
+              target={target}
+              postsOnFront={postsOnFront}
+              frontPageId={frontPageId}
+              onTarget={(next) => {
+                chooseTarget(next);
+                if (narrow) setPanel(null);
+              }}
+              can={{
+                add: props.user.canPublishPages,
+                arrange: props.user.canEditOthersPages,
+                home: props.user.canManageOptions,
+              }}
+              onAdd={(title) => {
+                const entry = newPageEntry(title, allPages);
+                draft.wantFields(new Map([[entry.key, entry.value as Record<string, unknown>]]));
+                chooseTarget({ kind: 'page', id: entry.slug });
+              }}
+              onRename={(ref, title) =>
+                draft.wantFields(fieldChange(ref, 'title', title, livePages))
+              }
+              onMove={(ref, to) => {
+                const arranged = movePage(allPages, ref, to);
+                if (!arranged) return false;
+                if (arranged.size) draft.wantFields(arrangementChanges(arranged, livePages));
+                return true;
+              }}
+              onHome={(id) => {
+                draft.want(homePageEntries(id, liveReading));
+                // A theme with a front-page template shows the home page in it.
+                if (library?.templates.some((t) => t.slug === 'front-page')) reloadCanvas();
+              }}
+            />
+          ) : undefined
+        }
       />
     ),
     notice: stale.length > 0 && (
@@ -721,7 +895,18 @@ export default function Studio(props: StudioProps) {
         onEditing={(value) => {
           editing.current = value;
         }}
-        onWant={draft.want}
+        onWant={(entries) => {
+          // Page entries are shared with the Pages panel: the canvas sets only `content`.
+          const plain = new Map<string, EntryValue | null>();
+          const fields = new Map<string, Record<string, unknown>>();
+          for (const [key, value] of entries) {
+            if (refOfKey(key) !== null) fields.set(key, { content: entryContent(value) });
+            else plain.set(key, value);
+          }
+          if (plain.size) draft.want(plain);
+          if (fields.size) draft.wantFields(fields);
+        }}
+        partsLocked={!props.user.canEditTheme}
         drafted={(key) => key in draft.entries}
         draftEntries={draft.entries}
         onReady={(h) => {
@@ -917,6 +1102,8 @@ interface StudioEditorProps {
   draftEntries: Readonly<Record<string, StoredEntry>>;
   onReady: (handle: StudioEditorHandle) => void;
   onNotice: (message: string, tone: 'success' | 'danger') => void;
+  /** The header and footer are read-only for this person (no `edit_theme_options`, #29). */
+  partsLocked: boolean;
 }
 
 /** The block-editor store calls the editor makes outside React's render. */
@@ -1130,7 +1317,8 @@ function StudioEditor(props: StudioEditorProps) {
       ...editorSettings({
         features: props.features,
         canUnfilteredHtml: props.canUnfilteredHtml,
-        postId: doc.page?.id,
+        // A page the draft adds has no ID yet: nothing to attach uploads to.
+        postId: typeof doc.page?.id === 'number' ? doc.page.id : undefined,
         assets: props.assets,
         context: 'studio',
       }),
@@ -1178,7 +1366,7 @@ function StudioEditor(props: StudioEditorProps) {
       <UndoShortcuts undo={history.undo} redo={history.redo} />
       <NoticesBridge onNotice={props.onNotice} />
       <MediaCategories enabled={props.features.media} />
-      <EditingModes blocks={doc.blocks} />
+      <EditingModes blocks={doc.blocks} partsEditable={!props.partsLocked} />
       <StoreBridgeSetter bridge={store} />
       {/* React events bubble out of the canvas iframe's portal, so this sees typing there too. */}
       <div className={styles.contents} onKeyDownCapture={settle} onPointerDownCapture={settle}>
@@ -1192,7 +1380,7 @@ function StudioEditor(props: StudioEditorProps) {
           <StudioFrame
             chrome={props.chrome}
             editor={editor}
-            notice={<PartNotice parts={props.parts} />}
+            notice={<PartNotice parts={props.parts} locked={props.partsLocked} />}
             footer={<Breadcrumb site={props.site} page={props.summary.title} parts={props.parts} />}
             inspector={
               showInspector && (
@@ -1207,6 +1395,7 @@ function StudioEditor(props: StudioEditorProps) {
                     if (region?.theme !== undefined) replaceRegion(region.key, region.theme);
                   }}
                   onClose={props.narrow ? props.onCloseInspector : undefined}
+                  partsLocked={props.partsLocked}
                 />
               )
             }
@@ -1217,7 +1406,11 @@ function StudioEditor(props: StudioEditorProps) {
                 style={width ? { maxWidth: `${width}px` } : undefined}
               >
                 <BlockContextProvider
-                  value={doc.page ? { postId: doc.page.id, postType: 'page' } : {}}
+                  value={
+                    typeof doc.page?.id === 'number'
+                      ? { postId: doc.page.id, postType: 'page' }
+                      : {}
+                  }
                 >
                   <BlockCanvas height="100%" styles={settings.styles as never}>
                     <BlockList className="wp-site-blocks" />
@@ -1270,20 +1463,25 @@ function StoreBridgeSetter({ bridge }: { bridge: { current: StoreBridge | null }
  * Above the canvas while something in a template part is selected: the
  * header and footer are on every page, so the person knows before they type.
  */
-function PartNotice({ parts }: { parts: ReadonlyMap<string, PartInfo> }) {
+function PartNotice({ parts, locked }: { parts: ReadonlyMap<string, PartInfo>; locked: boolean }) {
   const { __, sprintf } = useI18n();
   const part = useSelectedPart();
   if (!part) return null;
   const title = parts.get(part.slug)?.title ?? part.slug;
   return (
     <div className={styles.stageNotice} role="status" data-tone="accent" data-floating>
-      <Info size={16} aria-hidden="true" />
+      {locked ? <Lock size={16} aria-hidden="true" /> : <Info size={16} aria-hidden="true" />}
       <p>
         {sprintf(
-          __(
-            'You’re editing the %s. It’s on every page, so your changes show everywhere once you publish.',
-            'pressbase-admin',
-          ),
+          locked
+            ? __(
+                'The %s is on every page, so only people who can change the site’s design can edit it.',
+                'pressbase-admin',
+              )
+            : __(
+                'You’re editing the %s. It’s on every page, so your changes show everywhere once you publish.',
+                'pressbase-admin',
+              ),
           title,
         )}
       </p>
@@ -1296,7 +1494,13 @@ function PartNotice({ parts }: { parts: ReadonlyMap<string, PartInfo> }) {
  * the blocks are in the store. The template's block IDs never change while
  * the page is open, undo included.
  */
-function EditingModes({ blocks }: { blocks: BlockInstance[] }) {
+function EditingModes({
+  blocks,
+  partsEditable,
+}: {
+  blocks: BlockInstance[];
+  partsEditable: boolean;
+}) {
   const registry = useRegistry();
   const { setBlockEditingMode } = useDispatch(blockEditorStore) as unknown as {
     setBlockEditingMode: (clientId: string, mode: string) => void;
@@ -1304,8 +1508,10 @@ function EditingModes({ blocks }: { blocks: BlockInstance[] }) {
   useEffect(() => {
     const canvas = blocks as unknown as CanvasBlock[];
     registry.batch(() => {
-      for (const [clientId, mode] of editingModes(canvas)) setBlockEditingMode(clientId, mode);
+      for (const [clientId, mode] of editingModes(canvas, { partsEditable })) {
+        setBlockEditingMode(clientId, mode);
+      }
     });
-  }, [blocks, registry, setBlockEditingMode]);
+  }, [blocks, partsEditable, registry, setBlockEditingMode]);
   return null;
 }

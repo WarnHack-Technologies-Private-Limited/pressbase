@@ -88,6 +88,15 @@ export function createApp(kernel: Kernel) {
       url: ready ? await kernel.options.get<string>('home', '') : '',
       namespaces: ['pressbase/v1', 'wp/v2', 'wp-abilities/v1', ...kernel.plugins.namespaces()],
       pressbase: { version: PRESSBASE_VERSION, state: kernel.state },
+      // The reading settings, as WP_REST_Server::get_index() gives them to anyone.
+      ...(ready
+        ? {
+            timezone_string: await kernel.options.get<string>('timezone_string', ''),
+            page_for_posts: Number(await kernel.options.get('page_for_posts', 0)) || 0,
+            page_on_front: Number(await kernel.options.get('page_on_front', 0)) || 0,
+            show_on_front: await kernel.options.get<string>('show_on_front', 'posts'),
+          }
+        : {}),
       // site_logo, site_icon, site_icon_url, as WordPress's index has them.
       ...(ready ? await siteIdentityIndex(kernel) : {}),
     });

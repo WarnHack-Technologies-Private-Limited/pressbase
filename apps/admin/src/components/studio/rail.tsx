@@ -7,7 +7,6 @@ import {
 import {
   Blocks,
   FileText,
-  Home,
   Image,
   Layers,
   LayoutPanelTop,
@@ -16,12 +15,11 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
-import { type KeyboardEvent as ReactKeyboardEvent, useEffect, useRef } from 'react';
+import { type KeyboardEvent as ReactKeyboardEvent, type ReactNode, useEffect, useRef } from 'react';
 import { useI18n } from '@/lib/i18n/context';
 import { lightScope } from '../block-editor';
 import { Button } from '../ui/button';
 import { RAIL_PANELS, type RailPanel, type RailPanelId } from './layout-model';
-import { type CanvasTarget, pageTitle, pageTree, type StudioPage } from './site-model';
 import styles from './studio.module.css';
 
 const ICONS: Record<RailPanelId, LucideIcon> = {
@@ -73,18 +71,17 @@ export function Rail({
 export interface PanelProps {
   id: RailPanelId;
   onClose: () => void;
-  pages: StudioPage[];
-  target: CanvasTarget;
-  postsOnFront: boolean;
-  frontPageId: number;
-  onTarget: (target: CanvasTarget) => void;
+  /** A built panel's content (Pages, Sections), from Studio. */
+  content?: ReactNode;
+  /** A note at the top of the panel (what this person can't change, and why). */
+  note?: ReactNode;
 }
 
 /**
- * The open rail panel, beside the canvas. What's built today: the page list,
- * WordPress's block library (Elements) and list view (Layers). The rest say
- * which issue brings them. Escape closes the panel and returns focus to its
- * rail button.
+ * The open rail panel, beside the canvas. Built panels (Pages, #29) get
+ * their content from Studio; Elements and Layers show WordPress's block
+ * library and list view until #35 and #50; the rest say which issue brings
+ * them. Escape closes the panel and returns focus to its rail button.
  */
 export function RailPanelView(props: PanelProps) {
   const { __ } = useI18n();
@@ -140,7 +137,8 @@ export function RailPanelView(props: PanelProps) {
         />
       </header>
       <div className={styles.panelBody}>
-        {panel.interim === 'pages' && <PagesList {...props} />}
+        {props.note}
+        {panel.interim === 'built' && props.content}
         {panel.interim === 'inserter' && (
           <div className={`${lightScope} ${styles.wpPanel}`}>
             <InserterLibrary
@@ -160,13 +158,13 @@ export function RailPanelView(props: PanelProps) {
             />
           </div>
         )}
-        <Coming panel={panel} />
+        {panel.coming && <Coming panel={panel} coming={panel.coming} />}
       </div>
     </aside>
   );
 }
 
-function Coming({ panel }: { panel: RailPanel }) {
+function Coming({ panel, coming }: { panel: RailPanel; coming: string }) {
   const { __ } = useI18n();
   const Icon = ICONS[panel.id];
   const full = panel.interim === 'none';
@@ -174,51 +172,12 @@ function Coming({ panel }: { panel: RailPanel }) {
     <div className={styles.coming} data-full={full || undefined}>
       {full && <Icon size={28} aria-hidden="true" className={styles.comingIcon} />}
       {full && <p className={styles.comingSummary}>{__(panel.summary, 'pressbase-admin')}</p>}
-      <p>{__(panel.coming, 'pressbase-admin')}</p>
+      <p>{__(coming, 'pressbase-admin')}</p>
       {panel.id === 'styles' && (
         <a href="/admin/appearance/styles" className={styles.comingLink}>
           {__('Open Appearance → Styles', 'pressbase-admin')}
         </a>
       )}
     </div>
-  );
-}
-
-function PagesList({ pages, target, postsOnFront, frontPageId, onTarget }: PanelProps) {
-  const { __ } = useI18n();
-  const current = (t: CanvasTarget) =>
-    t.kind === target.kind &&
-    (t.kind === 'posts' || (target.kind === 'page' && t.id === target.id));
-  const item = (t: CanvasTarget, label: string, home: boolean, depth = 0, note?: string) => (
-    <li
-      key={t.kind === 'posts' ? 'posts' : t.id}
-      style={{ paddingInlineStart: `${depth * 1.25}rem` }}
-    >
-      <button
-        type="button"
-        className={styles.pageItem}
-        aria-current={current(t) ? 'page' : undefined}
-        onClick={() => onTarget(t)}
-      >
-        {home ? <Home size={16} aria-hidden="true" /> : <FileText size={16} aria-hidden="true" />}
-        <span className={styles.pageItemTitle}>{label}</span>
-        {home && <span className={styles.pageBadge}>{__('Home', 'pressbase-admin')}</span>}
-        {note && <span className={styles.pageNote}>{note}</span>}
-      </button>
-    </li>
-  );
-  return (
-    <ul className={styles.pages}>
-      {postsOnFront && item({ kind: 'posts' }, __('Latest posts', 'pressbase-admin'), true)}
-      {pageTree(pages).map(({ page, depth }) =>
-        item(
-          { kind: 'page', id: page.id },
-          pageTitle(page),
-          !postsOnFront && page.id === frontPageId,
-          depth,
-          page.status === 'publish' ? undefined : __('Draft', 'pressbase-admin'),
-        ),
-      )}
-    </ul>
   );
 }

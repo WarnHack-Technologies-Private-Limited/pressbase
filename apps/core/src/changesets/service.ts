@@ -18,6 +18,7 @@ import {
   ChangesetEntryError,
   globalStylesEntityHandler,
   optionEntityHandler,
+  orderEntries,
   parseEntryKey,
   postEntityHandler,
 } from './entities';
@@ -148,7 +149,8 @@ export class ChangesetsService {
       true,
     );
 
-    this.entities.register(postEntityHandler('page'));
+    // Pages: an entry may name, by slug, a page Studio adds (#29); publishing creates it.
+    this.entities.register(postEntityHandler('page', { create: {} }));
     this.entities.register(postEntityHandler('wp_navigation'));
     // Templates and parts save through saveBlockTemplate() (changesets/templates.ts).
     this.entities.register(templateEntityHandler(TEMPLATE_POST_TYPE));
@@ -483,9 +485,9 @@ export class ChangesetsService {
       }
       return { key, entry, id: parsed.id, handler };
     });
-    entries.sort((a, b) => a.handler.order - b.handler.order);
+    const ordered = orderEntries(entries.map((e) => ({ ...e, value: e.entry.value })));
     const authors = new Map<number, CurrentUser | null>();
-    for (const { key, entry, id, handler } of entries) {
+    for (const { key, entry, id, handler } of ordered) {
       if (!authors.has(entry.user_id)) {
         authors.set(entry.user_id, await loadUser(this.kernel, entry.user_id));
       }
@@ -543,10 +545,14 @@ export class ChangesetsService {
   /** The overlay a changeset previews (WP_Customize_Setting::preview() for each entry). */
   async previewOf(changeset: Post, user: CurrentUser): Promise<ChangesetPreview> {
     const preview = new ChangesetPreview(changeset, user);
+    const entries = [];
     for (const [key, entry] of Object.entries(this.data(changeset))) {
       const parsed = parseEntryKey(key);
       const handler = parsed && this.entities.get(parsed.type);
-      if (parsed && handler) await handler.preview(this.kernel, parsed.id, entry.value, preview);
+      if (parsed && handler) entries.push({ key, id: parsed.id, value: entry.value, handler });
+    }
+    for (const { id, value, handler } of orderEntries(entries)) {
+      await handler.preview(this.kernel, id, value, preview);
     }
     return preview;
   }

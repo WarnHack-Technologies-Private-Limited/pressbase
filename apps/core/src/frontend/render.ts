@@ -5,6 +5,7 @@ import { and, eq } from 'drizzle-orm';
 import type { CurrentUser } from '../auth/users';
 import { POSTPASS_COOKIE } from '../blocks/library/template';
 import { addCacheTags, CacheTag, collectCacheTags } from '../cache/tags';
+import { currentChangesetPreview } from '../changesets/preview';
 import { localeToLang } from '../i18n/locale';
 import type { Kernel } from '../kernel';
 import type { ActiveTheme } from '../themes/service';
@@ -137,6 +138,9 @@ async function bodyClasses(
 async function pageTemplateOf(kernel: Kernel, main: MainQuery): Promise<string | undefined> {
   const object = main.queriedObject;
   if (object?.kind !== 'post') return undefined;
+  // A changeset preview that picks another template for the page (#29).
+  const previewed = currentChangesetPreview()?.templates.get(object.post.id);
+  if (previewed !== undefined) return previewed ? previewed.replace(/\.html$/, '') : undefined;
   const [row] = await kernel.db
     .select({ value: schema.postmeta.value })
     .from(schema.postmeta)
