@@ -131,12 +131,17 @@ describe('@mobile and @tablet styles in the global stylesheet', () => {
         },
       },
     }).stylesheet;
-    expect(custom).toContain('@media (width <= 60rem){:root :where(.wp-block-heading){color: blue;}}');
+    expect(custom).toContain(
+      '@media (width <= 60rem){:root :where(.wp-block-heading){color: blue;}}',
+    );
     expect(custom).not.toContain('color: red');
   });
 
   it('prints nothing new without responsive values', () => {
-    const plain = theme({ version: 3, styles: { blocks: { 'core/heading': { color: { text: 'red' } } } } });
+    const plain = theme({
+      version: 3,
+      styles: { blocks: { 'core/heading': { color: { text: 'red' } } } },
+    });
     expect(plain.stylesheet).not.toContain('@media');
   });
 });
@@ -202,7 +207,9 @@ describe('settings.viewport and user styles', () => {
     });
     const settings = resolved.tree.getSettings();
     expect(settings.viewport).toEqual({ mobile: '20rem' });
-    expect((settings.blocks as Record<string, Record<string, unknown>>)['core/heading']).toEqual({});
+    expect((settings.blocks as Record<string, Record<string, unknown>>)['core/heading']).toEqual(
+      {},
+    );
   });
 
   it('keeps safe breakpoint styles of user global styles (remove_insecure_properties())', () => {

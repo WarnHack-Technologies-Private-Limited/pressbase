@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
+import { setup } from './test-utils';
 import { blockVisibility, imagesFetchPriorityAuto } from './themes/block-visibility';
 import { blockStateStyles, buildStateSelector } from './themes/states';
-import { setup } from './test-utils';
 
 /**
  * WordPress 7.1's responsive block styles: per-instance `@mobile` / `@tablet`
@@ -113,7 +113,11 @@ describe('block visibility (block-visibility.php)', () => {
   it('hides a block per device with classes and media queries, sorted', () => {
     expect(
       blockVisibility(
-        { metadata: { blockVisibility: { viewport: { tablet: false, mobile: false, desktop: true } } } },
+        {
+          metadata: {
+            blockVisibility: { viewport: { tablet: false, mobile: false, desktop: true } },
+          },
+        },
         true,
         undefined,
       ),
@@ -140,7 +144,13 @@ describe('block visibility (block-visibility.php)', () => {
   it('leaves blocks alone without the support or without hidden devices', () => {
     const attrs = { metadata: { blockVisibility: { viewport: { mobile: false } } } };
     expect(blockVisibility(attrs, false, undefined)).toBeNull();
-    expect(blockVisibility({ metadata: { blockVisibility: { viewport: { mobile: true } } } }, true, undefined)).toBeNull();
+    expect(
+      blockVisibility(
+        { metadata: { blockVisibility: { viewport: { mobile: true } } } },
+        true,
+        undefined,
+      ),
+    ).toBeNull();
     expect(blockVisibility({}, true, undefined)).toBeNull();
   });
 
@@ -196,7 +206,9 @@ describe('responsive styles on the public site', () => {
     );
     // The base size stays inline (and fluid); the state only adds a class.
     expect(html).toMatch(
-      new RegExp(`<h2 class="wp-block-heading ${className}" style="font-size:clamp\\([^"]+\\);">Small on phones</h2>`),
+      new RegExp(
+        `<h2 class="wp-block-heading ${className}" style="font-size:clamp\\([^"]+\\);">Small on phones</h2>`,
+      ),
     );
     expect(html).toContain(`<h2 class="wp-block-heading ${className}" style="font-size:clamp(`);
     expect(html).toMatch(new RegExp(`${className}" style="[^"]+">Same styles, same class</h2>`));
@@ -205,7 +217,9 @@ describe('responsive styles on the public site', () => {
     const css = supportCss(html);
     const rule = `@media (width <= 480px){.${className}{font-size:2rem !important;}}`;
     expect(css.split(rule).length).toBe(2); // once, for both headings
-    expect(css).toContain('@media (width <= 480px){.wp-block-hidden-mobile{display:none !important;}}');
+    expect(css).toContain(
+      '@media (width <= 480px){.wp-block-hidden-mobile{display:none !important;}}',
+    );
   });
 
   it('uses the breakpoints saved in global styles, for blocks and theme.json states', async () => {

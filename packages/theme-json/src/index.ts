@@ -50,6 +50,11 @@ export {
   splitSelectorList,
 } from './selectors';
 export {
+  type StyleEngineRule,
+  styleEngineDeclarations,
+  styleEngineStylesheet,
+} from './style-engine';
+export {
   applyStyleVariation,
   areGlobalStyleConfigsEqual,
   filterObjectByProperties,
@@ -67,11 +72,6 @@ export {
   styleVariationScope,
   VARIATION_PROPERTIES,
 } from './style-variations';
-export {
-  type StyleEngineRule,
-  styleEngineDeclarations,
-  styleEngineStylesheet,
-} from './style-engine';
 export { computeSpacingSizes, supportsLayout, ThemeJson } from './theme-json';
 export type * from './types';
 export {

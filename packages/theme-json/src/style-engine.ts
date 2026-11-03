@@ -36,7 +36,11 @@ const DEFINITIONS: Record<string, StyleDefinition[]> = {
     },
   ],
   color: [
-    { path: ['color', 'text'], property: 'color', cssVars: { color: '--wp--preset--color--$slug' } },
+    {
+      path: ['color', 'text'],
+      property: 'color',
+      cssVars: { color: '--wp--preset--color--$slug' },
+    },
     {
       path: ['color', 'background'],
       property: 'background-color',
@@ -67,7 +71,13 @@ const DEFINITIONS: Record<string, StyleDefinition[]> = {
       }),
     ),
   ],
-  shadow: [{ path: ['shadow'], property: 'box-shadow', cssVars: { shadow: '--wp--preset--shadow--$slug' } }],
+  shadow: [
+    {
+      path: ['shadow'],
+      property: 'box-shadow',
+      cssVars: { shadow: '--wp--preset--shadow--$slug' },
+    },
+  ],
   dimensions: [
     { path: ['dimensions', 'aspectRatio'], property: 'aspect-ratio' },
     ...(
@@ -164,7 +174,8 @@ function cssDeclarations(value: unknown, definition: StyleDefinition): Record<st
   if (definition.valueFunc === 'url') {
     // get_url_or_value_css_declaration()
     if (phpEmpty(value)) return out;
-    if (isObject(value) && !phpEmpty(value.url)) out[definition.property] = `url('${String(value.url)}')`;
+    if (isObject(value) && !phpEmpty(value.url))
+      out[definition.property] = `url('${String(value.url)}')`;
     else if (typeof value === 'string') out[definition.property] = value;
     return out;
   }
@@ -225,7 +236,8 @@ export function styleEngineDeclarations(style: unknown): Record<string, unknown>
       if (!Object.keys(css).length) continue;
       // Combine background gradient and background image, as the JS style engine does.
       if (css['background-image'] !== undefined && declarations['background-image'] !== undefined) {
-        css['background-image'] = `${String(css['background-image'])}, ${String(declarations['background-image'])}`;
+        css['background-image'] =
+          `${String(css['background-image'])}, ${String(declarations['background-image'])}`;
       }
       Object.assign(declarations, css);
     }
@@ -253,7 +265,11 @@ export interface StyleEngineRule {
 export function styleEngineStylesheet(rules: StyleEngineRule[]): string {
   const store = new Map<
     string,
-    { selector: string; group: string; declarations: Map<string, { value: string; important: boolean }> }
+    {
+      selector: string;
+      group: string;
+      declarations: Map<string, { value: string; important: boolean }>;
+    }
   >();
   for (const rule of rules) {
     const selector = rule.selector.trim();

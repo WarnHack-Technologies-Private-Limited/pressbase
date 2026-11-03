@@ -66,7 +66,9 @@ function replaceRecursive(base: Style, replacement: Style): Style {
 export function normalizeStatePresetVars(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(normalizeStatePresetVars);
   if (isObject(value)) {
-    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, normalizeStatePresetVars(v)]));
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, normalizeStatePresetVars(v)]),
+    );
   }
   if (typeof value !== 'string' || !value.startsWith('var:preset|')) return value;
   return `var(--wp--${value.slice('var:'.length).replaceAll('|', '--')})`;
@@ -81,10 +83,13 @@ function normalizeStateStyle(style: Style): unknown {
 /** wp_get_state_declarations_with_fallback_border_styles() */
 function fallbackBorderStyles(declarations: Style): Style {
   const has = (property: string) =>
-    declarations[property] !== undefined && declarations[property] !== null && declarations[property] !== '';
+    declarations[property] !== undefined &&
+    declarations[property] !== null &&
+    declarations[property] !== '';
   const out = { ...declarations };
   const hasBorderStyle = has('border-style');
-  if (!hasBorderStyle && (has('border-color') || has('border-width'))) out['border-style'] = 'solid';
+  if (!hasBorderStyle && (has('border-color') || has('border-width')))
+    out['border-style'] = 'solid';
   for (const side of ['top', 'right', 'bottom', 'left']) {
     if (
       !hasBorderStyle &&
@@ -100,7 +105,9 @@ function fallbackBorderStyles(declarations: Style): Style {
 /** wp_get_state_declarations_with_background_resets(): a solid colour clears a gradient. */
 function backgroundResets(declarations: Style): Style {
   const has = (property: string) =>
-    declarations[property] !== undefined && declarations[property] !== null && declarations[property] !== '';
+    declarations[property] !== undefined &&
+    declarations[property] !== null &&
+    declarations[property] !== '';
   if (has('background-color') && !has('background') && !has('background-image')) {
     return { ...declarations, 'background-image': 'unset' };
   }
@@ -135,7 +142,11 @@ function stateStyleGroups(stateStyle: Style, blockSelectors: Style): StyleGroup[
     if (isObject(featureSelectors) && isObject(featureStyles)) {
       const remaining: Style = { ...featureStyles };
       for (const [subfeature, subSelector] of Object.entries(featureSelectors)) {
-        if (subfeature === 'root' || typeof subSelector !== 'string' || !(subfeature in featureStyles)) {
+        if (
+          subfeature === 'root' ||
+          typeof subSelector !== 'string' ||
+          !(subfeature in featureStyles)
+        ) {
           continue;
         }
         addGroup(groups, subSelector, { [feature]: { [subfeature]: featureStyles[subfeature] } });
@@ -231,7 +242,8 @@ function addStateRule(
   // Base text alignment is a class, so a state needs a declaration.
   const typography = style.typography;
   const textAlign = isObject(typography) ? typography.textAlign : undefined;
-  if (typeof textAlign === 'string' && textAlign.trim() !== '') declarations['text-align'] = textAlign;
+  if (typeof textAlign === 'string' && textAlign.trim() !== '')
+    declarations['text-align'] = textAlign;
   if (!Object.keys(declarations).length) return;
   const rule: StateRule = { state, selector, declarations };
   if (rulesGroup) rule.rules_group = rulesGroup;
@@ -268,7 +280,11 @@ function uniqueStateClass(blockName: string, rules: StateRule[]): string {
 }
 
 /** wp_build_state_selector(): the instance class replaces the selector's leading block part. */
-export function buildStateSelector(base: string, blockSelector: string | null, state: string): string {
+export function buildStateSelector(
+  base: string,
+  blockSelector: string | null,
+  state: string,
+): string {
   if (typeof blockSelector !== 'string' || blockSelector.trim() === '') return base + state;
   const scoped: string[] = [];
   for (const raw of splitSelectorList(blockSelector)) {
@@ -297,7 +313,9 @@ export interface BlockStatesInput {
  * block's first tag and the CSS for the block supports stylesheet, or null
  * when the block has no state styles.
  */
-export function blockStateStyles(input: BlockStatesInput): { className: string; css: string } | null {
+export function blockStateStyles(
+  input: BlockStatesInput,
+): { className: string; css: string } | null {
   const style = input.style;
   if (isEmpty(style) || !isObject(style)) return null;
   const pseudoStates = VALID_BLOCK_PSEUDO_SELECTORS[input.blockName] ?? [];
