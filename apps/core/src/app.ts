@@ -33,6 +33,7 @@ import { postsRoutes } from './routes/posts';
 import { searchRoutes } from './routes/search';
 import { settingsRoutes } from './routes/settings';
 import { siteHealthRoutes, wpSiteHealthRoutes } from './routes/site-health';
+import { templatesRoutes } from './routes/templates';
 import { termsRoutes } from './routes/terms';
 import { publicFileRoutes, themeRoutes } from './routes/themes';
 import { typeRoutes } from './routes/types';
@@ -167,6 +168,10 @@ export function createApp(kernel: Kernel) {
   // revisions) and the live preview, /pressbase/v1/global-styles/preview.
   // See docs/architecture/themes.md#global-styles.
   installed.route('/', globalStylesRoutes(kernel));
+
+  // Templates and template parts (v0.8, Studio): /wp/v2/templates and
+  // /wp/v2/template-parts, with revisions and autosaves. See routes/templates.ts.
+  installed.route('/', templatesRoutes(kernel));
 
   // Site Health (v0.6): Pressbase's screen data and WordPress's
   // wp-site-health/v1 routes, before plugins' catch-all. See docs/architecture/site-health.md.
