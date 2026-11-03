@@ -29,7 +29,7 @@ import {
   BlockList,
   store as blockEditorStore,
 } from '@wordpress/block-editor';
-import { type Block as BlockInstance, parse, serialize } from '@wordpress/blocks';
+import { type Block as BlockInstance, createBlock, parse, serialize } from '@wordpress/blocks';
 import { Popover } from '@wordpress/components';
 import { useStateWithHistory } from '@wordpress/compose';
 import { useDispatch, useRegistry } from '@wordpress/data';
@@ -244,6 +244,37 @@ function withTheme(blocks: BlockInstance[], theme: string): BlockInstance[] {
   });
 }
 
+/**
+ * The template's Title blocks as headings with the page's title, for a page
+ * the draft adds (the template is never saved from the canvas). Same level,
+ * classes and styles, so it looks as it will.
+ */
+function withDraftTitle(blocks: BlockInstance[], title: string): BlockInstance[] {
+  return blocks.map((block) => {
+    if (block.name === 'core/post-title') {
+      const {
+        level,
+        textAlign,
+        className,
+        isLink: _link,
+        linkTarget: _t,
+        rel: _r,
+        ...rest
+      } = block.attributes as Record<string, unknown>;
+      return createBlock('core/heading', {
+        ...rest,
+        content: title,
+        level: typeof level === 'number' && level > 0 ? level : 2,
+        textAlign,
+        className: ['wp-block-post-title', className].filter(Boolean).join(' '),
+      });
+    }
+    return block.innerBlocks.length
+      ? { ...block, innerBlocks: withDraftTitle(block.innerBlocks, title) }
+      : block;
+  });
+}
+
 /** A part's markup as the canvas holds it: parsed, with the theme on nested parts, serialized. */
 const partMarkup = (raw: string, theme: string) => serialize(withTheme(parse(raw), theme));
 
@@ -298,8 +329,11 @@ function buildDoc(
     });
   }
 
+  let templateBlocks = withTheme(parse(template.content.raw ?? ''), template.theme);
+  // A page the draft adds has no post for the Title block to read: show its title in its place.
+  if (page && isNewPage(page.id)) templateBlocks = withDraftTitle(templateBlocks, pageTitle(page));
   const blocks = composeCanvas(
-    withTheme(parse(template.content.raw ?? ''), template.theme) as unknown as CanvasBlock[],
+    templateBlocks as unknown as CanvasBlock[],
     {
       // Parsed for each use, so every block on the canvas has its own clientId.
       blocks: (slug) => {

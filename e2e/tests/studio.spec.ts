@@ -54,11 +54,11 @@ test('Studio shows a page in the theme and edits it inline, with undo, redo and 
     await expect(page.getByRole('combobox', { name: 'Page' })).toHaveValue(String(id));
 
     // Panels that aren't built yet say which issue brings them.
-    await page.getByRole('button', { name: 'Sections' }).click();
-    await expect(page.getByText('Sections arrive with #44')).toBeVisible();
+    await page.getByRole('button', { name: 'Media' }).click();
+    await expect(page.getByText('arrives with #58')).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('button', { name: 'Sections' })).toBeFocused();
-    await expect(page.getByRole('button', { name: 'Sections' })).toHaveAttribute(
+    await expect(page.getByRole('button', { name: 'Media' })).toBeFocused();
+    await expect(page.getByRole('button', { name: 'Media' })).toHaveAttribute(
       'aria-expanded',
       'false',
     );

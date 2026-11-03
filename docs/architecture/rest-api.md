@@ -9,7 +9,7 @@ Everything is served under `/wp-json`, as in WordPress:
 
 | Method                   | Route                              | Access           | Purpose                                                           |
 | ------------------------ | ---------------------------------- | ---------------- | ----------------------------------------------------------------- |
-| GET                      | `/wp-json`                         | public           | Site name, description, URL, namespaces, Pressbase version and state; once installed, `site_logo`, `site_icon` and `site_icon_url`, as WordPress's index has them. |
+| GET                      | `/wp-json`                         | public           | Site name, description, URL, namespaces, Pressbase version and state; once installed, `timezone_string`, `show_on_front`, `page_on_front`, `page_for_posts`, `site_logo`, `site_icon` and `site_icon_url`, as WordPress's index has them. |
 | GET                      | `/pressbase/v1/install`                | public           | Install state, system checks, whether a setup code is needed.     |
 | POST                     | `/pressbase/v1/install/database-check` | before install   | Test database details.                                            |
 | POST                     | `/pressbase/v1/install`                | before install   | Install the site and sign in the administrator.                   |

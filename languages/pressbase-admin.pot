@@ -12,7 +12,7 @@ msgstr ""
 "X-Generator: pressbase i18n:extract\n"
 "X-Domain: pressbase-admin\n"
 
-#: apps/admin/src/app/admin/page.tsx:16 apps/admin/src/components/studio/top-bar.tsx:77 apps/admin/src/lib/sections.ts:42
+#: apps/admin/src/app/admin/page.tsx:16 apps/admin/src/components/studio/top-bar.tsx:85 apps/admin/src/lib/sections.ts:42
 msgid "Dashboard"
 msgstr ""
 
@@ -52,7 +52,7 @@ msgstr ""
 msgid "Drafts"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:119 apps/admin/src/components/studio/layout-model.ts:119 apps/admin/src/lib/sections.ts:55
+#: apps/admin/src/app/admin/page.tsx:119 apps/admin/src/components/studio/layout-model.ts:122 apps/admin/src/components/studio/pages-panel.tsx:266 apps/admin/src/lib/sections.ts:55
 msgid "Pages"
 msgstr ""
 
@@ -216,7 +216,7 @@ msgstr ""
 msgid "General Settings"
 msgstr ""
 
-#: apps/admin/src/app/admin/settings/layout.tsx:12 apps/admin/src/components/settings/settings-nav.tsx:32 apps/admin/src/components/studio/inspector.tsx:112 apps/admin/src/components/studio/inspector.tsx:314 apps/admin/src/components/studio/top-bar.tsx:202 apps/admin/src/lib/sections.ts:118
+#: apps/admin/src/app/admin/settings/layout.tsx:12 apps/admin/src/components/settings/settings-nav.tsx:32 apps/admin/src/components/studio/inspector.tsx:120 apps/admin/src/components/studio/inspector.tsx:356 apps/admin/src/components/studio/top-bar.tsx:210 apps/admin/src/lib/sections.ts:118
 msgid "Settings"
 msgstr ""
 
@@ -400,7 +400,7 @@ msgstr ""
 msgid "For the whole site, all plugins together."
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:267 apps/admin/src/components/settings/general-settings-form.tsx:484 apps/admin/src/components/settings/settings-form.tsx:98 apps/admin/src/components/studio/top-bar.tsx:216
+#: apps/admin/src/components/settings/ai-settings.tsx:267 apps/admin/src/components/settings/general-settings-form.tsx:484 apps/admin/src/components/settings/settings-form.tsx:98 apps/admin/src/components/studio/top-bar.tsx:224
 msgid "Saving…"
 msgstr ""
 
@@ -600,7 +600,7 @@ msgstr ""
 msgid "Discussion"
 msgstr ""
 
-#: apps/admin/src/components/settings/settings-nav.tsx:17 apps/admin/src/components/studio/layout-model.ts:165 apps/admin/src/lib/sections.ts:61
+#: apps/admin/src/components/settings/settings-nav.tsx:17 apps/admin/src/components/studio/layout-model.ts:162 apps/admin/src/lib/sections.ts:61
 msgid "Media"
 msgstr ""
 
@@ -608,7 +608,7 @@ msgstr ""
 msgid "Permalinks"
 msgstr ""
 
-#: apps/admin/src/components/settings/settings-nav.tsx:20 apps/admin/src/components/studio/layout-model.ts:175
+#: apps/admin/src/components/settings/settings-nav.tsx:20 apps/admin/src/components/studio/layout-model.ts:172
 msgid "AI"
 msgstr ""
 
@@ -691,11 +691,11 @@ msgstr ""
 msgid "Site"
 msgstr ""
 
-#: apps/admin/src/components/studio/breadcrumb.tsx:69 apps/admin/src/components/studio/inspector.tsx:137 apps/admin/src/components/studio/top-bar.tsx:83
+#: apps/admin/src/components/studio/breadcrumb.tsx:69 apps/admin/src/components/studio/inspector.tsx:146 apps/admin/src/components/studio/top-bar.tsx:91
 msgid "Page"
 msgstr ""
 
-#: apps/admin/src/components/studio/breadcrumb.tsx:70
+#: apps/admin/src/components/studio/breadcrumb.tsx:70 apps/admin/src/components/studio/section-toolbar.tsx:220
 msgid "Section"
 msgstr ""
 
@@ -711,64 +711,76 @@ msgstr ""
 msgid "Opening Studio…"
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:122
+#: apps/admin/src/components/studio/inspector.tsx:130
 msgid "Close settings"
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:137
+#: apps/admin/src/components/studio/inspector.tsx:146
 msgid "Home page"
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:143
+#: apps/admin/src/components/studio/inspector.tsx:152
 msgid "Status"
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:149
+#: apps/admin/src/components/studio/inspector.tsx:158 apps/admin/src/components/studio/inspector.tsx:165
 msgid "Template"
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:156
+#: apps/admin/src/components/studio/inspector.tsx:173
+msgid "Default"
+msgstr ""
+
+#: apps/admin/src/components/studio/inspector.tsx:181
+msgid "How the page is laid out around its sections."
+msgstr ""
+
+#: apps/admin/src/components/studio/inspector.tsx:187
 msgid "Click any text on the page to change it. Choose a block to see its settings here."
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:163
+#: apps/admin/src/components/studio/inspector.tsx:194
 msgid "Your home page lists your latest posts, so it has no text of its own to edit. Choose a page from the menu at the top to edit it."
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:170
+#: apps/admin/src/components/studio/inspector.tsx:201
 msgid "Nothing goes live until you press Publish. Undo with Ctrl+Z (⌘Z on a Mac)."
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:177
+#: apps/admin/src/components/studio/inspector.tsx:208
 msgid "Edit the title, address and other details"
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:198
+#: apps/admin/src/components/studio/inspector.tsx:231
 msgid "On all pages"
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:203
+#: apps/admin/src/components/studio/inspector.tsx:241
+msgid "This part of your design is on every page, so only people who can change the site’s design can edit it. Ask an administrator if it needs a change."
+msgstr ""
+
+#: apps/admin/src/components/studio/inspector.tsx:245
 msgid "This part of your design is on every page. Click any text in it to change it; your changes show on every page once you publish."
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:213
+#: apps/admin/src/components/studio/inspector.tsx:255
 msgid "You’ve changed this from the theme’s design."
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:214
+#: apps/admin/src/components/studio/inspector.tsx:256
 msgid "Your draft changes this."
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:222
+#: apps/admin/src/components/studio/inspector.tsx:264
 msgid "Reset to theme"
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:237
+#: apps/admin/src/components/studio/inspector.tsx:279
 #, js-format
 msgid "In the %s: changes show on every page."
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:239
+#: apps/admin/src/components/studio/inspector.tsx:281
 #, js-format
 msgid "Select the whole %s"
 msgstr ""
@@ -797,12 +809,8 @@ msgstr ""
 msgid "This block has no layout settings."
 msgstr ""
 
-#: apps/admin/src/components/studio/layout-model.ts:120
-msgid "Your site’s pages"
-msgstr ""
-
 #: apps/admin/src/components/studio/layout-model.ts:123
-msgid "Adding, nesting and reordering pages, and choosing the home page, arrive with #29."
+msgid "Your site’s pages"
 msgstr ""
 
 #: apps/admin/src/components/studio/layout-model.ts:129
@@ -825,60 +833,156 @@ msgstr ""
 msgid "Ready-made sections, in your site’s style"
 msgstr ""
 
-#: apps/admin/src/components/studio/layout-model.ts:141
-msgid "Sections arrive with #44: heroes, features, pricing, opening hours and more, ready to drop in."
-msgstr ""
-
-#: apps/admin/src/components/studio/layout-model.ts:147
+#: apps/admin/src/components/studio/layout-model.ts:144
 msgid "Layers"
 msgstr ""
 
-#: apps/admin/src/components/studio/layout-model.ts:148
+#: apps/admin/src/components/studio/layout-model.ts:145
 msgid "Everything on the page, as a list"
 msgstr ""
 
-#: apps/admin/src/components/studio/layout-model.ts:151
+#: apps/admin/src/components/studio/layout-model.ts:148
 msgid "Renaming, hiding on a device and drag to nest arrive with #50."
 msgstr ""
 
-#: apps/admin/src/components/studio/layout-model.ts:155
+#: apps/admin/src/components/studio/layout-model.ts:152
 msgid "Styles"
 msgstr ""
 
-#: apps/admin/src/components/studio/layout-model.ts:156
+#: apps/admin/src/components/studio/layout-model.ts:153
 msgid "Colours, fonts and spacing for the whole site"
 msgstr ""
 
-#: apps/admin/src/components/studio/layout-model.ts:159
+#: apps/admin/src/components/studio/layout-model.ts:156
 msgid "Site styles in Studio arrive with #46 and #47. Until then, use Appearance → Styles."
 msgstr ""
 
-#: apps/admin/src/components/studio/layout-model.ts:166
+#: apps/admin/src/components/studio/layout-model.ts:163
 msgid "Your images, video and audio"
 msgstr ""
 
-#: apps/admin/src/components/studio/layout-model.ts:169
+#: apps/admin/src/components/studio/layout-model.ts:166
 msgid "A media panel with your library and free photos arrives with #58. Until then, add an Image block from Elements and choose Media Library."
 msgstr ""
 
-#: apps/admin/src/components/studio/layout-model.ts:176
+#: apps/admin/src/components/studio/layout-model.ts:173
 msgid "Ask for changes in your own words"
 msgstr ""
 
-#: apps/admin/src/components/studio/layout-model.ts:179
+#: apps/admin/src/components/studio/layout-model.ts:176
 msgid "The AI panel arrives with #62: ask for site-wide changes and keep or undo each one."
 msgstr ""
 
-#: apps/admin/src/components/studio/layout-model.ts:196
+#: apps/admin/src/components/studio/layout-model.ts:193
 msgid "Desktop"
 msgstr ""
 
-#: apps/admin/src/components/studio/layout-model.ts:197
+#: apps/admin/src/components/studio/layout-model.ts:194
 msgid "Tablet"
 msgstr ""
 
-#: apps/admin/src/components/studio/layout-model.ts:198
+#: apps/admin/src/components/studio/layout-model.ts:195
 msgid "Mobile"
+msgstr ""
+
+#: apps/admin/src/components/studio/pages-panel.tsx:95
+#, js-format
+msgid "%s moved. It’s now a main page."
+msgstr ""
+
+#: apps/admin/src/components/studio/pages-panel.tsx:97
+#, js-format
+msgid "%1$s moved. It’s now under %2$s."
+msgstr ""
+
+#: apps/admin/src/components/studio/pages-panel.tsx:105
+msgid "The page can’t go there."
+msgstr ""
+
+#: apps/admin/src/components/studio/pages-panel.tsx:118
+#, js-format
+msgid "%s added. It goes live when you publish."
+msgstr ""
+
+#: apps/admin/src/components/studio/pages-panel.tsx:153
+msgid "Rename"
+msgstr ""
+
+#: apps/admin/src/components/studio/pages-panel.tsx:161
+msgid "Make this the home page"
+msgstr ""
+
+#: apps/admin/src/components/studio/pages-panel.tsx:167
+#, js-format
+msgid "%s will be the home page once you publish."
+msgstr ""
+
+#: apps/admin/src/components/studio/pages-panel.tsx:176 apps/admin/src/components/studio/section-toolbar.tsx:286
+msgid "Move up"
+msgstr ""
+
+#: apps/admin/src/components/studio/pages-panel.tsx:177 apps/admin/src/components/studio/section-toolbar.tsx:296
+msgid "Move down"
+msgstr ""
+
+#: apps/admin/src/components/studio/pages-panel.tsx:192
+#, js-format
+msgid "Put under %s"
+msgstr ""
+
+#: apps/admin/src/components/studio/pages-panel.tsx:200
+#, js-format
+msgid "Move out of %s"
+msgstr ""
+
+#: apps/admin/src/components/studio/pages-panel.tsx:209
+msgid "Edit details in Pages"
+msgstr ""
+
+#: apps/admin/src/components/studio/pages-panel.tsx:228 apps/admin/src/components/studio/pages-panel.tsx:408
+msgid "Page title"
+msgstr ""
+
+#: apps/admin/src/components/studio/pages-panel.tsx:243 apps/admin/src/components/studio/pages-panel.tsx:257
+msgid "Add page"
+msgstr ""
+
+#: apps/admin/src/components/studio/pages-panel.tsx:246
+msgid "Cancel"
+msgstr ""
+
+#: apps/admin/src/components/studio/pages-panel.tsx:284 apps/admin/src/components/studio/studio.tsx:721
+msgid "Latest posts"
+msgstr ""
+
+#: apps/admin/src/components/studio/pages-panel.tsx:286 apps/admin/src/components/studio/pages-panel.tsx:352
+msgid "Home"
+msgstr ""
+
+#: apps/admin/src/components/studio/pages-panel.tsx:348
+#, js-format
+msgid ", under %s"
+msgstr ""
+
+#: apps/admin/src/components/studio/pages-panel.tsx:356
+msgid "New"
+msgstr ""
+
+#: apps/admin/src/components/studio/pages-panel.tsx:360 apps/admin/src/components/studio/studio.tsx:1078
+msgid "Draft"
+msgstr ""
+
+#: apps/admin/src/components/studio/pages-panel.tsx:366
+#, js-format
+msgid "Actions for %s"
+msgstr ""
+
+#: apps/admin/src/components/studio/pages-panel.tsx:377
+msgid "No pages yet. Add one to start building your site."
+msgstr ""
+
+#: apps/admin/src/components/studio/pages-panel.tsx:382
+msgid "Drag a page to reorder it, or onto another page to put it under that one. With the keyboard, use the page’s ⋯ menu, or Alt and the arrow keys."
 msgstr ""
 
 #: apps/admin/src/components/studio/publish-panel.tsx:70
@@ -916,7 +1020,7 @@ msgstr ""
 msgid "Undo these changes"
 msgstr ""
 
-#: apps/admin/src/components/studio/publish-panel.tsx:161 apps/admin/src/components/studio/studio.tsx:759
+#: apps/admin/src/components/studio/publish-panel.tsx:161 apps/admin/src/components/studio/studio.tsx:1024
 msgid "Discard all"
 msgstr ""
 
@@ -927,197 +1031,337 @@ msgid_plural "Publish %d changes"
 msgstr[0] ""
 msgstr[1] ""
 
-#: apps/admin/src/components/studio/rail.tsx:47
+#: apps/admin/src/components/studio/rail.tsx:45
 msgid "Studio panels"
 msgstr ""
 
-#: apps/admin/src/components/studio/rail.tsx:137
+#: apps/admin/src/components/studio/rail.tsx:134
 msgid "Close panel"
 msgstr ""
 
-#: apps/admin/src/components/studio/rail.tsx:159
+#: apps/admin/src/components/studio/rail.tsx:157
 msgid "Blocks on this page"
 msgstr ""
 
-#: apps/admin/src/components/studio/rail.tsx:180
+#: apps/admin/src/components/studio/rail.tsx:178
 msgid "Open Appearance → Styles"
 msgstr ""
 
-#: apps/admin/src/components/studio/rail.tsx:205
-msgid "Home"
+#: apps/admin/src/components/studio/section-toolbar.tsx:247
+#, js-format
+msgid "Section %1$d of %2$d: %3$s"
 msgstr ""
 
-#: apps/admin/src/components/studio/rail.tsx:212 apps/admin/src/components/studio/studio.tsx:557
-msgid "Latest posts"
+#: apps/admin/src/components/studio/section-toolbar.tsx:285
+msgid "Move section up"
 msgstr ""
 
-#: apps/admin/src/components/studio/rail.tsx:219 apps/admin/src/components/studio/studio.tsx:813
-msgid "Draft"
+#: apps/admin/src/components/studio/section-toolbar.tsx:295
+msgid "Move section down"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:379
+#: apps/admin/src/components/studio/section-toolbar.tsx:305
+msgid "Duplicate section"
+msgstr ""
+
+#: apps/admin/src/components/studio/section-toolbar.tsx:306
+msgid "Duplicate"
+msgstr ""
+
+#: apps/admin/src/components/studio/section-toolbar.tsx:315
+msgid "Ask AI about this section (coming soon)"
+msgstr ""
+
+#: apps/admin/src/components/studio/section-toolbar.tsx:316
+msgid "Ask AI: coming soon"
+msgstr ""
+
+#: apps/admin/src/components/studio/section-toolbar.tsx:323
+msgid "More for this section"
+msgstr ""
+
+#: apps/admin/src/components/studio/section-toolbar.tsx:326
+msgid "Select section"
+msgstr ""
+
+#: apps/admin/src/components/studio/section-toolbar.tsx:330
+msgid "Add a section above"
+msgstr ""
+
+#: apps/admin/src/components/studio/section-toolbar.tsx:334
+msgid "Add a section below"
+msgstr ""
+
+#: apps/admin/src/components/studio/section-toolbar.tsx:338
+msgid "Remove section"
+msgstr ""
+
+#: apps/admin/src/components/studio/section-toolbar.tsx:351
+#, js-format
+msgid "Add a section above %s"
+msgstr ""
+
+#: apps/admin/src/components/studio/section-toolbar.tsx:355 apps/admin/src/components/studio/section-toolbar.tsx:367
+msgid "Add section"
+msgstr ""
+
+#: apps/admin/src/components/studio/section-toolbar.tsx:363
+#, js-format
+msgid "Add a section below %s"
+msgstr ""
+
+#: apps/admin/src/components/studio/sections-panel.tsx:169
+msgid "This page shows your latest posts, so it has no sections of its own. Open a page to add sections to it."
+msgstr ""
+
+#: apps/admin/src/components/studio/sections-panel.tsx:182 apps/admin/src/components/studio/sections-panel.tsx:188
+msgid "Search sections"
+msgstr ""
+
+#: apps/admin/src/components/studio/sections-panel.tsx:193
+msgid "Kind of section"
+msgstr ""
+
+#: apps/admin/src/components/studio/sections-panel.tsx:201
+msgid "All sections"
+msgstr ""
+
+#: apps/admin/src/components/studio/sections-panel.tsx:214
+msgid "Adding at the top of the page."
+msgstr ""
+
+#: apps/admin/src/components/studio/sections-panel.tsx:216
+msgid "Adding at the end of the page."
+msgstr ""
+
+#: apps/admin/src/components/studio/sections-panel.tsx:217
+#, js-format
+msgid "Adding after “%s”."
+msgstr ""
+
+#: apps/admin/src/components/studio/sections-panel.tsx:223
+msgid "Add at the usual place instead"
+msgstr ""
+
+#: apps/admin/src/components/studio/sections-panel.tsx:232
+msgid "The sections couldn’t load. Close the panel and open it again."
+msgstr ""
+
+#: apps/admin/src/components/studio/sections-panel.tsx:237
+msgid "Loading sections…"
+msgstr ""
+
+#: apps/admin/src/components/studio/sections-panel.tsx:242
+msgid "No sections match. Try another word."
+msgstr ""
+
+#: apps/admin/src/components/studio/sections-panel.tsx:257
+msgid "Click a section to add it to the page, or drag it to the place you want."
+msgstr ""
+
+#: apps/admin/src/components/studio/sections-panel.tsx:328
+#, js-format
+msgid "Add section: %s"
+msgstr ""
+
+#: apps/admin/src/components/studio/sections-panel.tsx:334
+msgid "Theme"
+msgstr ""
+
+#: apps/admin/src/components/studio/sections-panel.tsx:337
+msgid "Plugin"
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:488
 #, js-format
 msgid "Your draft is back: %d change isn’t published yet."
 msgid_plural "Your draft is back: %d changes aren’t published yet."
 msgstr[0] ""
 msgstr[1] ""
 
-#: apps/admin/src/components/studio/studio.tsx:415
+#: apps/admin/src/components/studio/studio.tsx:519
+msgid "This page isn’t in your draft any more."
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:535
 msgid "The theme has no template for this page."
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:503
+#: apps/admin/src/components/studio/studio.tsx:641
 msgid "Published. Your changes are live."
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:506
+#: apps/admin/src/components/studio/studio.tsx:644
 msgid "View page"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:545
+#: apps/admin/src/components/studio/studio.tsx:708
 msgid "Your changes were discarded. The page shows what visitors see."
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:617
+#: apps/admin/src/components/studio/studio.tsx:725
+msgid "New: goes live when you publish"
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:782
 msgid "Ask AI arrives with #63: select something on the page and ask for a change in your own words."
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:658
+#: apps/admin/src/components/studio/studio.tsx:840
+msgid "Only people who can change the site’s design can change its styles. You can edit your pages."
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:890
+#, js-format
+msgid "Section added: %s."
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:895 apps/admin/src/components/studio/studio.tsx:943
+msgid "Opening the page…"
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:907
 #, js-format
 msgid "Since you last worked on your draft, someone published changes to %s. If you publish your draft, your version replaces theirs."
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:670
+#: apps/admin/src/components/studio/studio.tsx:919
 msgid "Dismiss"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:682
+#: apps/admin/src/components/studio/studio.tsx:931
 msgid "Studio couldn’t open this page."
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:685
+#: apps/admin/src/components/studio/studio.tsx:934
 msgid "Try again"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:694
-msgid "Opening the page…"
-msgstr ""
-
-#: apps/admin/src/components/studio/studio.tsx:741
+#: apps/admin/src/components/studio/studio.tsx:1006
 msgid "Your latest changes aren’t saved"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:742
+#: apps/admin/src/components/studio/studio.tsx:1007
 msgid "Leave without them"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:750
+#: apps/admin/src/components/studio/studio.tsx:1015
 msgid "Studio couldn’t save them to your draft. Stay to try again, or open the other page and lose them."
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:758
+#: apps/admin/src/components/studio/studio.tsx:1023
 msgid "Discard all your changes?"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:766
+#: apps/admin/src/components/studio/studio.tsx:1031
 #, js-format
 msgid "The %d change in your draft will be thrown away. Your site stays as visitors see it now. This can’t be undone."
 msgid_plural "The %d changes in your draft will be thrown away. Your site stays as visitors see it now. This can’t be undone."
 msgstr[0] ""
 msgstr[1] ""
 
-#: apps/admin/src/components/studio/studio.tsx:810
+#: apps/admin/src/components/studio/studio.tsx:1075
 msgid "Published"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:815
+#: apps/admin/src/components/studio/studio.tsx:1080
 msgid "Pending review"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:817
+#: apps/admin/src/components/studio/studio.tsx:1082
 msgid "Private"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:819
+#: apps/admin/src/components/studio/studio.tsx:1084
 msgid "Scheduled"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:863
+#: apps/admin/src/components/studio/studio.tsx:1128
 msgid "Skip to the page"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:1189
+#: apps/admin/src/components/studio/studio.tsx:1461
 msgid "all pages"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:1283
+#: apps/admin/src/components/studio/studio.tsx:1567
+#, js-format
+msgid "The %s is on every page, so only people who can change the site’s design can edit it."
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:1571
 #, js-format
 msgid "You’re editing the %s. It’s on every page, so your changes show everywhere once you publish."
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:74
+#: apps/admin/src/components/studio/top-bar.tsx:82
 msgid "Back to the dashboard"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:79 apps/admin/src/lib/sections.ts:79
+#: apps/admin/src/components/studio/top-bar.tsx:87 apps/admin/src/lib/sections.ts:79
 msgid "Studio"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:98
+#: apps/admin/src/components/studio/top-bar.tsx:103
 msgid "Home (latest posts)"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:106
+#: apps/admin/src/components/studio/top-bar.tsx:111
 #, js-format
 msgid "%s (home page)"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:109
+#: apps/admin/src/components/studio/top-bar.tsx:113
+#, js-format
+msgid "%s (new)"
+msgstr ""
+
+#: apps/admin/src/components/studio/top-bar.tsx:116
 #, js-format
 msgid "%s (draft)"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:121
+#: apps/admin/src/components/studio/top-bar.tsx:129
 msgid "Preview size"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:147
+#: apps/admin/src/components/studio/top-bar.tsx:155
 msgid "Undo"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:148
+#: apps/admin/src/components/studio/top-bar.tsx:156
 msgid "Undo (Ctrl+Z)"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:157
+#: apps/admin/src/components/studio/top-bar.tsx:165
 msgid "Redo"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:158
+#: apps/admin/src/components/studio/top-bar.tsx:166
 msgid "Redo (Ctrl+Shift+Z)"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:174
+#: apps/admin/src/components/studio/top-bar.tsx:182
 msgid "Ask AI"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:175
+#: apps/admin/src/components/studio/top-bar.tsx:183
 msgid "Coming soon"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:185
+#: apps/admin/src/components/studio/top-bar.tsx:193
 msgid "Preview (opens in a new tab)"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:187
+#: apps/admin/src/components/studio/top-bar.tsx:195
 msgid "Preview"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:221
+#: apps/admin/src/components/studio/top-bar.tsx:229
 msgid "Draft saved"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:228
+#: apps/admin/src/components/studio/top-bar.tsx:236
 msgid "Couldn’t save. Try again"
 msgstr ""
 

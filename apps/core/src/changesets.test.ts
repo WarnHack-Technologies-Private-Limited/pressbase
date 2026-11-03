@@ -687,6 +687,18 @@ describe('changesets: pages Studio adds and arranges (#29)', () => {
     expect((await ctx.request('GET', `/wp/v2/pages/${ctx.page.id}`)).body.template).toBe('');
   });
 
+  it('gives anyone the home page settings in the REST index, as WordPress does', async () => {
+    const ctx = await site();
+    await ctx.kernel.options.set('show_on_front', 'page');
+    await ctx.kernel.options.set('page_on_front', ctx.page.id);
+    const index = await ctx.app.request('/wp-json/');
+    expect(await index.json()).toMatchObject({
+      show_on_front: 'page',
+      page_on_front: ctx.page.id,
+      page_for_posts: 0,
+    });
+  });
+
   it('refuses a template the theme doesn’t offer, a page under itself, and a missing ID', async () => {
     const ctx = await site();
     const res = await ctx.request('POST', '/pressbase/v1/changesets', {
