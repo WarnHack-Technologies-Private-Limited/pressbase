@@ -53,7 +53,8 @@ const CUSTOM_COLOUR_ATTRIBUTES = [
 ];
 
 const RAW_COLOUR = /#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color-mix)\(/i;
-const RAW_LENGTH = /\d(?:\.\d+)?(?:px|rem|em|ex|ch|vw|vh|vmin|vmax|svh|dvh|lvh|pt|pc|cm|mm|in|%)(?![a-z0-9])/i;
+const RAW_LENGTH =
+  /\d(?:\.\d+)?(?:px|rem|em|ex|ch|vw|vh|vmin|vmax|svh|dvh|lvh|pt|pc|cm|mm|in|%)(?![a-z0-9])/i;
 const PRESET = /^var:preset\|([a-z-]+)\|([a-z0-9-]+)$/;
 const CSS_PRESET = /var\(--wp--preset--([a-z-]+)--([a-z0-9-]+)\)/g;
 
@@ -85,14 +86,17 @@ function checkStyle(value: unknown, where: string, problems: string[]): void {
     return;
   }
   if (value && typeof value === 'object') {
-    for (const [key, child] of Object.entries(value)) checkStyle(child, `${where}.${key}`, problems);
+    for (const [key, child] of Object.entries(value))
+      checkStyle(child, `${where}.${key}`, problems);
   }
 }
 
 function checkHtml(block: ParsedBlock, name: string, problems: string[]): void {
   const html = block.innerContent.filter((c): c is string => typeof c === 'string').join('');
-  if (/<script\b|<style\b|<iframe\b/i.test(html)) problems.push(`${name}: scripts, styles and frames aren't allowed`);
-  if (/\son[a-z]+\s*=/i.test(html)) problems.push(`${name}: event handler attributes aren't allowed`);
+  if (/<script\b|<style\b|<iframe\b/i.test(html))
+    problems.push(`${name}: scripts, styles and frames aren't allowed`);
+  if (/\son[a-z]+\s*=/i.test(html))
+    problems.push(`${name}: event handler attributes aren't allowed`);
   if (/javascript:/i.test(html)) problems.push(`${name}: javascript: links aren't allowed`);
   for (const m of html.matchAll(/\sstyle="([^"]*)"/g)) {
     const css = (m[1] as string).replace(CSS_PRESET, '');
@@ -169,8 +173,10 @@ function checkHeadings(blocks: ParsedBlock[], pattern: LibraryPattern, problems:
   }
   let previous = first;
   for (const level of rest) {
-    if (level <= first) problems.push(`only the first heading may be h${first}; found another h${level}`);
-    else if (level > previous + 1) problems.push(`heading levels skip from h${previous} to h${level}`);
+    if (level <= first)
+      problems.push(`only the first heading may be h${first}; found another h${level}`);
+    else if (level > previous + 1)
+      problems.push(`heading levels skip from h${previous} to h${level}`);
     previous = level;
   }
 }

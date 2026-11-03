@@ -57,7 +57,13 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
     description: 'Bold sections designed to showcase key content.',
     wordpress: true,
   },
-  { name: 'about', section: 'about', label: 'About', description: 'Introduce yourself.', wordpress: true },
+  {
+    name: 'about',
+    section: 'about',
+    label: 'About',
+    description: 'Introduce yourself.',
+    wordpress: true,
+  },
   {
     name: 'features',
     section: 'features',
@@ -171,7 +177,14 @@ export function readPattern(dir: string, file: string): LibraryPattern {
   if (meta.description !== undefined && typeof meta.description !== 'string') {
     throw fail('"description" must be a string');
   }
-  const known = new Set(['title', 'description', 'categories', 'keywords', 'viewportWidth', 'slots']);
+  const known = new Set([
+    'title',
+    'description',
+    'categories',
+    'keywords',
+    'viewportWidth',
+    'slots',
+  ]);
   for (const key of Object.keys(meta)) if (!known.has(key)) throw fail(`"${key}" is not known`);
   const pattern: LibraryPattern = {
     name: `pressbase/${file}`,

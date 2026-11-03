@@ -22,9 +22,7 @@ export function slotValues(slots: Slot[]): SlotValues {
 
 function slotValue(slot: Slot): SlotValue {
   if (slot.kind === 'group') {
-    return slot.items.map((item) =>
-      slot.flat && item[0] ? slotValue(item[0]) : slotValues(item),
-    );
+    return slot.items.map((item) => (slot.flat && item[0] ? slotValue(item[0]) : slotValues(item)));
   }
   if (slot.kind === 'button' || slot.kind === 'image') return { ...slot.value };
   return slot.value;
@@ -46,7 +44,7 @@ export function fillSlots(
   values: SlotValues,
   options: FillOptions = {},
 ): ParsedBlock[] {
-  const copy = structuredClone(blocks);
+  const copy = blocks.map(cloneBlock);
   const declarations = options.declarations ?? {};
   const nodes = analyse(copy, declarations);
   fillNodes(nodes, values, options.format ?? 'html', declarations, '');
@@ -94,6 +92,17 @@ function fillNodes(
 }
 
 /* --------------------------------------------------------- growing groups */
+
+/** A deep copy of a parsed block (attributes are JSON). Works in Node.js and browsers alike. */
+function cloneBlock(block: ParsedBlock): ParsedBlock {
+  return {
+    blockName: block.blockName,
+    attrs: JSON.parse(JSON.stringify(block.attrs)),
+    innerBlocks: block.innerBlocks.map(cloneBlock),
+    innerHTML: block.innerHTML,
+    innerContent: [...block.innerContent],
+  };
+}
 
 const isWhitespace = (chunk: unknown): chunk is string =>
   typeof chunk === 'string' && chunk.trim() === '';
@@ -152,7 +161,7 @@ function resize(group: GroupNode, target: number): void {
   }
   while (group.count < target) {
     const last = parent.innerBlocks[start + group.count - 1] as ParsedBlock;
-    insertAfter(parent, start + group.count - 1, structuredClone(last));
+    insertAfter(parent, start + group.count - 1, cloneBlock(last));
     group.count++;
   }
 }

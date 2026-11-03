@@ -7,6 +7,7 @@ import {
   type GroupSlot,
   isPlaceholder,
   parseSlotDeclarations,
+  type Slot,
   SlotDeclarationError,
   type SlotValues,
   slotsJsonSchema,
@@ -39,7 +40,10 @@ const HERO = `<!-- wp:group {"align":"full","style":{"spacing":{"padding":{"top"
 <!-- /wp:buttons --></div>
 <!-- /wp:group -->`;
 
-const card = (title: string, text: string) => `<!-- wp:column {"style":{"spacing":{"padding":{"top":"var:preset|spacing|40"}}}} -->
+const card = (
+  title: string,
+  text: string,
+) => `<!-- wp:column {"style":{"spacing":{"padding":{"top":"var:preset|spacing|40"}}}} -->
 <div class="wp-block-column" style="padding-top:var(--wp--preset--spacing--40)"><!-- wp:image {"sizeSlug":"large"} -->
 <figure class="wp-block-image size-large"><img src="/a.jpg" alt="Fresh loaves on a shelf"/></figure>
 <!-- /wp:image -->
@@ -102,7 +106,12 @@ describe('extractSlots', () => {
       block: 'core/heading',
     });
     const actions = slots[3] as GroupSlot;
-    expect(actions).toMatchObject({ flat: true, minItems: 1, maxItems: 2, itemBlock: 'core/button' });
+    expect(actions).toMatchObject({
+      flat: true,
+      minItems: 1,
+      maxItems: 2,
+      itemBlock: 'core/button',
+    });
     expect(actions.items[0]?.[0]).toMatchObject({
       kind: 'button',
       value: { text: 'See the menu', url: '#menu' },
@@ -262,21 +271,23 @@ describe('fillSlots', () => {
       ['media', 'media'],
       ['body', 'body'],
       ['citation', 'citation'],
-      ['summary', 'summary'],
-      ['body-2', 'body'],
+      ['items', 'items'],
     ]);
+    // A question is an item even alone, so more can be added.
+    expect((slots[3] as GroupSlot).items[0]?.map((s) => s.id)).toEqual(['summary', 'body']);
     expect(roundTrip(markup)).toBe(markup);
     const out = serializeBlocks(
       fillSlots(blocks, {
         media: { url: '/d.jpg', alt: 'New' },
         citation: 'Asha, regular',
-        summary: 'Can I order a cake?',
+        items: [{ summary: 'Can I order a cake?' }, { summary: 'Do you deliver?' }],
       }),
     );
     expect(out).toContain('{"url":"/d.jpg","alt":"New","dimRatio":50}');
     expect(out).toContain('alt="New" src="/d.jpg"');
     expect(out).toContain('<cite>Asha, regular</cite>');
     expect(out).toContain('<summary>Can I order a cake?</summary>');
+    expect(out.match(/<!-- wp:details -->/g)).toHaveLength(2);
   });
 });
 
@@ -391,7 +402,7 @@ describe('placeholders', () => {
     const found = findPlaceholders(extractSlots(blocks));
     expect(found.map((f) => [f.path, f.reason])).toEqual([['list.0', 'text']]);
     const hero = findPlaceholders(extractSlots(parseBlocks(HERO)));
-    expect(hero.map((f) => [f.path, f.reason])).toEqual([["actions.1", "link"]]);
+    expect(hero.map((f) => [f.path, f.reason])).toEqual([['actions.1', 'link']]);
   });
 });
 
@@ -402,7 +413,7 @@ describe('transferSlots', () => {
     const { values, unused } = transferSlots(from, to);
     expect(values.title).toBe('Bread baked <em>before</em> sunrise');
     // The buttons have no button to go to in the cards, and nothing takes the eyebrow or text.
-    expect(unused.map((u) => u.path)).toEqual(["eyebrow", "body", "actions.0", "actions.1"]);
+    expect(unused.map((u) => u.path)).toEqual(['eyebrow', 'body', 'actions.0', 'actions.1']);
     expect(values.items).toBeUndefined();
     const out = serializeBlocks(fillSlots(parseBlocks(FEATURES), values));
     expect(out).toContain('<h2 class="wp-block-heading">Bread baked <em>before</em> sunrise</h2>');
@@ -416,7 +427,9 @@ describe('transferSlots', () => {
     const source = extractSlots(four);
     const sourceGroup = source[1] as GroupSlot;
     const extra = sourceGroup.items[2] ?? [];
-    sourceGroup.items.push(extra.map((s) => (s.id === 'title' ? { ...s, value: 'Fourth' } : s)));
+    sourceGroup.items.push(
+      extra.map((s) => (s.id === 'title' ? ({ ...s, value: 'Fourth' } as Slot) : s)),
+    );
     const { values, unused } = transferSlots(source, extractSlots(parseBlocks(FEATURES)));
     expect((values.items as unknown[]).length).toBe(3);
     expect(unused.map((u) => u.path)).toEqual(['items.3.media', 'items.3.title', 'items.3.body']);

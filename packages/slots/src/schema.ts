@@ -33,7 +33,9 @@ const ROLE_HINTS: Record<string, string> = {
 function describe(slot: Slot): string {
   const parts: string[] = [];
   const name = slot.label ?? ROLE_HINTS[slot.role] ?? slot.role;
-  parts.push(slot.kind === 'heading' && slot.level ? `${name} (heading level ${slot.level}).` : `${name}.`);
+  parts.push(
+    slot.kind === 'heading' && slot.level ? `${name} (heading level ${slot.level}).` : `${name}.`,
+  );
   if (slot.description) parts.push(slot.description);
   if (slot.kind === 'heading' || slot.kind === 'text' || slot.kind === 'button') {
     const example = slot.kind === 'button' ? slot.value.text : slot.value;
@@ -98,7 +100,8 @@ function slotSchema(slot: Slot): JsonSchema {
   return {
     type: 'array',
     description: [
-      slot.label ?? (slot.role === 'items' ? 'Repeated items' : (ROLE_HINTS[slot.role] ?? slot.role)),
+      slot.label ??
+        (slot.role === 'items' ? 'Repeated items' : (ROLE_HINTS[slot.role] ?? slot.role)),
       `${slot.minItems === slot.maxItems ? slot.minItems : `${slot.minItems} to ${slot.maxItems}`} items; the pattern has ${slot.items.length}.`,
       slot.description ?? '',
     ]

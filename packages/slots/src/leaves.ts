@@ -45,7 +45,10 @@ function setChunk(block: ParsedBlock, index: number, html: string): void {
   block.innerHTML = block.innerContent.filter((c): c is string => typeof c === 'string').join('');
 }
 
-function chunk(block: ParsedBlock, which: 'first' | 'last'): { index: number; html: string } | null {
+function chunk(
+  block: ParsedBlock,
+  which: 'first' | 'last',
+): { index: number; html: string } | null {
   const index = chunkIndex(block, which);
   return index === -1 ? null : { index, html: block.innerContent[index] as string };
 }
@@ -221,7 +224,10 @@ export function leavesOf(block: ParsedBlock): BlockLeaves {
       return { before: [buttonLeaf], after: [] };
     case 'core/quote': {
       const cite: TextSpec = { tag: 'cite', which: 'last', last: true };
-      return { before: [], after: hasElement(block, cite) ? [textLeaf('text', 'citation', cite)] : [] };
+      return {
+        before: [],
+        after: hasElement(block, cite) ? [textLeaf('text', 'citation', cite)] : [],
+      };
     }
     case 'core/pullquote': {
       const cite: TextSpec = { tag: 'cite', last: true };

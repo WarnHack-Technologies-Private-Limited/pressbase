@@ -46,7 +46,8 @@ function allLeaves(slot: Slot, path: string): UnusedValue[] {
 function kindsOf(slots: Slot[]): Set<string> {
   const kinds = new Set<string>();
   for (const slot of slots) {
-    if (slot.kind === 'group') for (const item of slot.items) for (const k of kindsOf(item)) kinds.add(k);
+    if (slot.kind === 'group')
+      for (const item of slot.items) for (const k of kindsOf(item)) kinds.add(k);
     else kinds.add(family(slot));
   }
   return kinds;
@@ -74,7 +75,10 @@ export function transferSlots(from: Slot[], to: Slot[], prefix = ''): SlotTransf
   const targetLeaves = to.filter((s): s is Leaf => s.kind !== 'group');
   const pending: Leaf[] = [];
   for (const target of targetLeaves) {
-    const source = pick(sourceLeaves, (s) => s.role === target.role && family(s) === family(target));
+    const source = pick(
+      sourceLeaves,
+      (s) => s.role === target.role && family(s) === family(target),
+    );
     if (source) values[target.id] = leafValue(source);
     else pending.push(target);
   }

@@ -32,18 +32,21 @@ const NAMED_ENTITIES: Record<string, string> = {
 
 /** Decodes the HTML entities block markup uses (numeric ones and the common named ones). */
 export function decodeEntities(text: string): string {
-  return text.replace(/&(#[xX][0-9a-fA-F]+|#\d+|[A-Za-z][A-Za-z0-9]*);/g, (match, entity: string) => {
-    if (entity[0] === '#') {
-      const code =
-        entity[1] === 'x' || entity[1] === 'X'
-          ? Number.parseInt(entity.slice(2), 16)
-          : Number.parseInt(entity.slice(1), 10);
-      return Number.isFinite(code) && code > 0 && code <= 0x10ffff
-        ? String.fromCodePoint(code)
-        : match;
-    }
-    return NAMED_ENTITIES[entity] ?? match;
-  });
+  return text.replace(
+    /&(#[xX][0-9a-fA-F]+|#\d+|[A-Za-z][A-Za-z0-9]*);/g,
+    (match, entity: string) => {
+      if (entity[0] === '#') {
+        const code =
+          entity[1] === 'x' || entity[1] === 'X'
+            ? Number.parseInt(entity.slice(2), 16)
+            : Number.parseInt(entity.slice(1), 10);
+        return Number.isFinite(code) && code > 0 && code <= 0x10ffff
+          ? String.fromCodePoint(code)
+          : match;
+      }
+      return NAMED_ENTITIES[entity] ?? match;
+    },
+  );
 }
 
 /** Rich text to plain text: tags removed, entities decoded, whitespace collapsed. */
@@ -126,7 +129,8 @@ export function getAttr(tag: string, name: string): string | null {
 /** Sets (or, with null, removes) an attribute; the value is escaped here. */
 export function setAttr(tag: string, name: string, value: string | null): string {
   const pattern = attrPattern(name);
-  if (value === null) return tag.replace(new RegExp(`\\s${name}\\s*=\\s*("[^"]*"|'[^']*')`, 'i'), '');
+  if (value === null)
+    return tag.replace(new RegExp(`\\s${name}\\s*=\\s*("[^"]*"|'[^']*')`, 'i'), '');
   const quoted = `"${escAttr(value)}"`;
   if (pattern.test(tag)) return tag.replace(pattern, (_m, before: string) => `${before}${quoted}`);
   return tag.replace(/\s*(\/?)>$/, (_m, slash: string) => ` ${name}=${quoted}${slash ? '/' : ''}>`);

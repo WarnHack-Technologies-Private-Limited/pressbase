@@ -63,7 +63,8 @@ export function signature(block: ParsedBlock): string {
     const always = block.blockName !== null && block.blockName in COLLECTIONS;
     for (const kid of kids) {
       const last = collapsed[collapsed.length - 1];
-      if (last === `${kid}*` || (last === kid && !always)) collapsed[collapsed.length - 1] = `${kid}*`;
+      if (last === `${kid}*` || (last === kid && !always))
+        collapsed[collapsed.length - 1] = `${kid}*`;
       else collapsed.push(always ? `${kid}*` : kid);
     }
     inner = `(${collapsed.join(',')})`;
@@ -80,7 +81,9 @@ function holdsSlots(block: ParsedBlock): boolean {
 
 function blockName(block: ParsedBlock): string | undefined {
   const metadata = block.attrs.metadata as { name?: unknown } | undefined;
-  return typeof metadata?.name === 'string' && metadata.name.trim() ? metadata.name.trim() : undefined;
+  return typeof metadata?.name === 'string' && metadata.name.trim()
+    ? metadata.name.trim()
+    : undefined;
 }
 
 export function slugify(text: string): string {
@@ -106,8 +109,12 @@ function runsOf(block: ParsedBlock, groups: ReadonlySet<string>): [number, numbe
   const layout = (block.attrs.layout as { type?: unknown } | undefined)?.type;
   if (
     kids.length > 0 &&
-    (block.blockName === 'core/columns' || layout === 'grid' || (name && groups.has(slugify(name)))) &&
-    kids.every((kid) => kid.blockName && !SINGLE_SLOT_BLOCKS.has(kid.blockName) && holdsSlots(kid)) &&
+    (block.blockName === 'core/columns' ||
+      layout === 'grid' ||
+      (name && groups.has(slugify(name)))) &&
+    kids.every(
+      (kid) => kid.blockName && !SINGLE_SLOT_BLOCKS.has(kid.blockName) && holdsSlots(kid),
+    ) &&
     kids.every((kid) => signature(kid) === signature(kids[0] as ParsedBlock))
   ) {
     return [[0, kids.length]];
@@ -128,7 +135,12 @@ function runsOf(block: ParsedBlock, groups: ReadonlySet<string>): [number, numbe
   return runs;
 }
 
-function walkBlock(block: ParsedBlock, path: number[], out: Node[], groups: ReadonlySet<string>): void {
+function walkBlock(
+  block: ParsedBlock,
+  path: number[],
+  out: Node[],
+  groups: ReadonlySet<string>,
+): void {
   if (block.blockName === null || OPAQUE_BLOCKS.has(block.blockName)) return;
   const leaves = leavesOf(block);
   const name = blockName(block);
@@ -147,7 +159,12 @@ function walkBlock(block: ParsedBlock, path: number[], out: Node[], groups: Read
   for (const leaf of leaves.after) out.push(leafNode(leaf));
 }
 
-function walkChildren(block: ParsedBlock, path: number[], out: Node[], groups: ReadonlySet<string>): void {
+function walkChildren(
+  block: ParsedBlock,
+  path: number[],
+  out: Node[],
+  groups: ReadonlySet<string>,
+): void {
   const runs = runsOf(block, groups);
   const kids = block.innerBlocks;
   let r = 0;
@@ -231,7 +248,8 @@ function declare(nodes: Node[], declarations: SlotDeclarations, prefix: string):
 function declaredGroups(declarations: SlotDeclarations): Set<string> {
   const ids = new Set<string>();
   for (const [key, d] of Object.entries(declarations)) {
-    if (d.minItems !== undefined || d.maxItems !== undefined) ids.add(key.split('.').pop() as string);
+    if (d.minItems !== undefined || d.maxItems !== undefined)
+      ids.add(key.split('.').pop() as string);
   }
   return ids;
 }
@@ -254,7 +272,11 @@ export function analyseGroupItems(
   const items: Node[][] = [];
   const groups = declaredGroups(declarations);
   for (let k = group.start; k < group.start + group.count; k++) {
-    const item = analyseItem(group.parent.innerBlocks[k] as ParsedBlock, [...group.path, k], groups);
+    const item = analyseItem(
+      group.parent.innerBlocks[k] as ParsedBlock,
+      [...group.path, k],
+      groups,
+    );
     items.push(declare(item, declarations, `${key}.`));
   }
   return items;
@@ -313,7 +335,13 @@ export function toSlot(node: Node): Slot {
   if (leaf.kind === 'image') {
     const value = leaf.read(block) as { url: string; alt: string };
     const subject = d?.subject ?? (value.alt || undefined);
-    return { ...common(node), kind: 'image', block: block_, value, ...(subject ? { subject } : {}) };
+    return {
+      ...common(node),
+      kind: 'image',
+      block: block_,
+      value,
+      ...(subject ? { subject } : {}),
+    };
   }
   if (leaf.kind === 'button') {
     const value = leaf.read(block) as { text: string; url: string };

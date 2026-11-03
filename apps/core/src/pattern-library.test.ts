@@ -70,7 +70,10 @@ describe('slots of the Pressbase theme’s patterns', () => {
     expect(shape(team.items[0] ?? [])).toEqual(['media', 'title', 'body']);
     expect(team.items[0]?.[0]).toMatchObject({
       kind: 'image',
-      value: { url: '/wp-content/themes/pressbase/assets/images/portrait-1.svg', alt: 'Placeholder portrait' },
+      value: {
+        url: '/wp-content/themes/pressbase/assets/images/portrait-1.svg',
+        alt: 'Placeholder portrait',
+      },
     });
     // The highlighted middle plan has an extra label, so plans aren't alike: each is its own slots.
     expect(shape(slotsOf('pricing.php'))).toContain('list-2[4]');
@@ -80,7 +83,10 @@ describe('slots of the Pressbase theme’s patterns', () => {
     const byFile = new Map((await themePatterns()).map((p) => [p.file, p.content]));
     const blocks = parseBlocks(byFile.get('faq.php') as string);
     const questions = (n: number) =>
-      Array.from({ length: n }, (_, i) => ({ summary: `Question ${i + 1}?`, body: `Answer ${i + 1}.` }));
+      Array.from({ length: n }, (_, i) => ({
+        summary: `Question ${i + 1}?`,
+        body: `Answer ${i + 1}.`,
+      }));
     for (const n of [1, 2, 7]) {
       const markup = serializeBlocks(fillSlots(blocks, { items: questions(n) }));
       expect(markup.match(/<!-- wp:details[ -]/g)).toHaveLength(n);
@@ -96,10 +102,15 @@ describe('slots of the Pressbase theme’s patterns', () => {
     const from = extractSlots(parseBlocks(byFile.get('cta-band.php') as string));
     const hero = libraryPatterns().find((p) => p.name === 'pressbase/hero-centered');
     const blocks = parseBlocks(hero?.content as string);
-    const { values, unused } = transferSlots(from, extractSlots(blocks, { declarations: hero?.slots }));
+    const { values, unused } = transferSlots(
+      from,
+      extractSlots(blocks, { declarations: hero?.slots }),
+    );
     expect(unused).toEqual([]);
     const markup = serializeBlocks(fillSlots(blocks, values, { declarations: hero?.slots }));
-    expect(markup).toContain('<h1 class="wp-block-heading has-text-align-center has-xx-large-font-size">');
+    expect(markup).toContain(
+      '<h1 class="wp-block-heading has-text-align-center has-xx-large-font-size">',
+    );
     expect(markup).not.toContain('Good work, done properly');
   });
 });
@@ -117,7 +128,10 @@ describe('the Slots header of a PHP pattern', () => {
 <!-- /wp:paragraph -->`;
 
   it('declares slots', () => {
-    const result = loadPhpPattern(pattern('{"body":{"facts":true,"placeholder":"[Add your hours]"}}'), CONTEXT);
+    const result = loadPhpPattern(
+      pattern('{"body":{"facts":true,"placeholder":"[Add your hours]"}}'),
+      CONTEXT,
+    );
     expect(result).toMatchObject({
       ok: true,
       pattern: { slots: { body: { facts: true, placeholder: '[Add your hours]' } } },
@@ -134,7 +148,8 @@ describe('the Slots header of a PHP pattern', () => {
 
 describe('the Pressbase pattern library', () => {
   it('follows the library rules: presets, core blocks, headings, alt text, no scripts', () => {
-    for (const pattern of libraryPatterns()) expect(checkPattern(pattern), pattern.name).toEqual([]);
+    for (const pattern of libraryPatterns())
+      expect(checkPattern(pattern), pattern.name).toEqual([]);
   });
 
   it('shares no name with the theme’s patterns or core’s built-ins', async () => {
@@ -177,7 +192,8 @@ describe('the Pressbase pattern library', () => {
       label: string;
     }[];
     const names = categories.map((c) => c.name);
-    for (const category of LIBRARY_CATEGORIES) expect(names, category.name).toContain(category.name);
+    for (const category of LIBRARY_CATEGORIES)
+      expect(names, category.name).toContain(category.name);
     // WordPress's own categories keep WordPress's labels; each is registered once.
     expect(categories.find((c) => c.name === 'banner')?.label).toBe('Banners');
     expect(categories.find((c) => c.name === 'opening-hours')?.label).toBe('Opening hours');
