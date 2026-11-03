@@ -15,6 +15,7 @@ import { aiRoutes } from './routes/ai';
 import { authRoutes } from './routes/auth';
 import { autosavesRoutes } from './routes/autosaves';
 import { blockRoutes } from './routes/blocks';
+import { changesetsRoutes } from './routes/changesets';
 import { commentCountRoutes, commentsRoutes } from './routes/comments';
 import { commentsPostRoutes } from './routes/comments-post';
 import { cronRoutes } from './routes/cron';
@@ -167,6 +168,10 @@ export function createApp(kernel: Kernel) {
   // revisions) and the live preview, /pressbase/v1/global-styles/preview.
   // See docs/architecture/themes.md#global-styles.
   installed.route('/', globalStylesRoutes(kernel));
+
+  // Changesets (v0.8): one draft across styles, templates, pages, menus and
+  // options, published together. See docs/architecture/changesets.md, ADR 0022.
+  installed.route('/pressbase/v1/changesets', changesetsRoutes());
 
   // Site Health (v0.6): Pressbase's screen data and WordPress's
   // wp-site-health/v1 routes, before plugins' catch-all. See docs/architecture/site-health.md.

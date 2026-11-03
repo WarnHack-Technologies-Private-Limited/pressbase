@@ -4,6 +4,7 @@ import { currentUserCan } from '../auth/meta-caps';
 import type { CurrentUser } from '../auth/users';
 import { siteInfo, termLink } from '../blocks/helpers';
 import { addCacheTags, CacheTag } from '../cache/tags';
+import { previewPost } from '../changesets/preview';
 import {
   basePath,
   type PermalinkBases,
@@ -557,7 +558,9 @@ async function mainQuery(
     return undefined;
   };
 
-  const singular = async (post: Post | undefined, kind: 'post' | 'page'): Promise<MainQuery> => {
+  const singular = async (found: Post | undefined, kind: 'post' | 'page'): Promise<MainQuery> => {
+    // Lookups by path or slug read rows directly; a changeset preview shows its version (ADR 0022).
+    const post = previewPost(found);
     if (!post || !(await canView(kernel, user, post))) return notFound();
     const redirect = await canonical(post);
     if (redirect) return redirect;

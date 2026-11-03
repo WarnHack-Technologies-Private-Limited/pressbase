@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { schema } from '@pressbase/db';
 import { and, desc, eq } from 'drizzle-orm';
+import { previewPost } from '../changesets/preview';
 import type { Kernel } from '../kernel';
 import type { Post } from './posts';
 
@@ -38,7 +39,8 @@ export async function mostRecentNavigation(kernel: Kernel): Promise<Post | undef
     .where(and(eq(schema.posts.type, NAVIGATION), eq(schema.posts.status, 'publish')))
     .orderBy(desc(schema.posts.date), desc(schema.posts.id))
     .limit(1);
-  return post;
+  // A changeset preview shows its version of the menu (v0.8, ADR 0022).
+  return previewPost(post);
 }
 
 /** A published `wp_navigation` post, or undefined. */

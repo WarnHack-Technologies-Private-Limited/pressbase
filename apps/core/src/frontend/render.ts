@@ -178,6 +178,10 @@ export async function renderPublicPage(
   kernel: Kernel,
   request: RenderRequest,
 ): Promise<RenderedPage> {
+  // Changeset previews (v0.8, ADR 0022): `?changeset_uuid=` renders with the
+  // changeset's entries applied, never cached. See changesets/service.ts.
+  const preview = await kernel.changesets.renderPreview(request, (r) => renderPublicPage(kernel, r));
+  if (preview) return preview;
   // Public pages are in the site's language, whoever asks (get_locale(), not the user's).
   const { result, tags } = await kernel.i18n.withLocale(kernel.i18n.getLocale(), () =>
     collectCacheTags(() => route(kernel, request)),
