@@ -10,6 +10,8 @@ export {
   LAYOUT_DEFINITIONS,
   type LayoutDefinition,
   PRESETS_METADATA,
+  VALID_BLOCK_PSEUDO_SELECTORS,
+  VALID_ELEMENT_PSEUDO_SELECTORS,
 } from './constants';
 export { CORE_BLOCK_STYLE_METADATA } from './data/core-blocks';
 export { WORDPRESS_THEME_JSON } from './data/wordpress-theme-json';
@@ -65,6 +67,11 @@ export {
   styleVariationScope,
   VARIATION_PROPERTIES,
 } from './style-variations';
+export {
+  type StyleEngineRule,
+  styleEngineDeclarations,
+  styleEngineStylesheet,
+} from './style-engine';
 export { computeSpacingSizes, supportsLayout, ThemeJson } from './theme-json';
 export type * from './types';
 export {
