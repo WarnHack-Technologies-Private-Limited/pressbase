@@ -6,7 +6,6 @@
  * folder. Wiring is documented in docs/architecture/block-editor.md.
  */
 
-import apiFetch from '@wordpress/api-fetch';
 import {
   BlockCanvas,
   BlockEditorProvider,
@@ -16,27 +15,13 @@ import {
   __experimentalLibrary as InserterLibrary,
   __experimentalListView as ListView,
 } from '@wordpress/block-editor';
-import { registerCoreBlocks } from '@wordpress/block-library';
-import {
-  type Block as BlockInstance,
-  getBlockType,
-  getBlockTypes,
-  parse,
-  serialize,
-  setFreeformContentHandlerName,
-} from '@wordpress/blocks';
+import { type Block as BlockInstance, parse, serialize } from '@wordpress/blocks';
 import { Popover } from '@wordpress/components';
 import { useStateWithHistory } from '@wordpress/compose';
 import { useDispatch, useRegistry, useSelect } from '@wordpress/data';
 // The editor's own toolbar uses WordPress's strings, translated with Gutenberg's (translations.ts).
-import { __, isRTL } from '@wordpress/i18n';
-import '@wordpress/format-library';
-import {
-  store as keyboardShortcutsStore,
-  ShortcutProvider,
-  useShortcut,
-} from '@wordpress/keyboard-shortcuts';
-import { store as noticesStore } from '@wordpress/notices';
+import { __ } from '@wordpress/i18n';
+import { ShortcutProvider } from '@wordpress/keyboard-shortcuts';
 import { ListTree, Plus, Redo2, Undo2, X } from 'lucide-react';
 import {
   type KeyboardEvent as ReactKeyboardEvent,
@@ -48,55 +33,22 @@ import {
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { type AdminBlock, useAdminExtensions } from '../extensions/host';
 import { Button } from '../ui/button';
-import { configureApiFetch } from './api-fetch';
-import { assetUrl, CANVAS_STYLESHEETS, directional, UI_STYLESHEETS } from './assets';
 import styles from './block-editor.module.css';
-import { allowedBlockTypes, countWords, readingMinutes } from './blocks';
-import { type EditorFeatures, loadEditorFeatures, NO_FEATURES, toEditorPattern } from './features';
-import { fetchLinkSuggestions } from './link-suggestions';
+import { countWords, readingMinutes } from './blocks';
 import {
-  ALLOWED_MIME_TYPES,
-  categoriesWithMedia,
-  createInserterMediaCategories,
-  type InserterMediaCategory,
-} from './media-categories';
-import { registerMediaLibrary } from './media-library';
-import { createMediaUpload } from './media-upload';
-import { preparePluginBlocks } from './server-blocks';
+  EditorUiStylesheets,
+  editorSettings,
+  MediaCategories,
+  NoticesBridge,
+  type ResolvedAssets,
+  resolvedAssets,
+  saveEditedMenus,
+  UndoShortcuts,
+  useEditorFeatures,
+  usePluginBlocks,
+} from './kit';
 import { EditorSkeleton } from './skeleton';
-
-/* ------------------------------------------------------------- one-time setup */
-
-configureApiFetch(apiFetch);
-if (!getBlockType('core/paragraph')) {
-  registerCoreBlocks();
-  // Content that isn't block markup (raw HTML from imports or API clients)
-  // opens as a Custom HTML block, unchanged. WordPress uses the Classic block,
-  // which needs TinyMCE.
-  setFreeformContentHandlerName('core/html');
-}
-
-/**
- * HTML for the canvas iframe's <head>: WordPress's stylesheets, then plugin
- * blocks' `style` and `editorStyle` (as _wp_get_iframed_editor_assets() adds
- * block styles). Stable per list, so the iframe is built once.
- */
-function resolvedAssets(blockStyles: readonly string[]) {
-  return {
-    styles: [
-      ...CANVAS_STYLESHEETS.map((name) => assetUrl(directional(name, isRTL()))),
-      ...blockStyles,
-    ]
-      .map((href) => `<link rel="stylesheet" href="${href.replace(/"/g, '&quot;')}">`)
-      .join(''),
-    scripts: '',
-  };
-}
-
-/** The inserter's Media tab (Images, Videos, Audio), once the media library exists. */
-const MEDIA_CATEGORIES = createInserterMediaCategories();
 
 /* -------------------------------------------------------------------- types */
 
@@ -144,30 +96,13 @@ type Panel = 'inserter' | 'list' | null;
  * then the editor, so saved plugin blocks parse as themselves.
  */
 export default function BlockEditor(props: BlockEditorProps) {
-  const { blocks = [] } = useAdminExtensions();
-  const [ready, setReady] = useState(false);
-  const key = JSON.stringify(blocks);
-  // Once per editor, with the blocks known then.
-  useEffect(() => {
-    let live = true;
-    preparePluginBlocks(JSON.parse(key) as AdminBlock[])
-      .catch((error) => console.error('Plugin blocks couldn’t be prepared:', error))
-      .finally(() => {
-        if (live) setReady(true);
-      });
-    return () => {
-      live = false;
-    };
-  }, []);
-  const assets = useMemo(
-    () => resolvedAssets((JSON.parse(key) as AdminBlock[]).flatMap((block) => block.styles)),
-    [key],
-  );
+  const { ready, blockStyles } = usePluginBlocks();
+  const assets = useMemo(() => resolvedAssets(blockStyles), [blockStyles]);
   if (!ready) return <EditorSkeleton />;
   return <Editor {...props} resolvedAssets={assets} />;
 }
 
-function Editor(props: BlockEditorProps & { resolvedAssets: ReturnType<typeof resolvedAssets> }) {
+function Editor(props: BlockEditorProps & { resolvedAssets: ResolvedAssets }) {
   const { initialContent, onContentChange, onReady, postId, canUnfilteredHtml } = props;
   const [initial] = useState(() => {
     const blocks = parse(initialContent);
@@ -177,24 +112,12 @@ function Editor(props: BlockEditorProps & { resolvedAssets: ReturnType<typeof re
     blocks: initial.blocks,
   });
   const value = history.value as { blocks: BlockInstance[]; selection?: unknown };
-  const [features, setFeatures] = useState<EditorFeatures>(NO_FEATURES);
+  const features = useEditorFeatures();
   const [panel, setPanel] = useState<Panel>(null);
   const [words, setWords] = useState(() => countWords(initial.baseline));
 
   const blocksRef = useRef(value.blocks);
   blocksRef.current = value.blocks;
-
-  useEffect(() => {
-    let live = true;
-    loadEditorFeatures().then((loaded) => {
-      if (!live) return;
-      if (loaded.media) registerMediaLibrary();
-      setFeatures(loaded);
-    });
-    return () => {
-      live = false;
-    };
-  }, []);
 
   // Hand the parent a way to read the content on demand (saving, autosave).
   const registry = useRegistry();
@@ -218,43 +141,18 @@ function Editor(props: BlockEditorProps & { resolvedAssets: ReturnType<typeof re
     return () => clearTimeout(timer);
   }, [value.blocks, initial.blocks, onContentChange]);
 
-  const settings = useMemo(() => {
-    const names = getBlockTypes().map((type) => type.name);
-    return {
-      alignWide: true,
-      bodyPlaceholder: __('Type / to choose a block'),
-      allowedBlockTypes: allowedBlockTypes(names, features),
-      __experimentalBlockPatterns: features.patterns.map(toEditorPattern),
-      __experimentalBlockPatternCategories: features.patternCategories,
-      __experimentalReusableBlocks: features.syncedPatterns ?? [],
-      __experimentalCanUserUseUnfilteredHTML: canUnfilteredHtml,
-      __experimentalFetchLinkSuggestions: fetchLinkSuggestions,
-      __unstableResolvedAssets: props.resolvedAssets,
-      mediaUpload: createMediaUpload({ available: features.media, postId }),
-      imageEditing: features.media,
-      // The Media tab only lists categories whose type is allowed here; the
-      // categories themselves are registered by <MediaCategories>.
-      ...(features.media ? { allowedMimeTypes: ALLOWED_MIME_TYPES } : {}),
-      enableOpenverseMediaCategory: false,
-      canLockBlocks: true,
-      codeEditingEnabled: true,
-      isRTL: isRTL(),
-    };
-  }, [features, canUnfilteredHtml, postId, props.resolvedAssets]);
+  const settings = useMemo(
+    () =>
+      editorSettings({ features, canUnfilteredHtml, postId, assets: props.resolvedAssets }),
+    [features, canUnfilteredHtml, postId, props.resolvedAssets],
+  );
 
   const togglePanel = (next: Exclude<Panel, null>) =>
     setPanel((current) => (current === next ? null : next));
 
   return (
     <ShortcutProvider className={styles.root}>
-      {UI_STYLESHEETS.map((name) => (
-        <link
-          key={name}
-          rel="stylesheet"
-          href={assetUrl(directional(name, isRTL()))}
-          precedence="pressbase-editor"
-        />
-      ))}
+      <EditorUiStylesheets />
       <BlockEditorProvider
         value={value.blocks}
         selection={value.selection as never}
@@ -345,30 +243,6 @@ function Editor(props: BlockEditorProps & { resolvedAssets: ReturnType<typeof re
 }
 
 /* ----------------------------------------------------------------- pieces */
-
-/** core-data's store, as the Navigation block uses it (only the calls made here). */
-interface CoreDataStore {
-  __experimentalGetDirtyEntityRecords?: () => { kind: string; name: string; key: number }[];
-}
-
-/** Saves the `wp_navigation` records the Navigation block left edited in core-data. */
-async function saveEditedMenus(registry: ReturnType<typeof useRegistry>): Promise<void> {
-  let dirty: { kind: string; name: string; key: number }[] = [];
-  try {
-    const select = registry.select('core') as CoreDataStore | undefined;
-    dirty = select?.__experimentalGetDirtyEntityRecords?.() ?? [];
-  } catch {
-    return; // core-data isn't loaded: nothing was edited through it.
-  }
-  const dispatch = registry.dispatch('core') as {
-    saveEditedEntityRecord?: (kind: string, name: string, key: number) => Promise<unknown>;
-  };
-  for (const record of dirty) {
-    if (record.kind === 'postType' && record.name === 'wp_navigation') {
-      await dispatch.saveEditedEntityRecord?.(record.kind, record.name, record.key);
-    }
-  }
-}
 
 /** The inserter or list view, over the left edge of the canvas. */
 function SidePanel({ kind, onClose }: { kind: Exclude<Panel, null>; onClose: () => void }) {
@@ -501,83 +375,6 @@ function TitleField({
       />
     </div>
   );
-}
-
-/** Undo and redo, from anywhere in the editor (WordPress's core/editor/undo). */
-function UndoShortcuts({ undo, redo }: { undo: () => void; redo: () => void }) {
-  const { registerShortcut } = useDispatch(keyboardShortcutsStore) as unknown as {
-    registerShortcut: (shortcut: object) => void;
-  };
-  useEffect(() => {
-    registerShortcut({
-      name: 'pressbase/editor/undo',
-      category: 'global',
-      description: 'Undo your last changes.',
-      keyCombination: { modifier: 'primary', character: 'z' },
-    });
-    registerShortcut({
-      name: 'pressbase/editor/redo',
-      category: 'global',
-      description: 'Redo your last undo.',
-      keyCombination: { modifier: 'primaryShift', character: 'z' },
-      aliases: [{ modifier: 'primary', character: 'y' }],
-    });
-  }, [registerShortcut]);
-  useShortcut('pressbase/editor/undo', (event) => {
-    event.preventDefault();
-    undo();
-  });
-  useShortcut('pressbase/editor/redo', (event) => {
-    event.preventDefault();
-    redo();
-  });
-  return null;
-}
-
-/**
- * Fills the inserter's Media tab. BlockEditorProvider strips the private
- * `inserterMediaCategories` setting, so the categories are added with the
- * public registerInserterMediaCategory() action instead, once per editor
- * store, and only those that have media (as WordPress's own check does).
- */
-const registeredStores = new WeakSet<object>();
-function MediaCategories({ enabled }: { enabled: boolean }) {
-  const registry = useRegistry();
-  const { registerInserterMediaCategory } = useDispatch(blockEditorStore) as unknown as {
-    registerInserterMediaCategory: (category: InserterMediaCategory) => void;
-  };
-  useEffect(() => {
-    if (!enabled || registeredStores.has(registry)) return;
-    registeredStores.add(registry);
-    categoriesWithMedia(MEDIA_CATEGORIES).then((categories) => {
-      for (const category of categories) registerInserterMediaCategory(category);
-    });
-  }, [enabled, registry, registerInserterMediaCategory]);
-  return null;
-}
-
-/** WordPress notices (block copied, upload failed…) become Pressbase toasts. */
-function NoticesBridge({ onNotice }: { onNotice: BlockEditorProps['onNotice'] }) {
-  const notices = useSelect(
-    (select) =>
-      (
-        select(noticesStore) as {
-          getNotices: () => { id: string; content: unknown; status: string }[];
-        }
-      ).getNotices(),
-    [],
-  );
-  const { removeNotice } = useDispatch(noticesStore) as unknown as {
-    removeNotice: (id: string) => void;
-  };
-  useEffect(() => {
-    for (const notice of notices) {
-      const message = typeof notice.content === 'string' ? notice.content : '';
-      if (message) onNotice(message, notice.status === 'error' ? 'danger' : 'success');
-      removeNotice(notice.id);
-    }
-  }, [notices, onNotice, removeNotice]);
-  return null;
 }
 
 function SelectionReporter({
