@@ -191,7 +191,7 @@ describe('page entries', () => {
   it('keep only fields that differ from the live page', () => {
     const live = site();
     const changes = arrangementChanges(
-      new Map([
+      new Map<number | string, { parent: number; menu_order: number }>([
         [1, { parent: 0, menu_order: 1 }],
         [3, { parent: 0, menu_order: 0 }],
         ['new-page', { parent: 2, menu_order: 1 }],

@@ -103,6 +103,8 @@ import {
   StudioRegionsProvider,
   useSelectedPart,
 } from './regions';
+import { SectionToolbar } from './section-toolbar';
+import { SectionsPanel } from './sections-panel';
 import {
   type CanvasTarget,
   initialTarget,
@@ -373,6 +375,8 @@ export default function Studio(props: StudioProps) {
   const [doc, setDoc] = useState<CanvasDoc | null>(null);
   const [device, setDevice] = useState<Device>('desktop');
   const [panel, setPanel] = useState<RailPanelId | null>(null);
+  // Where the Sections panel adds the next section (＋ Add section on the canvas, #44).
+  const [sectionsAt, setSectionsAt] = useState<number | null>(null);
   const [tab, setTab] = useState<InspectorTabId>('content');
   const [narrow, setNarrow] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
@@ -510,6 +514,16 @@ export default function Studio(props: StudioProps) {
     };
     // liveParts and the reading settings are read when a page opens; a change to them doesn't rebuild the canvas.
   }, [library, opened, target, reloadKey, __]);
+
+  // The latest posts stop being a page of their own once a page is the home page (#29).
+  const leavingPosts = useRef(false);
+  useEffect(() => {
+    if (!opened || target.kind !== 'posts' || postsOnFront || leavingPosts.current) return;
+    leavingPosts.current = true;
+    chooseTarget(homeTarget()).finally(() => {
+      leavingPosts.current = false;
+    });
+  });
 
   // Edits not in the draft yet: the browser asks before leaving.
   useEffect(() => {
@@ -729,6 +743,15 @@ export default function Studio(props: StudioProps) {
 
   const staleNames = stale.map((key) => changes.find((c) => c.key === key)?.title ?? key);
 
+  const askAi = () =>
+    toast(
+      __(
+        'Ask AI arrives with #63: select something on the page and ask for a change in your own words.',
+        'pressbase-admin',
+      ),
+    );
+  const editorReady = Boolean(doc && library && assets && plugins.ready && summary);
+
   const chrome: Chrome = {
     topBar: (editor) => (
       <TopBar
@@ -743,14 +766,7 @@ export default function Studio(props: StudioProps) {
         canRedo={editor?.canRedo ?? false}
         onUndo={() => editor?.undo()}
         onRedo={() => editor?.redo()}
-        onAskAi={() =>
-          toast(
-            __(
-              'Ask AI arrives with #63: select something on the page and ask for a change in your own words.',
-              'pressbase-admin',
-            ),
-          )
-        }
+        onAskAi={askAi}
         changes={changes}
         draftStatus={draft.status}
         onRetrySave={() => {
@@ -766,11 +782,22 @@ export default function Studio(props: StudioProps) {
         disabled={!editor}
       />
     ),
-    rail: <Rail open={panel} onToggle={(id) => setPanel((open) => (open === id ? null : id))} />,
+    rail: (
+      <Rail
+        open={panel}
+        onToggle={(id) => {
+          setPanel((open) => (open === id ? null : id));
+          setSectionsAt(null);
+        }}
+      />
+    ),
     panel: panel && (
       <RailPanelView
         id={panel}
-        onClose={() => setPanel(null)}
+        onClose={() => {
+          setPanel(null);
+          setSectionsAt(null);
+        }}
         note={
           panel === 'styles' && !props.user.canEditTheme ? (
             <p className={styles.panelNote}>
@@ -820,6 +847,20 @@ export default function Studio(props: StudioProps) {
                 if (library?.templates.some((t) => t.slug === 'front-page')) reloadCanvas();
               }}
             />
+          ) : panel === 'sections' ? (
+            editorReady ? (
+              <SectionsPanel
+                insertAt={sectionsAt}
+                onClearInsertAt={() => setSectionsAt(null)}
+                onInserted={(title) =>
+                  toast(sprintf(__('Section added: %s.', 'pressbase-admin'), title))
+                }
+              />
+            ) : (
+              <p className={styles.pagesEmpty} aria-busy="true">
+                {__('Opening the page…', 'pressbase-admin')}
+              </p>
+            )
           ) : undefined
         }
       />
@@ -907,6 +948,11 @@ export default function Studio(props: StudioProps) {
           if (fields.size) draft.wantFields(fields);
         }}
         partsLocked={!props.user.canEditTheme}
+        onAddSection={(index) => {
+          setSectionsAt(index);
+          setPanel('sections');
+        }}
+        onAskAi={askAi}
         drafted={(key) => key in draft.entries}
         draftEntries={draft.entries}
         onReady={(h) => {
@@ -1104,6 +1150,9 @@ interface StudioEditorProps {
   onNotice: (message: string, tone: 'success' | 'danger') => void;
   /** The header and footer are read-only for this person (no `edit_theme_options`, #29). */
   partsLocked: boolean;
+  /** ＋ Add section on the canvas: opens the Sections panel at that place (#44). */
+  onAddSection: (index: number) => void;
+  onAskAi: () => void;
 }
 
 /** The block-editor store calls the editor makes outside React's render. */
@@ -1337,6 +1386,7 @@ function StudioEditor(props: StudioEditorProps) {
     redo: history.redo,
   };
   const width = DEVICES.find((d) => d.id === props.device)?.width ?? null;
+  const frameRef = useRef<HTMLDivElement>(null);
   const showInspector = !props.narrow || props.inspectorOpen;
 
   /** A part can go back to the theme's design: it's customised, or edited in the draft. */
@@ -1402,6 +1452,7 @@ function StudioEditor(props: StudioEditorProps) {
           >
             <div className={styles.canvasArea} data-device={props.device}>
               <div
+                ref={frameRef}
                 className={styles.canvasFrame}
                 style={width ? { maxWidth: `${width}px` } : undefined}
               >
@@ -1416,6 +1467,11 @@ function StudioEditor(props: StudioEditorProps) {
                     <BlockList className="wp-site-blocks" />
                   </BlockCanvas>
                 </BlockContextProvider>
+                <SectionToolbar
+                  frameRef={frameRef}
+                  onAddSection={props.onAddSection}
+                  onAskAi={props.onAskAi}
+                />
               </div>
             </div>
           </StudioFrame>

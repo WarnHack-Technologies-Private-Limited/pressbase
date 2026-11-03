@@ -137,10 +137,7 @@ export const RAIL_PANELS: readonly RailPanel[] = [
     label: msgid('Sections'),
     summary: msgid('Ready-made sections, in your site’s style'),
     issue: 44,
-    interim: 'none',
-    coming: msgid(
-      'Sections arrive with #44: heroes, features, pricing, opening hours and more, ready to drop in.',
-    ),
+    interim: 'built',
   },
   {
     id: 'layers',
