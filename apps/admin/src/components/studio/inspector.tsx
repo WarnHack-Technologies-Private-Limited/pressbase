@@ -8,7 +8,7 @@ import {
   useBlockDisplayInformation,
 } from '@wordpress/block-editor';
 import { store as blocksStore } from '@wordpress/blocks';
-import { __experimentalUseSlotFills as useSlotFills, PanelBody } from '@wordpress/components';
+import { PanelBody, __experimentalUseSlotFills as useSlotFills } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import { __ as wp__ } from '@wordpress/i18n';
 import { Lock, X } from 'lucide-react';
@@ -108,7 +108,9 @@ function PageInfo({ page }: { page: PageSummary }) {
   const { __ } = useI18n();
   return (
     <div className={styles.inspectorIntro}>
-      <p className={styles.eyebrow}>{page.isHome ? __('Home page', 'pressbase-admin') : __('Page', 'pressbase-admin')}</p>
+      <p className={styles.eyebrow}>
+        {page.isHome ? __('Home page', 'pressbase-admin') : __('Page', 'pressbase-admin')}
+      </p>
       <h2 className={styles.inspectorTitle}>{page.title}</h2>
       <dl className={styles.facts}>
         {page.status && (
@@ -179,7 +181,6 @@ function useTabsWithControls(): (tab: InspectorTab) => boolean {
   for (const tab of INSPECTOR_TABS) {
     for (const group of tab.groups) {
       // The tabs and their groups are constant, so the hooks always run in the same order.
-      // biome-ignore lint/correctness/useHookAtTopLevel: fixed list, see above.
       const fills = useSlotFills(group.slot) as unknown[] | undefined;
       if (fills?.length) filled.add(group.slot);
     }

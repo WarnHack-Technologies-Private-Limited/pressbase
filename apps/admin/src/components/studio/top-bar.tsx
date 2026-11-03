@@ -46,7 +46,8 @@ export interface TopBarProps {
   disabled?: boolean;
 }
 
-const targetValue = (target: CanvasTarget) => (target.kind === 'posts' ? 'posts' : String(target.id));
+const targetValue = (target: CanvasTarget) =>
+  target.kind === 'posts' ? 'posts' : String(target.id);
 
 /**
  * Studio's top bar: back to the admin, the page being edited, the preview
@@ -59,7 +60,11 @@ export function TopBar(props: TopBarProps) {
   const tree = pageTree(props.pages);
   return (
     <header className={styles.topBar}>
-      <a href="/admin" className={styles.back} title={__('Back to the dashboard', 'pressbase-admin')}>
+      <a
+        href="/admin"
+        className={styles.back}
+        title={__('Back to the dashboard', 'pressbase-admin')}
+      >
         <ArrowLeft size={18} aria-hidden="true" />
         <span className={styles.backLabel}>{__('Dashboard', 'pressbase-admin')}</span>
       </a>
@@ -76,7 +81,9 @@ export function TopBar(props: TopBarProps) {
           disabled={props.disabled}
           onChange={(event) => {
             const value = event.target.value;
-            props.onTarget(value === 'posts' ? { kind: 'posts' } : { kind: 'page', id: Number(value) });
+            props.onTarget(
+              value === 'posts' ? { kind: 'posts' } : { kind: 'page', id: Number(value) },
+            );
           }}
         >
           {props.postsOnFront && (
@@ -157,9 +164,7 @@ export function TopBar(props: TopBarProps) {
         onClick={props.onAskAi}
       >
         <span className={styles.collapsible}>{__('Ask AI', 'pressbase-admin')}</span>
-        <span className={styles.soon}>
-          {__('Coming soon', 'pressbase-admin')}
-        </span>
+        <span className={styles.soon}>{__('Coming soon', 'pressbase-admin')}</span>
       </Button>
       <Button
         size="sm"

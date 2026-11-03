@@ -84,7 +84,9 @@ export function Breadcrumb({
           );
           return (
             <li key={`${crumb.level}-${crumb.clientId ?? ''}`}>
-              {index > 0 && <ChevronRight size={14} aria-hidden="true" className={styles.crumbSep} />}
+              {index > 0 && (
+                <ChevronRight size={14} aria-hidden="true" className={styles.crumbSep} />
+              )}
               {last ? (
                 <span className={styles.crumbCurrent} aria-current="location">
                   {content}

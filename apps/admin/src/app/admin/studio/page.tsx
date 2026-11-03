@@ -20,7 +20,7 @@ const PAGES =
  * opening their own pages here is #29. The admin shell shows this route
  * without its sidebar (admin-shell.tsx).
  */
-export default async function StudioPage({ searchParams }: Props) {
+export default async function StudioScreen({ searchParams }: Props) {
   const [me, site, reading, pages] = await Promise.all([
     coreGet<Me>('/wp/v2/users/me?context=edit'),
     coreGet<SiteIndex>('/'),

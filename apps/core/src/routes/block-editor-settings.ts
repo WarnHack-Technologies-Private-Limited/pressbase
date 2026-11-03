@@ -52,7 +52,9 @@ export function iframedThemeAssets(theme: Pick<ActiveTheme, 'css' | 'stylesheets
 } {
   const html: string[] = [];
   if (theme.css.fontFaces) {
-    html.push(`<style class='wp-fonts-local'>\n${safeInline(theme.css.fontFaces, 'style')}\n</style>`);
+    html.push(
+      `<style class='wp-fonts-local'>\n${safeInline(theme.css.fontFaces, 'style')}\n</style>`,
+    );
   }
   if (theme.css.blockStyles) {
     html.push(
@@ -71,7 +73,11 @@ export function iframedThemeAssets(theme: Pick<ActiveTheme, 'css' | 'stylesheets
 }
 
 const escAttr = (value: string) =>
-  value.replace(/&/g, '&amp;').replace(/'/g, '&#039;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/'/g, '&#039;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;');
 
 /** A preset list by origin, as WordPress picks it for `colors`, `fontSizes`…: custom, then theme, then default. */
 function byOrigin(presets: Json): Json {

@@ -142,8 +142,7 @@ function Editor(props: BlockEditorProps & { resolvedAssets: ResolvedAssets }) {
   }, [value.blocks, initial.blocks, onContentChange]);
 
   const settings = useMemo(
-    () =>
-      editorSettings({ features, canUnfilteredHtml, postId, assets: props.resolvedAssets }),
+    () => editorSettings({ features, canUnfilteredHtml, postId, assets: props.resolvedAssets }),
     [features, canUnfilteredHtml, postId, props.resolvedAssets],
   );
 

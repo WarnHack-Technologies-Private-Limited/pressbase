@@ -120,7 +120,9 @@ export const RAIL_PANELS: readonly RailPanel[] = [
     summary: msgid('Your site’s pages'),
     issue: 29,
     interim: 'pages',
-    coming: msgid('Adding, nesting and reordering pages, and choosing the home page, arrive with #29.'),
+    coming: msgid(
+      'Adding, nesting and reordering pages, and choosing the home page, arrive with #29.',
+    ),
   },
   {
     id: 'elements',
@@ -136,7 +138,9 @@ export const RAIL_PANELS: readonly RailPanel[] = [
     summary: msgid('Ready-made sections, in your site’s style'),
     issue: 44,
     interim: 'none',
-    coming: msgid('Sections arrive with #44: heroes, features, pricing, opening hours and more, ready to drop in.'),
+    coming: msgid(
+      'Sections arrive with #44: heroes, features, pricing, opening hours and more, ready to drop in.',
+    ),
   },
   {
     id: 'layers',
@@ -152,7 +156,9 @@ export const RAIL_PANELS: readonly RailPanel[] = [
     summary: msgid('Colours, fonts and spacing for the whole site'),
     issue: 46,
     interim: 'none',
-    coming: msgid('Site styles in Studio arrive with #46 and #47. Until then, use Appearance → Styles.'),
+    coming: msgid(
+      'Site styles in Studio arrive with #46 and #47. Until then, use Appearance → Styles.',
+    ),
   },
   {
     id: 'media',
@@ -160,8 +166,9 @@ export const RAIL_PANELS: readonly RailPanel[] = [
     summary: msgid('Your images, video and audio'),
     issue: 58,
     interim: 'none',
-    coming:
-      msgid('A media panel with your library and free photos arrives with #58. Until then, add an Image block from Elements and choose Media Library.'),
+    coming: msgid(
+      'A media panel with your library and free photos arrives with #58. Until then, add an Image block from Elements and choose Media Library.',
+    ),
   },
   {
     id: 'ai',
@@ -169,7 +176,9 @@ export const RAIL_PANELS: readonly RailPanel[] = [
     summary: msgid('Ask for changes in your own words'),
     issue: 62,
     interim: 'none',
-    coming: msgid('The AI panel arrives with #62: ask for site-wide changes and keep or undo each one.'),
+    coming: msgid(
+      'The AI panel arrives with #62: ask for site-wide changes and keep or undo each one.',
+    ),
   },
 ];
 

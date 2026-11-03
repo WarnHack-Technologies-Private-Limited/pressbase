@@ -106,9 +106,7 @@ export function RailPanelView(props: PanelProps) {
   }, [panel.id]);
 
   const close = () => {
-    const toggle = document.querySelector<HTMLButtonElement>(
-      `[data-panel-toggle="${panel.id}"]`,
-    );
+    const toggle = document.querySelector<HTMLButtonElement>(`[data-panel-toggle="${panel.id}"]`);
     props.onClose();
     requestAnimationFrame(() => toggle?.focus());
   };
@@ -155,7 +153,11 @@ export function RailPanelView(props: PanelProps) {
         )}
         {panel.interim === 'list-view' && (
           <div className={`${lightScope} ${styles.wpPanel}`}>
-            <ListView isExpanded showBlockMovers description={__('Blocks on this page', 'pressbase-admin')} />
+            <ListView
+              isExpanded
+              showBlockMovers
+              description={__('Blocks on this page', 'pressbase-admin')}
+            />
           </div>
         )}
         <Coming panel={panel} />
@@ -185,20 +187,20 @@ function Coming({ panel }: { panel: RailPanel }) {
 function PagesList({ pages, target, postsOnFront, frontPageId, onTarget }: PanelProps) {
   const { __ } = useI18n();
   const current = (t: CanvasTarget) =>
-    t.kind === target.kind && (t.kind === 'posts' || (target.kind === 'page' && t.id === target.id));
+    t.kind === target.kind &&
+    (t.kind === 'posts' || (target.kind === 'page' && t.id === target.id));
   const item = (t: CanvasTarget, label: string, home: boolean, depth = 0, note?: string) => (
-    <li key={t.kind === 'posts' ? 'posts' : t.id} style={{ paddingInlineStart: `${depth * 1.25}rem` }}>
+    <li
+      key={t.kind === 'posts' ? 'posts' : t.id}
+      style={{ paddingInlineStart: `${depth * 1.25}rem` }}
+    >
       <button
         type="button"
         className={styles.pageItem}
         aria-current={current(t) ? 'page' : undefined}
         onClick={() => onTarget(t)}
       >
-        {home ? (
-          <Home size={16} aria-hidden="true" />
-        ) : (
-          <FileText size={16} aria-hidden="true" />
-        )}
+        {home ? <Home size={16} aria-hidden="true" /> : <FileText size={16} aria-hidden="true" />}
         <span className={styles.pageItemTitle}>{label}</span>
         {home && <span className={styles.pageBadge}>{__('Home', 'pressbase-admin')}</span>}
         {note && <span className={styles.pageNote}>{note}</span>}

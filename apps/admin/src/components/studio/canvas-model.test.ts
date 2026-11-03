@@ -66,7 +66,11 @@ describe('composeCanvas', () => {
 describe('findRegions and editingModes', () => {
   it('lists parts and the content, and doesn’t look inside the page', () => {
     const page = [block('core/group', {}, [part('nested-in-page')])];
-    const canvas = composeCanvas(pageTemplate(), parts({ header: [block('core/site-title')] }), page);
+    const canvas = composeCanvas(
+      pageTemplate(),
+      parts({ header: [block('core/site-title')] }),
+      page,
+    );
     expect(findRegions(canvas).map((r) => [r.kind, r.slug])).toEqual([
       ['part', 'header'],
       ['content', undefined],

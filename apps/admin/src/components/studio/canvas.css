@@ -48,7 +48,13 @@ body.editor-styles-wrapper {
   border-radius: 0 0 6px 0;
   background: #3b4cca;
   color: #ffffff;
-  font: 500 12px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font:
+    500 12px / 1.5 ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
   letter-spacing: 0;
   text-transform: none;
   opacity: 0;
@@ -78,7 +84,9 @@ body.editor-styles-wrapper {
  * site logo) render nothing on the site; their editing placeholders would
  * only be noise here. They're set in page details and site identity.
  */
-.is-editing-disabled:is(.wp-block-post-featured-image, .wp-block-site-logo):has(.components-placeholder) {
+.is-editing-disabled:is(.wp-block-post-featured-image, .wp-block-site-logo):has(
+  .components-placeholder
+) {
   display: none;
 }
 

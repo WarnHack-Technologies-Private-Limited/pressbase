@@ -29,14 +29,7 @@ import { Popover } from '@wordpress/components';
 import { useStateWithHistory } from '@wordpress/compose';
 import { useDispatch, useRegistry } from '@wordpress/data';
 import { ShortcutProvider } from '@wordpress/keyboard-shortcuts';
-import {
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n/context';
 import { lightScope } from '../block-editor';
@@ -135,7 +128,9 @@ const STUDIO_CANVAS_STYLESHEETS: EditorStylesheet[] = [
 /** Adds the theme to template-part blocks, as WordPress does when it reads a template. */
 function withTheme(blocks: BlockInstance[], theme: string): BlockInstance[] {
   return blocks.map((block) => {
-    const inner = block.innerBlocks.length ? withTheme(block.innerBlocks, theme) : block.innerBlocks;
+    const inner = block.innerBlocks.length
+      ? withTheme(block.innerBlocks, theme)
+      : block.innerBlocks;
     if (block.name === 'core/template-part' && !block.attributes.theme) {
       return { ...block, attributes: { ...block.attributes, theme }, innerBlocks: inner };
     }
@@ -284,7 +279,10 @@ export default function Studio(props: StudioProps) {
   }, [dirty]);
 
   const chooseTarget = (next: CanvasTarget) => {
-    if (next.kind === target.kind && (next.kind === 'posts' || (target.kind === 'page' && next.id === target.id))) {
+    if (
+      next.kind === target.kind &&
+      (next.kind === 'posts' || (target.kind === 'page' && next.id === target.id))
+    ) {
       return;
     }
     if (dirty) setPendingTarget(next);
@@ -346,7 +344,10 @@ export default function Studio(props: StudioProps) {
       const link = doc?.page?.link;
       toast(__('Published. Your changes are live.', 'pressbase-admin'), {
         action: link
-          ? { label: __('View page', 'pressbase-admin'), onClick: () => window.open(link, '_blank', 'noopener') }
+          ? {
+              label: __('View page', 'pressbase-admin'),
+              onClick: () => window.open(link, '_blank', 'noopener'),
+            }
           : undefined,
       });
     } catch (error) {
@@ -379,7 +380,8 @@ export default function Studio(props: StudioProps) {
         status: doc.page ? statusLabel(doc.page.status, __) : undefined,
         template: doc.template.title.raw || doc.template.title.rendered || doc.template.slug,
         editLink: doc.page ? `/admin/pages/${doc.page.id}` : undefined,
-        hasContent: Boolean(doc.page) && pageBlocks(doc.blocks as unknown as CanvasBlock[]) !== null,
+        hasContent:
+          Boolean(doc.page) && pageBlocks(doc.blocks as unknown as CanvasBlock[]) !== null,
       }
     : null;
 
@@ -680,8 +682,11 @@ function StudioEditor(props: StudioEditorProps) {
   }, [value.blocks, doc.blocks, onDirty, currentContent]);
 
   const settings = useMemo(() => {
-    const { styles: themeStyles, __unstableResolvedAssets: _assets, ...themeSettings } =
-      props.library.theme;
+    const {
+      styles: themeStyles,
+      __unstableResolvedAssets: _assets,
+      ...themeSettings
+    } = props.library.theme;
     return {
       ...editorSettings({
         features: props.features,
@@ -729,9 +734,7 @@ function StudioEditor(props: StudioEditorProps) {
         <StudioFrame
           chrome={props.chrome}
           editor={editor}
-          footer={
-            <Breadcrumb site={props.site} page={props.summary.title} parts={props.parts} />
-          }
+          footer={<Breadcrumb site={props.site} page={props.summary.title} parts={props.parts} />}
           inspector={
             showInspector && (
               <Inspector
@@ -748,8 +751,6 @@ function StudioEditor(props: StudioEditorProps) {
             <div
               className={styles.canvasFrame}
               style={width ? { maxWidth: `${width}px` } : undefined}
-              aria-label={__('Page canvas', 'pressbase-admin')}
-              role="region"
             >
               <BlockContextProvider
                 value={doc.page ? { postId: doc.page.id, postType: 'page' } : {}}

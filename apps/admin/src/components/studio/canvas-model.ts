@@ -62,7 +62,9 @@ export function composeCanvas(
         if (content) contentUsed = true;
         return { ...block, innerBlocks: inner };
       }
-      return block.innerBlocks.length ? { ...block, innerBlocks: fill(block.innerBlocks, seen) } : block;
+      return block.innerBlocks.length
+        ? { ...block, innerBlocks: fill(block.innerBlocks, seen) }
+        : block;
     });
   return fill(template, []);
 }
@@ -80,7 +82,11 @@ export function findRegions(blocks: CanvasBlock[]): Region[] {
   const walk = (list: CanvasBlock[]) => {
     for (const block of list) {
       if (block.name === TEMPLATE_PART) {
-        out.push({ kind: 'part', clientId: block.clientId, slug: String(block.attributes.slug ?? '') });
+        out.push({
+          kind: 'part',
+          clientId: block.clientId,
+          slug: String(block.attributes.slug ?? ''),
+        });
       } else if (block.name === POST_CONTENT) {
         out.push({ kind: 'content', clientId: block.clientId });
         continue; // The page's own blocks aren't regions.
