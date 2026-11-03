@@ -12,7 +12,7 @@ msgstr ""
 "X-Generator: pressbase i18n:extract\n"
 "X-Domain: pressbase-admin\n"
 
-#: apps/admin/src/app/admin/page.tsx:16 apps/admin/src/components/studio/top-bar.tsx:69 apps/admin/src/lib/sections.ts:42
+#: apps/admin/src/app/admin/page.tsx:16 apps/admin/src/components/studio/top-bar.tsx:77 apps/admin/src/lib/sections.ts:42
 msgid "Dashboard"
 msgstr ""
 
@@ -216,7 +216,7 @@ msgstr ""
 msgid "General Settings"
 msgstr ""
 
-#: apps/admin/src/app/admin/settings/layout.tsx:12 apps/admin/src/components/settings/settings-nav.tsx:32 apps/admin/src/components/studio/inspector.tsx:87 apps/admin/src/components/studio/inspector.tsx:246 apps/admin/src/components/studio/top-bar.tsx:196 apps/admin/src/lib/sections.ts:118
+#: apps/admin/src/app/admin/settings/layout.tsx:12 apps/admin/src/components/settings/settings-nav.tsx:32 apps/admin/src/components/studio/inspector.tsx:112 apps/admin/src/components/studio/inspector.tsx:314 apps/admin/src/components/studio/top-bar.tsx:202 apps/admin/src/lib/sections.ts:118
 msgid "Settings"
 msgstr ""
 
@@ -400,7 +400,7 @@ msgstr ""
 msgid "For the whole site, all plugins together."
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:267 apps/admin/src/components/settings/general-settings-form.tsx:484 apps/admin/src/components/settings/settings-form.tsx:98
+#: apps/admin/src/components/settings/ai-settings.tsx:267 apps/admin/src/components/settings/general-settings-form.tsx:484 apps/admin/src/components/settings/settings-form.tsx:98 apps/admin/src/components/studio/top-bar.tsx:216
 msgid "Saving…"
 msgstr ""
 
@@ -691,7 +691,7 @@ msgstr ""
 msgid "Site"
 msgstr ""
 
-#: apps/admin/src/components/studio/breadcrumb.tsx:69 apps/admin/src/components/studio/inspector.tsx:112 apps/admin/src/components/studio/top-bar.tsx:75
+#: apps/admin/src/components/studio/breadcrumb.tsx:69 apps/admin/src/components/studio/inspector.tsx:137 apps/admin/src/components/studio/top-bar.tsx:83
 msgid "Page"
 msgstr ""
 
@@ -711,44 +711,66 @@ msgstr ""
 msgid "Opening Studio…"
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:97
+#: apps/admin/src/components/studio/inspector.tsx:122
 msgid "Close settings"
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:112
+#: apps/admin/src/components/studio/inspector.tsx:137
 msgid "Home page"
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:118
+#: apps/admin/src/components/studio/inspector.tsx:143
 msgid "Status"
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:124
+#: apps/admin/src/components/studio/inspector.tsx:149
 msgid "Template"
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:131
+#: apps/admin/src/components/studio/inspector.tsx:156
 msgid "Click any text on the page to change it. Choose a block to see its settings here."
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:138
+#: apps/admin/src/components/studio/inspector.tsx:163
 msgid "Your home page lists your latest posts, so it has no text of its own to edit. Choose a page from the menu at the top to edit it."
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:145
+#: apps/admin/src/components/studio/inspector.tsx:170
 msgid "Nothing goes live until you press Publish. Undo with Ctrl+Z (⌘Z on a Mac)."
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:152
+#: apps/admin/src/components/studio/inspector.tsx:177
 msgid "Edit the title, address and other details"
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:163
-msgid "Shown on every page"
+#: apps/admin/src/components/studio/inspector.tsx:198
+msgid "On all pages"
 msgstr ""
 
-#: apps/admin/src/components/studio/inspector.tsx:168
-msgid "Editing the header and footer here arrives with #30. Until then they show exactly as visitors see them, and changes to this page leave them as they are."
+#: apps/admin/src/components/studio/inspector.tsx:203
+msgid "This part of your design is on every page. Click any text in it to change it; your changes show on every page once you publish."
+msgstr ""
+
+#: apps/admin/src/components/studio/inspector.tsx:213
+msgid "You’ve changed this from the theme’s design."
+msgstr ""
+
+#: apps/admin/src/components/studio/inspector.tsx:214
+msgid "Your draft changes this."
+msgstr ""
+
+#: apps/admin/src/components/studio/inspector.tsx:222
+msgid "Reset to theme"
+msgstr ""
+
+#: apps/admin/src/components/studio/inspector.tsx:237
+#, js-format
+msgid "In the %s: changes show on every page."
+msgstr ""
+
+#: apps/admin/src/components/studio/inspector.tsx:239
+#, js-format
+msgid "Select the whole %s"
 msgstr ""
 
 #: apps/admin/src/components/studio/layout-model.ts:62 apps/admin/src/lib/sections.ts:45
@@ -859,6 +881,52 @@ msgstr ""
 msgid "Mobile"
 msgstr ""
 
+#: apps/admin/src/components/studio/publish-panel.tsx:70
+#, js-format
+msgid "Publish, %d change"
+msgid_plural "Publish, %d changes"
+msgstr[0] ""
+msgstr[1] ""
+
+#: apps/admin/src/components/studio/publish-panel.tsx:71 apps/admin/src/components/studio/publish-panel.tsx:89
+msgid "Publish"
+msgstr ""
+
+#: apps/admin/src/components/studio/publish-panel.tsx:86
+msgid "No changes to publish yet"
+msgstr ""
+
+#: apps/admin/src/components/studio/publish-panel.tsx:112
+#, js-format
+msgid "%d change ready to publish"
+msgid_plural "%d changes ready to publish"
+msgstr[0] ""
+msgstr[1] ""
+
+#: apps/admin/src/components/studio/publish-panel.tsx:122
+msgid "They’re saved in your draft. Visitors see them once you publish, all at once."
+msgstr ""
+
+#: apps/admin/src/components/studio/publish-panel.tsx:142
+#, js-format
+msgid "Undo changes to %s"
+msgstr ""
+
+#: apps/admin/src/components/studio/publish-panel.tsx:143
+msgid "Undo these changes"
+msgstr ""
+
+#: apps/admin/src/components/studio/publish-panel.tsx:161 apps/admin/src/components/studio/studio.tsx:759
+msgid "Discard all"
+msgstr ""
+
+#: apps/admin/src/components/studio/publish-panel.tsx:174
+#, js-format
+msgid "Publish %d change"
+msgid_plural "Publish %d changes"
+msgstr[0] ""
+msgstr[1] ""
+
 #: apps/admin/src/components/studio/rail.tsx:47
 msgid "Studio panels"
 msgstr ""
@@ -879,155 +947,178 @@ msgstr ""
 msgid "Home"
 msgstr ""
 
-#: apps/admin/src/components/studio/rail.tsx:212 apps/admin/src/components/studio/studio.tsx:378
+#: apps/admin/src/components/studio/rail.tsx:212 apps/admin/src/components/studio/studio.tsx:557
 msgid "Latest posts"
 msgstr ""
 
-#: apps/admin/src/components/studio/rail.tsx:219 apps/admin/src/components/studio/studio.tsx:554
+#: apps/admin/src/components/studio/rail.tsx:219 apps/admin/src/components/studio/studio.tsx:813
 msgid "Draft"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:259
+#: apps/admin/src/components/studio/studio.tsx:379
+#, js-format
+msgid "Your draft is back: %d change isn’t published yet."
+msgid_plural "Your draft is back: %d changes aren’t published yet."
+msgstr[0] ""
+msgstr[1] ""
+
+#: apps/admin/src/components/studio/studio.tsx:415
 msgid "The theme has no template for this page."
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:345
+#: apps/admin/src/components/studio/studio.tsx:503
 msgid "Published. Your changes are live."
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:348
+#: apps/admin/src/components/studio/studio.tsx:506
 msgid "View page"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:415
+#: apps/admin/src/components/studio/studio.tsx:545
+msgid "Your changes were discarded. The page shows what visitors see."
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:617
 msgid "Ask AI arrives with #63: select something on the page and ask for a change in your own words."
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:452
+#: apps/admin/src/components/studio/studio.tsx:658
+#, js-format
+msgid "Since you last worked on your draft, someone published changes to %s. If you publish your draft, your version replaces theirs."
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:670
+msgid "Dismiss"
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:682
 msgid "Studio couldn’t open this page."
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:455
+#: apps/admin/src/components/studio/studio.tsx:685
 msgid "Try again"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:464
+#: apps/admin/src/components/studio/studio.tsx:694
 msgid "Opening the page…"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:506
-msgid "Leave this page without publishing?"
+#: apps/admin/src/components/studio/studio.tsx:741
+msgid "Your latest changes aren’t saved"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:507
-msgid "Discard changes"
+#: apps/admin/src/components/studio/studio.tsx:742
+msgid "Leave without them"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:515
-msgid "Your changes to this page aren’t published. If you open another page now, they’re lost."
+#: apps/admin/src/components/studio/studio.tsx:750
+msgid "Studio couldn’t save them to your draft. Stay to try again, or open the other page and lose them."
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:524
-msgid "Publish everything in your draft?"
+#: apps/admin/src/components/studio/studio.tsx:758
+msgid "Discard all your changes?"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:525
-msgid "Publish all"
-msgstr ""
-
-#: apps/admin/src/components/studio/studio.tsx:536
+#: apps/admin/src/components/studio/studio.tsx:766
 #, js-format
-msgid "Your draft also holds %d other change made elsewhere. Publishing makes all of them live together."
-msgstr ""
+msgid "The %d change in your draft will be thrown away. Your site stays as visitors see it now. This can’t be undone."
+msgid_plural "The %d changes in your draft will be thrown away. Your site stays as visitors see it now. This can’t be undone."
+msgstr[0] ""
+msgstr[1] ""
 
-#: apps/admin/src/components/studio/studio.tsx:551
+#: apps/admin/src/components/studio/studio.tsx:810
 msgid "Published"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:556
+#: apps/admin/src/components/studio/studio.tsx:815
 msgid "Pending review"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:558
+#: apps/admin/src/components/studio/studio.tsx:817
 msgid "Private"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:560
+#: apps/admin/src/components/studio/studio.tsx:819
 msgid "Scheduled"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:600
+#: apps/admin/src/components/studio/studio.tsx:863
 msgid "Skip to the page"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:749
-msgid "every page"
+#: apps/admin/src/components/studio/studio.tsx:1189
+msgid "all pages"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:66
+#: apps/admin/src/components/studio/studio.tsx:1283
+#, js-format
+msgid "You’re editing the %s. It’s on every page, so your changes show everywhere once you publish."
+msgstr ""
+
+#: apps/admin/src/components/studio/top-bar.tsx:74
 msgid "Back to the dashboard"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:71 apps/admin/src/lib/sections.ts:79
+#: apps/admin/src/components/studio/top-bar.tsx:79 apps/admin/src/lib/sections.ts:79
 msgid "Studio"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:90
+#: apps/admin/src/components/studio/top-bar.tsx:98
 msgid "Home (latest posts)"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:98
+#: apps/admin/src/components/studio/top-bar.tsx:106
 #, js-format
 msgid "%s (home page)"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:101
+#: apps/admin/src/components/studio/top-bar.tsx:109
 #, js-format
 msgid "%s (draft)"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:113
+#: apps/admin/src/components/studio/top-bar.tsx:121
 msgid "Preview size"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:139
+#: apps/admin/src/components/studio/top-bar.tsx:147
 msgid "Undo"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:140
+#: apps/admin/src/components/studio/top-bar.tsx:148
 msgid "Undo (Ctrl+Z)"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:149
+#: apps/admin/src/components/studio/top-bar.tsx:157
 msgid "Redo"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:150
+#: apps/admin/src/components/studio/top-bar.tsx:158
 msgid "Redo (Ctrl+Shift+Z)"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:166
+#: apps/admin/src/components/studio/top-bar.tsx:174
 msgid "Ask AI"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:167
+#: apps/admin/src/components/studio/top-bar.tsx:175
 msgid "Coming soon"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:176
+#: apps/admin/src/components/studio/top-bar.tsx:185
 msgid "Preview (opens in a new tab)"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:178
+#: apps/admin/src/components/studio/top-bar.tsx:187
 msgid "Preview"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:186
-msgid "No changes to publish yet"
+#: apps/admin/src/components/studio/top-bar.tsx:221
+msgid "Draft saved"
 msgstr ""
 
-#: apps/admin/src/components/studio/top-bar.tsx:189
-msgid "Publish"
+#: apps/admin/src/components/studio/top-bar.tsx:228
+msgid "Couldn’t save. Try again"
 msgstr ""
 
 #: apps/admin/src/components/ui/field.tsx:40
