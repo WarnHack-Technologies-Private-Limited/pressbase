@@ -121,7 +121,8 @@ function runsOf(block: ParsedBlock, groups: ReadonlySet<string>): [number, numbe
       const sig = signature(kid);
       while (j < kids.length && signature(kids[j] as ParsedBlock) === sig) j++;
     }
-    if (j - i >= 2) runs.push([i, j - i]);
+    // Questions and answers are items even alone, so one can grow back into many.
+    if (j - i >= 2 || (kid.blockName === 'core/details' && holdsSlots(kid))) runs.push([i, j - i]);
     i = j;
   }
   return runs;

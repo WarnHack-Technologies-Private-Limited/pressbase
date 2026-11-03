@@ -54,7 +54,7 @@ describe('slots of the Pressbase theme’s patterns', () => {
       const slots = extractSlots(blocks);
       if (slots.length > 0) withSlots++;
       expect(serializeBlocks(fillSlots(blocks, slotValues(slots))), file).toBe(content);
-      // Filling as plain text gives the same markup too, wherever the text has no markup.
+      // fillSlots() works on a copy: the parsed pattern is unchanged.
       expect(serializeBlocks(blocks), file).toBe(content);
     }
     expect(withSlots).toBeGreaterThanOrEqual(22);
@@ -83,7 +83,7 @@ describe('slots of the Pressbase theme’s patterns', () => {
       Array.from({ length: n }, (_, i) => ({ summary: `Question ${i + 1}?`, body: `Answer ${i + 1}.` }));
     for (const n of [1, 2, 7]) {
       const markup = serializeBlocks(fillSlots(blocks, { items: questions(n) }));
-      expect(markup.match(/<!-- wp:details /g) ?? markup.match(/<!-- wp:details -->/g)).toHaveLength(n);
+      expect(markup.match(/<!-- wp:details[ -]/g)).toHaveLength(n);
       expect(markup).toContain(`<summary>Question ${n}?</summary>`);
       expect(serializeBlocks(parseBlocks(markup))).toBe(markup);
       const items = extractSlots(parseBlocks(markup))[2] as GroupSlot;
