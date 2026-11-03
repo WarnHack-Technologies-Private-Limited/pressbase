@@ -9,6 +9,7 @@ import {
 } from './constants';
 import type { JsonObject, JsonValue, ThemeJsonData } from './types';
 import { arrayGet, arraySet, clone, isObject } from './util';
+import { getViewportMediaQueries, sanitizeViewportSettings } from './viewport';
 
 /**
  * Sanitising user global styles before they are stored — ports of
@@ -144,40 +145,116 @@ function removeInsecureStyles(input: JsonObject): JsonObject {
   return output;
 }
 
-function removeInsecureElementStyles(elements: JsonValue | undefined): JsonObject {
+/** The pseudo states of a node (`:hover`…), sanitised, added to `output`. */
+function addPseudoStates(input: JsonObject, output: JsonObject, pseudos: string[]): void {
+  for (const pseudo of pseudos) {
+    const state = input[pseudo];
+    if (isObject(state)) output[pseudo] = removeInsecureStyles(state);
+  }
+}
+
+/**
+ * Sanitising context: the viewport style states (`@mobile`, `@tablet`) the
+ * site's breakpoints allow, and whether custom CSS may stay.
+ */
+interface InsecureContext {
+  blocks: Set<string>;
+  breakpoints: string[];
+  canEditCss: boolean;
+}
+
+/**
+ * remove_insecure_element_styles(): each element's styles and pseudo states,
+ * and (WordPress 7.1) its viewport states with their pseudo states.
+ */
+function removeInsecureElementStyles(
+  elements: JsonValue | undefined,
+  context: InsecureContext,
+): JsonObject {
   const output: JsonObject = {};
   if (!isObject(elements)) return output;
   for (const name of Object.keys(ELEMENTS)) {
     const input = elements[name];
     if (!isObject(input)) continue;
+    const pseudos = VALID_ELEMENT_PSEUDO_SELECTORS[name] ?? [];
     const styles = removeInsecureStyles(input);
-    for (const pseudo of VALID_ELEMENT_PSEUDO_SELECTORS[name] ?? []) {
-      const state = input[pseudo];
-      if (isObject(state)) styles[pseudo] = removeInsecureStyles(state);
+    addPseudoStates(input, styles, pseudos);
+    for (const breakpoint of context.breakpoints) {
+      const state = input[breakpoint];
+      if (!isObject(state)) continue;
+      const stateOutput = removeInsecureStyles(state);
+      addPseudoStates(state, stateOutput, pseudos);
+      styles[breakpoint] = stateOutput;
     }
     output[name] = styles;
   }
   return output;
 }
 
-function removeInsecureInnerBlockStyles(blocks: JsonValue | undefined, valid: Set<string>) {
+/**
+ * The viewport states of a block or variation node (the "re-add responsive
+ * breakpoint styles" steps of remove_insecure_properties()): styles,
+ * elements, inner blocks, the block's pseudo states, and custom CSS for
+ * users with `edit_css`.
+ */
+function addViewportStates(
+  input: JsonObject,
+  output: JsonObject,
+  blockName: string | undefined,
+  context: InsecureContext,
+): void {
+  for (const breakpoint of context.breakpoints) {
+    const state = input[breakpoint];
+    if (!isObject(state)) continue;
+    const stateOutput = removeInsecureStyles(state);
+    if (state.elements !== undefined) {
+      stateOutput.elements = removeInsecureElementStyles(state.elements, context);
+    }
+    if (state.blocks !== undefined) {
+      stateOutput.blocks = removeInsecureInnerBlockStyles(state.blocks, context);
+    }
+    addPseudoStates(state, stateOutput, VALID_BLOCK_PSEUDO_SELECTORS[blockName ?? ''] ?? []);
+    if (context.canEditCss && typeof state.css === 'string') stateOutput.css = state.css;
+    output[breakpoint] = stateOutput;
+  }
+}
+
+/** remove_insecure_inner_block_styles() */
+function removeInsecureInnerBlockStyles(blocks: JsonValue | undefined, context: InsecureContext) {
   const output: JsonObject = {};
   if (!isObject(blocks)) return output;
   for (const [name, input] of Object.entries(blocks)) {
-    if (!valid.has(name) || !isObject(input)) continue;
+    if (!context.blocks.has(name) || !isObject(input)) continue;
     const styles = removeInsecureStyles(input);
-    if (input.elements !== undefined) styles.elements = removeInsecureElementStyles(input.elements);
+    if (input.elements !== undefined) {
+      styles.elements = removeInsecureElementStyles(input.elements, context);
+    }
+    for (const breakpoint of context.breakpoints) {
+      const state = input[breakpoint];
+      if (!isObject(state)) continue;
+      const stateOutput = removeInsecureStyles(state);
+      addPseudoStates(state, stateOutput, VALID_BLOCK_PSEUDO_SELECTORS[name] ?? []);
+      styles[breakpoint] = stateOutput;
+    }
     output[name] = styles;
   }
   return output;
 }
 
 /** A node with nested elements/blocks: a style variation (block-level or shared). */
-function removeInsecureVariation(input: JsonObject, blocks: Set<string>): JsonObject {
+function removeInsecureVariation(
+  input: JsonObject,
+  blockName: string | undefined,
+  context: InsecureContext,
+): JsonObject {
   const output = removeInsecureStyles(input);
-  if (input.blocks !== undefined)
-    output.blocks = removeInsecureInnerBlockStyles(input.blocks, blocks);
-  if (input.elements !== undefined) output.elements = removeInsecureElementStyles(input.elements);
+  if (input.blocks !== undefined) {
+    output.blocks = removeInsecureInnerBlockStyles(input.blocks, context);
+  }
+  if (input.elements !== undefined) {
+    output.elements = removeInsecureElementStyles(input.elements, context);
+  }
+  addViewportStates(input, output, blockName, context);
   return output;
 }
 
@@ -185,7 +262,7 @@ const NAME_IS_SAFE = (name: unknown) => typeof name === 'string' && !/[<>&"']/.t
 const SLUG_IS_SAFE = (slug: unknown) => typeof slug === 'string' && /^[A-Za-z0-9_-]+$/.test(slug);
 
 /** remove_insecure_settings(): presets with safe names, slugs and values, plus plain settings. */
-function removeInsecureSettings(input: JsonObject): JsonObject {
+function removeInsecureSettings(input: JsonObject, isRoot: boolean): JsonObject {
   const output: JsonObject = {};
   const presetPaths = new Set(PRESETS_METADATA.map((p) => p.path.join('.')));
   for (const preset of PRESETS_METADATA) {
@@ -235,6 +312,10 @@ function removeInsecureSettings(input: JsonObject): JsonObject {
     }
   };
   walk(input, []);
+  // `viewport` is sanitized as it is in theme.json (remove_insecure_settings(), root only).
+  if (isRoot && 'viewport' in input) {
+    output.viewport = sanitizeViewportSettings(input.viewport) as JsonObject;
+  } else delete output.viewport;
   return output;
 }
 
@@ -257,6 +338,13 @@ export function removeInsecureProperties(
   options: RemoveInsecureOptions,
 ): ThemeJsonData {
   const blocks = new Set(options.blockNames);
+  const context: InsecureContext = {
+    blocks,
+    breakpoints: Object.keys(
+      getViewportMediaQueries(arrayGet(input, ['settings', 'viewport']) ?? null),
+    ),
+    canEditCss: options.canEditCss,
+  };
   const data: ThemeJsonData = {};
   for (const key of VALID_TOP_LEVEL_KEYS) {
     if (input[key] !== undefined) data[key] = clone(input[key]);
@@ -279,7 +367,7 @@ export function removeInsecureProperties(
 
   // Elements, with their pseudo states.
   if (input_styles.elements !== undefined) {
-    const elements = removeInsecureElementStyles(input_styles.elements);
+    const elements = removeInsecureElementStyles(input_styles.elements, context);
     if (Object.keys(elements).length) styles.elements = elements;
   }
 
@@ -294,12 +382,15 @@ export function removeInsecureProperties(
         const state = node[pseudo];
         if (isObject(state)) block[pseudo] = removeInsecureStyles(state);
       }
-      if (node.elements !== undefined) block.elements = removeInsecureElementStyles(node.elements);
+      if (node.elements !== undefined) {
+        block.elements = removeInsecureElementStyles(node.elements, context);
+      }
+      addViewportStates(node, block, name, context);
       if (isObject(node.variations)) {
         const variations: JsonObject = {};
         for (const [variation, variationNode] of Object.entries(node.variations)) {
           if (isObject(variationNode)) {
-            variations[variation] = removeInsecureVariation(variationNode, blocks);
+            variations[variation] = removeInsecureVariation(variationNode, name, context);
           }
         }
         block.variations = variations;
@@ -313,7 +404,7 @@ export function removeInsecureProperties(
   if (isObject(input_styles.variations)) {
     const variations: JsonObject = {};
     for (const [name, node] of Object.entries(input_styles.variations)) {
-      if (isObject(node)) variations[name] = removeInsecureVariation(node, blocks);
+      if (isObject(node)) variations[name] = removeInsecureVariation(node, undefined, context);
     }
     styles.variations = variations;
   }
@@ -322,11 +413,11 @@ export function removeInsecureProperties(
   else delete data.styles;
 
   if (isObject(input.settings)) {
-    const settings = removeInsecureSettings(input.settings);
+    const settings = removeInsecureSettings(input.settings, true);
     if (isObject(input.settings.blocks)) {
       const out: JsonObject = {};
       for (const [name, node] of Object.entries(input.settings.blocks)) {
-        if (blocks.has(name) && isObject(node)) out[name] = removeInsecureSettings(node);
+        if (blocks.has(name) && isObject(node)) out[name] = removeInsecureSettings(node, false);
       }
       settings.blocks = out;
     }

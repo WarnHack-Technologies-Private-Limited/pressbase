@@ -10,6 +10,8 @@ export {
   LAYOUT_DEFINITIONS,
   type LayoutDefinition,
   PRESETS_METADATA,
+  VALID_BLOCK_PSEUDO_SELECTORS,
+  VALID_ELEMENT_PSEUDO_SELECTORS,
 } from './constants';
 export { CORE_BLOCK_STYLE_METADATA } from './data/core-blocks';
 export { WORDPRESS_THEME_JSON } from './data/wordpress-theme-json';
@@ -48,6 +50,11 @@ export {
   splitSelectorList,
 } from './selectors';
 export {
+  type StyleEngineRule,
+  styleEngineDeclarations,
+  styleEngineStylesheet,
+} from './style-engine';
+export {
   applyStyleVariation,
   areGlobalStyleConfigsEqual,
   filterObjectByProperties,
@@ -73,3 +80,13 @@ export {
   typographyValueAndUnit,
 } from './typography';
 export { arrayGet, convertCustomProperties, isObject, toKebabCase } from './util';
+export {
+  DEFAULT_VIEWPORT_BREAKPOINTS,
+  getViewportMediaQueries,
+  sanitizeViewportSettings,
+  VIEWPORT_STATES,
+  type ViewportBreakpoints,
+  type ViewportMediaQueryOptions,
+  type ViewportName,
+  type ViewportState,
+} from './viewport';

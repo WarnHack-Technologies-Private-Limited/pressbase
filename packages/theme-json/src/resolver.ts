@@ -149,6 +149,10 @@ export function blockStyleVariationInstanceStyles(
     settings: { spacing: { blockGap: true } },
     styles: { elements, blocks: blocksData },
   };
+  // Variation state styles use the site's breakpoints (WordPress 7.1).
+  const viewport = arrayGet(raw, ['settings', 'viewport']);
+  if (viewport !== undefined)
+    arraySet(config, ['settings', 'viewport'], clone(viewport) as JsonValue);
   return new ThemeJson(config, 'blocks', blocks).getStylesheet(['styles'], ['custom'], {
     includeBlockStyleVariations: true,
     skipRootLayoutStyles: true,

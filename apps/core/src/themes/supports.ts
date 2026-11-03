@@ -7,6 +7,7 @@ import {
   type WPBlock,
 } from '@pressbase/blocks';
 import {
+  blockRootSelector,
   blockStyleVariationInstanceStyles,
   getChildLayoutStyle,
   getLayoutStyle,
@@ -19,7 +20,9 @@ import {
 import { isUnavailableDynamicBlock } from '../blocks/library';
 import { currentPage } from '../frontend/page';
 import type { Kernel } from '../kernel';
+import { blockVisibility, imagesFetchPriorityAuto } from './block-visibility';
 import type { ActiveTheme } from './service';
+import { blockStateStyles } from './states';
 
 /**
  * The block supports that need the active theme's settings, as render
@@ -31,7 +34,11 @@ import type { ActiveTheme } from './service';
  * - position.php: sticky and fixed positions;
  * - typography.php: fluid custom font sizes;
  * - block-style-variations.php: per-instance styles for variations that
- *   style inner elements or blocks (`is-style-section-1--3`).
+ *   style inner elements or blocks (`is-style-section-1--3`);
+ * - block-visibility.php: hiding a block, or hiding it on some devices
+ *   (`wp-block-hidden-mobile`), see block-visibility.ts;
+ * - states.php: per-instance `@mobile` / `@tablet` and `:hover`… styles
+ *   (`wp-states-1a2b3c4d`), see states.ts.
  *
  * Generated CSS goes to the page being rendered (frontend/page.ts), which
  * prints it in the document head, like WordPress's `core-block-supports`
@@ -456,6 +463,50 @@ function styleVariationSupport(parsed: ParsedBlock, theme: ActiveTheme): ParsedB
   return parsed;
 }
 
+/** wp_render_block_visibility_support() (block-visibility.php) */
+function renderBlockVisibility(
+  content: string,
+  parsed: ParsedBlock,
+  block: AnyBlock,
+  theme: ActiveTheme,
+): string {
+  if (!block.blockType || !content) return content;
+  const result = blockVisibility(
+    parsed.attrs,
+    blockHasSupport(block.blockType.supports, 'visibility', true),
+    theme.settings.viewport,
+  );
+  if (!result) return content;
+  if (result.hidden) return '';
+  currentPage()?.addSupportStyle(result.css);
+  if (!/<[a-zA-Z]/.test(content)) return content;
+  return imagesFetchPriorityAuto(addClasses(content, result.classes));
+}
+
+/** wp_render_block_states_support() (states.php) */
+function renderBlockStates(
+  content: string,
+  parsed: ParsedBlock,
+  block: AnyBlock,
+  theme: ActiveTheme,
+): string {
+  const type = block.blockType;
+  if (!type || !parsed.blockName || !content) return content;
+  const states = blockStateStyles({
+    blockName: parsed.blockName,
+    style: parsed.attrs.style,
+    selectors: type.selectors as Record<string, unknown>,
+    rootSelector: blockRootSelector(parsed.blockName, {
+      supports: type.supports as JsonObject,
+      selectors: type.selectors as JsonObject,
+    }),
+    viewport: theme.settings.viewport,
+  });
+  if (!states) return content;
+  currentPage()?.addSupportStyle(states.css);
+  return addClasses(content, [states.className]);
+}
+
 /** Registers the filters. Called once by the themes service. */
 export function registerThemeSupports(kernel: Kernel): void {
   const { hooks } = kernel;
@@ -504,6 +555,8 @@ export function registerThemeSupports(kernel: Kernel): void {
     content = renderFluidTypography(content, parsed, active);
     content = await renderLayout(content, parsed, wpBlock, active);
     content = renderPosition(content, parsed, wpBlock, active);
+    content = renderBlockVisibility(content, parsed, wpBlock, active);
+    content = renderBlockStates(content, parsed, wpBlock, active);
     return content;
   });
 }
