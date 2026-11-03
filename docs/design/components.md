@@ -164,3 +164,13 @@ Gutenberg inside Pressbase's chrome. Architecture and wiring: [Block editor](../
 - **Panels.** Add block and List view open a panel on the canvas's left edge: beside the canvas when there's room, over it when there isn't. Opening moves focus into the panel (search field / tree); Escape closes it and returns focus to its toggle. Choosing a block closes the inserter and focuses the new block.
 - **Narrow screens.** Below 1100px the sidebar is a drawer from the right, opened with the Settings toggle and closed with Escape or its close button. Below 480px the canvas runs edge to edge.
 - **Unavailable features are hidden, not broken.** Blocks that need server pieces that aren't there yet are left out of the inserter; uploads without a media library explain what to do instead ("Use “Insert from URL” instead").
+
+## Studio: `components/studio/`
+
+The full-screen site editor. Architecture: [Studio](../architecture/studio.md).
+
+- **Calm by default.** The page fills the screen; the rail's panels are closed until asked for, and the inspector describes the page in plain words until something is selected. The only primary button is Publish, enabled once there's something to publish.
+- **Three levels, always visible.** The breadcrumb under the canvas names Site › Page › Section › Block; the inspector's eyebrow says the same (*Home page*, *Shown on every page*).
+- **What's coming says so.** Panels and buttons that later issues build (Sections, Media, AI, Ask AI) are present, explain what they'll do and name their issue (“Sections arrive with #44”), rather than being hidden or looking broken. Ask AI wears a *Coming soon* badge and explains itself in a toast when pressed.
+- **Locked, not dimmed.** The header and footer show exactly as on the site; hovering or selecting one outlines it with its label (*Header · every page*), and the inspector says when it becomes editable.
+- **Same light islands as the post editor.** Our chrome follows the admin theme; WordPress's controls (the inspector's tab panels, Elements, Layers, popovers) stay light, and the canvas is the site itself.
