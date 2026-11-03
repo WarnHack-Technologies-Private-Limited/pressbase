@@ -9,8 +9,10 @@ import { keyHint, redactSecrets } from './security';
 import {
   AiError,
   type AiMessage,
+  type AiModelTier,
   type AiProvider,
   type AiResult,
+  type AiStreamEvent,
   type AiTextRequest,
 } from './types';
 
@@ -31,6 +33,11 @@ export interface AiSettings {
   provider: string;
   /** Empty: the provider's default model. */
   model: string;
+  /**
+   * The "model for quick edits" (`usingModelTier('fast')`): rewrites and
+   * small changes. Empty: the main model.
+   */
+  fastModel: string;
   /** Requests per UTC day for the whole site. */
   dailyLimit: number;
 }
@@ -42,7 +49,10 @@ export interface AiAttribution {
   plugin: string | null;
   ability: string | null;
   user: CurrentUser | null;
-  timeoutSeconds?: number;
+  /** This request's timeout; otherwise `wp_ai_client_default_request_timeout` (30 s). */
+  timeoutMs?: number;
+  /** Which of the site's models to use (default: the main one). */
+  tier?: AiModelTier;
 }
 
 /** A usage log row, as `pressbase_ai_request` receives it: never the prompt or the output. */
@@ -80,6 +90,7 @@ export const AI_OPTIONS = {
   enabled: 'pressbase_ai_enabled',
   provider: 'pressbase_ai_provider',
   model: 'pressbase_ai_model',
+  fastModel: 'pressbase_ai_fast_model',
   dailyLimit: 'pressbase_ai_daily_request_limit',
 } as const;
 
@@ -92,6 +103,9 @@ export const AI_LOG_RETENTION_DAYS = 90;
 export function apiKeyOption(providerId: string): string {
   return `connectors_ai_${providerId.replace(/-/g, '_')}_api_key`;
 }
+
+const timeoutError = () =>
+  new AiError('prompt_timeout', 'The AI provider took too long to answer.', 504);
 
 /** Midnight UTC today: the daily caps reset then. */
 function startOfDay(now = new Date()): Date {
@@ -142,6 +156,7 @@ export class AiClient {
       enabled: Boolean(await options.get(AI_OPTIONS.enabled, false)),
       provider: String(await options.get(AI_OPTIONS.provider, 'anthropic')),
       model: String(await options.get(AI_OPTIONS.model, '')),
+      fastModel: String(await options.get(AI_OPTIONS.fastModel, '')),
       dailyLimit: Number.isInteger(limit) && limit >= 0 ? limit : DEFAULT_DAILY_LIMIT,
     };
   }
@@ -154,6 +169,9 @@ export class AiClient {
     if (input.enabled !== undefined) await options.set(AI_OPTIONS.enabled, input.enabled);
     if (input.provider !== undefined) await options.set(AI_OPTIONS.provider, input.provider);
     if (input.model !== undefined) await options.set(AI_OPTIONS.model, input.model.trim());
+    if (input.fastModel !== undefined) {
+      await options.set(AI_OPTIONS.fastModel, input.fastModel.trim());
+    }
     if (input.dailyLimit !== undefined) await options.set(AI_OPTIONS.dailyLimit, input.dailyLimit);
     return this.settings();
   }
@@ -246,11 +264,10 @@ export class AiClient {
   }
 
   /**
-   * Sends one request to the configured provider: checks the caps, applies
-   * the timeout, redacts keys from errors and logs the request without content.
-   * The prompt builder calls this; use the builder.
+   * What every request needs before it's sent: the provider, its key, the
+   * model for the tier, the timeout, the caps checked, and a log entry.
    */
-  async send(request: Omit<AiTextRequest, 'model'>, attribution: AiAttribution): Promise<AiResult> {
+  async #prepare(attribution: AiAttribution) {
     const settings = await this.settings();
     const provider = this.#providers.get(settings.provider);
     const { key } = await this.apiKey(settings.provider);
@@ -262,25 +279,18 @@ export class AiClient {
       );
     }
     await this.#checkCaps(attribution.plugin);
-    const model = settings.model || provider.defaultModel;
-    const filtered = await this.kernel.hooks.applyFilters(
-      'wp_ai_client_default_request_timeout',
-      DEFAULT_TIMEOUT_SECONDS,
-    );
-    const seconds =
-      attribution.timeoutSeconds ??
-      (typeof filtered === 'number' && filtered > 0 ? filtered : DEFAULT_TIMEOUT_SECONDS);
-    const timeoutMs = Math.round(seconds * 1000);
-
-    const started = Date.now();
-    const controller = new AbortController();
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const timeout = new Promise<never>((_, reject) => {
-      timer = setTimeout(() => {
-        controller.abort();
-        reject(new AiError('prompt_timeout', 'The AI provider took too long to answer.', 504));
-      }, timeoutMs);
-    });
+    const main = settings.model || provider.defaultModel;
+    const model = attribution.tier === 'fast' ? settings.fastModel || main : main;
+    let timeoutMs = attribution.timeoutMs;
+    if (timeoutMs === undefined) {
+      const filtered = await this.kernel.hooks.applyFilters(
+        'wp_ai_client_default_request_timeout',
+        DEFAULT_TIMEOUT_SECONDS,
+      );
+      const seconds =
+        typeof filtered === 'number' && filtered > 0 ? filtered : DEFAULT_TIMEOUT_SECONDS;
+      timeoutMs = Math.round(seconds * 1000);
+    }
     const entry: AiRequestLogEntry = {
       userId: attribution.user?.id ?? null,
       plugin: attribution.plugin,
@@ -293,6 +303,46 @@ export class AiClient {
       status: 'ok',
       errorCode: null,
     };
+    return { provider, key, model, timeoutMs, entry };
+  }
+
+  /** A failure as an AiError with keys redacted from its message, recorded on the log entry. */
+  #failure(error: unknown, key: string, entry: AiRequestLogEntry): AiError {
+    const failure =
+      error instanceof AiError
+        ? new AiError(error.code, redactSecrets(error.message, [key]), error.status)
+        : new AiError(
+            'prompt_builder_error',
+            redactSecrets(error instanceof Error ? error.message : String(error), [key]),
+            500,
+          );
+    entry.status = 'error';
+    entry.errorCode = failure.code;
+    return failure;
+  }
+
+  #record(entry: AiRequestLogEntry, result: AiResult, model: string): void {
+    entry.inputTokens = result.tokenUsage.promptTokens;
+    entry.outputTokens = result.tokenUsage.completionTokens;
+    entry.model = result.model || model;
+  }
+
+  /**
+   * Sends one request to the configured provider: checks the caps, applies
+   * the timeout, redacts keys from errors and logs the request without content.
+   * The prompt builder calls this; use the builder.
+   */
+  async send(request: Omit<AiTextRequest, 'model'>, attribution: AiAttribution): Promise<AiResult> {
+    const { provider, key, model, timeoutMs, entry } = await this.#prepare(attribution);
+    const started = Date.now();
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        controller.abort();
+        reject(timeoutError());
+      }, timeoutMs);
+    });
     try {
       const result = await Promise.race([
         provider.generateText(
@@ -301,24 +351,80 @@ export class AiClient {
         ),
         timeout,
       ]);
-      entry.inputTokens = result.tokenUsage.promptTokens;
-      entry.outputTokens = result.tokenUsage.completionTokens;
-      entry.model = result.model || model;
+      this.#record(entry, result, model);
       return result;
     } catch (error) {
-      const failure =
-        error instanceof AiError
-          ? new AiError(error.code, redactSecrets(error.message, [key]), error.status)
-          : new AiError(
-              'prompt_builder_error',
-              redactSecrets(error instanceof Error ? error.message : String(error), [key]),
-              500,
-            );
-      entry.status = 'error';
-      entry.errorCode = failure.code;
-      throw failure;
+      throw this.#failure(error, key, entry);
     } finally {
       clearTimeout(timer);
+      entry.durationMs = Date.now() - started;
+      await this.#log(entry);
+    }
+  }
+
+  /**
+   * send(), streamed: yields the provider's text events and ends with
+   * `done`. The caps, the timeout (for the whole reply), key redaction and
+   * the log are send()'s; the request is logged once, when the stream ends,
+   * fails or is abandoned (`prompt_cancelled`). A provider without
+   * streamText() answers in one piece. Use the builder's streamText().
+   */
+  async *stream(
+    request: Omit<AiTextRequest, 'model'>,
+    attribution: AiAttribution,
+  ): AsyncGenerator<AiStreamEvent, void, undefined> {
+    const { provider, key, model, timeoutMs, entry } = await this.#prepare(attribution);
+    const started = Date.now();
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        controller.abort();
+        reject(timeoutError());
+      }, timeoutMs);
+    });
+    // Between two events nobody awaits the timeout; that isn't an unhandled rejection.
+    timeout.catch(() => {});
+    const full = { ...request, model };
+    const context = { apiKey: key, signal: controller.signal, timeoutMs };
+    const source: AsyncIterable<AiStreamEvent> = provider.streamText
+      ? provider.streamText(full, context)
+      : (async function* () {
+          yield { type: 'done' as const, result: await provider.generateText(full, context) };
+        })();
+    const iterator = source[Symbol.asyncIterator]();
+    let finished = false;
+    try {
+      for (;;) {
+        const next = await Promise.race([iterator.next(), timeout]);
+        if (next.done) break;
+        const event = next.value;
+        if (event.type === 'done') {
+          this.#record(entry, event.result, model);
+          finished = true;
+          yield event;
+          return;
+        }
+        if (event.text) yield event;
+      }
+      throw new AiError(
+        'prompt_upstream_server_error',
+        'The AI provider ended its reply early.',
+        502,
+      );
+    } catch (error) {
+      throw this.#failure(error, key, entry);
+    } finally {
+      clearTimeout(timer);
+      if (!finished) {
+        // Failed, or the caller stopped reading: stop the provider too.
+        controller.abort();
+        if (entry.status === 'ok') {
+          entry.status = 'error';
+          entry.errorCode = 'prompt_cancelled';
+        }
+        iterator.return?.()?.catch(() => {});
+      }
       entry.durationMs = Date.now() - started;
       await this.#log(entry);
     }

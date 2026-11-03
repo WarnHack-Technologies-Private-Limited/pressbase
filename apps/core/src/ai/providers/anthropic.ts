@@ -46,6 +46,13 @@ export interface AnthropicClientLike {
         params: Anthropic.Beta.MessageCreateParamsNonStreaming,
         options?: { signal?: AbortSignal; timeout?: number },
       ): Promise<Anthropic.Beta.BetaMessage>;
+      /** messages.stream(): optional so a fake can leave it out (generateText() is used then). */
+      stream?(
+        params: Anthropic.Beta.MessageCreateParamsNonStreaming,
+        options?: { signal?: AbortSignal; timeout?: number },
+      ): AsyncIterable<Anthropic.Beta.BetaRawMessageStreamEvent> & {
+        finalMessage(): Promise<Anthropic.Beta.BetaMessage>;
+      };
     };
   };
 }
@@ -70,7 +77,12 @@ function toContent(message: AiMessage): Anthropic.Beta.BetaContentBlockParam[] {
   const content: Anthropic.Beta.BetaContentBlockParam[] = [];
   for (const part of message.parts) {
     if (part.type === 'text') content.push({ type: 'text', text: part.text });
-    else if (part.type === 'function_call') {
+    else if (part.type === 'image') {
+      content.push({
+        type: 'image',
+        source: { type: 'base64', media_type: part.mimeType, data: part.data },
+      });
+    } else if (part.type === 'function_call') {
       content.push({ type: 'tool_use', id: part.id, name: part.name, input: part.args });
     } else {
       const response = part.response as { error?: unknown } | null;
@@ -150,6 +162,88 @@ function toAiError(error: unknown): AiError {
   return new AiError('prompt_builder_error', message, 500);
 }
 
+/** The Messages API request for a provider-neutral one. */
+function toParams(request: AiTextRequest): Anthropic.Beta.MessageCreateParamsNonStreaming {
+  const tools: Anthropic.Beta.BetaTool[] = (request.functionDeclarations ?? []).map((fn) => ({
+    name: fn.name,
+    description: fn.description,
+    input_schema: toolSchema(fn.parameters),
+  }));
+  const messages: Anthropic.Beta.BetaMessageParam[] = request.messages.map((message) => {
+    const raw = message.providerContent;
+    if (message.role === 'model' && raw?.providerId === 'anthropic') {
+      // The assistant turn as Claude sent it, thinking blocks included.
+      return {
+        role: 'assistant',
+        content: raw.content as Anthropic.Beta.BetaContentBlockParam[],
+      };
+    }
+    return {
+      role: message.role === 'model' ? 'assistant' : 'user',
+      content: toContent(message),
+    };
+  });
+  const fallback = FALLBACK_MODELS.has(request.model);
+  return {
+    model: request.model,
+    max_tokens: request.maxTokens,
+    messages,
+    ...(request.systemInstruction ? { system: request.systemInstruction } : {}),
+    ...(tools.length ? { tools, tool_choice: { type: 'auto' } } : {}),
+    ...(request.outputSchema
+      ? {
+          output_config: {
+            format: {
+              type: 'json_schema',
+              schema: transformJSONSchema(request.outputSchema as never) as Record<string, unknown>,
+            },
+          },
+        }
+      : {}),
+    ...(fallback ? { betas: [FALLBACK_BETA], fallbacks: 'default' } : {}),
+  };
+}
+
+/** The provider-neutral result of a Messages API response. */
+function toResult(response: Anthropic.Beta.BetaMessage): AiResult {
+  if (response.stop_reason === 'refusal') {
+    throw new AiError('prompt_refused', 'The model declined this request.', 422);
+  }
+  const parts: AiMessagePart[] = [];
+  for (const block of response.content) {
+    if (block.type === 'text') parts.push({ type: 'text', text: block.text });
+    else if (block.type === 'tool_use') {
+      parts.push({
+        type: 'function_call',
+        id: block.id,
+        name: block.name,
+        args: (block.input ?? {}) as Record<string, unknown>,
+      });
+    }
+  }
+  const prompt =
+    response.usage.input_tokens +
+    (response.usage.cache_read_input_tokens ?? 0) +
+    (response.usage.cache_creation_input_tokens ?? 0);
+  const completion = response.usage.output_tokens;
+  return {
+    id: response.id,
+    message: {
+      role: 'model',
+      parts,
+      providerContent: { providerId: 'anthropic', content: response.content },
+    },
+    finishReason: finishReason(response.stop_reason),
+    tokenUsage: {
+      promptTokens: prompt,
+      completionTokens: completion,
+      totalTokens: prompt + completion,
+    },
+    providerId: 'anthropic',
+    model: response.model,
+  };
+}
+
 export function createAnthropicProvider(
   factory: AnthropicClientFactory = defaultFactory,
 ): AiProvider {
@@ -168,94 +262,43 @@ export function createAnthropicProvider(
 
     async generateText(request: AiTextRequest, context: AiProviderContext): Promise<AiResult> {
       const client = factory({ apiKey: context.apiKey, timeout: context.timeoutMs });
-      const tools: Anthropic.Beta.BetaTool[] = (request.functionDeclarations ?? []).map((fn) => ({
-        name: fn.name,
-        description: fn.description,
-        input_schema: toolSchema(fn.parameters),
-      }));
-      const messages: Anthropic.Beta.BetaMessageParam[] = request.messages.map((message) => {
-        const raw = message.providerContent;
-        if (message.role === 'model' && raw?.providerId === 'anthropic') {
-          // The assistant turn as Claude sent it, thinking blocks included.
-          return {
-            role: 'assistant',
-            content: raw.content as Anthropic.Beta.BetaContentBlockParam[],
-          };
-        }
-        return {
-          role: message.role === 'model' ? 'assistant' : 'user',
-          content: toContent(message),
-        };
-      });
-      const fallback = FALLBACK_MODELS.has(request.model);
-      const params: Anthropic.Beta.MessageCreateParamsNonStreaming = {
-        model: request.model,
-        max_tokens: request.maxTokens,
-        messages,
-        ...(request.systemInstruction ? { system: request.systemInstruction } : {}),
-        ...(tools.length ? { tools, tool_choice: { type: 'auto' } } : {}),
-        ...(request.outputSchema
-          ? {
-              output_config: {
-                format: {
-                  type: 'json_schema',
-                  schema: transformJSONSchema(request.outputSchema as never) as Record<
-                    string,
-                    unknown
-                  >,
-                },
-              },
-            }
-          : {}),
-        ...(fallback ? { betas: [FALLBACK_BETA], fallbacks: 'default' } : {}),
-      };
-
       let response: Anthropic.Beta.BetaMessage;
       try {
-        response = await client.beta.messages.create(params, {
+        response = await client.beta.messages.create(toParams(request), {
           signal: context.signal,
           timeout: context.timeoutMs,
         });
       } catch (error) {
         throw toAiError(error);
       }
+      return toResult(response);
+    },
 
-      if (response.stop_reason === 'refusal') {
-        throw new AiError('prompt_refused', 'The model declined this request.', 422);
+    /**
+     * The Messages API with `stream: true`, through the SDK's stream helper:
+     * text deltas as they arrive, then the accumulated message as the result.
+     */
+    async *streamText(request: AiTextRequest, context: AiProviderContext) {
+      const client = factory({ apiKey: context.apiKey, timeout: context.timeoutMs });
+      const options = { signal: context.signal, timeout: context.timeoutMs };
+      const stream = client.beta.messages.stream;
+      if (!stream) {
+        yield { type: 'done' as const, result: await this.generateText(request, context) };
+        return;
       }
-      const parts: AiMessagePart[] = [];
-      for (const block of response.content) {
-        if (block.type === 'text') parts.push({ type: 'text', text: block.text });
-        else if (block.type === 'tool_use') {
-          parts.push({
-            type: 'function_call',
-            id: block.id,
-            name: block.name,
-            args: (block.input ?? {}) as Record<string, unknown>,
-          });
+      let response: Anthropic.Beta.BetaMessage;
+      try {
+        const messages = stream.call(client.beta.messages, toParams(request), options);
+        for await (const event of messages) {
+          if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+            yield { type: 'text' as const, text: event.delta.text };
+          }
         }
+        response = await messages.finalMessage();
+      } catch (error) {
+        throw toAiError(error);
       }
-      const prompt =
-        response.usage.input_tokens +
-        (response.usage.cache_read_input_tokens ?? 0) +
-        (response.usage.cache_creation_input_tokens ?? 0);
-      const completion = response.usage.output_tokens;
-      return {
-        id: response.id,
-        message: {
-          role: 'model',
-          parts,
-          providerContent: { providerId: 'anthropic', content: response.content },
-        },
-        finishReason: finishReason(response.stop_reason),
-        tokenUsage: {
-          promptTokens: prompt,
-          completionTokens: completion,
-          totalTokens: prompt + completion,
-        },
-        providerId: 'anthropic',
-        model: response.model,
-      };
+      yield { type: 'done' as const, result: toResult(response) };
     },
   };
 }

@@ -10,7 +10,8 @@ import type { Kernel } from '../kernel';
  * - `GET /settings`: the settings, each provider with its models and key
  *   status (`source`: env, database or none; `last4`), today's usage, and
  *   whether AI is available. Keys are never returned.
- * - `POST /settings`: `enabled`, `provider`, `model`, `daily_limit`, and
+ * - `POST /settings`: `enabled`, `provider`, `model`, `fast_model` (the
+ *   model for quick edits; empty: the main model), `daily_limit`, and
  *   `api_key` (saved for `provider`; `""` deletes it). A key set in the
  *   environment wins over a saved one.
  * - `POST /test`: "Test connection", a tiny prompt through the configured
@@ -21,15 +22,17 @@ import type { Kernel } from '../kernel';
  * same option names Pressbase uses: connectors_ai_{provider}_api_key.
  */
 
+const modelId = z
+  .string()
+  .max(191)
+  .regex(/^[A-Za-z0-9._:@/-]*$/, 'Use the model ID, like claude-opus-5-5.');
+
 const settingsBody = z
   .object({
     enabled: z.boolean().optional(),
     provider: z.string().min(1).max(64).optional(),
-    model: z
-      .string()
-      .max(191)
-      .regex(/^[A-Za-z0-9._:@/-]*$/, 'Use the model ID, like claude-opus-5-5.')
-      .optional(),
+    model: modelId.optional(),
+    fast_model: modelId.optional(),
     daily_limit: z.number().int().min(0).max(1_000_000).optional(),
     api_key: z
       .string()
@@ -56,6 +59,7 @@ async function settingsResponse(kernel: Kernel) {
     enabled: settings.enabled,
     provider: settings.provider,
     model: settings.model,
+    fast_model: settings.fastModel,
     daily_limit: settings.dailyLimit,
     providers,
     requests_today: await kernel.ai.requestsToday(),
@@ -87,6 +91,7 @@ export function aiRoutes() {
       enabled: body.enabled,
       provider: body.provider,
       model: body.model,
+      fastModel: body.fast_model,
       dailyLimit: body.daily_limit,
     });
     if (body.api_key !== undefined) await kernel.ai.setApiKey(provider, body.api_key || null);
