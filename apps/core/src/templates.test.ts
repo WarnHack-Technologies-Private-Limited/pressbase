@@ -298,7 +298,9 @@ describe('/wp/v2/templates and /wp/v2/template-parts', () => {
     expect(index._links.self[0].href).toBe(
       'http://localhost:3000/wp-json/wp/v2/templates/plain//index',
     );
-    expect(index._links.about[0].href).toBe('http://localhost:3000/wp-json/wp/v2/types/wp_template');
+    expect(index._links.about[0].href).toBe(
+      'http://localhost:3000/wp-json/wp/v2/types/wp_template',
+    );
 
     const pageTemplates = await ctx.request('GET', '/wp/v2/templates?post_type=page');
     expect(pageTemplates.body.map((t: { slug: string }) => t.slug)).toEqual(['landing']);

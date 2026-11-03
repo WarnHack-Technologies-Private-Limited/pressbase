@@ -171,7 +171,10 @@ export function templatesRoutes(kernel: Kernel) {
 
   /** get_wp_templates_original_source_field() */
   const originalSource = (t: BlockTemplate): 'theme' | 'plugin' | 'site' | 'user' => {
-    if (t.hasThemeFile && (t.origin === 'theme' || (!t.origin && ['theme', 'custom'].includes(t.source))))
+    if (
+      t.hasThemeFile &&
+      (t.origin === 'theme' || (!t.origin && ['theme', 'custom'].includes(t.source)))
+    )
       return 'theme';
     if (t.origin === 'plugin') return 'plugin';
     if (!t.hasThemeFile && t.source === 'custom' && !t.author) return 'site';
@@ -286,9 +289,7 @@ export function templatesRoutes(kernel: Kernel) {
       links['version-history'] = [{ href: `${self}/revisions`, count: revisions.length }];
       const latest = revisions[0];
       if (latest) {
-        links['predecessor-version'] = [
-          { href: `${self}/revisions/${latest.id}`, id: latest.id },
-        ];
+        links['predecessor-version'] = [{ href: `${self}/revisions/${latest.id}`, id: latest.id }];
       }
     }
     if (canEdit) links['wp:action-publish'] = [{ href: self }];

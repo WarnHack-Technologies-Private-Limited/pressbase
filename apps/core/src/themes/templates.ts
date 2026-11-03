@@ -1,8 +1,8 @@
 import { schema } from '@pressbase/db';
 import { and, eq, inArray } from 'drizzle-orm';
 import { userCan } from '../auth/users';
+import { type Post, PostError } from '../content/posts';
 import { type QueryArgs, queryPosts } from '../content/query';
-import { PostError, type Post } from '../content/posts';
 import type { Kernel } from '../kernel';
 import type { ActiveTheme } from './service';
 
@@ -726,7 +726,10 @@ async function describeCustomTemplate(kernel: Kernel, template: BlockTemplate): 
       return;
     case 'single':
       for (const type of kernel.postTypes.all()) {
-        if (rest.startsWith(`${type.name}-`) && (await forPost(type.name, rest.slice(type.name.length + 1))))
+        if (
+          rest.startsWith(`${type.name}-`) &&
+          (await forPost(type.name, rest.slice(type.name.length + 1)))
+        )
           return;
       }
       return;
@@ -738,7 +741,10 @@ async function describeCustomTemplate(kernel: Kernel, template: BlockTemplate): 
       return;
     case 'taxonomy':
       for (const taxonomy of kernel.taxonomies.all()) {
-        if (rest.startsWith(`${taxonomy.name}-`) && (await forTerm(taxonomy.name, rest.slice(taxonomy.name.length + 1))))
+        if (
+          rest.startsWith(`${taxonomy.name}-`) &&
+          (await forTerm(taxonomy.name, rest.slice(taxonomy.name.length + 1)))
+        )
           return;
       }
       return;
@@ -916,7 +922,8 @@ export async function locateBlockTemplate(
       content = emptyTemplateWarning(kernel, template);
     } else if (template.hasThemeFile) {
       const active = options.theme ?? (await kernel.themes.active());
-      content = (await templateFile(kernel, active, TEMPLATE_POST_TYPE, template.slug))?.content ?? '';
+      content =
+        (await templateFile(kernel, active, TEMPLATE_POST_TYPE, template.slug))?.content ?? '';
     }
   }
   return { slug: template.slug, content, template };
@@ -1070,7 +1077,13 @@ export async function saveBlockTemplate(
   }
 
   if (template?.source === 'custom' && template.wpId) {
-    const terms = area ? { [TEMPLATE_PART_AREA_TAXONOMY]: [await termIdByName(kernel, TEMPLATE_PART_AREA_TAXONOMY, area)] } : undefined;
+    const terms = area
+      ? {
+          [TEMPLATE_PART_AREA_TAXONOMY]: [
+            await termIdByName(kernel, TEMPLATE_PART_AREA_TAXONOMY, area),
+          ],
+        }
+      : undefined;
     await kernel.posts.update(template.wpId, {
       status: 'publish',
       ...(content !== undefined ? { content } : {}),
@@ -1088,7 +1101,8 @@ export async function saveBlockTemplate(
   }
 
   // A new post: the first customised copy of a theme file, or a new template.
-  const themeName = template?.theme ?? changes.theme ?? (await kernel.themes.active()).info.stylesheet;
+  const themeName =
+    template?.theme ?? changes.theme ?? (await kernel.themes.active()).info.stylesheet;
   const slug = template?.slug ?? changes.slug;
   if (!slug) throw new PostError('rest_missing_callback_param', 'Missing parameter(s): slug');
   const terms: Record<string, number[]> = {
@@ -1140,14 +1154,21 @@ export async function deleteBlockTemplate(
     throw new PostError('rest_template_not_found', 'No templates exist with that id.', 404);
   }
   if (template.source !== 'custom' || !template.wpId) {
-    throw new PostError('rest_invalid_template', "Templates based on theme files can't be removed.");
+    throw new PostError(
+      'rest_invalid_template',
+      "Templates based on theme files can't be removed.",
+    );
   }
   if (force) {
     await kernel.posts.delete(template.wpId);
     return { template, deleted: true };
   }
   if (template.status === 'trash') {
-    throw new PostError('rest_template_already_trashed', 'The template has already been deleted.', 410);
+    throw new PostError(
+      'rest_template_already_trashed',
+      'The template has already been deleted.',
+      410,
+    );
   }
   await kernel.posts.trash(template.wpId);
   return { template: { ...template, status: 'trash' }, deleted: false };
