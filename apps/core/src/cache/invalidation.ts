@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { schema } from '@pressbase/db';
 import { inArray } from 'drizzle-orm';
 import type { Comment } from '../comments/service';
@@ -72,10 +73,36 @@ export function membershipTags(post: Pick<Post, 'id' | 'type' | 'authorId'>): st
   ];
 }
 
+/** Purges held back while a changeset publishes (see holdCachePurges()). */
+const held = new AsyncLocalStorage<{ tags: Set<string>; open: boolean }>();
+
+/**
+ * Runs `fn` with the purges its changes announce held back, and returns
+ * their tags instead of announcing them. A changeset publish (v0.8, ADR 0022)
+ * changes many entities in one transaction: it purges once, after commit.
+ * When `fn` throws, the held tags are dropped with the transaction.
+ */
+export async function holdCachePurges<T>(
+  fn: () => Promise<T>,
+): Promise<{ result: T; tags: string[] }> {
+  const scope = { tags: new Set<string>(), open: true };
+  try {
+    const result = await held.run(scope, fn);
+    return { result, tags: [...scope.tags] };
+  } finally {
+    scope.open = false;
+  }
+}
+
 export function registerCacheInvalidation(kernel: Kernel): void {
   const { hooks } = kernel;
   const purge = async (tags: (string | undefined)[], reason: string) => {
     const unique = [...new Set(tags.filter((t): t is string => Boolean(t)))];
+    const scope = held.getStore();
+    if (scope?.open) {
+      for (const tag of unique) scope.tags.add(tag);
+      return;
+    }
     if (unique.length) await hooks.doAction(PURGE_ACTION, unique, reason);
   };
   /**

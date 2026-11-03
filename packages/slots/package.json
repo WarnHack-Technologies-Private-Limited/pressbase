@@ -1,0 +1,22 @@
+{
+  "name": "@pressbase/slots",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pattern slots: a section's editable content as typed, ordered slots that can be read, filled, moved between layouts and described as a JSON schema for AI.",
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@pressbase/blocks": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  }
+}

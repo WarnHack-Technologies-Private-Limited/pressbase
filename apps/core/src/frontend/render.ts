@@ -8,6 +8,7 @@ import { addCacheTags, CacheTag, collectCacheTags } from '../cache/tags';
 import { localeToLang } from '../i18n/locale';
 import type { Kernel } from '../kernel';
 import type { ActiveTheme } from '../themes/service';
+import { locateBlockTemplate } from '../themes/templates';
 import { parseFeedRequest, renderFeed } from './feeds';
 import { HtmlOutput } from './head';
 import { templateHierarchy } from './hierarchy';
@@ -178,6 +179,12 @@ export async function renderPublicPage(
   kernel: Kernel,
   request: RenderRequest,
 ): Promise<RenderedPage> {
+  // Changeset previews (v0.8, ADR 0022): `?changeset_uuid=` renders with the
+  // changeset's entries applied, never cached. See changesets/service.ts.
+  const preview = await kernel.changesets.renderPreview(request, (r) =>
+    renderPublicPage(kernel, r),
+  );
+  if (preview) return preview;
   // Public pages are in the site's language, whoever asks (get_locale(), not the user's).
   const { result, tags } = await kernel.i18n.withLocale(kernel.i18n.getLocale(), () =>
     collectCacheTags(() => route(kernel, request)),
@@ -367,8 +374,10 @@ async function renderPage(
   }
   const theme = request.theme ?? (await kernel.themes.active());
   const candidates = templateHierarchy(main, await pageTemplateOf(kernel, main));
-  const slug = candidates.find((c) => theme.templates.has(c)) ?? 'index';
-  const template = theme.templates.get(slug);
+  // locate_block_template(): a customised copy (wp_template post) wins over
+  // the theme's file, and custom templates join the hierarchy (themes/templates.ts).
+  const template = await locateBlockTemplate(kernel, candidates, { theme, loggedIn: !!user });
+  const slug = template?.slug ?? 'index';
   const home = (await kernel.options.get<string>('home', '')).replace(/\/+$/, '');
   const page = new PageRender(theme, main, user, home, requestedPath, request.cookies);
   // This page's copy of the site-wide scripts and styles (kernel.scripts / kernel.styles).

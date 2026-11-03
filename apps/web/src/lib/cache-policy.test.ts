@@ -46,6 +46,12 @@ describe('bypassReason', () => {
     );
     expect(bypassReason(req('http://site.test/hello/?replytocom=3'))).toBe('query');
   });
+
+  it('skips changeset previews, even for visitors without a session', () => {
+    const uuid = '6f1c2b8e-4d3a-4f5b-9c7d-2e8a1b0c3d4e';
+    expect(bypassReason(req(`http://site.test/about/?changeset_uuid=${uuid}`))).toBe('query');
+    expect(bypassReason(req(`http://site.test/?customize_changeset_uuid=${uuid}`))).toBe('query');
+  });
 });
 
 describe('cacheKey', () => {

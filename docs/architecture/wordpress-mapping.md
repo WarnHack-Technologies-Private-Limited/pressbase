@@ -62,6 +62,8 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | Caching plugins (`clean_post_cache`, page caches) | `apps/core/src/cache/`, `apps/web/src/lib/page-cache.ts` | Tag-based purges. See [ADR 0008](../adr/0008-public-page-caching.md). |
 | `wp-cron.php`, `wp_schedule_event()` and the rest of `cron.php` | `apps/core/src/jobs/` (`kernel.jobs`, `kernel.cron`) | Events are rows in the `jobs` table, run on time by a worker. See [Jobs and cron](jobs.md). |
 | `publish_future_post`, `_future_post_hook()` | `apps/core/src/jobs/core-events.ts` | One event per scheduled post; `publishDue()` is the safety net. |
+| `customize_changeset`, `WP_Customize_Manager::save_changeset_post()`, `_publish_changeset_values()`, `_wp_customize_publish_changeset()`, `trash_changeset_post()`, `?customize_changeset_uuid=` previews, `WP_Customize_Setting::preview()` | `apps/core/src/changesets/` (`kernel.changesets`), `routes/changesets.ts` (`/pressbase/v1/changesets`) | Entries are entities (`page:12`, `wp_global_styles:{theme}`, `option:blogname`), not settings; publishing is one database transaction (`kernel.transaction()`); previews are a request-scoped overlay at `?changeset_uuid=`. See [Changesets](changesets.md), [ADR 0022](../adr/0022-changesets.md). |
+| `pre_option_{$option}` | `kernel.options.get()` | Returning anything but `false` replaces the stored value. |
 | `get_plugins()`, `activate_plugin()`, `deactivate_plugins()`, `delete_plugins()`, `uninstall_plugin()`, plugin file headers | `apps/core/src/plugins/` (`kernel.plugins`), `plugin.json` | ES modules; tracked registrations instead of a fresh process per request. See [Plugins](plugins.md). |
 | `WP_REST_Plugins_Controller`, `Plugin_Upgrader` (upload) | `apps/core/src/routes/plugins.ts` | `plugin` is the folder name; installs from an uploaded .zip only. |
 | `plugins.php`, `plugin-install.php?tab=upload` | `/admin/plugins` | |
@@ -72,6 +74,8 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | `WP_Theme_JSON_Resolver::get_style_variations()`, the site editor's style variation logic | `packages/theme-json/src/style-variations.ts`, `kernel.themes` (`active().variations`) | Full, colour and typography variations; choosing one writes the user's global styles, as in WordPress. |
 | `wp_global_styles` post type, `get_user_data_from_wp_global_styles()`, `get_user_global_styles_post_id()` | `apps/core/src/themes/global-styles.ts` | One post per theme, slug `wp-global-styles-{stylesheet}` (no `wp_theme` term). |
 | `WP_REST_Global_Styles_Controller`, `WP_REST_Global_Styles_Revisions_Controller` | `apps/core/src/routes/global-styles.ts` | Plus `/pressbase/v1/global-styles/preview`. |
+| `wp_template`, `wp_template_part`, `wp_theme`, `wp_template_part_area` (`create_initial_post_types()`, `create_initial_taxonomies()`), `get_block_templates()`, `get_block_template()`, `get_block_file_template()`, `_build_block_template_result_from_post()`, `resolve_block_template()`, `locate_block_template()`, `wp_filter_wp_template_unique_post_slug()` | `apps/core/src/themes/templates.ts` | A customised copy is a published post tagged with the theme's `wp_theme` term, read through `queryPosts()`; `saveBlockTemplate()` / `deleteBlockTemplate()` hold the REST controller's write logic. See [Themes](themes.md#templates-and-template-parts) and [ADR 0021](../adr/0021-site-editor-and-templates-storage.md). |
+| `WP_REST_Templates_Controller`, `WP_REST_Template_Revisions_Controller`, `WP_REST_Template_Autosaves_Controller` | `apps/core/src/routes/templates.ts` | `/wp/v2/templates` and `/wp/v2/template-parts`; `lookup` is not ported yet. |
 | `WP_Theme_JSON::remove_insecure_properties()`, `wp_filter_global_styles_post()`, `safecss_filter_attr()`, `validate_custom_css()` | `packages/theme-json/src/sanitize.ts` | |
 | Site editor → Styles | `/admin/appearance/styles` | The essentials: variations, colours, type, layout, revisions, live preview. |
 | `site_logo`, `site_icon`, `get_custom_logo()`, `WP_Site_Icon`, `get_site_icon_url()`, `wp_site_icon()` | `apps/core/src/themes/site-identity.ts`, `blocks/library/post-media.ts` (`core/site-logo`) | Icon crops are sub-sizes of the chosen image (`site_icon-512` … `site_icon-32`), not a separate cropped attachment. |
@@ -96,7 +100,7 @@ If you know WordPress, use this page to find the equivalent here. The reference 
 | WordPress                                      | Pressbase (planned)                             | Release |
 | ---------------------------------------------- | ------------------------------------------- | ------- |
 | Autosave | Autosaves endpoint, with the block editor | v0.3 |
-| Site editor (`wp_template`, `wp_global_styles`) | Admin site editor | later |
+| Site editor (`wp_template`, `wp_global_styles`) | Studio (`/admin/studio`); storage and REST shipped, see [ADR 0021](../adr/0021-site-editor-and-templates-storage.md) | v0.8 |
 | Classic menus (`nav_menu`, `/wp/v2/menus`, `WP_Classic_To_Block_Menu_Converter`) | Converted to `wp_navigation` by the importer | v0.6 |
 | Importer, wp-cli                               | Migration tool, `pressbase` CLI                 | v0.6    |
 | `__()`, text domains                           | `@wordpress/i18n`, `.po`/`.mo`              | v0.6    |

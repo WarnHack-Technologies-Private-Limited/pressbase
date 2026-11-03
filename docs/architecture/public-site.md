@@ -78,7 +78,7 @@ Drafts, pending and private posts purge nothing: anonymous visitors never saw th
 
 - Methods other than `GET` and `HEAD`.
 - Requests with an `Authorization` header, a session cookie (`pressbase_*`), a post password cookie (`wp-postpass*`) or a commenter cookie (`comment_author_*`). Logged-in people always get a fresh render.
-- `?preview`, `?unapproved`, `?moderation-hash`, `?replytocom`.
+- `?preview`, `?unapproved`, `?moderation-hash`, `?replytocom`, and changeset previews (`?changeset_uuid`, `?customize_changeset_uuid`; see [Changesets](changesets.md)).
 - Answers core marks `private` or `no-store`: logged-in renders, unlocked password-protected posts, held-comment previews.
 - Statuses other than 200, 301 and 404. 301s and 404s are kept one minute; 200s an hour, then served stale for up to a day while a refresh runs.
 - 404s while a plugin listens to `pressbase_404` (a 404 log): they're sent `no-store`, so every hit reaches it.

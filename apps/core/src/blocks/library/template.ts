@@ -7,6 +7,7 @@ import {
   parseBlocks,
 } from '@pressbase/blocks';
 import { currentPage } from '../../frontend/page';
+import { templatePartForRender } from '../../themes/templates';
 import { type CoreBlock, contextPost, siteInfo } from '../helpers';
 
 /**
@@ -18,7 +19,12 @@ import { type CoreBlock, contextPost, siteInfo } from '../helpers';
 /** WordPress's template part areas and the element each one uses (get_allowed_block_template_part_areas()). */
 const AREA_TAGS: Record<string, string> = { header: 'header', footer: 'footer' };
 
-/** render_block_core_template_part() */
+/**
+ * render_block_core_template_part(): the active theme's customised copy (a
+ * `wp_template_part` post) first, then the theme's `parts/{slug}.html`
+ * (themes/templates.ts). Fires render_block_core_template_part_post, _file
+ * or _none, as WordPress does.
+ */
 export async function renderTemplatePart(
   attributes: BlockAttributes,
   _content: string,
@@ -26,20 +32,37 @@ export async function renderTemplatePart(
 ): Promise<string> {
   const slug = typeof attributes.slug === 'string' ? attributes.slug : '';
   if (!slug) return '';
-  const theme = currentPage()?.theme ?? (await block.services.kernel.themes.active());
-  const part = theme.parts.get(slug);
+  const { kernel } = block.services;
+  const theme = currentPage()?.theme ?? (await kernel.themes.active());
   // A part from another theme (`theme` attribute) isn't available.
   const themeAttr = typeof attributes.theme === 'string' ? attributes.theme : '';
-  if (
-    !part ||
-    (themeAttr && themeAttr !== theme.info.stylesheet && themeAttr !== theme.parent?.stylesheet)
-  ) {
+  const part = await templatePartForRender(kernel, slug, themeAttr, theme);
+  if (!part) {
+    const id = `${theme.info.stylesheet}//${slug}`;
+    await kernel.hooks.doAction('render_block_core_template_part_none', id, attributes, '');
     return block.services.user
       ? `Template part has been deleted or is unavailable: ${escHtml(slug)}`
       : '';
   }
+  if (part.post) {
+    await kernel.hooks.doAction(
+      'render_block_core_template_part_post',
+      part.id,
+      attributes,
+      part.post,
+      part.content,
+    );
+  } else {
+    await kernel.hooks.doAction(
+      'render_block_core_template_part_file',
+      part.id,
+      attributes,
+      '',
+      part.content,
+    );
+  }
   const rendered = await block.withRecursionGuard(
-    `template-part:${part.theme}/${slug}`,
+    `template-part:${part.id}`,
     () => block.renderInnerBlocks(parseBlocks(part.content)),
     '',
   );
