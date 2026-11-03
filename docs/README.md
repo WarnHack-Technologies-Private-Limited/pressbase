@@ -27,6 +27,7 @@ New here? The [README](../README.md#see-it-in-action) shows Pressbase in action:
 - [Jobs and cron](architecture/jobs.md): the job queue, its worker, WP-Cron and scheduled posts.
 - [Import and export](architecture/import-export.md): WXR in and out, the import pipeline, attachment downloads, migrating from a WordPress database.
 - [Blocks](architecture/blocks.md): parsing, rendering, dynamic blocks and patterns.
+- [Patterns and slots](architecture/patterns.md): the Pressbase pattern library, and slots: a pattern's content as typed values for Swap layout and AI.
 - [People](architecture/people.md): users and roles, application passwords, mail, password reset.
 - [Comments](architecture/comments.md): the comment pipeline, moderation, blocks and the comment form.
 - [Themes and the public site](architecture/themes.md): theme.json, block themes, routing, the template hierarchy and page rendering.

@@ -299,6 +299,8 @@ const PATTERN_FIELDS: [keyof BlockPattern, string][] = [
   ['postTypes', 'post_types'],
   ['templateTypes', 'template_types'],
   ['source', 'source'],
+  // Pressbase: declared slots, for Studio's Swap layout and AI (@pressbase/slots).
+  ['slots', 'slots'],
 ];
 
 function blockPatternRoutes() {

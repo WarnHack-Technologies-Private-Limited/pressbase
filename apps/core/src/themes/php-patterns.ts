@@ -1,4 +1,5 @@
 import { escAttr, escHtml, escUrl } from '@pressbase/blocks';
+import { parseSlotDeclarations, type SlotDeclarations } from '@pressbase/slots';
 import { sanitizePostContent } from '../content/sanitize';
 import { PATTERN_HEADERS, readFileHeaders } from './file-headers';
 
@@ -53,6 +54,8 @@ export interface LoadedPattern {
   templateTypes?: string[];
   viewportWidth?: number;
   inserter?: boolean;
+  /** Pressbase's `Slots:` header: declared slots (see @pressbase/slots). */
+  slots?: SlotDeclarations;
 }
 
 export type PatternLoadResult =
@@ -402,5 +405,12 @@ export function loadPhpPattern(source: string, context: PhpPatternContext): Patt
   }
   if (headers.inserter)
     pattern.inserter = !['no', 'false'].includes(headers.inserter.toLowerCase());
+  if (headers.slots) {
+    try {
+      pattern.slots = parseSlotDeclarations(headers.slots);
+    } catch (error) {
+      return { ok: false, reason: `the "Slots" header is not valid: ${(error as Error).message}` };
+    }
+  }
   return { ok: true, pattern };
 }

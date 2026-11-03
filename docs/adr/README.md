@@ -30,4 +30,5 @@ To write one, copy [template.md](template.md) to `NNNN-short-title.md` and open 
 | [0020](0020-plugin-blocks.md) | Plugin blocks: server registration through api.blocks, editor modules through window.pressbase.blocks | Accepted |
 | [0021](0021-site-editor-and-templates-storage.md) | The site editor shell and templates storage: wp_template posts with WordPress's model, read through the content layer | Accepted (shell pending #28) |
 | [0022](0022-changesets.md) | Changesets: one customize_changeset draft across entities, published in one transaction, previewed through a request-scoped overlay | Accepted |
+| [0024](0024-ai-site-building.md) | AI site building: pattern slots found by walking blocks and filled in place, a pattern library; pipeline, operations and honest content pending | Proposed (slots accepted) |
 | [0025](0025-theme-install-and-delete.md) | Installing and deleting themes from a .zip: one strict ZIP reader, block themes only, atomic replacement | Accepted |
