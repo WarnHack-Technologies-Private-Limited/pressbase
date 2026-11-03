@@ -28,9 +28,10 @@ import type { Post } from './posts';
 
 export interface TaxQueryClause {
   taxonomy: string;
-  /** Term IDs or slugs, depending on `field`. */
+  /** Term IDs, slugs or names, depending on `field`. */
   terms: (number | string)[];
-  field?: 'term_id' | 'slug';
+  /** `name` matches the term's name exactly, as WordPress's `wp_theme` queries do. */
+  field?: 'term_id' | 'slug' | 'name';
   operator?: 'IN' | 'NOT IN' | 'AND';
   /** Also match child terms (hierarchical taxonomies). Default true, as in WordPress. */
   include_children?: boolean;
@@ -118,16 +119,11 @@ function taxClause(clause: TaxQueryClause, hierarchical: boolean): SQL {
   const { posts } = schema;
   const field = clause.field ?? 'term_id';
   const values = clause.terms.map((t) => (field === 'term_id' ? Number(t) : String(t)));
-  const termMatch =
-    field === 'term_id'
-      ? sql`t.id in (${sql.join(
-          values.map((v) => sql`${v}`),
-          sql`, `,
-        )})`
-      : sql`t.slug in (${sql.join(
-          values.map((v) => sql`${v}`),
-          sql`, `,
-        )})`;
+  const column = field === 'term_id' ? sql`t.id` : field === 'name' ? sql`t.name` : sql`t.slug`;
+  const termMatch = sql`${column} in (${sql.join(
+    values.map((v) => sql`${v}`),
+    sql`, `,
+  )})`;
 
   // The term_taxonomy rows to match, optionally with all their descendants.
   const matched =
@@ -152,7 +148,7 @@ function taxClause(clause: TaxQueryClause, hierarchical: boolean): SQL {
         ...values.map((v) =>
           has(
             sql`select tt.id from term_taxonomy tt join terms t on t.id = tt.term_id
-              where tt.taxonomy = ${clause.taxonomy} and ${field === 'term_id' ? sql`t.id = ${v}` : sql`t.slug = ${v}`}`,
+              where tt.taxonomy = ${clause.taxonomy} and ${column} = ${v}`,
           ),
         ),
       ) as SQL;
