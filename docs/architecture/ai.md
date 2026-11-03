@@ -24,6 +24,7 @@ Code: `apps/core/src/ai/` (client, prompt builder, function resolver, providers)
 | `rest_validate_value_from_schema()`, `wp_prepare_json_schema_for_client()` | `validateJsonSchema()`, `prepareJsonSchemaForClient()` (`abilities/json-schema.ts`) |
 | `/wp-abilities/v1` controllers | `routes/abilities.ts` |
 | `core/get-site-info` (`abilities.php`) | the same, in `abilities/core-abilities.ts` |
+| — | `core/check-page`: the [quality checks](quality-checks.md) for a page, as data |
 
 ## The AI client
 

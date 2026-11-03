@@ -29,6 +29,7 @@ New here? The [README](../README.md#see-it-in-action) shows Pressbase in action:
 - [Blocks](architecture/blocks.md): parsing, rendering, dynamic blocks and patterns.
 - [Patterns and slots](architecture/patterns.md): the Pressbase pattern library, and slots: a pattern's content as typed values for Swap layout and AI.
 - [Design generator](architecture/design-generator.md): palettes from a hue and a mood that always pass WCAG AA, font pairs, corner and spacing presets, as user global styles.
+- [Quality checks](architecture/quality-checks.md): `checkPage()` and `core/check-page`: invalid blocks, contrast, headings, alt text, placeholders, link text and raw colours, each finding with its block.
 - [People](architecture/people.md): users and roles, application passwords, mail, password reset.
 - [Comments](architecture/comments.md): the comment pipeline, moderation, blocks and the comment form.
 - [Themes and the public site](architecture/themes.md): theme.json, block themes, routing, the template hierarchy and page rendering.
