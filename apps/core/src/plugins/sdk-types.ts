@@ -48,6 +48,7 @@ export type {
 } from '../ai/types';
 export type { CurrentUser } from '../auth/users';
 export type {} from '../cache/invalidation';
+export type { ChangesetData, ChangesetEntry } from '../changesets/service';
 export type {
   MetaObjectType,
   MetaRestArgs,
