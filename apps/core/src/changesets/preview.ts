@@ -1,8 +1,8 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { GlobalStylesConfig } from '@pressbase/theme-json';
 import type { CurrentUser } from '../auth/users';
-import type { QueryArgs } from '../content/query';
 import type { Post } from '../content/posts';
+import type { QueryArgs } from '../content/query';
 
 /**
  * The preview overlay of a changeset (v0.8, ADR 0022): what
@@ -88,6 +88,11 @@ export async function withChangesetPreview<T>(
   }
 }
 
+/** Runs `fn` without the overlay: work that writes (a scheduled publish) must see the database. */
+export function outsideChangesetPreview<T>(fn: () => Promise<T>): Promise<T> {
+  return storage.exit(fn);
+}
+
 /**
  * A post as the preview shows it: changed, or created by the changeset (a
  * negative `id` that the database didn't find). Outside a preview, the post.
@@ -126,7 +131,11 @@ const EVALUATED = new Set<keyof QueryArgs>([
  * query asks something only the database can answer (a search, meta, terms
  * of a post that exists).
  */
-function matches(post: Post, args: QueryArgs, terms?: Record<string, string[]>): boolean | undefined {
+function matches(
+  post: Post,
+  args: QueryArgs,
+  terms?: Record<string, string[]>,
+): boolean | undefined {
   const types = list(args.post_type) ?? ['post'];
   if (!types.includes('any') && !types.includes(post.type)) return false;
   const statuses = list(args.post_status) ?? ['publish'];
@@ -187,7 +196,7 @@ export function previewQueryRows(
 ): { rows: Post[]; delta: number } {
   const preview = currentChangesetPreview();
   const types = list(args.post_type) ?? ['post'];
-  if (!preview || !preview.hasPostsOf(types)) return { rows, delta: 0 };
+  if (!preview?.hasPostsOf(types)) return { rows, delta: 0 };
 
   const seen = new Set(rows.map((r) => r.id));
   const kept = rows

@@ -234,7 +234,9 @@ export function postEntityHandler(
       const postType = typeOf(kernel);
       const post = await find(kernel, id, type);
       if (!post) {
-        return userCan(user, postType.cap.create_posts) && userCan(user, postType.cap.publish_posts);
+        return (
+          userCan(user, postType.cap.create_posts) && userCan(user, postType.cap.publish_posts)
+        );
       }
       if (!(await currentUserCan(kernel, user, 'edit_post', post.id))) return false;
       const publishing = value.status === 'publish' || value.status === 'private';
@@ -254,8 +256,11 @@ export function postEntityHandler(
         await kernel.posts.update(post.id, input);
         return;
       }
-      if (!options.create) throw new ChangesetEntryError('rest_post_invalid_id', 'Invalid post ID.');
-      const terms = options.create.terms ? await termIds(kernel, await options.create.terms(kernel)) : {};
+      if (!options.create)
+        throw new ChangesetEntryError('rest_post_invalid_id', 'Invalid post ID.');
+      const terms = options.create.terms
+        ? await termIds(kernel, await options.create.terms(kernel))
+        : {};
       await kernel.posts.insert(type, {
         ...input,
         title: input.title ?? id,
@@ -393,7 +398,8 @@ const EXTRA_SETTINGS: Record<string, SettingDefinition> = {
 };
 
 function settingFor(kernel: Kernel, option: string): SettingDefinition | undefined {
-  for (const [, setting] of kernel.settings.entries()) if (setting.option === option) return setting;
+  for (const [, setting] of kernel.settings.entries())
+    if (setting.option === option) return setting;
   return EXTRA_SETTINGS[option];
 }
 

@@ -20,7 +20,12 @@ import {
   parseEntryKey,
   postEntityHandler,
 } from './entities';
-import { ChangesetPreview, currentChangesetPreview, withChangesetPreview } from './preview';
+import {
+  ChangesetPreview,
+  currentChangesetPreview,
+  outsideChangesetPreview,
+  withChangesetPreview,
+} from './preview';
 
 /**
  * Changesets (v0.8, ADR 0022): one draft across global styles, templates,
@@ -159,13 +164,19 @@ export class ChangesetsService {
       }
       // A scheduled changeset: the status changed outside a transaction.
       try {
-        await this.#transactionally(changeset, () => this.#applyEntries(changeset));
+        // publishDue() can run during a render, even a preview's: publish outside it.
+        await outsideChangesetPreview(() =>
+          this.#transactionally(changeset, () => this.#applyEntries(changeset)),
+        );
       } catch (error) {
         await kernel.db
           .update(schema.posts)
           .set({ status: 'draft' })
           .where(eq(schema.posts.id, changeset.id));
-        console.error(`[changesets] Scheduled changeset ${changeset.slug} failed to publish:`, error);
+        console.error(
+          `[changesets] Scheduled changeset ${changeset.slug} failed to publish:`,
+          error,
+        );
       }
     });
 
@@ -233,7 +244,9 @@ export class ChangesetsService {
   data(changeset: Post): ChangesetData {
     try {
       const data = JSON.parse(changeset.content || '{}') as unknown;
-      return data && typeof data === 'object' && !Array.isArray(data) ? (data as ChangesetData) : {};
+      return data && typeof data === 'object' && !Array.isArray(data)
+        ? (data as ChangesetData)
+        : {};
     } catch {
       return {};
     }
@@ -475,10 +488,14 @@ export class ChangesetsService {
         await handler.apply(this.kernel, id, entry.value, authors.get(entry.user_id) ?? null);
       } catch (error) {
         if (error instanceof ChangesetEntryError) {
-          throw new ChangesetValidationError({ [key]: { code: error.code, message: error.message } });
+          throw new ChangesetValidationError({
+            [key]: { code: error.code, message: error.message },
+          });
         }
         if (error instanceof PostError) {
-          throw new ChangesetValidationError({ [key]: { code: error.code, message: error.message } });
+          throw new ChangesetValidationError({
+            [key]: { code: error.code, message: error.message },
+          });
         }
         throw error;
       }
@@ -500,7 +517,12 @@ export class ChangesetsService {
     const { kernel } = this;
     await kernel.hooks.doAction('wp_trash_post', changeset.id);
     await kernel.meta.update('post', changeset.id, '_wp_trash_meta_status', changeset.status);
-    await kernel.meta.update('post', changeset.id, '_wp_trash_meta_time', Math.floor(Date.now() / 1000));
+    await kernel.meta.update(
+      'post',
+      changeset.id,
+      '_wp_trash_meta_time',
+      Math.floor(Date.now() / 1000),
+    );
     await kernel.db
       .update(schema.posts)
       .set({ status: 'trash' })
@@ -544,7 +566,10 @@ export class ChangesetsService {
 
     const changeset = request.user ? await this.find(uuid) : undefined;
     const allowed =
-      changeset && request.user && this.isOpen(changeset) && this.canManage(changeset, request.user);
+      changeset &&
+      request.user &&
+      this.isOpen(changeset) &&
+      this.canManage(changeset, request.user);
     let page: RenderedPage;
     if (!allowed || !changeset || !request.user) {
       const inner = { ...request };
@@ -554,7 +579,9 @@ export class ChangesetsService {
       const preview = await this.previewOf(changeset, request.user);
       const theme =
         request.theme ??
-        (preview.globalStyles ? await this.kernel.themes.withUserStyles(preview.globalStyles) : undefined);
+        (preview.globalStyles
+          ? await this.kernel.themes.withUserStyles(preview.globalStyles)
+          : undefined);
       const inner: RenderRequest = { ...request, ...(theme ? { theme } : {}) };
       handled.add(inner);
       page = await withChangesetPreview(preview, () => render(inner));
@@ -563,7 +590,10 @@ export class ChangesetsService {
         ...page,
         html: keepInPreview(page.html, home, changeset.slug),
         headers: page.headers.location
-          ? { ...page.headers, location: withPreviewParam(page.headers.location, home, changeset.slug) }
+          ? {
+              ...page.headers,
+              location: withPreviewParam(page.headers.location, home, changeset.slug),
+            }
           : page.headers,
       };
     }

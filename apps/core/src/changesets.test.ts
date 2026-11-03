@@ -385,7 +385,10 @@ describe('changesets: publishing', () => {
     expect(previewed.posts[0]?.id).toBeLessThan(0);
     expect((await lookup()).posts).toHaveLength(0);
 
-    const published = await ctx.request('POST', `/pressbase/v1/changesets/${res.body.uuid}/publish`);
+    const published = await ctx.request(
+      'POST',
+      `/pressbase/v1/changesets/${res.body.uuid}/publish`,
+    );
     expect(published.status).toBe(200);
     const found = await lookup();
     expect(found.posts).toHaveLength(1);
@@ -431,7 +434,10 @@ describe('changesets: preview (?changeset_uuid=)', () => {
 
     // Someone who can't manage the changeset sees the live site.
     const editor = await ctx.loginAs('editor', 'editor');
-    const other = await editor.request('GET', `/pressbase/v1/render?url=${encodeURIComponent(url)}`);
+    const other = await editor.request(
+      'GET',
+      `/pressbase/v1/render?url=${encodeURIComponent(url)}`,
+    );
     expect(other.body.html).toContain('Open from nine until five.');
 
     // The page cache is untouched: no purge, no change to the cached theme or options.
