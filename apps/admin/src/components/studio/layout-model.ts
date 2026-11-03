@@ -9,7 +9,7 @@
  * own panel titles, translated with Gutenberg's strings.
  */
 
-import { msgid } from '@/lib/i18n/locale';
+import { msgid } from '../../lib/i18n/locale';
 
 /* --------------------------------------------------------------- inspector */
 
