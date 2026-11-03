@@ -25,6 +25,10 @@
   color: var(--color-text);
 }
 
+.contents {
+  display: contents;
+}
+
 .frame {
   display: flex;
   flex-direction: column;

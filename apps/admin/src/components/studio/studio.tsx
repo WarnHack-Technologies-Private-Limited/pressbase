@@ -653,6 +653,20 @@ function StudioEditor(props: StudioEditorProps) {
   const blocksRef = useRef(value.blocks);
   blocksRef.current = value.blocks;
   const baseline = useRef(doc.baseline);
+  // Blocks that finish loading on their own (the Navigation block picking its
+  // menu, say) can change the tree just after it opens. Those changes aren't
+  // the user's, so they don't become undo steps: until the person first
+  // presses a key or the pointer (or three seconds pass), changes are staged.
+  const settled = useRef(false);
+  const settle = () => {
+    settled.current = true;
+  };
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      settled.current = true;
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const currentContent = useCallback(() => {
     const blocks = pageBlocks(blocksRef.current as unknown as CanvasBlock[]);
@@ -716,7 +730,9 @@ function StudioEditor(props: StudioEditorProps) {
       value={value.blocks}
       selection={value.selection as never}
       onInput={(blocks, { selection }) => history.setValue({ blocks, selection }, true)}
-      onChange={(blocks, { selection }) => history.setValue({ blocks, selection }, false)}
+      onChange={(blocks, { selection }) =>
+        history.setValue({ blocks, selection }, !settled.current)
+      }
       settings={settings}
       useSubRegistry
     >
@@ -724,45 +740,48 @@ function StudioEditor(props: StudioEditorProps) {
       <NoticesBridge onNotice={props.onNotice} />
       <MediaCategories enabled={props.features.media} />
       <EditingModes blocks={doc.blocks} />
-      <StudioRegionsProvider
-        value={{
-          parts: props.parts,
-          partLabel: (slug) =>
-            `${props.parts.get(slug)?.title ?? slug} · ${__('every page', 'pressbase-admin')}`,
-        }}
-      >
-        <StudioFrame
-          chrome={props.chrome}
-          editor={editor}
-          footer={<Breadcrumb site={props.site} page={props.summary.title} parts={props.parts} />}
-          inspector={
-            showInspector && (
-              <Inspector
-                page={props.summary}
-                parts={props.parts}
-                tab={props.tab}
-                onTab={props.onTab}
-                onClose={props.narrow ? props.onCloseInspector : undefined}
-              />
-            )
-          }
+      {/* React events bubble out of the canvas iframe's portal, so this sees typing there too. */}
+      <div className={styles.contents} onKeyDownCapture={settle} onPointerDownCapture={settle}>
+        <StudioRegionsProvider
+          value={{
+            parts: props.parts,
+            partLabel: (slug) =>
+              `${props.parts.get(slug)?.title ?? slug} · ${__('every page', 'pressbase-admin')}`,
+          }}
         >
-          <div className={styles.canvasArea} data-device={props.device}>
-            <div
-              className={styles.canvasFrame}
-              style={width ? { maxWidth: `${width}px` } : undefined}
-            >
-              <BlockContextProvider
-                value={doc.page ? { postId: doc.page.id, postType: 'page' } : {}}
+          <StudioFrame
+            chrome={props.chrome}
+            editor={editor}
+            footer={<Breadcrumb site={props.site} page={props.summary.title} parts={props.parts} />}
+            inspector={
+              showInspector && (
+                <Inspector
+                  page={props.summary}
+                  parts={props.parts}
+                  tab={props.tab}
+                  onTab={props.onTab}
+                  onClose={props.narrow ? props.onCloseInspector : undefined}
+                />
+              )
+            }
+          >
+            <div className={styles.canvasArea} data-device={props.device}>
+              <div
+                className={styles.canvasFrame}
+                style={width ? { maxWidth: `${width}px` } : undefined}
               >
-                <BlockCanvas height="100%" styles={settings.styles as never}>
-                  <BlockList className="wp-site-blocks" />
-                </BlockCanvas>
-              </BlockContextProvider>
+                <BlockContextProvider
+                  value={doc.page ? { postId: doc.page.id, postType: 'page' } : {}}
+                >
+                  <BlockCanvas height="100%" styles={settings.styles as never}>
+                    <BlockList className="wp-site-blocks" />
+                  </BlockCanvas>
+                </BlockContextProvider>
+              </div>
             </div>
-          </div>
-        </StudioFrame>
-      </StudioRegionsProvider>
+          </StudioFrame>
+        </StudioRegionsProvider>
+      </div>
       <div className={lightScope}>
         <Popover.Slot />
       </div>
