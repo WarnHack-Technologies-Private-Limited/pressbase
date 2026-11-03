@@ -1,0 +1,89 @@
+/*
+ * Inside Studio's canvas iframe (served as /editor-assets/studio-canvas.css),
+ * after the theme's global styles. The theme does the typography and layout;
+ * this file only adds what an editor needs on top: the admin's focus colour
+ * for WordPress's UI, and a quiet outline and label for template parts
+ * ("Header · every page"), which are shown locked until #30.
+ */
+
+:root {
+  --wp-admin-theme-color: #3b4cca;
+  --wp-admin-theme-color--rgb: 59, 76, 202;
+  --wp-admin-theme-color-darker-10: #3343c0;
+  --wp-admin-theme-color-darker-10--rgb: 51, 67, 192;
+  --wp-admin-theme-color-darker-20: #2f3db0;
+  --wp-admin-theme-color-darker-20--rgb: 47, 61, 176;
+  --wp-admin-border-width-focus: 2px;
+}
+
+body.editor-styles-wrapper {
+  /* The theme's root padding and colours apply; the canvas just never shows a gap below. */
+  min-height: 100vh;
+}
+
+/* -------------------------------------------------------- template parts */
+
+.pressbase-studio-part {
+  position: relative;
+  /* Locked: the theme's own links and buttons don't navigate inside the editor. */
+  cursor: default;
+}
+
+.pressbase-studio-part::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px dashed transparent;
+  pointer-events: none;
+  transition: border-color 120ms ease-out;
+}
+
+.pressbase-studio-part::before {
+  content: attr(data-studio-label);
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: 0;
+  padding: 2px 8px;
+  border-radius: 0 0 6px 0;
+  background: #3b4cca;
+  color: #ffffff;
+  font: 500 12px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease-out;
+}
+
+.pressbase-studio-part:hover::after,
+.pressbase-studio-part.is-selected::after {
+  border-color: rgb(59 76 202 / 0.6);
+}
+
+.pressbase-studio-part:hover::before,
+.pressbase-studio-part.is-selected::before {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pressbase-studio-part::before,
+  .pressbase-studio-part::after {
+    transition: none;
+  }
+}
+
+/*
+ * Locked template blocks with nothing to show yet (no featured image, no
+ * site logo) render nothing on the site; their editing placeholders would
+ * only be noise here. They're set in page details and site identity.
+ */
+.is-editing-disabled:is(.wp-block-post-featured-image, .wp-block-site-logo):has(.components-placeholder) {
+  display: none;
+}
+
+/* An empty page: room to click into. */
+.entry-content.block-editor-block-list__layout:empty,
+.entry-content > .block-list-appender:only-child {
+  min-height: 6rem;
+}

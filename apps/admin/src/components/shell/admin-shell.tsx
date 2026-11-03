@@ -82,6 +82,11 @@ function onMenuKeyDown(event: ReactKeyboardEvent<HTMLDivElement>, close: () => v
 
 const noSubscription = () => () => {};
 
+/** Admin screens shown full-screen, without the admin's sidebar and top bar. */
+export function isFullScreen(pathname: string): boolean {
+  return pathname === '/admin/studio' || pathname.startsWith('/admin/studio/');
+}
+
 /**
  * True while rendering on the server and hydrating that HTML, false on a
  * client-side render. An inline script only runs when it arrives as HTML.
@@ -198,6 +203,24 @@ export function AdminShell({
 
   const role = user.roles[0] ? _x(roleLabel(user.roles[0]), 'User role', 'pressbase-admin') : '';
   const topPages = pagesUnder(extensions, null);
+
+  // Full-screen screens (Studio) bring their own chrome: no sidebar or top bar.
+  if (isFullScreen(pathname)) {
+    return (
+      <ExtensionsProvider extensions={extensions}>
+        {serverHtml && (
+          <script dangerouslySetInnerHTML={{ __html: colorSchemeScript(savedScheme) }} />
+        )}
+        <CurrentUserProvider user={user}>
+          <ToastProvider>
+            <ExtensionErrors />
+            {children}
+            <PluginArea />
+          </ToastProvider>
+        </CurrentUserProvider>
+      </ExtensionsProvider>
+    );
+  }
 
   return (
     <ExtensionsProvider extensions={extensions}>
