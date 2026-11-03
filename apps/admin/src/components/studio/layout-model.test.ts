@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEVICES, INSPECTOR_TABS, RAIL_PANELS, visibleTab } from './layout-model';
+import { DEVICES, INSPECTOR_TABS, RAIL_PANELS } from './layout-model';
 
 describe('inspector tabs', () => {
   it('are Content, Style and Layout', () => {
@@ -31,13 +31,6 @@ describe('inspector tabs', () => {
     expect([...placed].sort()).toEqual([...editorGroups].sort());
     const slots = INSPECTOR_TABS.flatMap((tab) => tab.groups.map((g) => g.slot));
     expect(new Set(slots).size).toBe(slots.length);
-  });
-
-  it('fall back to a tab that has controls', () => {
-    const only = (id: string) => (tab: { id: string }) => tab.id === id;
-    expect(visibleTab('style', only('style'))).toBe('style');
-    expect(visibleTab('style', only('layout'))).toBe('layout');
-    expect(visibleTab('layout', () => false)).toBe('layout');
   });
 });
 

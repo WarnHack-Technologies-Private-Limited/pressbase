@@ -3,7 +3,13 @@
  * tabs and the left rail's panels. Data only, so the shell, its tests and
  * the issues that extend it (#32 Simple/Advanced, #35 Elements, #44
  * Sections, #50 Layers…) agree on one list. See docs/architecture/studio.md.
+ *
+ * Labels are English, marked with msgid() for translators; Studio shows
+ * them with `__(label, 'pressbase-admin')`. Group labels are WordPress's
+ * own panel titles, translated with Gutenberg's strings.
  */
+
+import { msgid } from '@/lib/i18n/locale';
 
 /* --------------------------------------------------------------- inspector */
 
@@ -53,8 +59,8 @@ export interface InspectorTab {
 export const INSPECTOR_TABS: readonly InspectorTab[] = [
   {
     id: 'content',
-    label: 'Content',
-    empty: 'This block has no content settings. Edit it on the page.',
+    label: msgid('Content'),
+    empty: msgid('This block has no content settings. Edit it on the page.'),
     groups: [
       { group: 'default', slot: 'InspectorControls' },
       { group: 'content', slot: 'InspectorControlsContent' },
@@ -65,8 +71,8 @@ export const INSPECTOR_TABS: readonly InspectorTab[] = [
   },
   {
     id: 'style',
-    label: 'Style',
-    empty: 'This block has no style settings.',
+    label: msgid('Style'),
+    empty: msgid('This block has no style settings.'),
     groups: [
       { group: 'styles', slot: 'InspectorControlsStyles' },
       { group: 'typography', slot: 'InspectorControlsTypography', label: 'Typography' },
@@ -80,8 +86,8 @@ export const INSPECTOR_TABS: readonly InspectorTab[] = [
   },
   {
     id: 'layout',
-    label: 'Layout',
-    empty: 'This block has no layout settings.',
+    label: msgid('Layout'),
+    empty: msgid('This block has no layout settings.'),
     groups: [
       { group: 'layout', slot: 'InspectorControlsLayout', label: 'Layout' },
       { group: 'dimensions', slot: 'InspectorControlsDimensions', label: 'Dimensions' },
@@ -89,16 +95,6 @@ export const INSPECTOR_TABS: readonly InspectorTab[] = [
     ],
   },
 ];
-
-/** The tab to show: the one asked for when it has controls, else the first that has. */
-export function visibleTab(
-  wanted: InspectorTabId,
-  hasControls: (tab: InspectorTab) => boolean,
-): InspectorTabId {
-  const tab = INSPECTOR_TABS.find((t) => t.id === wanted);
-  if (tab && hasControls(tab)) return wanted;
-  return INSPECTOR_TABS.find(hasControls)?.id ?? wanted;
-}
 
 /* --------------------------------------------------------------- left rail */
 
@@ -120,60 +116,60 @@ export interface RailPanel {
 export const RAIL_PANELS: readonly RailPanel[] = [
   {
     id: 'pages',
-    label: 'Pages',
-    summary: 'Your site’s pages',
+    label: msgid('Pages'),
+    summary: msgid('Your site’s pages'),
     issue: 29,
     interim: 'pages',
-    coming: 'Adding, nesting and reordering pages, and choosing the home page, arrive with #29.',
+    coming: msgid('Adding, nesting and reordering pages, and choosing the home page, arrive with #29.'),
   },
   {
     id: 'elements',
-    label: 'Elements',
-    summary: 'Blocks to add to the page',
+    label: msgid('Elements'),
+    summary: msgid('Blocks to add to the page'),
     issue: 35,
     interim: 'inserter',
-    coming: 'Large tiles you can drag onto the page arrive with #35.',
+    coming: msgid('Large tiles you can drag onto the page arrive with #35.'),
   },
   {
     id: 'sections',
-    label: 'Sections',
-    summary: 'Ready-made sections, in your site’s style',
+    label: msgid('Sections'),
+    summary: msgid('Ready-made sections, in your site’s style'),
     issue: 44,
     interim: 'none',
-    coming: 'Sections arrive with #44: heroes, features, pricing, opening hours and more, ready to drop in.',
+    coming: msgid('Sections arrive with #44: heroes, features, pricing, opening hours and more, ready to drop in.'),
   },
   {
     id: 'layers',
-    label: 'Layers',
-    summary: 'Everything on the page, as a list',
+    label: msgid('Layers'),
+    summary: msgid('Everything on the page, as a list'),
     issue: 50,
     interim: 'list-view',
-    coming: 'Renaming, hiding on a device and drag to nest arrive with #50.',
+    coming: msgid('Renaming, hiding on a device and drag to nest arrive with #50.'),
   },
   {
     id: 'styles',
-    label: 'Styles',
-    summary: 'Colours, fonts and spacing for the whole site',
+    label: msgid('Styles'),
+    summary: msgid('Colours, fonts and spacing for the whole site'),
     issue: 46,
     interim: 'none',
-    coming: 'Site styles in Studio arrive with #46 and #47. Until then, use Appearance → Styles.',
+    coming: msgid('Site styles in Studio arrive with #46 and #47. Until then, use Appearance → Styles.'),
   },
   {
     id: 'media',
-    label: 'Media',
-    summary: 'Your images, video and audio',
+    label: msgid('Media'),
+    summary: msgid('Your images, video and audio'),
     issue: 58,
     interim: 'none',
     coming:
-      'A media panel with your library and free photos arrives with #58. Until then, add an Image block from Elements and choose Media Library.',
+      msgid('A media panel with your library and free photos arrives with #58. Until then, add an Image block from Elements and choose Media Library.'),
   },
   {
     id: 'ai',
-    label: 'AI',
-    summary: 'Ask for changes in your own words',
+    label: msgid('AI'),
+    summary: msgid('Ask for changes in your own words'),
     issue: 62,
     interim: 'none',
-    coming: 'The AI panel arrives with #62: ask for site-wide changes and keep or undo each one.',
+    coming: msgid('The AI panel arrives with #62: ask for site-wide changes and keep or undo each one.'),
   },
 ];
 
@@ -188,7 +184,7 @@ export type Device = 'desktop' | 'tablet' | 'mobile';
  * per-device styles are #49.
  */
 export const DEVICES: readonly { id: Device; label: string; width: number | null }[] = [
-  { id: 'desktop', label: 'Desktop', width: null },
-  { id: 'tablet', label: 'Tablet', width: 768 },
-  { id: 'mobile', label: 'Mobile', width: 390 },
+  { id: 'desktop', label: msgid('Desktop'), width: null },
+  { id: 'tablet', label: msgid('Tablet'), width: 768 },
+  { id: 'mobile', label: msgid('Mobile'), width: 390 },
 ];
