@@ -38,6 +38,7 @@ New here? The [README](../README.md#see-it-in-action) shows Pressbase in action:
 - [REST API](architecture/rest-api.md): endpoints, errors, authentication.
 - [Site Health](architecture/site-health.md): Tools → Site Health's tests, the Info tab, the Dashboard rating and how plugins extend them.
 - [Block editor](architecture/block-editor.md): how Gutenberg runs in the admin, api-fetch, hidden blocks, autosave.
+- [Studio](architecture/studio.md): the full-screen site editor at `/admin/studio`: the canvas as one block tree, the shell's layout, and where the v0.8 issues plug in.
 - [Internationalisation](architecture/i18n.md): text domains, `.mo`/`.po`/JSON files, the site's and users' languages, language packs, RTL, translating the admin and the block editor.
 - [Installer](architecture/installer.md): site states, the install flow, configuration.
 - [Pressbase SEO](architecture/seo-plugin.md): how the first first-party plugin is built, and which plugin APIs it uses.

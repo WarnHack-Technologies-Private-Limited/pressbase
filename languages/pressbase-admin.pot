@@ -12,7 +12,7 @@ msgstr ""
 "X-Generator: pressbase i18n:extract\n"
 "X-Domain: pressbase-admin\n"
 
-#: apps/admin/src/app/admin/page.tsx:16 apps/admin/src/lib/sections.ts:41
+#: apps/admin/src/app/admin/page.tsx:16 apps/admin/src/components/studio/top-bar.tsx:69 apps/admin/src/lib/sections.ts:42
 msgid "Dashboard"
 msgstr ""
 
@@ -52,11 +52,11 @@ msgstr ""
 msgid "Drafts"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:119 apps/admin/src/lib/sections.ts:54
+#: apps/admin/src/app/admin/page.tsx:119 apps/admin/src/components/studio/layout-model.ts:119 apps/admin/src/lib/sections.ts:55
 msgid "Pages"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:121 apps/admin/src/lib/sections.ts:66
+#: apps/admin/src/app/admin/page.tsx:121 apps/admin/src/lib/sections.ts:67
 msgid "Comments"
 msgstr ""
 
@@ -216,7 +216,7 @@ msgstr ""
 msgid "General Settings"
 msgstr ""
 
-#: apps/admin/src/app/admin/settings/layout.tsx:12 apps/admin/src/components/settings/settings-nav.tsx:32 apps/admin/src/lib/sections.ts:110
+#: apps/admin/src/app/admin/settings/layout.tsx:12 apps/admin/src/components/settings/settings-nav.tsx:32 apps/admin/src/components/studio/inspector.tsx:87 apps/admin/src/components/studio/inspector.tsx:246 apps/admin/src/components/studio/top-bar.tsx:196 apps/admin/src/lib/sections.ts:118
 msgid "Settings"
 msgstr ""
 
@@ -600,7 +600,7 @@ msgstr ""
 msgid "Discussion"
 msgstr ""
 
-#: apps/admin/src/components/settings/settings-nav.tsx:17 apps/admin/src/lib/sections.ts:60
+#: apps/admin/src/components/settings/settings-nav.tsx:17 apps/admin/src/components/studio/layout-model.ts:165 apps/admin/src/lib/sections.ts:61
 msgid "Media"
 msgstr ""
 
@@ -608,7 +608,7 @@ msgstr ""
 msgid "Permalinks"
 msgstr ""
 
-#: apps/admin/src/components/settings/settings-nav.tsx:20
+#: apps/admin/src/components/settings/settings-nav.tsx:20 apps/admin/src/components/studio/layout-model.ts:175
 msgid "AI"
 msgstr ""
 
@@ -616,7 +616,7 @@ msgstr ""
 msgid "Scheduled tasks"
 msgstr ""
 
-#: apps/admin/src/components/settings/settings-nav.tsx:40 apps/admin/src/components/shell/admin-shell.tsx:265
+#: apps/admin/src/components/settings/settings-nav.tsx:40 apps/admin/src/components/shell/admin-shell.tsx:288
 msgid ", coming in "
 msgstr ""
 
@@ -635,56 +635,399 @@ msgctxt "color scheme"
 msgid "Dark"
 msgstr ""
 
-#: apps/admin/src/components/shell/admin-shell.tsx:209
+#: apps/admin/src/components/shell/admin-shell.tsx:232
 msgid "Skip to content"
 msgstr ""
 
-#: apps/admin/src/components/shell/admin-shell.tsx:216
+#: apps/admin/src/components/shell/admin-shell.tsx:239
 msgctxt "navigation landmark"
 msgid "Admin"
 msgstr ""
 
-#: apps/admin/src/components/shell/admin-shell.tsx:228
+#: apps/admin/src/components/shell/admin-shell.tsx:251
 msgid "Untitled site"
 msgstr ""
 
 #. translators: %s: the Pressbase version.
-#: apps/admin/src/components/shell/admin-shell.tsx:232
+#: apps/admin/src/components/shell/admin-shell.tsx:255
 #, js-format
 msgid "Pressbase %s"
 msgstr ""
 
-#: apps/admin/src/components/shell/admin-shell.tsx:294
+#: apps/admin/src/components/shell/admin-shell.tsx:317
 msgid "Developer preview. Sections marked with a version are on the way."
 msgstr ""
 
-#: apps/admin/src/components/shell/admin-shell.tsx:315
+#: apps/admin/src/components/shell/admin-shell.tsx:338
 msgid "Open menu"
 msgstr ""
 
-#: apps/admin/src/components/shell/admin-shell.tsx:321
+#: apps/admin/src/components/shell/admin-shell.tsx:344
 msgid "Visit site"
 msgstr ""
 
-#: apps/admin/src/components/shell/admin-shell.tsx:324
+#: apps/admin/src/components/shell/admin-shell.tsx:347
 msgid "(opens in a new tab)"
 msgstr ""
 
-#: apps/admin/src/components/shell/admin-shell.tsx:346
+#: apps/admin/src/components/shell/admin-shell.tsx:369
 msgid "Account"
 msgstr ""
 
-#: apps/admin/src/components/shell/admin-shell.tsx:362
+#: apps/admin/src/components/shell/admin-shell.tsx:385
 msgid "Profile"
 msgstr ""
 
-#: apps/admin/src/components/shell/admin-shell.tsx:366
+#: apps/admin/src/components/shell/admin-shell.tsx:389
 msgctxt "color scheme"
 msgid "Theme"
 msgstr ""
 
-#: apps/admin/src/components/shell/admin-shell.tsx:392
+#: apps/admin/src/components/shell/admin-shell.tsx:415
 msgid "Log out"
+msgstr ""
+
+#: apps/admin/src/components/studio/breadcrumb.tsx:68
+msgid "Site"
+msgstr ""
+
+#: apps/admin/src/components/studio/breadcrumb.tsx:69 apps/admin/src/components/studio/inspector.tsx:112 apps/admin/src/components/studio/top-bar.tsx:75
+msgid "Page"
+msgstr ""
+
+#: apps/admin/src/components/studio/breadcrumb.tsx:70
+msgid "Section"
+msgstr ""
+
+#: apps/admin/src/components/studio/breadcrumb.tsx:71
+msgid "Block"
+msgstr ""
+
+#: apps/admin/src/components/studio/breadcrumb.tsx:75
+msgid "Breadcrumb"
+msgstr ""
+
+#: apps/admin/src/components/studio/index.tsx:15
+msgid "Opening Studio…"
+msgstr ""
+
+#: apps/admin/src/components/studio/inspector.tsx:97
+msgid "Close settings"
+msgstr ""
+
+#: apps/admin/src/components/studio/inspector.tsx:112
+msgid "Home page"
+msgstr ""
+
+#: apps/admin/src/components/studio/inspector.tsx:118
+msgid "Status"
+msgstr ""
+
+#: apps/admin/src/components/studio/inspector.tsx:124
+msgid "Template"
+msgstr ""
+
+#: apps/admin/src/components/studio/inspector.tsx:131
+msgid "Click any text on the page to change it. Choose a block to see its settings here."
+msgstr ""
+
+#: apps/admin/src/components/studio/inspector.tsx:138
+msgid "Your home page lists your latest posts, so it has no text of its own to edit. Choose a page from the menu at the top to edit it."
+msgstr ""
+
+#: apps/admin/src/components/studio/inspector.tsx:145
+msgid "Nothing goes live until you press Publish. Undo with Ctrl+Z (⌘Z on a Mac)."
+msgstr ""
+
+#: apps/admin/src/components/studio/inspector.tsx:152
+msgid "Edit the title, address and other details"
+msgstr ""
+
+#: apps/admin/src/components/studio/inspector.tsx:163
+msgid "Shown on every page"
+msgstr ""
+
+#: apps/admin/src/components/studio/inspector.tsx:168
+msgid "Editing the header and footer here arrives with #30. Until then they show exactly as visitors see them, and changes to this page leave them as they are."
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:62 apps/admin/src/lib/sections.ts:45
+msgid "Content"
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:63
+msgid "This block has no content settings. Edit it on the page."
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:74
+msgid "Style"
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:75
+msgid "This block has no style settings."
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:89
+msgid "Layout"
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:90
+msgid "This block has no layout settings."
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:120
+msgid "Your site’s pages"
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:123
+msgid "Adding, nesting and reordering pages, and choosing the home page, arrive with #29."
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:129
+msgid "Elements"
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:130
+msgid "Blocks to add to the page"
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:133
+msgid "Large tiles you can drag onto the page arrive with #35."
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:137
+msgid "Sections"
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:138
+msgid "Ready-made sections, in your site’s style"
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:141
+msgid "Sections arrive with #44: heroes, features, pricing, opening hours and more, ready to drop in."
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:147
+msgid "Layers"
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:148
+msgid "Everything on the page, as a list"
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:151
+msgid "Renaming, hiding on a device and drag to nest arrive with #50."
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:155
+msgid "Styles"
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:156
+msgid "Colours, fonts and spacing for the whole site"
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:159
+msgid "Site styles in Studio arrive with #46 and #47. Until then, use Appearance → Styles."
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:166
+msgid "Your images, video and audio"
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:169
+msgid "A media panel with your library and free photos arrives with #58. Until then, add an Image block from Elements and choose Media Library."
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:176
+msgid "Ask for changes in your own words"
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:179
+msgid "The AI panel arrives with #62: ask for site-wide changes and keep or undo each one."
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:196
+msgid "Desktop"
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:197
+msgid "Tablet"
+msgstr ""
+
+#: apps/admin/src/components/studio/layout-model.ts:198
+msgid "Mobile"
+msgstr ""
+
+#: apps/admin/src/components/studio/rail.tsx:47
+msgid "Studio panels"
+msgstr ""
+
+#: apps/admin/src/components/studio/rail.tsx:137
+msgid "Close panel"
+msgstr ""
+
+#: apps/admin/src/components/studio/rail.tsx:159
+msgid "Blocks on this page"
+msgstr ""
+
+#: apps/admin/src/components/studio/rail.tsx:180
+msgid "Open Appearance → Styles"
+msgstr ""
+
+#: apps/admin/src/components/studio/rail.tsx:205
+msgid "Home"
+msgstr ""
+
+#: apps/admin/src/components/studio/rail.tsx:212 apps/admin/src/components/studio/studio.tsx:378
+msgid "Latest posts"
+msgstr ""
+
+#: apps/admin/src/components/studio/rail.tsx:219 apps/admin/src/components/studio/studio.tsx:554
+msgid "Draft"
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:259
+msgid "The theme has no template for this page."
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:345
+msgid "Published. Your changes are live."
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:348
+msgid "View page"
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:415
+msgid "Ask AI arrives with #63: select something on the page and ask for a change in your own words."
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:452
+msgid "Studio couldn’t open this page."
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:455
+msgid "Try again"
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:464
+msgid "Opening the page…"
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:506
+msgid "Leave this page without publishing?"
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:507
+msgid "Discard changes"
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:515
+msgid "Your changes to this page aren’t published. If you open another page now, they’re lost."
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:524
+msgid "Publish everything in your draft?"
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:525
+msgid "Publish all"
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:536
+#, js-format
+msgid "Your draft also holds %d other change made elsewhere. Publishing makes all of them live together."
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:551
+msgid "Published"
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:556
+msgid "Pending review"
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:558
+msgid "Private"
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:560
+msgid "Scheduled"
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:600
+msgid "Skip to the page"
+msgstr ""
+
+#: apps/admin/src/components/studio/studio.tsx:749
+msgid "every page"
+msgstr ""
+
+#: apps/admin/src/components/studio/top-bar.tsx:66
+msgid "Back to the dashboard"
+msgstr ""
+
+#: apps/admin/src/components/studio/top-bar.tsx:71 apps/admin/src/lib/sections.ts:79
+msgid "Studio"
+msgstr ""
+
+#: apps/admin/src/components/studio/top-bar.tsx:90
+msgid "Home (latest posts)"
+msgstr ""
+
+#: apps/admin/src/components/studio/top-bar.tsx:98
+#, js-format
+msgid "%s (home page)"
+msgstr ""
+
+#: apps/admin/src/components/studio/top-bar.tsx:101
+#, js-format
+msgid "%s (draft)"
+msgstr ""
+
+#: apps/admin/src/components/studio/top-bar.tsx:113
+msgid "Preview size"
+msgstr ""
+
+#: apps/admin/src/components/studio/top-bar.tsx:139
+msgid "Undo"
+msgstr ""
+
+#: apps/admin/src/components/studio/top-bar.tsx:140
+msgid "Undo (Ctrl+Z)"
+msgstr ""
+
+#: apps/admin/src/components/studio/top-bar.tsx:149
+msgid "Redo"
+msgstr ""
+
+#: apps/admin/src/components/studio/top-bar.tsx:150
+msgid "Redo (Ctrl+Shift+Z)"
+msgstr ""
+
+#: apps/admin/src/components/studio/top-bar.tsx:166
+msgid "Ask AI"
+msgstr ""
+
+#: apps/admin/src/components/studio/top-bar.tsx:167
+msgid "Coming soon"
+msgstr ""
+
+#: apps/admin/src/components/studio/top-bar.tsx:176
+msgid "Preview (opens in a new tab)"
+msgstr ""
+
+#: apps/admin/src/components/studio/top-bar.tsx:178
+msgid "Preview"
+msgstr ""
+
+#: apps/admin/src/components/studio/top-bar.tsx:186
+msgid "No changes to publish yet"
+msgstr ""
+
+#: apps/admin/src/components/studio/top-bar.tsx:189
+msgid "Publish"
 msgstr ""
 
 #: apps/admin/src/components/ui/field.tsx:40
@@ -896,42 +1239,38 @@ msgctxt "User role"
 msgid "Subscriber"
 msgstr ""
 
-#: apps/admin/src/lib/sections.ts:44
-msgid "Content"
-msgstr ""
-
-#: apps/admin/src/lib/sections.ts:48
+#: apps/admin/src/lib/sections.ts:49
 msgid "Posts"
 msgstr ""
 
-#: apps/admin/src/lib/sections.ts:73
+#: apps/admin/src/lib/sections.ts:74
 msgid "Design"
 msgstr ""
 
-#: apps/admin/src/lib/sections.ts:77
+#: apps/admin/src/lib/sections.ts:85
 msgid "Appearance"
 msgstr ""
 
-#: apps/admin/src/lib/sections.ts:84
+#: apps/admin/src/lib/sections.ts:92
 msgid "Extend"
 msgstr ""
 
-#: apps/admin/src/lib/sections.ts:88
+#: apps/admin/src/lib/sections.ts:96
 msgid "Plugins"
 msgstr ""
 
-#: apps/admin/src/lib/sections.ts:91
+#: apps/admin/src/lib/sections.ts:99
 msgid "Add features with plugins that install at runtime — no rebuild required."
 msgstr ""
 
-#: apps/admin/src/lib/sections.ts:96
+#: apps/admin/src/lib/sections.ts:104
 msgid "Manage"
 msgstr ""
 
-#: apps/admin/src/lib/sections.ts:100
+#: apps/admin/src/lib/sections.ts:108
 msgid "Users"
 msgstr ""
 
-#: apps/admin/src/lib/sections.ts:106
+#: apps/admin/src/lib/sections.ts:114
 msgid "Tools"
 msgstr ""

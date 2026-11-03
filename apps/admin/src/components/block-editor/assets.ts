@@ -30,6 +30,8 @@ export const EDITOR_STYLESHEETS = {
   'format-library-rtl.css': 'node_modules/@wordpress/format-library/build-style/style-rtl.css',
   // Pressbase's own canvas styles: typography, layout and the title field.
   'canvas.css': 'src/components/block-editor/canvas.css',
+  // Studio's canvas: outlines and labels for the header, footer and page content.
+  'studio-canvas.css': 'src/components/studio/canvas.css',
 } as const;
 
 export type EditorStylesheet = keyof typeof EDITOR_STYLESHEETS;
@@ -63,7 +65,7 @@ export const CANVAS_STYLESHEETS: EditorStylesheet[] = [
  * Bumped with the @wordpress packages (or canvas.css) so browsers fetch the
  * new files; the URLs are cached as immutable.
  */
-export const EDITOR_ASSETS_VERSION = 'wp12.0.0-1';
+export const EDITOR_ASSETS_VERSION = 'wp12.0.0-2';
 
 export const assetUrl = (name: EditorStylesheet) =>
   `/editor-assets/${name}?v=${EDITOR_ASSETS_VERSION}`;

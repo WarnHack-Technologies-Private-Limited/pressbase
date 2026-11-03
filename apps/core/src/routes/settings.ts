@@ -24,6 +24,13 @@ export function settingsRoutes() {
 
   app.get('/', async (c) => c.json(await readSettings(c.get('kernel'), c.get('user'))));
 
+  // rest_send_allow_header(): the block editor asks before offering to edit the
+  // site title or tagline (core-data's canUser( 'update', { kind: 'root', name: 'site' } )).
+  app.options('/', (c) => {
+    c.header('Allow', 'GET, POST, PUT, PATCH');
+    return c.json({ namespace: 'wp/v2', methods: ['GET', 'POST', 'PUT', 'PATCH'] });
+  });
+
   const update = async (c: Context<AppEnv>) => {
     const kernel = c.get('kernel');
     const user = c.get('user');
