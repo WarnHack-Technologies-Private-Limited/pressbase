@@ -12,8 +12,19 @@
 const PERSONAL_COOKIE =
   /^(pressbase_|wp-postpass|comment_author_|wordpress_logged_in_|wordpress_sec_)/;
 
-/** Query variables that make a page personal or a one-off. */
-const PERSONAL_QUERY = ['preview', 'unapproved', 'moderation-hash', 'replytocom'];
+/**
+ * Query variables that make a page personal or a one-off. `changeset_uuid`
+ * (and WordPress's `customize_changeset_uuid`) asks for a changeset preview
+ * (ADR 0022), which must never fill the cache.
+ */
+const PERSONAL_QUERY = [
+  'preview',
+  'unapproved',
+  'moderation-hash',
+  'replytocom',
+  'changeset_uuid',
+  'customize_changeset_uuid',
+];
 
 export type Bypass = 'method' | 'cookie' | 'query' | 'authorization' | 'disabled';
 
