@@ -22,12 +22,19 @@ export function settingsRoutes() {
 
   app.use(requireCapability('manage_options'));
 
-  app.get('/', async (c) => c.json(await readSettings(c.get('kernel'), c.get('user'))));
+  // rest_send_allow_header(), on every answer: the block editor asks before
+  // offering to edit the site title, tagline or logo (core-data's
+  // canUser( 'update', { kind: 'root', name: 'site' } )), and takes the
+  // answer from the GET it reads the settings with too.
+  const ALLOW = 'GET, POST, PUT, PATCH';
 
-  // rest_send_allow_header(): the block editor asks before offering to edit the
-  // site title or tagline (core-data's canUser( 'update', { kind: 'root', name: 'site' } )).
+  app.get('/', async (c) => {
+    c.header('Allow', ALLOW);
+    return c.json(await readSettings(c.get('kernel'), c.get('user')));
+  });
+
   app.options('/', (c) => {
-    c.header('Allow', 'GET, POST, PUT, PATCH');
+    c.header('Allow', ALLOW);
     return c.json({ namespace: 'wp/v2', methods: ['GET', 'POST', 'PUT', 'PATCH'] });
   });
 

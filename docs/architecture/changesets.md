@@ -49,7 +49,7 @@ Handlers apply in `order`: posts (10), global styles (20), options (30).
 | Type | ID | Value | Permission |
 |---|---|---|---|
 | `page`, `wp_navigation` (and any post type registered with `postEntityHandler()`) | post ID, or slug | REST fields: `title`, `content`, `excerpt`, `status` (`publish`, `draft`, `pending`, `private`), `slug`, `parent`, `menu_order` | `edit_post` on the post; `publish_post` to publish it |
-| `wp_template`, `wp_template_part` | `theme//slug` (the REST id) or the slug, in the active theme | `content`, `title`, `description`; `area` for parts | `edit_theme_options` |
+| `wp_template`, `wp_template_part` | `theme//slug` (the REST id) or the slug, in the active theme | `content`, `title`, `description`; `area` for parts. Or `{ source: "theme" }` alone: back to the theme's file | `edit_theme_options` |
 | `wp_global_styles` | theme stylesheet | `{ styles?, settings? }`, as `POST /wp/v2/global-styles/{id}` takes, prepared the same way (missing keys keep the stored value) | `edit_theme_options` |
 | `option` | option name | the setting's value, checked by its schema | the setting's capability (`manage_options`; `edit_theme_options` for the header menu) |
 
@@ -67,7 +67,7 @@ That is enough for posts that exist. For entries that name, by slug, a post that
 
 ### Templates and template parts
 
-Templates have their own handler, `templateEntityHandler()` in `changesets/templates.ts`, because a customised copy is more than a post: it saves through `saveBlockTemplate()`, as `POST /wp/v2/templates/{id}` does. The first edit of a theme file makes its copy (the file's title and area, meta `origin: theme`); later edits update the copy and keep a revision; a slug with neither file nor copy makes a new template. A preview lays the edit over the copy, or shows the copy-to-be with a negative ID and its `wp_theme` and `wp_template_part_area` terms, so `getBlockTemplate()` and the `core/template-part` block find it through `queryPosts()` without any code of their own.
+Templates have their own handler, `templateEntityHandler()` in `changesets/templates.ts`, because a customised copy is more than a post: it saves through `saveBlockTemplate()`, as `POST /wp/v2/templates/{id}` does. The first edit of a theme file makes its copy (the file's title and area, meta `origin: theme`); later edits update the copy and keep a revision; a slug with neither file nor copy makes a new template. `{ source: "theme" }` is a reset, as `POST /wp/v2/templates/{id}` with `source: theme` (Studio's *Reset to theme*): publishing deletes the customised copy, and a preview hides it (as a trashed post), so the theme's file renders. It needs a theme file (`rest_template_not_found` otherwise) and takes no other fields. A preview lays the edit over the copy, or shows the copy-to-be with a negative ID and its `wp_theme` and `wp_template_part_area` terms, so `getBlockTemplate()` and the `core/template-part` block find it through `queryPosts()` without any code of their own.
 
 ## Publishing
 

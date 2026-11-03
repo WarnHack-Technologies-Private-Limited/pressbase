@@ -29,6 +29,10 @@ import { type ChangesetEntityHandler, ChangesetEntryError } from './entities';
  * and keep a revision. A slug with neither file nor copy makes a new template.
  * A preview lays the edit over the copy, or shows the copy-to-be with a
  * negative ID, so the renderer's ordinary post lookups find it.
+ *
+ * `{ source: "theme" }` resets: publishing deletes the customised copy, so
+ * the theme's file shows again, as `POST /wp/v2/templates/{id}` with
+ * `source: theme` does (Studio's "Reset to theme"). A preview hides the copy.
  */
 
 const templateValue = z
@@ -38,9 +42,15 @@ const templateValue = z
     description: rawText.optional(),
     /** Template parts only: header, footer, navigation-overlay, uncategorized. */
     area: z.string().max(40).optional(),
+    /** `theme`: back to the theme's file (the customised copy is deleted); nothing else may be given. */
+    source: z.literal('theme').optional(),
   })
   .strict()
-  .refine((v) => Object.keys(v).length > 0, { message: 'Give at least one field to change.' });
+  .refine((v) => Object.keys(v).length > 0, { message: 'Give at least one field to change.' })
+  .refine((v) => v.source === undefined || Object.keys(v).length === 1, {
+    message: 'A reset to the theme’s file takes no other fields.',
+    path: ['source'],
+  });
 
 export type TemplateEntryValue = z.infer<typeof templateValue>;
 
@@ -84,6 +94,16 @@ export function templateEntityHandler(
         );
       }
       const v = { ...parsed.data };
+      if (v.source === 'theme') {
+        const { template } = await resolve(kernel, id);
+        if (!template?.hasThemeFile) {
+          throw new ChangesetEntryError(
+            'rest_template_not_found',
+            'This template has no theme file to go back to.',
+          );
+        }
+        return v;
+      }
       if (type !== TEMPLATE_PART_POST_TYPE) delete v.area;
       if (!userCan(user, 'unfiltered_html')) {
         if (v.title !== undefined) v.title = sanitizePostTitle(v.title);
@@ -99,6 +119,12 @@ export function templateEntityHandler(
 
     async apply(kernel, id, value, author: CurrentUser | null) {
       const { id: full, template } = await resolve(kernel, id);
+      if (value.source === 'theme') {
+        // Already the theme's file: nothing to do.
+        if (template?.source === 'custom' && template.wpId)
+          await kernel.posts.delete(template.wpId);
+        return;
+      }
       const slug = full.split('//')[1];
       await saveBlockTemplate(
         kernel,
@@ -111,6 +137,13 @@ export function templateEntityHandler(
 
     async preview(kernel, id, value, preview) {
       const { id: full, template } = await resolve(kernel, id);
+      if (value.source === 'theme') {
+        // The copy drops out of the lookups, so the theme's file renders.
+        if (template?.source !== 'custom' || !template.wpId) return;
+        const post = preview.posts.get(template.wpId) ?? (await kernel.posts.get(template.wpId));
+        if (post) preview.posts.set(post.id, { ...post, status: 'trash' });
+        return;
+      }
       if (template?.source === 'custom' && template.wpId) {
         const post = preview.posts.get(template.wpId) ?? (await kernel.posts.get(template.wpId));
         if (!post) return;

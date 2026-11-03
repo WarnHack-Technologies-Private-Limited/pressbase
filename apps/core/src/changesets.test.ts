@@ -454,6 +454,53 @@ describe('changesets: templates and template parts', () => {
     expect((await ctx.kernel.posts.revisions(copy?.wpId ?? 0)).length).toBeGreaterThan(0);
   });
 
+  it('resets a customised part to the theme’s file with source: theme', async () => {
+    const ctx = await site();
+    const first = await ctx.request('POST', '/pressbase/v1/changesets', {
+      entries: { 'wp_template_part:header': { content: HEADER('Corner Bakery header') } },
+    });
+    await ctx.request('POST', `/pressbase/v1/changesets/${first.body.uuid}/publish`);
+    const copy = await header(ctx.kernel);
+    expect(copy?.source).toBe('custom');
+
+    const reset = await ctx.request('POST', '/pressbase/v1/changesets', {
+      entries: { 'wp_template_part:header': { source: 'theme' } },
+    });
+    expect(reset.status).toBe(201);
+    expect(reset.body.entries['wp_template_part:header'].value).toEqual({ source: 'theme' });
+    // The preview shows the theme's header; everyone else still sees the copy.
+    const preview = await visitAsAdmin(ctx, `/opening-hours/?changeset_uuid=${reset.body.uuid}`);
+    expect(preview.html).not.toContain('Corner Bakery header');
+    expect(preview.html).toContain('wp-block-template-part');
+    expect((await visit(ctx, '/opening-hours/')).html).toContain('Corner Bakery header');
+
+    const published = await ctx.request(
+      'POST',
+      `/pressbase/v1/changesets/${reset.body.uuid}/publish`,
+    );
+    expect(published.status).toBe(200);
+    expect((await header(ctx.kernel))?.source).toBe('theme');
+    expect(await ctx.kernel.posts.get(copy?.wpId ?? 0)).toBeFalsy();
+    expect((await visit(ctx, '/opening-hours/')).html).not.toContain('Corner Bakery header');
+  });
+
+  it('refuses a reset with other fields, or for a template without a theme file', async () => {
+    const ctx = await site();
+    const mixed = await ctx.request('POST', '/pressbase/v1/changesets', {
+      entries: { 'wp_template_part:header': { source: 'theme', content: '<p>Both</p>' } },
+    });
+    expect(mixed.status).toBe(400);
+    expect(mixed.body.data.entries['wp_template_part:header'].code).toBe('rest_invalid_param');
+
+    const noFile = await ctx.request('POST', '/pressbase/v1/changesets', {
+      entries: { 'wp_template_part:made-up': { source: 'theme' } },
+    });
+    expect(noFile.status).toBe(400);
+    expect(noFile.body.data.entries['wp_template_part:made-up'].code).toBe(
+      'rest_template_not_found',
+    );
+  });
+
   it('needs edit_theme_options, and the active theme', async () => {
     const ctx = await site();
     const editor = await ctx.loginAs('editor', 'editor');
