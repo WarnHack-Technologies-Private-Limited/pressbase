@@ -84,8 +84,10 @@ export function TopBar(props: TopBarProps) {
           )}
           {tree.map(({ page, depth }) => {
             const title = pageTitle(page);
+            const isFront = page.id === props.frontPageId && !props.postsOnFront;
+            // "Home (home page)" says it twice; a page called Home needs no note.
             const label =
-              page.id === props.frontPageId && !props.postsOnFront
+              isFront && !/\bhome\b/i.test(title)
                 ? sprintf(__('%s (home page)', 'pressbase-admin'), title)
                 : page.status === 'publish'
                   ? title

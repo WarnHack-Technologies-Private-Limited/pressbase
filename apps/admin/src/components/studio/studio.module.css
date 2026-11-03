@@ -277,7 +277,13 @@
 .wpPanel {
   flex: 1;
   min-height: 0;
+  overflow-y: auto;
   background: #ffffff;
+}
+
+/* The panel's own header closes it; the inserter's second close button would repeat it. */
+.wpPanel :global(.block-editor-tabbed-sidebar__close-button) {
+  display: none;
 }
 
 .wpPanel :global(.block-editor-inserter__menu),
