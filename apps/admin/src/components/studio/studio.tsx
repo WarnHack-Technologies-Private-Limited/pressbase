@@ -7,14 +7,19 @@
  * (../block-editor/kit.tsx). See docs/architecture/studio.md and ADR 0021.
  *
  * ```
- * Studio                      data: theme settings, templates, parts, the page
- *   TopBar                    page picker · devices · undo/redo · Ask AI · Preview · Publish
+ * Studio                      data: theme settings, templates, parts, the page, the draft
+ *   TopBar                    page picker · devices · undo/redo · Ask AI · saved · Preview · Publish N
  *   StudioEditor (per page)   BlockEditorProvider ← one block tree (canvas-model.ts)
  *     Rail · RailPanelView    Pages · Elements · Sections · Layers · Styles · Media · AI
  *     BlockCanvas (iframe)    the template, its parts and the page, in the theme's styles
  *     Breadcrumb              Site › Page › Section › Block
  *     Inspector               Content · Style · Layout
  * ```
+ *
+ * Every edit is saved to the user's open changeset (use-draft.ts, #31): the
+ * editor works out which entries the canvas needs (the page's content, each
+ * template part) and the draft writes them after a pause. Publish makes them
+ * live together; nothing reaches the live site before that.
  */
 
 import {
@@ -29,6 +34,7 @@ import { Popover } from '@wordpress/components';
 import { useStateWithHistory } from '@wordpress/compose';
 import { useDispatch, useRegistry } from '@wordpress/data';
 import { ShortcutProvider } from '@wordpress/keyboard-shortcuts';
+import { Info, X } from 'lucide-react';
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n/context';
@@ -48,11 +54,41 @@ import { Button } from '../ui/button';
 import { ConfirmDialog } from '../ui/dialog';
 import { useToast } from '../ui/toast';
 import { Breadcrumb } from './breadcrumb';
-import { type CanvasBlock, composeCanvas, editingModes, pageBlocks } from './canvas-model';
+import {
+  type CanvasBlock,
+  composeCanvas,
+  editingModes,
+  findRegions,
+  pageBlocks,
+  partOf,
+  regionBlocks,
+  withoutNavigationRef,
+} from './canvas-model';
+import {
+  type Changeset,
+  changedSince,
+  describeChange,
+  desiredEntry,
+  type EntryValue,
+  type LiveModified,
+  pageKey,
+  parseKey,
+  partKey,
+  type RegionState,
+  regionChanged,
+  type StoredEntry,
+} from './changes-model';
+import { useEntityEdits } from './entity-edits';
 import { Inspector, type PageSummary } from './inspector';
 import { DEVICES, type Device, type InspectorTabId, type RailPanelId } from './layout-model';
+import type { PendingChange } from './publish-panel';
 import { Rail, RailPanelView } from './rail';
-import { type PartInfo, registerStudioRegions, StudioRegionsProvider } from './regions';
+import {
+  type PartInfo,
+  registerStudioRegions,
+  StudioRegionsProvider,
+  useSelectedPart,
+} from './regions';
 import {
   type CanvasTarget,
   initialTarget,
@@ -65,6 +101,7 @@ import {
 } from './site-model';
 import styles from './studio.module.css';
 import { TopBar } from './top-bar';
+import { useDraft } from './use-draft';
 
 registerStudioRegions();
 
@@ -78,6 +115,11 @@ interface RestTemplate {
   title: { raw?: string; rendered?: string };
   content: { raw?: string };
   area?: string;
+  /** `theme` (the theme's file) or `custom` (a customised copy, or the site's own). */
+  source?: string;
+  has_theme_file?: boolean;
+  /** Site time, as WordPress gives it. */
+  modified?: string | null;
 }
 
 /** GET /wp-block-editor/v1/settings: the theme's part of the editor settings. */
@@ -87,14 +129,37 @@ interface ThemeEditorSettings {
   [setting: string]: unknown;
 }
 
+/** A template part as visitors see it now, and its theme's file when it's a customised copy. */
+interface LivePart {
+  part: RestTemplate;
+  /** The theme file's markup, for a customised copy of one. */
+  themeFile?: string;
+}
+
 interface Library {
   theme: ThemeEditorSettings;
   templates: RestTemplate[];
-  parts: RestTemplate[];
+  /** The menu a Navigation block without one shows (and fills in as its `ref`). */
+  navigationFallback: number | null;
 }
 
 interface EditablePage extends StudioPage {
   content: { raw?: string };
+}
+
+/** What a region saves to, and what it held when the canvas opened. */
+interface RegionInfo {
+  key: string;
+  kind: 'content' | 'part';
+  slug?: string;
+  /** What visitors see now (block markup after a parse/serialize pass). */
+  live: string;
+  /** What the canvas opened with: the draft's version, or `live`. */
+  initial: string;
+  /** Parts: the theme file's markup (for a part that isn't customised, that's `live`). */
+  theme?: string;
+  /** Parts: visitors see a customised copy of the theme's file. */
+  customised?: boolean;
 }
 
 /** One document on the canvas: a page (or the latest posts) in its template. */
@@ -104,16 +169,19 @@ interface CanvasDoc {
   page?: EditablePage;
   template: RestTemplate;
   blocks: BlockInstance[];
-  /** The page's content after one parse/serialize pass; null without a page. */
-  baseline: string | null;
+  regions: Map<string, RegionInfo>;
 }
 
 export interface StudioProps {
   site: { name: string; url: string };
   reading: ReadingSettings;
+  /** The site's time zone (`timezone_string`), for reading REST `modified` dates. */
+  timeZone: string;
   pages: StudioPage[];
   /** `?page=` from the URL. */
   requestedPage?: number;
+  /** `?changeset_uuid=` from the URL: *Back to Studio* in a preview. */
+  requestedChangeset?: string;
   canUnfilteredHtml: boolean;
 }
 
@@ -138,22 +206,66 @@ function withTheme(blocks: BlockInstance[], theme: string): BlockInstance[] {
   });
 }
 
+/** A part's markup as the canvas holds it: parsed, with the theme on nested parts, serialized. */
+const partMarkup = (raw: string, theme: string) => serialize(withTheme(parse(raw), theme));
+
+const entryContent = (value: unknown): string | undefined => {
+  const content = (value as { content?: unknown } | null)?.content;
+  return typeof content === 'string' ? content : undefined;
+};
+
 function buildDoc(
   target: CanvasTarget,
   library: Library,
+  liveParts: ReadonlyMap<string, LivePart>,
   reading: ReadingSettings,
+  draft: Readonly<Record<string, { value: unknown }>>,
   page?: EditablePage,
 ): CanvasDoc | null {
   const template = pickTemplate(templateCandidates(target, reading, page), library.templates);
   if (!template) return null;
-  const parts = new Map(library.parts.map((part) => [part.slug, part.content.raw ?? '']));
-  const content = page ? parse(page.content.raw ?? '') : null;
+  const regions = new Map<string, RegionInfo>();
+
+  // Template parts: what visitors see, with the draft's version on the canvas.
+  const partsOnCanvas = new Map<string, string>();
+  for (const [slug, { part, themeFile }] of liveParts) {
+    const key = partKey(slug);
+    const live = partMarkup(part.content.raw ?? '', template.theme);
+    const customised =
+      part.source === 'custom' && Boolean(part.has_theme_file) && themeFile !== undefined;
+    const theme = customised ? partMarkup(themeFile ?? '', template.theme) : live;
+    const value = draft[key]?.value as { source?: string } | undefined;
+    const drafted = entryContent(value);
+    const initial =
+      value?.source === 'theme'
+        ? theme
+        : drafted !== undefined
+          ? partMarkup(drafted, template.theme)
+          : live;
+    regions.set(key, { key, kind: 'part', slug, live, initial, theme, customised });
+    partsOnCanvas.set(slug, initial);
+  }
+
+  let content: BlockInstance[] | null = null;
+  if (page) {
+    const key = pageKey(page.id);
+    const live = serialize(parse(page.content.raw ?? ''));
+    const drafted = entryContent(draft[key]?.value);
+    content = parse(drafted ?? page.content.raw ?? '');
+    regions.set(key, {
+      key,
+      kind: 'content',
+      live,
+      initial: drafted !== undefined ? serialize(content) : live,
+    });
+  }
+
   const blocks = composeCanvas(
     withTheme(parse(template.content.raw ?? ''), template.theme) as unknown as CanvasBlock[],
     {
       // Parsed for each use, so every block on the canvas has its own clientId.
       blocks: (slug) => {
-        const raw = parts.get(slug);
+        const raw = partsOnCanvas.get(slug);
         return raw === undefined
           ? undefined
           : (withTheme(parse(raw), template.theme) as unknown as CanvasBlock[]);
@@ -167,7 +279,7 @@ function buildDoc(
     page,
     template,
     blocks,
-    baseline: content ? serialize(content) : null,
+    regions,
   };
 }
 
@@ -185,37 +297,52 @@ function previewUrl(link: string, changeset: Pick<Changeset, 'uuid' | 'preview_l
 const errorMessage = (error: unknown) =>
   error instanceof ApiError || error instanceof Error ? error.message : String(error);
 
-interface Changeset {
-  uuid: string;
-  entries: Record<string, unknown>;
-  preview_link: string;
+/** The template parts as visitors see them, with the theme files of customised copies. */
+async function loadLiveParts(): Promise<Map<string, LivePart>> {
+  const parts = await api<RestTemplate[]>('/wp/v2/template-parts?context=edit');
+  const entries = await Promise.all(
+    parts.map(async (part): Promise<[string, LivePart]> => {
+      if (part.source !== 'custom' || !part.has_theme_file) return [part.slug, { part }];
+      const file = await api<RestTemplate>(
+        `/wp/v2/template-parts/${part.id}?source=theme&context=edit`,
+      ).catch(() => null);
+      return [part.slug, { part, themeFile: file?.content.raw }];
+    }),
+  );
+  return new Map(entries);
 }
 
 /* ------------------------------------------------------------------ studio */
 
 export default function Studio(props: StudioProps) {
-  const { __, sprintf } = useI18n();
+  const { __, _n, sprintf } = useI18n();
   const toast = useToast();
   const plugins = usePluginBlocks();
   const features = useEditorFeatures();
   const [library, setLibrary] = useState<Library | null>(null);
+  const [liveParts, setLiveParts] = useState<Map<string, LivePart> | null>(null);
+  const [opened, setOpened] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   const [target, setTarget] = useState<CanvasTarget>(() =>
     initialTarget(props.requestedPage, props.reading, props.pages),
   );
+  const [reloadKey, setReloadKey] = useState(0);
   const [doc, setDoc] = useState<CanvasDoc | null>(null);
   const [device, setDevice] = useState<Device>('desktop');
   const [panel, setPanel] = useState<RailPanelId | null>(null);
   const [tab, setTab] = useState<InspectorTabId>('content');
   const [narrow, setNarrow] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
-  const [dirty, setDirty] = useState(false);
-  const [busy, setBusy] = useState<'preview' | 'publish' | null>(null);
+  const [busy, setBusy] = useState<'preview' | 'publish' | 'discard' | 'revert' | null>(null);
   const [pendingTarget, setPendingTarget] = useState<CanvasTarget | null>(null);
-  const [confirmPublish, setConfirmPublish] = useState<{ uuid: string; others: number } | null>(
-    null,
-  );
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [stale, setStale] = useState<string[]>([]);
   const handle = useRef<StudioEditorHandle | null>(null);
+  const draft = useDraft({ onError: (message) => toast(message, { tone: 'danger' }) });
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  // The canvas holds edits not handed to the draft yet (the editor reports them after a pause).
+  const editing = useRef(false);
 
   const postsOnFront = props.reading.show_on_front !== 'page' || !props.reading.page_on_front;
   const frontPageId = Number(props.reading.page_on_front) || 0;
@@ -229,33 +356,62 @@ export default function Studio(props: StudioProps) {
     return () => media.removeEventListener('change', update);
   }, []);
 
-  // The theme's editor settings, templates and parts: once.
+  // The theme's editor settings, templates and parts, and the user's open draft: once.
   useEffect(() => {
     let live = true;
     Promise.all([
       api<ThemeEditorSettings>('/wp-block-editor/v1/settings?context=site-editor'),
       api<RestTemplate[]>('/wp/v2/templates?context=edit'),
-      api<RestTemplate[]>('/wp/v2/template-parts?context=edit'),
+      loadLiveParts(),
+      api<{ id: number }>('/wp-block-editor/v1/navigation-fallback').catch(() => null),
+      api<Changeset[]>('/pressbase/v1/changesets').catch(() => [] as Changeset[]),
     ])
-      .then(([theme, templates, parts]) => live && setLibrary({ theme, templates, parts }))
+      .then(([theme, templates, parts, fallback, open]) => {
+        if (!live) return;
+        const changeset = open.find((c) => c.uuid === props.requestedChangeset) ?? open[0] ?? null;
+        draftRef.current.resume(changeset);
+        setLibrary({ theme, templates, navigationFallback: fallback?.id || null });
+        setLiveParts(parts);
+        setOpened(true);
+        if (changeset?.count) {
+          toast(
+            sprintf(
+              _n(
+                'Your draft is back: %d change isn’t published yet.',
+                'Your draft is back: %d changes aren’t published yet.',
+                changeset.count,
+                'pressbase-admin',
+              ),
+              changeset.count,
+            ),
+          );
+          checkStale(changeset, parts, props.timeZone).then((keys) => live && setStale(keys));
+        }
+      })
       .catch((error) => live && setFailed(errorMessage(error)));
     return () => {
       live = false;
     };
   }, []);
 
-  // The page on the canvas, whenever the target changes.
+  // The page on the canvas, whenever the target changes (or the draft is discarded).
   useEffect(() => {
-    if (!library) return;
+    if (!library || !liveParts || !opened) return;
     let live = true;
     setDoc(null);
-    setDirty(false);
     const load = async () => {
       const page =
         target.kind === 'page'
           ? await api<EditablePage>(`/wp/v2/pages/${target.id}?context=edit`)
           : undefined;
-      const next = buildDoc(target, library, props.reading, page);
+      const next = buildDoc(
+        target,
+        library,
+        liveParts,
+        props.reading,
+        draftRef.current.entries,
+        page,
+      );
       if (!next) throw new Error(__('The theme has no template for this page.', 'pressbase-admin'));
       if (live) setDoc(next);
     };
@@ -264,29 +420,44 @@ export default function Studio(props: StudioProps) {
     const url = new URL(window.location.href);
     if (target.kind === 'page') url.searchParams.set('page', String(target.id));
     else url.searchParams.delete('page');
+    url.searchParams.delete('changeset_uuid');
     window.history.replaceState(window.history.state, '', url);
     return () => {
       live = false;
     };
-  }, [library, target, props.reading, __]);
+    // liveParts changes after a publish without rebuilding the canvas: it's read when a page opens.
+  }, [library, opened, target, reloadKey, props.reading, __]);
 
-  // Unpublished edits: the browser asks before leaving.
+  // Edits not in the draft yet: the browser asks before leaving.
   useEffect(() => {
-    if (!dirty) return;
-    const onBeforeUnload = (event: BeforeUnloadEvent) => event.preventDefault();
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      handle.current?.report();
+      if (editing.current || draftRef.current.unsaved) event.preventDefault();
+    };
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, [dirty]);
+  }, []);
 
-  const chooseTarget = (next: CanvasTarget) => {
+  /** Hands the canvas's edits to the draft and writes them now. */
+  const saveNow = useCallback(async () => {
+    handle.current?.report();
+    return draftRef.current.flush();
+  }, []);
+
+  const chooseTarget = async (next: CanvasTarget) => {
     if (
       next.kind === target.kind &&
       (next.kind === 'posts' || (target.kind === 'page' && next.id === target.id))
     ) {
       return;
     }
-    if (dirty) setPendingTarget(next);
-    else setTarget(next);
+    try {
+      // Saved first, so the page opens with the header as just edited.
+      await saveNow();
+      setTarget(next);
+    } catch {
+      setPendingTarget(next);
+    }
   };
 
   const assets = useMemo(
@@ -301,30 +472,16 @@ export default function Studio(props: StudioProps) {
     [library, plugins.blockStyles],
   );
 
-  /** Writes the page's content into the user's open changeset (ADR 0022). */
-  const saveDraft = async (): Promise<Changeset | null> => {
-    const content = handle.current?.getPageContent();
-    if (!doc?.page || content === undefined || content === null) return null;
-    return api<Changeset>('/pressbase/v1/changesets', {
-      method: 'POST',
-      body: { entries: { [`page:${doc.page.id}`]: { content } } },
-    });
-  };
-
   const preview = async () => {
     const link = doc?.page?.link ?? props.site.url;
     // Opened now, while the click still counts as the user's: popup blockers allow it.
     const win = window.open('about:blank', '_blank');
     if (win) win.opener = null;
-    if (!dirty) {
-      if (win) win.location.href = link;
-      return;
-    }
     setBusy('preview');
     try {
-      const changeset = await saveDraft();
+      const changeset = await saveNow();
       // The page itself, with the draft laid over it (changeset_uuid; see changesets.md#preview).
-      const url = changeset ? previewUrl(link, changeset) : link;
+      const url = changeset?.count ? previewUrl(link, changeset) : link;
       if (win) win.location.href = url;
       else window.open(url, '_blank', 'noopener');
     } catch (error) {
@@ -335,12 +492,13 @@ export default function Studio(props: StudioProps) {
     }
   };
 
-  const publishNow = async (uuid: string) => {
+  const publish = async (): Promise<boolean> => {
     setBusy('publish');
     try {
-      await api(`/pressbase/v1/changesets/${encodeURIComponent(uuid)}/publish`, { method: 'POST' });
-      handle.current?.markSaved();
-      setDirty(false);
+      handle.current?.report();
+      await draft.publish();
+      await handle.current?.markPublished();
+      setStale([]);
       const link = doc?.page?.link;
       toast(__('Published. Your changes are live.', 'pressbase-admin'), {
         action: link
@@ -350,6 +508,25 @@ export default function Studio(props: StudioProps) {
             }
           : undefined,
       });
+      // Pages opened from now on start from the parts as published.
+      loadLiveParts()
+        .then(setLiveParts)
+        .catch(() => {});
+      return true;
+    } catch (error) {
+      toast(errorMessage(error), { tone: 'danger' });
+      return false;
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const revert = async (key: string) => {
+    setBusy('revert');
+    try {
+      // On the canvas: put the region back (one undo step); the draft follows.
+      if (handle.current?.revertRegion(key)) await saveNow();
+      else await draft.revert(key);
     } catch (error) {
       toast(errorMessage(error), { tone: 'danger' });
     } finally {
@@ -357,20 +534,22 @@ export default function Studio(props: StudioProps) {
     }
   };
 
-  const publish = async () => {
-    setBusy('publish');
-    let changeset: Changeset | null = null;
+  const discardAll = async () => {
+    setBusy('discard');
     try {
-      changeset = await saveDraft();
+      handle.current?.discardEdits();
+      await draft.discard();
+      setStale([]);
+      setReloadKey((k) => k + 1);
+      toast(
+        __('Your changes were discarded. The page shows what visitors see.', 'pressbase-admin'),
+      );
     } catch (error) {
       toast(errorMessage(error), { tone: 'danger' });
+    } finally {
+      setBusy(null);
+      setConfirmDiscard(false);
     }
-    setBusy(null);
-    if (!changeset || !doc?.page) return;
-    // The draft can hold changes made elsewhere; say so before they go live too.
-    const others = Object.keys(changeset.entries).filter((key) => key !== `page:${doc.page?.id}`);
-    if (others.length) setConfirmPublish({ uuid: changeset.uuid, others: others.length });
-    else await publishNow(changeset.uuid);
   };
 
   const summary: PageSummary | null = doc
@@ -388,13 +567,36 @@ export default function Studio(props: StudioProps) {
   const parts = useMemo(
     () =>
       new Map<string, PartInfo>(
-        (library?.parts ?? []).map((part) => [
+        [...(liveParts?.values() ?? [])].map(({ part, themeFile }) => [
           part.slug,
-          { title: part.title.raw || part.title.rendered || part.slug, area: part.area ?? '' },
+          {
+            title: part.title.raw || part.title.rendered || part.slug,
+            area: part.area ?? '',
+            customised:
+              part.source === 'custom' && Boolean(part.has_theme_file) && themeFile !== undefined,
+          },
         ]),
       ),
-    [library],
+    [liveParts],
   );
+
+  const changes: PendingChange[] = draft.keys.map((key) => ({
+    key,
+    ...describeChange(
+      key,
+      draft.entries[key],
+      {
+        page: (id) => {
+          const found = props.pages.find((p) => p.id === id);
+          return found ? pageTitle(found) : undefined;
+        },
+        part: (slug) => parts.get(slug)?.title,
+      },
+      __,
+    ),
+  }));
+
+  const staleNames = stale.map((key) => changes.find((c) => c.key === key)?.title ?? key);
 
   const chrome: Chrome = {
     topBar: (editor) => (
@@ -418,10 +620,16 @@ export default function Studio(props: StudioProps) {
             ),
           )
         }
-        canPublish={dirty && Boolean(doc?.page) && !busy}
+        changes={changes}
+        draftStatus={draft.status}
+        onRetrySave={() => {
+          saveNow().catch((error) => toast(errorMessage(error), { tone: 'danger' }));
+        }}
         busy={busy}
         onPreview={preview}
         onPublish={publish}
+        onRevert={revert}
+        onDiscardAll={() => setConfirmDiscard(true)}
         inspectorOpen={!narrow || inspectorOpen}
         onToggleInspector={() => setInspectorOpen((open) => !open)}
         disabled={!editor}
@@ -441,6 +649,28 @@ export default function Studio(props: StudioProps) {
           if (narrow) setPanel(null);
         }}
       />
+    ),
+    notice: stale.length > 0 && (
+      <div className={styles.stageNotice} role="status" data-tone="warning">
+        <Info size={16} aria-hidden="true" />
+        <p>
+          {sprintf(
+            __(
+              'Since you last worked on your draft, someone published changes to %s. If you publish your draft, your version replaces theirs.',
+              'pressbase-admin',
+            ),
+            staleNames.join(', '),
+          )}
+        </p>
+        <Button
+          size="sm"
+          variant="ghost"
+          className={styles.iconButton}
+          icon={<X size={16} aria-hidden="true" />}
+          aria-label={__('Dismiss', 'pressbase-admin')}
+          onClick={() => setStale([])}
+        />
+      </div>
     ),
   };
 
@@ -488,7 +718,12 @@ export default function Studio(props: StudioProps) {
         inspectorOpen={inspectorOpen}
         onCloseInspector={() => setInspectorOpen(false)}
         chrome={chrome}
-        onDirty={setDirty}
+        onEditing={(value) => {
+          editing.current = value;
+        }}
+        onWant={draft.want}
+        drafted={(key) => key in draft.entries}
+        draftEntries={draft.entries}
         onReady={(h) => {
           handle.current = h;
         }}
@@ -503,8 +738,8 @@ export default function Studio(props: StudioProps) {
       {content}
       <ConfirmDialog
         open={pendingTarget !== null}
-        title={__('Leave this page without publishing?', 'pressbase-admin')}
-        confirmLabel={__('Discard changes', 'pressbase-admin')}
+        title={__('Your latest changes aren’t saved', 'pressbase-admin')}
+        confirmLabel={__('Leave without them', 'pressbase-admin')}
         onCancel={() => setPendingTarget(null)}
         onConfirm={() => {
           if (pendingTarget) setTarget(pendingTarget);
@@ -513,36 +748,60 @@ export default function Studio(props: StudioProps) {
       >
         <p>
           {__(
-            'Your changes to this page aren’t published. If you open another page now, they’re lost.',
+            'Studio couldn’t save them to your draft. Stay to try again, or open the other page and lose them.',
             'pressbase-admin',
           )}
         </p>
       </ConfirmDialog>
       <ConfirmDialog
-        open={confirmPublish !== null}
-        tone="primary"
-        title={__('Publish everything in your draft?', 'pressbase-admin')}
-        confirmLabel={__('Publish all', 'pressbase-admin')}
-        busy={busy === 'publish'}
-        onCancel={() => setConfirmPublish(null)}
-        onConfirm={async () => {
-          const uuid = confirmPublish?.uuid;
-          setConfirmPublish(null);
-          if (uuid) await publishNow(uuid);
-        }}
+        open={confirmDiscard}
+        title={__('Discard all your changes?', 'pressbase-admin')}
+        confirmLabel={__('Discard all', 'pressbase-admin')}
+        busy={busy === 'discard'}
+        onCancel={() => setConfirmDiscard(false)}
+        onConfirm={discardAll}
       >
         <p>
           {sprintf(
-            __(
-              'Your draft also holds %d other change made elsewhere. Publishing makes all of them live together.',
+            _n(
+              'The %d change in your draft will be thrown away. Your site stays as visitors see it now. This can’t be undone.',
+              'The %d changes in your draft will be thrown away. Your site stays as visitors see it now. This can’t be undone.',
+              changes.length,
               'pressbase-admin',
             ),
-            confirmPublish?.others ?? 0,
+            changes.length,
           )}
         </p>
       </ConfirmDialog>
     </ShortcutProvider>
   );
+}
+
+/**
+ * The draft's pages and parts that changed on the live site after the draft
+ * did (changedSince()): someone else published them meanwhile.
+ */
+async function checkStale(
+  changeset: Changeset,
+  parts: ReadonlyMap<string, LivePart>,
+  timeZone: string,
+): Promise<string[]> {
+  const live = new Map<string, LiveModified>();
+  const pageIds = Object.keys(changeset.entries)
+    .map(parseKey)
+    .filter((k) => k.type === 'page' && Number(k.id) > 0)
+    .map((k) => Number(k.id));
+  if (pageIds.length) {
+    const pages = await api<{ id: number; modified_gmt: string }[]>(
+      `/wp/v2/pages?context=edit&per_page=100&status=publish,draft,pending,private,future&include=${pageIds.join(',')}`,
+    ).catch(() => []);
+    for (const page of pages) live.set(pageKey(page.id), { gmt: page.modified_gmt });
+  }
+  for (const [slug, { part }] of parts) {
+    if (part.source === 'custom' && part.modified)
+      live.set(partKey(slug), { local: part.modified });
+  }
+  return changedSince(changeset.entries, live, timeZone);
 }
 
 function statusLabel(status: string, __: ReturnType<typeof useI18n>['__']): string {
@@ -577,6 +836,8 @@ interface Chrome {
   topBar: (editor: EditorState | null) => ReactNode;
   rail: ReactNode;
   panel: ReactNode;
+  /** A note above the canvas (the draft changed on the live site meanwhile). */
+  notice?: ReactNode;
 }
 
 /** The screen's layout, around whatever the canvas area holds. */
@@ -586,12 +847,14 @@ function StudioFrame({
   children,
   footer,
   inspector,
+  notice,
 }: {
   chrome: Chrome;
   editor: EditorState | null;
   children: ReactNode;
   footer?: ReactNode;
   inspector?: ReactNode;
+  notice?: ReactNode;
 }) {
   const { __ } = useI18n();
   return (
@@ -604,6 +867,8 @@ function StudioFrame({
         {chrome.rail}
         {chrome.panel}
         <main id="studio-canvas" className={styles.stage} tabIndex={-1}>
+          {chrome.notice}
+          {notice}
           {children}
           {footer}
         </main>
@@ -616,10 +881,14 @@ function StudioFrame({
 /* ------------------------------------------------------------------ editor */
 
 export interface StudioEditorHandle {
-  /** The page's content as block markup; null when the canvas shows no page. */
-  getPageContent(): string | null;
-  /** After publishing: the current content becomes the new baseline. */
-  markSaved(): void;
+  /** Hands the canvas's edits to the draft now (instead of after the pause). */
+  report(): void;
+  /** Puts a region on the canvas back to what visitors see; false when it isn't on the canvas. */
+  revertRegion(key: string): boolean;
+  /** After publishing: what the canvas shows is what visitors see. */
+  markPublished(): Promise<void>;
+  /** Before discarding: drops edits held outside the canvas's blocks (site title, menus). */
+  discardEdits(): void;
 }
 
 interface StudioEditorProps {
@@ -638,21 +907,46 @@ interface StudioEditorProps {
   inspectorOpen: boolean;
   onCloseInspector: () => void;
   chrome: Chrome;
-  onDirty: (dirty: boolean) => void;
+  /** True while the canvas holds edits it hasn't reported yet. */
+  onEditing: (editing: boolean) => void;
+  /** The entries the canvas needs in the draft (null: none). */
+  onWant: (entries: ReadonlyMap<string, EntryValue | null>) => void;
+  /** Whether the draft has an entry for this key. */
+  drafted: (key: string) => boolean;
+  /** The draft's entries when the canvas opened (site title, menus: laid over core-data). */
+  draftEntries: Readonly<Record<string, StoredEntry>>;
   onReady: (handle: StudioEditorHandle) => void;
   onNotice: (message: string, tone: 'success' | 'danger') => void;
 }
 
+/** The block-editor store calls the editor makes outside React's render. */
+interface StoreBridge {
+  getBlocks: () => BlockInstance[];
+  replaceInnerBlocks: (clientId: string, blocks: BlockInstance[], update?: boolean) => void;
+  /** The block and its parents, outermost first. */
+  chain: (clientId: string) => Pick<CanvasBlock, 'name' | 'clientId' | 'attributes'>[];
+}
+
+/** How long the canvas waits after an edit before working out what changed (serializing costs). */
+const REPORT_DELAY = 300;
+
 function StudioEditor(props: StudioEditorProps) {
   const { __ } = useI18n();
-  const { doc, onDirty } = props;
+  const { doc } = props;
   const history = useStateWithHistory<{ blocks: BlockInstance[]; selection?: unknown }>({
     blocks: doc.blocks,
   });
   const value = history.value as { blocks: BlockInstance[]; selection?: unknown };
   const blocksRef = useRef(value.blocks);
   blocksRef.current = value.blocks;
-  const baseline = useRef(doc.baseline);
+  const store = useRef<StoreBridge | null>(null);
+  // Regions' live and opening markup; updated when a publish makes the canvas live.
+  const regions = useRef(new Map(doc.regions));
+  // Regions changed since opening: they always say what they need, even when back to the start.
+  const touched = useRef(new Set<string>());
+  const [, setVersion] = useState(0);
+  const propsRef = useRef(props);
+  propsRef.current = props;
   // Blocks that finish loading on their own (the Navigation block picking its
   // menu, say) can change the tree just after it opens. Those changes aren't
   // the user's, so they don't become undo steps: until the person first
@@ -668,32 +962,163 @@ function StudioEditor(props: StudioEditorProps) {
     return () => clearTimeout(timer);
   }, []);
 
-  const currentContent = useCallback(() => {
-    const blocks = pageBlocks(blocksRef.current as unknown as CanvasBlock[]);
-    return blocks ? serialize(blocks as unknown as BlockInstance[]) : null;
+  // The header's fallback menu. On a new site, the first request creates it, and the
+  // Navigation block may have asked at the same moment; asked again once the canvas is up.
+  const fallbackMenu = useRef(props.library.navigationFallback);
+
+  /** Each region's state now: markup, and markup without changes nobody made. */
+  const regionStates = useCallback((): RegionState[] => {
+    const tree = (store.current?.getBlocks() ?? blocksRef.current) as unknown as CanvasBlock[];
+    const { content, parts } = regionBlocks(tree);
+    const fallback = fallbackMenu.current;
+    const out: RegionState[] = [];
+    for (const region of regions.current.values()) {
+      const blocks = region.kind === 'content' ? content : parts.get(region.slug ?? '')?.blocks;
+      if (!blocks) continue;
+      const current = serialize(blocks as unknown as BlockInstance[]);
+      const normalized = fallback
+        ? serialize(withoutNavigationRef(blocks, fallback) as unknown as BlockInstance[])
+        : undefined;
+      out.push({
+        key: region.key,
+        live: region.live,
+        initial: region.initial,
+        current,
+        normalized: normalized === current ? undefined : normalized,
+        themeFile: region.customised ? region.theme : undefined,
+      });
+    }
+    return out;
   }, []);
+
+  // Site title, tagline, logo and menus: edited in core-data, saved as entries too.
+  const [entityTick, setEntityTick] = useState(0);
+  const entities = useEntityEdits({
+    draft: props.draftEntries,
+    onChange: () => setEntityTick((t) => t + 1),
+  });
+  const entitiesRef = useRef(entities);
+  entitiesRef.current = entities;
+
+  // Regions edited where the person was working: a change arrives with the
+  // selection in it. Blocks that adjust themselves elsewhere on the canvas
+  // (the Navigation block picking its menu, a block migrating its markup)
+  // don't make the header or footer an edit.
+  const edited = useRef(new Set<string>());
+  const noteEdit = (selection: unknown) => {
+    const clientId = (selection as { selectionStart?: { clientId?: string } } | undefined)
+      ?.selectionStart?.clientId;
+    if (!clientId || !store.current) return;
+    const chain = store.current.chain(clientId);
+    const part = partOf(chain);
+    if (part) edited.current.add(partKey(part.slug));
+    else if (chain.some((b) => b.name === 'core/post-content') && doc.page) {
+      edited.current.add(pageKey(doc.page.id));
+    }
+  };
+
+  const report = useCallback(() => {
+    const wants = entitiesRef.current.wants();
+    for (const state of regionStates()) {
+      if (!touched.current.has(state.key) && !edited.current.has(state.key)) continue;
+      if (!touched.current.has(state.key) && !regionChanged(state)) continue;
+      touched.current.add(state.key);
+      wants.set(state.key, desiredEntry(state));
+    }
+    propsRef.current.onEditing(false);
+    if (wants.size) propsRef.current.onWant(wants);
+  }, [regionStates]);
+
+  useEffect(() => {
+    if (!entityTick) return;
+    const timer = setTimeout(report, REPORT_DELAY);
+    return () => clearTimeout(timer);
+  }, [entityTick, report]);
+
+  const replaceRegion = useCallback(
+    (key: string, markup: string): boolean => {
+      const region = regions.current.get(key);
+      if (!region || !store.current) return false;
+      const tree = store.current.getBlocks() as unknown as CanvasBlock[];
+      const clientId =
+        region.kind === 'content'
+          ? findRegions(tree).find((r) => r.kind === 'content')?.clientId
+          : regionBlocks(tree).parts.get(region.slug ?? '')?.clientId;
+      if (!clientId) return false;
+      const blocks = parse(markup);
+      store.current.replaceInnerBlocks(
+        clientId,
+        region.kind === 'part' ? withTheme(blocks, doc.template.theme) : blocks,
+      );
+      touched.current.add(key);
+      report();
+      setVersion((v) => v + 1);
+      return true;
+    },
+    [doc.template.theme, report],
+  );
 
   useEffect(() => {
     props.onReady({
-      getPageContent: currentContent,
-      markSaved: () => {
-        baseline.current = currentContent();
+      report,
+      revertRegion: (key) => {
+        const region = regions.current.get(key);
+        if (region) return replaceRegion(key, region.live);
+        if (!entitiesRef.current.revert(key)) return false;
+        report();
+        return true;
+      },
+      discardEdits: () => entitiesRef.current.clear(),
+      markPublished: async () => {
+        for (const state of regionStates()) {
+          const region = regions.current.get(state.key);
+          // Regions the draft didn't change are as they were.
+          if (!region || (!touched.current.has(state.key) && region.initial === region.live)) {
+            continue;
+          }
+          regions.current.set(state.key, {
+            ...region,
+            live: state.current,
+            initial: state.current,
+            // Back to the theme's file (a reset), or a customised copy of it now.
+            customised:
+              region.kind === 'part'
+                ? (state.normalized ?? state.current) !== region.theme
+                : undefined,
+          });
+        }
+        touched.current.clear();
+        edited.current.clear();
+        setVersion((v) => v + 1);
+        await entitiesRef.current.refresh();
       },
     });
   }, []);
 
-  // Unpublished changes, compared with what was loaded (debounced: serializing is the expensive part).
   useEffect(() => {
-    if (value.blocks === doc.blocks) {
-      onDirty(false);
-      return;
-    }
+    let live = true;
     const timer = setTimeout(() => {
-      const content = currentContent();
-      onDirty(content !== null && content !== baseline.current);
-    }, 300);
+      api<{ id: number }>('/wp-block-editor/v1/navigation-fallback')
+        .then((menu) => {
+          if (!live || !menu?.id || menu.id === fallbackMenu.current) return;
+          fallbackMenu.current = menu.id;
+          if (touched.current.size) report();
+        })
+        .catch(() => {});
+    }, 1500);
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [report]);
+
+  // What changed, a moment after each edit (serializing is the expensive part).
+  useEffect(() => {
+    if (value.blocks === doc.blocks) return;
+    propsRef.current.onEditing(true);
+    const timer = setTimeout(report, REPORT_DELAY);
     return () => clearTimeout(timer);
-  }, [value.blocks, doc.blocks, onDirty, currentContent]);
+  }, [value.blocks, doc.blocks, report]);
 
   const settings = useMemo(() => {
     const {
@@ -707,6 +1132,7 @@ function StudioEditor(props: StudioEditorProps) {
         canUnfilteredHtml: props.canUnfilteredHtml,
         postId: doc.page?.id,
         assets: props.assets,
+        context: 'studio',
       }),
       // The theme's palette, font sizes, spacing and layout (theme.json), as WordPress's site editor gets them.
       ...themeSettings,
@@ -725,14 +1151,27 @@ function StudioEditor(props: StudioEditorProps) {
   const width = DEVICES.find((d) => d.id === props.device)?.width ?? null;
   const showInspector = !props.narrow || props.inspectorOpen;
 
+  /** A part can go back to the theme's design: it's customised, or edited in the draft. */
+  const canReset = (slug: string) => {
+    const region = regions.current.get(partKey(slug));
+    if (region?.kind !== 'part') return false;
+    return (
+      Boolean(region.customised) || props.drafted(region.key) || touched.current.has(region.key)
+    );
+  };
+
   return (
     <BlockEditorProvider
       value={value.blocks}
       selection={value.selection as never}
-      onInput={(blocks, { selection }) => history.setValue({ blocks, selection }, true)}
-      onChange={(blocks, { selection }) =>
-        history.setValue({ blocks, selection }, !settled.current)
-      }
+      onInput={(blocks, { selection }) => {
+        noteEdit(selection);
+        history.setValue({ blocks, selection }, true);
+      }}
+      onChange={(blocks, { selection }) => {
+        noteEdit(selection);
+        history.setValue({ blocks, selection }, !settled.current);
+      }}
       settings={settings}
       useSubRegistry
     >
@@ -740,18 +1179,20 @@ function StudioEditor(props: StudioEditorProps) {
       <NoticesBridge onNotice={props.onNotice} />
       <MediaCategories enabled={props.features.media} />
       <EditingModes blocks={doc.blocks} />
+      <StoreBridgeSetter bridge={store} />
       {/* React events bubble out of the canvas iframe's portal, so this sees typing there too. */}
       <div className={styles.contents} onKeyDownCapture={settle} onPointerDownCapture={settle}>
         <StudioRegionsProvider
           value={{
             parts: props.parts,
             partLabel: (slug) =>
-              `${props.parts.get(slug)?.title ?? slug} · ${__('every page', 'pressbase-admin')}`,
+              `${props.parts.get(slug)?.title ?? slug} · ${__('all pages', 'pressbase-admin')}`,
           }}
         >
           <StudioFrame
             chrome={props.chrome}
             editor={editor}
+            notice={<PartNotice parts={props.parts} />}
             footer={<Breadcrumb site={props.site} page={props.summary.title} parts={props.parts} />}
             inspector={
               showInspector && (
@@ -760,6 +1201,11 @@ function StudioEditor(props: StudioEditorProps) {
                   parts={props.parts}
                   tab={props.tab}
                   onTab={props.onTab}
+                  canReset={canReset}
+                  onReset={(slug) => {
+                    const region = regions.current.get(partKey(slug));
+                    if (region?.theme !== undefined) replaceRegion(region.key, region.theme);
+                  }}
                   onClose={props.narrow ? props.onCloseInspector : undefined}
                 />
               )
@@ -786,6 +1232,62 @@ function StudioEditor(props: StudioEditorProps) {
         <Popover.Slot />
       </div>
     </BlockEditorProvider>
+  );
+}
+
+/** Gives the editor the store's getBlocks() and replaceInnerBlocks(), for reverts and resets. */
+function StoreBridgeSetter({ bridge }: { bridge: { current: StoreBridge | null } }) {
+  const registry = useRegistry();
+  const { replaceInnerBlocks } = useDispatch(blockEditorStore) as unknown as Pick<
+    StoreBridge,
+    'replaceInnerBlocks'
+  >;
+  useEffect(() => {
+    const select = registry.select(blockEditorStore) as unknown as {
+      getBlocks: () => BlockInstance[];
+      getBlockParents: (id: string) => string[];
+      getBlockName: (id: string) => string | null;
+      getBlockAttributes: (id: string) => Record<string, unknown> | null;
+    };
+    bridge.current = {
+      getBlocks: () => select.getBlocks(),
+      replaceInnerBlocks,
+      chain: (clientId) =>
+        [...select.getBlockParents(clientId), clientId].map((id) => ({
+          clientId: id,
+          name: select.getBlockName(id) ?? '',
+          attributes: select.getBlockAttributes(id) ?? {},
+        })),
+    };
+    return () => {
+      bridge.current = null;
+    };
+  }, [registry, replaceInnerBlocks, bridge]);
+  return null;
+}
+
+/**
+ * Above the canvas while something in a template part is selected: the
+ * header and footer are on every page, so the person knows before they type.
+ */
+function PartNotice({ parts }: { parts: ReadonlyMap<string, PartInfo> }) {
+  const { __, sprintf } = useI18n();
+  const part = useSelectedPart();
+  if (!part) return null;
+  const title = parts.get(part.slug)?.title ?? part.slug;
+  return (
+    <div className={styles.stageNotice} role="status" data-tone="accent" data-floating>
+      <Info size={16} aria-hidden="true" />
+      <p>
+        {sprintf(
+          __(
+            'You’re editing the %s. It’s on every page, so your changes show everywhere once you publish.',
+            'pressbase-admin',
+          ),
+          title,
+        )}
+      </p>
+    </div>
   );
 }
 

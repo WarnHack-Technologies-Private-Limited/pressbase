@@ -225,6 +225,9 @@ describe('settings', () => {
     const options = await request('OPTIONS', '/wp/v2/settings');
     expect(options.status).toBe(200);
     expect(options.headers.get('allow')).toContain('POST');
+    // So does the GET it reads them with (core-data takes permissions from either).
+    const read = await request('GET', '/wp/v2/settings');
+    expect(read.headers.get('allow')).toBe('GET, POST, PUT, PATCH');
   });
 
   it('is closed to logged-out visitors', async () => {

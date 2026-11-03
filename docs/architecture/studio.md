@@ -2,7 +2,7 @@
 
 Studio is Pressbase's site editor: a full-screen screen at `/admin/studio` where a site owner edits their pages in the real theme, header and footer included. It does what WordPress's *Appearance → Editor* does, with the direct feel the [plan](../plans/visual-site-builder.md#the-screen) describes. The decision to build our own editor around `@wordpress/block-editor`, rather than use `@wordpress/edit-site`, is in [ADR 0021](../adr/0021-site-editor-and-templates-storage.md#studio-shell).
 
-This page covers the shell (#28): its layout, how the canvas is built, and where the rest of v0.8 plugs in.
+This page covers the shell (#28), saving through the user's draft (#31), the header and footer in place (#30), and where the rest of v0.8 plugs in.
 
 ![Studio, editing the home page](../assets/screenshots/studio-light.png)
 
@@ -12,18 +12,19 @@ This page covers the shell (#28): its layout, how the canvas is built, and where
 - **Menu:** its own item, *Design → Studio* (`lib/sections.ts`). *Appearance → Editor* (the Appearance tab, and `/admin/appearance/editor`) leads here.
 - **Full-screen:** `AdminShell` renders `/admin/studio` without its sidebar and top bar (`isFullScreen()` in `components/shell/admin-shell.tsx`), keeping the toasts, the current user and plugins' UI modules.
 - **Which page:** `?page={id}` opens that page; without it, the home page: the static front page (`show_on_front: page`), or the latest posts. The address follows the page picker, so a reload reopens the same page.
+- **Which draft:** the user's open changeset (`GET /pressbase/v1/changesets`), or the one `?changeset_uuid=` names (a preview's *Back to Studio* link). See [Saving](#saving-the-draft-publish-preview-discard).
 - **Loading:** `components/studio/index.tsx` loads Studio with `next/dynamic` (`ssr: false`) after the editor's translations, like the post editor.
 
 ## The screen
 
 ```
 ┌ TopBar ───────────────────────────────────────────────────────────────────────┐
-│ ← Dashboard  [Home ▾]  [▭ ▯ ▯]  ↶ ↷              ✦ Ask AI (soon)  Preview  Publish │
+│ ← Dashboard  [Home ▾]  [▭ ▯ ▯]  ↶ ↷   ✦ Ask AI (soon)  ✓ Draft saved  Preview  [Publish 2] │
 ├ Rail ┬ Panel ─────────┬ Canvas (iframe) ─────────────────────┬ Inspector ──────┤
-│Pages │ Pages          │  ┌ Header · every page ───────────┐   │ Heading 3       │
+│Pages │ Pages          │  ┌ Header · all pages ────────────┐   │ Heading 3       │
 │Elem. │ Home     Home  │  └────────────────────────────────┘   │ Content Style   │
 │Sect. │ Menu           │   Fresh bread, every morning          │ Layout          │
-│Layers│ About us       │  ┌ Footer · every page ───────────┐   │ Typography …    │
+│Layers│ About us       │  ┌ Footer · all pages ────────────┐   │ Typography …    │
 │Styles│                │  └────────────────────────────────┘   │                 │
 │Media │ (#29 note)     ├ Breadcrumb: Site › Home › Hero › Heading │                 │
 │AI    │                │                                       │                 │
@@ -32,11 +33,11 @@ This page covers the shell (#28): its layout, how the canvas is built, and where
 
 | Part | Component | What it does now | Built out by |
 | --- | --- | --- | --- |
-| Top bar | `top-bar.tsx` | Back to the dashboard; the page picker (a native `<select>` of the page tree, plus *Home (latest posts)* when there's no static front page); Desktop / Tablet / Mobile (canvas widths 100%, 768px, 390px); undo and redo; *Ask AI* (marked *Coming soon*, explains itself on click); Preview; Publish | #31 (Publish N, Discard), #63 (Ask AI), #49 (per-device styles), #33 (command palette) |
+| Top bar | `top-bar.tsx`, `publish-panel.tsx` | Back to the dashboard; the page picker (a native `<select>` of the page tree, plus *Home (latest posts)* when there's no static front page); Desktop / Tablet / Mobile (canvas widths 100%, 768px, 390px); undo and redo; *Ask AI* (marked *Coming soon*, explains itself on click); whether the draft is saved; Preview; *Publish N* with the list of changes and *Discard all* | #63 (Ask AI), #49 (per-device styles), #33 (command palette) |
 | Left rail | `rail.tsx` | Seven panels; the open one sits beside the canvas (over it on narrow screens). Escape closes it and returns focus to its button | see below |
-| Canvas | `studio.tsx` | The page in its template, in the active theme | #30, #35–#37 |
+| Canvas | `studio.tsx`, `regions.tsx` | The page in its template, in the active theme; the header and footer editable in place | #35–#37 |
 | Breadcrumb | `breadcrumb.tsx` | Site › Page › Section › Block for the selection; each step selects that level | — |
-| Inspector | `inspector.tsx` | Nothing selected: the page (status, template, how to edit). A template part: what it is and that editing it comes with #30. A block: its card and the Content / Style / Layout tabs | #32 (Simple / Advanced) |
+| Inspector | `inspector.tsx` | Nothing selected: the page (status, template, how to edit). A template part: that it's on every page, and *Reset to theme* once it differs from the theme's. A block: its card and the Content / Style / Layout tabs, under a note when it sits in a part | #32 (Simple / Advanced) |
 
 ### Left rail panels
 
@@ -77,9 +78,9 @@ The canvas is the page's template with its *regions* filled in (`canvas-model.ts
 
 So the whole canvas is one `BlockEditorProvider` value with one undo history (`useStateWithHistory`, as in the post editor), and undo and redo cover every edit on the screen. WordPress's own site editor keeps each part and the page as separate core-data entities with their own edits; one tree is simpler and makes the [changeset](changesets.md) the single place where edits are split per entity.
 
-Both region blocks save as self-closing comments (their `save` returns `null`), so serializing the template gives back the template unchanged, and a region's inner blocks are that entity's content. `pageBlocks()` reads the page's blocks back out; `findRegions()` lists the regions, for #30 and #31.
+Both region blocks save as self-closing comments (their `save` returns `null`), so serializing the template gives back the template unchanged, and a region's inner blocks are that entity's content. `regionBlocks()` reads each region back out: the page's blocks (`pageBlocks()`) and each part's, by slug (the first copy, when a part shows twice); `findRegions()` lists them in order.
 
-Inside Studio, both blocks edit as plain containers of their inner blocks (`regions.tsx`, an `editor.BlockEdit` filter active only under `StudioRegionsProvider`), with the tag and classes the public site renders: `<header class="wp-block-template-part">` for a header part, `<div class="entry-content wp-block-post-content">` for the content. The post editor keeps WordPress's components.
+Inside Studio, both blocks edit as plain containers of their inner blocks (`regions.tsx`, an `editor.BlockEdit` filter active only under `StudioRegionsProvider`), with the tag and classes the public site renders: `<header class="wp-block-template-part">` for a header part, `<div class="entry-content wp-block-post-content">` for the content. A part also gets its label (*Header · all pages*) as a real element in the canvas, shown on hover and while it or anything in it is selected; clicking it selects the part as a whole. The post editor keeps WordPress's components.
 
 ### Which template
 
@@ -95,9 +96,13 @@ Template-part blocks get the template's `theme` attribute when the canvas is bui
 | --- | --- | --- |
 | The template (root) | `disabled` | The template's own blocks (the page title, the featured image, the layout groups) are shown, not edited |
 | The page's content (`core/post-content`) | `default` | Everything in the page is editable inline |
-| A template part | `default` for the part, `disabled` for its blocks | The header and footer can be selected as a whole ("Header · every page") but not changed until #30 makes them editable (`partsEditable`) |
+| A template part | `default` | The header and footer are edited in place (#30). With `partsEditable: false` (for authors, #29) its blocks are `disabled`: the part is selectable as a whole but locked |
 
-Locked blocks without anything to show on the site (no featured image, no site logo) are hidden in the canvas (`canvas.css`). Sections from unsynced patterns stay fully editable (`disableContentOnlyForUnsyncedPatterns`).
+Locked blocks without anything to show on the site (no featured image, no site logo) are hidden in the canvas (`canvas.css`). In an editable part, the site logo block shows its placeholder, so a logo can be added. Sections from unsynced patterns stay fully editable (`disableContentOnlyForUnsyncedPatterns`).
+
+### Which blocks
+
+`editorSettings({ context: 'studio' })` offers the site-editing blocks the post editor leaves out (`STUDIO_BLOCKS` in `block-editor/blocks.ts`): `core/template-part`, `core/post-content`, `core/site-logo`, `core/site-title` and `core/site-tagline`. Everything else in `UNSUPPORTED_BLOCKS` stays out of both (`blocks.test.ts`).
 
 ### Styles
 
@@ -113,15 +118,51 @@ The block list has the `wp-site-blocks` class, so the theme's root layout rules 
 
 Desktop, Tablet and Mobile set the canvas frame's width (`DEVICES` in `layout-model.ts`: 100%, 768px, 390px, under WordPress 7.1's `tablet` and `mobile` breakpoints). The iframe is that wide, so the theme's media queries apply. Per-device styles are #49.
 
-## Saving: Preview and Publish
+## Saving: the draft, Publish, Preview, Discard
 
-Studio never saves to the live site on its own. Until #31 saves every edit to a changeset as it happens:
+Studio never writes to the live site on its own ([Principle 4](../plans/visual-site-builder.md#principles)). Every edit goes into the user's open [changeset](changesets.md), and only *Publish* makes it live.
 
-- **Publish** is available once the page's content differs from what was loaded (compared after a parse/serialize pass, so opening a page is never a change). It writes `page:{id}: { content }` to the user's open changeset (`POST /pressbase/v1/changesets`) and publishes it. If the draft also holds changes made elsewhere, a dialog says how many before publishing them all.
-- **Preview** writes the same entry and opens the page with `?changeset_uuid=` in a new tab. Without changes it opens the live page.
-- **Leaving** with unpublished changes: the browser asks (`beforeunload`), and switching pages asks to discard them.
+![The Publish list: two changes, each with an undo button, then Discard all and Publish](../assets/screenshots/studio-publish.png)
 
-#31 replaces this with debounced saving, *Publish N* with the list of changes, Discard, and resuming the open changeset.
+### What the canvas saves
+
+`StudioEditor` knows each region's *live* markup (what visitors see), its *initial* markup (what the canvas opened with: the draft's version, or live) and, for a part, the theme file's markup. A moment after an edit (300 ms; serializing is the expensive part) it works out each region's entry (`desiredEntry()` in `changes-model.ts`):
+
+| The region now | Entry |
+| --- | --- |
+| Back to what visitors see | none (`null` removes it) |
+| A customised part back to exactly the theme's file | `wp_template_part:{slug}: { source: "theme" }` (a reset; publishing deletes the copy) |
+| Anything else | `page:{id}: { content }` or `wp_template_part:{slug}: { content }` |
+
+Markup is compared after a parse/serialize pass, so opening a page is never a change. Only regions edited where the person is working count: a change arrives with the selection in the page or in a part (or comes from undoing one, a Reset or an undo in the Publish list). Blocks that adjust themselves elsewhere on the canvas (a block migrating old markup, say) don't make the header an edit. The Navigation block fills in its fallback menu's `ref` when it loads; that's the menu it shows anyway, so a part that differs only by that (`withoutNavigationRef()`) isn't edited. Once a part is edited, it's saved with the `ref`, so the header names its menu ([navigation.md](navigation.md#why-an-option)).
+
+Some blocks edit records outside the tree, in core-data (`entity-edits.ts`): the site title, tagline and logo edit the site record (`/wp/v2/settings`), saved as `option:blogname`, `option:blogdescription`, `option:site_logo` and `option:site_icon`; the Navigation block edits its menu, saved as `wp_navigation:{id}: { content }`. Nothing goes to their REST routes. A resumed draft's entries are laid back over those records; Discard and Publish clear the edits.
+
+### The draft
+
+`use-draft.ts` keeps the changeset in step: 800 ms after the last change it sends what differs (`entriesPatch()`) with `POST /pressbase/v1/changesets`, which starts the user's changeset or returns their open one. One request at a time; edits made meanwhile go in the next. Values the server stored differently (sanitised for people without `unfiltered_html`) aren't sent again. The top bar says *Saving…*, *Draft saved*, or *Couldn’t save. Try again*.
+
+| Action | Does |
+| --- | --- |
+| **Publish N** | N is the number of entries in the draft. The button opens a panel listing them in plain words (`describeChange()`: *Footer · On every page*, *About us · Page*, *Site title*), each with an undo button, then *Discard all* and *Publish N changes*. Publishing saves what's pending, then `POST /pressbase/v1/changesets/{uuid}/publish`: everything goes live together. |
+| **Undo one change** | On the canvas: the region goes back to what visitors see (one undo step), and the draft follows. Elsewhere (another page, the site title): the entry is removed. |
+| **Discard all** | Asks first, then `DELETE /pressbase/v1/changesets/{uuid}` and reopens the page as visitors see it. |
+| **Preview** | Saves what's pending, then opens the page with `?changeset_uuid=` in a new tab (the live page when the draft is empty). The preview's *Back to Studio* opens `/admin/studio?changeset_uuid=…`. |
+| **Another page** | Saves first, then opens it, with the header and footer as just edited. If saving fails, Studio asks before leaving the edits behind. |
+| **Leaving** | While edits aren't saved yet (or saving failed), the browser asks first (`beforeunload`). Saved edits are safe in the draft. |
+
+### Reopening
+
+Studio opens with the user's open changeset: the canvas shows its pages and parts, a toast says how many changes aren't published yet, and if a page or part in it changed on the live site after the draft did (someone published it meanwhile; `changedSince()` compares the entry's `date_modified_gmt` with the page's `modified_gmt`, or the part's `modified` in the site's time zone), a note above the canvas names them: publishing the draft would replace their version.
+
+## Header and footer in place
+
+![Editing the header: its outline and label, the note over the canvas, and Header in the breadcrumb](../assets/screenshots/studio-header.png)
+
+- Hovering a part outlines it with its label; selecting it, or anything in it, keeps a solid outline (`has-child-selected`).
+- Before the first keystroke the UI says the part is on every page: a note floats over the bottom of the canvas (*You’re editing the Header. It’s on every page…*), and the inspector shows *In the Header: changes show on every page*, with a way to select the whole part.
+- The part's own settings offer **Reset to theme** once it differs from the theme's design: a customised copy (`source: custom` with a theme file), or a part the draft changes. It puts the theme file's blocks on the canvas (`GET /wp/v2/template-parts/{id}?source=theme`), one undo step; publishing deletes the copy.
+- Edits are saved as `wp_template_part:{slug}` entries, never straight to `/wp/v2/template-parts`. Publishing the first edit of a theme's part makes its customised copy ([changesets.md](changesets.md#templates-and-template-parts)).
 
 ## Keyboard and accessibility
 
@@ -141,8 +182,8 @@ Studio never saves to the live site on its own. Until #31 saves every edit to a 
 | Issue | Where |
 | --- | --- |
 | #29 Pages panel | `PagesList` in `rail.tsx`; `site-model.ts` (`pageTree()`); `initialTarget()` for *Edit with Studio* links (`/admin/studio?page={id}`) |
-| #30 Header and footer | `editingModes(blocks, { partsEditable: true })`; `findRegions()` to save each part; the part summary in `inspector.tsx`; `regions.tsx` for the outline and label |
-| #31 Changesets | `saveDraft()` / `publish()` in `studio.tsx`; split the tree with `pageBlocks()` and `findRegions()` |
+| #29 Authors in Studio | `editingModes(blocks, { partsEditable: false })` for people without `edit_theme_options` |
+| #46, #47 Styles | a `wp_global_styles:{stylesheet}` entry through `useDraft().want()`; `describeChange()` already names it |
 | #32 Simple / Advanced | `INSPECTOR_TABS` in `layout-model.ts` |
 | #33 Command palette | inside `ShortcutProvider` in `studio.tsx` |
 | #34 History | `useStateWithHistory` in `StudioEditor` |
@@ -154,14 +195,20 @@ Studio never saves to the live site on its own. Until #31 saves every edit to a 
 
 ## Tests
 
-- `components/studio/canvas-model.test.ts`: composing the canvas, regions, editing modes, the breadcrumb.
+- `components/studio/canvas-model.test.ts`: composing the canvas, regions, editing modes, the part a block sits in, the Navigation block's fallback `ref`, the breadcrumb.
+- `components/studio/changes-model.test.ts`: which entry a region needs (content, reset, none), what to send, the order and wording of the Publish list, the site record's options, and drafts overtaken on the live site.
+- `components/block-editor/blocks.test.ts`: the site-editing blocks in Studio only.
+- `apps/core/src/changesets.test.ts`: `source: theme` entries (reset a part).
 - `components/studio/site-model.test.ts`: which page opens, template candidates, the page tree.
 - `components/studio/layout-model.test.ts`: the tabs cover every inspector group; the rail's panels each name their issue; device widths.
 - `apps/core/src/block-editor-settings.test.ts`: `/wp-block-editor/v1/settings`.
-- `e2e/tests/studio.spec.ts`: opening a page with its header and footer, inline editing, undo and redo, the locked header, Publish through a changeset, and the keyboard path.
+- `e2e/tests/studio.spec.ts`: opening a page with its header and footer, inline editing, undo and redo, selecting the header, Publish through a changeset, and the keyboard path.
+- `e2e/tests/studio-saving.spec.ts`: an edit saved to the draft, reopened, previewed and published; undoing one change from the list and Discard all; the footer edited on one page and shown on every page, then Reset to theme.
 
 ## Not yet
 
 - Editing the page title, featured image and template in Studio (page details stay in Pages for now; #29).
-- Saving header, footer and template edits (#30, #31).
-- Resuming an open changeset when Studio opens (#31).
+- Editing the template itself (the page title, layout groups) and choosing a page's template.
+- Undo and redo of edits made outside the block tree (site title, tagline, logo, menu items): core-data keeps their own history. Undo one from the Publish list instead.
+- *Create new menu* in the Navigation block saves that menu straight away, as in WordPress; only pointing the header at it waits for Publish.
+- Telling apart "someone else published" from "you saved it in another screen": both show the note on reopening.

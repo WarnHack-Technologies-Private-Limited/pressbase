@@ -109,10 +109,69 @@ export function pageBlocks(blocks: CanvasBlock[]): CanvasBlock[] | null {
   return null;
 }
 
+/**
+ * Each region's blocks, by what they save to: `content` (the page) and each
+ * template part's slug. A part shown more than once (or inside another part)
+ * is the first one, which is the one the canvas edits.
+ */
+export function regionBlocks(blocks: CanvasBlock[]): {
+  content: CanvasBlock[] | null;
+  parts: Map<string, { clientId: string; blocks: CanvasBlock[] }>;
+} {
+  const parts = new Map<string, { clientId: string; blocks: CanvasBlock[] }>();
+  const walk = (list: CanvasBlock[]) => {
+    for (const block of list) {
+      if (block.name === TEMPLATE_PART) {
+        const slug = String(block.attributes.slug ?? '');
+        if (slug && !parts.has(slug)) {
+          parts.set(slug, { clientId: block.clientId, blocks: block.innerBlocks });
+        }
+      }
+      if (block.name !== POST_CONTENT) walk(block.innerBlocks);
+    }
+  };
+  walk(blocks);
+  return { content: pageBlocks(blocks), parts };
+}
+
+/** The template part holding a block (the innermost one), from its chain of parents. */
+export function partOf(chain: Pick<CanvasBlock, 'name' | 'clientId' | 'attributes'>[]): {
+  clientId: string;
+  slug: string;
+} | null {
+  for (let i = chain.length - 1; i >= 0; i--) {
+    const block = chain[i];
+    if (!block) continue;
+    if (block.name === POST_CONTENT) return null;
+    if (block.name === TEMPLATE_PART) {
+      return { clientId: block.clientId, slug: String(block.attributes.slug ?? '') };
+    }
+  }
+  return null;
+}
+
+/**
+ * The blocks without a Navigation block's `ref` to `menuId`. The Navigation
+ * block fills in its fallback menu's ID when it opens without one; that's
+ * the menu it shows anyway, so on its own it isn't an edit.
+ */
+export function withoutNavigationRef(blocks: CanvasBlock[], menuId: number): CanvasBlock[] {
+  return blocks.map((block) => {
+    const inner = block.innerBlocks.length
+      ? withoutNavigationRef(block.innerBlocks, menuId)
+      : block.innerBlocks;
+    if (block.name === 'core/navigation' && block.attributes.ref === menuId) {
+      const { ref: _ref, ...attributes } = block.attributes;
+      return { ...block, attributes, innerBlocks: inner };
+    }
+    return inner === block.innerBlocks ? block : { ...block, innerBlocks: inner };
+  });
+}
+
 export type EditingMode = 'default' | 'contentOnly' | 'disabled';
 
 export interface EditingRules {
-  /** Header, footer and other parts can be edited (#30); until then they're shown locked. */
+  /** Header, footer and other parts can be edited (#30); people who can't change the design see them locked. */
   partsEditable: boolean;
 }
 
@@ -126,7 +185,7 @@ export interface EditingRules {
  */
 export function editingModes(
   blocks: CanvasBlock[],
-  rules: EditingRules = { partsEditable: false },
+  rules: EditingRules = { partsEditable: true },
 ): [clientId: string, mode: EditingMode][] {
   const modes: [string, EditingMode][] = [['', 'disabled']];
   const walk = (list: CanvasBlock[]) => {

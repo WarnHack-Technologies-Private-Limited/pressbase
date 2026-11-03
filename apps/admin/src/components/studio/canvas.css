@@ -2,8 +2,8 @@
  * Inside Studio's canvas iframe (served as /editor-assets/studio-canvas.css),
  * after the theme's global styles. The theme does the typography and layout;
  * this file only adds what an editor needs on top: the admin's focus colour
- * for WordPress's UI, and a quiet outline and label for template parts
- * ("Header · every page"), which are shown locked until #30.
+ * for WordPress's UI, and an outline and label for template parts
+ * ("Header · all pages"), so it's clear an edit there shows on every page.
  */
 
 :root {
@@ -25,8 +25,6 @@ body.editor-styles-wrapper {
 
 .pressbase-studio-part {
   position: relative;
-  /* Locked: the theme's own links and buttons don't navigate inside the editor. */
-  cursor: default;
 }
 
 .pressbase-studio-part::after {
@@ -38,12 +36,12 @@ body.editor-styles-wrapper {
   transition: border-color 120ms ease-out;
 }
 
-.pressbase-studio-part::before {
-  content: attr(data-studio-label);
+.pressbase-studio-part > .pressbase-studio-part__label {
   position: absolute;
   z-index: 2;
   top: 0;
   left: 0;
+  margin: 0;
   padding: 2px 8px;
   border-radius: 0 0 6px 0;
   background: #3b4cca;
@@ -57,23 +55,33 @@ body.editor-styles-wrapper {
     sans-serif;
   letter-spacing: 0;
   text-transform: none;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
   opacity: 0;
   pointer-events: none;
   transition: opacity 120ms ease-out;
 }
 
-.pressbase-studio-part:hover::after,
-.pressbase-studio-part.is-selected::after {
+.pressbase-studio-part:hover::after {
   border-color: rgb(59 76 202 / 0.6);
 }
 
-.pressbase-studio-part:hover::before,
-.pressbase-studio-part.is-selected::before {
+/* Selected, or something in it is: a solid outline for as long as you edit it. */
+.pressbase-studio-part.is-selected::after,
+.pressbase-studio-part.has-child-selected::after {
+  border: 2px solid #3b4cca;
+}
+
+.pressbase-studio-part:hover > .pressbase-studio-part__label,
+.pressbase-studio-part.is-selected > .pressbase-studio-part__label,
+.pressbase-studio-part.has-child-selected > .pressbase-studio-part__label {
   opacity: 1;
+  pointer-events: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pressbase-studio-part::before,
+  .pressbase-studio-part > .pressbase-studio-part__label,
   .pressbase-studio-part::after {
     transition: none;
   }
