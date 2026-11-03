@@ -10,6 +10,9 @@ import { eq } from 'drizzle-orm';
  * the roadmap, so run a single core process per site for now.
  *
  * Hooks:
+ * - filter `pre_option_{name}` (false, name, fallback) — before a read; any
+ *   value but `false` is returned instead of the stored one (get_option()).
+ *   Changeset previews use it (changesets/preview.ts).
  * - filter `option_{name}` (value, name) — runs on every read.
  * - action `updated_option` (name, oldValue, newValue) — after a write.
  * - action `deleted_option` (name) — after a delete.
@@ -18,10 +21,19 @@ export class Options {
   #cache = new Map<string, unknown>();
   #loaded = false;
 
+  readonly #db: () => Database;
+
   constructor(
-    private readonly db: Database,
+    /** The database, or a function giving it (the kernel's, which follows transactions). */
+    db: Database | (() => Database),
     private readonly hooks: HookBus,
-  ) {}
+  ) {
+    this.#db = typeof db === 'function' ? db : () => db;
+  }
+
+  private get db(): Database {
+    return this.#db();
+  }
 
   async load(): Promise<void> {
     const rows = await this.db
@@ -33,6 +45,11 @@ export class Options {
   }
 
   async get<T = unknown>(name: string, fallback?: T): Promise<T> {
+    const preName = `pre_option_${name}`;
+    if (this.hooks.hasFilter(preName)) {
+      const pre = await this.hooks.applyFilters(preName, false, name, fallback);
+      if (pre !== false) return pre as T;
+    }
     if (!this.#loaded) await this.load();
     let value: unknown;
     if (this.#cache.has(name)) {

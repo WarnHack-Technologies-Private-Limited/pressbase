@@ -15,6 +15,7 @@ import {
   sql,
 } from 'drizzle-orm';
 import { addCacheTags, CacheTag } from '../cache/tags';
+import { previewQueryRows } from '../changesets/preview';
 import type { Kernel } from '../kernel';
 import type { Post } from './posts';
 
@@ -303,9 +304,11 @@ export async function queryPosts(kernel: Kernel, input: QueryArgs): Promise<Quer
     .from(posts)
     .where(condition)
     .orderBy(...orderBy);
-  const rows = await (unlimited
+  const fetched = await (unlimited
     ? rowsQuery.offset(offset)
     : rowsQuery.limit(perPage).offset(offset));
+  // A changeset preview swaps in its posts (v0.8, ADR 0022).
+  const { rows, delta } = previewQueryRows(args, fetched, unlimited ? -1 : perPage);
 
   // A page that runs this query lists posts of these types (see cache/tags.ts).
   addCacheTags(
@@ -316,7 +319,7 @@ export async function queryPosts(kernel: Kernel, input: QueryArgs): Promise<Quer
   let found = rows.length;
   if (!args.no_found_rows && !unlimited) {
     const [total] = await kernel.db.select({ n: count() }).from(posts).where(condition);
-    found = total?.n ?? 0;
+    found = (total?.n ?? 0) + delta;
   }
   return {
     posts: rows,

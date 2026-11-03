@@ -1,6 +1,7 @@
 import { schema } from '@pressbase/db';
 import { and, eq, inArray } from 'drizzle-orm';
 import { userCan } from '../auth/users';
+import { currentChangesetPreview } from '../changesets/preview';
 import { type Post, PostError } from '../content/posts';
 import { type QueryArgs, queryPosts } from '../content/query';
 import type { Kernel } from '../kernel';
@@ -508,7 +509,19 @@ async function postThemeTerms(
   postIds: number[],
 ): Promise<Map<number, { theme?: string; area?: string }>> {
   const out = new Map<number, { theme?: string; area?: string }>();
-  if (!postIds.length) return out;
+  // A copy a changeset preview shows before it exists (negative ID, ADR 0022).
+  const preview = currentChangesetPreview();
+  for (const id of postIds) {
+    const created = id < 0 ? preview?.created.get(id) : undefined;
+    if (created) {
+      out.set(id, {
+        theme: created.terms[THEME_TAXONOMY]?.[0],
+        area: created.terms[TEMPLATE_PART_AREA_TAXONOMY]?.[0],
+      });
+    }
+  }
+  const stored = postIds.filter((id) => id > 0);
+  if (!stored.length) return out;
   const { terms, termTaxonomy, termRelationships } = schema;
   const rows = await kernel.db
     .select({
@@ -521,7 +534,7 @@ async function postThemeTerms(
     .innerJoin(terms, eq(terms.id, termTaxonomy.termId))
     .where(
       and(
-        inArray(termRelationships.objectId, postIds),
+        inArray(termRelationships.objectId, stored),
         inArray(termTaxonomy.taxonomy, [THEME_TAXONOMY, TEMPLATE_PART_AREA_TAXONOMY]),
       ),
     )

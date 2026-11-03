@@ -1,6 +1,7 @@
 import { schema } from '@pressbase/db';
 import { and, eq, inArray, lte, type SQL, sql } from 'drizzle-orm';
 import { addCacheTags, CacheTag } from '../cache/tags';
+import { previewPost } from '../changesets/preview';
 import type { Kernel } from '../kernel';
 import { sanitizePostContent, sanitizePostTitle, sanitizeSlug } from './sanitize';
 
@@ -62,7 +63,8 @@ export class PostsService {
     const [post] = await this.#db.select().from(schema.posts).where(eq(schema.posts.id, id));
     // A page that shows this post depends on it (see cache/tags.ts).
     if (post) addCacheTags(CacheTag.post(post.id));
-    return post;
+    // A changeset preview shows its version of the post (v0.8, ADR 0022).
+    return previewPost(post, id);
   }
 
   /** wp_unique_post_slug(): unique per type, and per parent for hierarchical types. */

@@ -5,6 +5,7 @@ import { AbilitiesRegistry } from './abilities/registry';
 import { AiClient } from './ai/client';
 import { BlocksService } from './blocks/service';
 import { registerCacheInvalidation } from './cache/invalidation';
+import { ChangesetsService } from './changesets/service';
 import { registerCommentNotifications } from './comments/notify';
 import { CommentsService } from './comments/service';
 import type { Config } from './config';
@@ -33,6 +34,7 @@ import { ThemesService } from './themes/service';
 import { registerSiteIdentityHooks, registerSiteIdentitySettings } from './themes/site-identity';
 import { registerThemeSupports } from './themes/supports';
 import { registerTemplatePostTypes } from './themes/templates';
+import { activeTransaction, runInTransaction } from './transaction';
 import { DB_VERSION } from './version';
 
 /**
@@ -90,6 +92,8 @@ export class Kernel {
   readonly abilities = new AbilitiesRegistry(this);
   /** The AI client: wp_ai_client_prompt(), providers, caps and the usage log (v0.7, ADR 0019). */
   readonly ai = new AiClient(this);
+  /** Changesets: one draft across styles, templates, pages, menus and options (v0.8, ADR 0022). */
+  readonly changesets = new ChangesetsService(this);
   #connection: DatabaseConnection | undefined;
   #options: Options | undefined;
   #state: SiteState = 'needs-database';
@@ -121,6 +125,9 @@ export class Kernel {
     // AI usage log with the daily job cleanup. See docs/architecture/ai.md.
     registerCoreAbilities(this);
     this.hooks.addAction('pressbase_prune_jobs', () => this.ai.pruneLog());
+    // Changesets (v0.8): the customize_changeset post type, publishing and
+    // previews. See docs/architecture/changesets.md.
+    this.changesets.register();
   }
 
   get state(): SiteState {
@@ -132,8 +139,14 @@ export class Kernel {
     return this.#connection;
   }
 
+  /** The database; inside `transaction()`, the transaction (see transaction.ts). */
   get db() {
-    return this.connection.db;
+    return activeTransaction() ?? this.connection.db;
+  }
+
+  /** Runs `fn` in one database transaction that every service joins (v0.8, ADR 0022). */
+  transaction<T>(fn: () => Promise<T>): Promise<T> {
+    return runInTransaction(this.connection.db, fn);
   }
 
   get options(): Options {
@@ -157,7 +170,7 @@ export class Kernel {
     }
     await this.#connection?.close();
     this.#connection = connection;
-    this.#options = new Options(connection.db, this.hooks);
+    this.#options = new Options(() => this.db, this.hooks);
     return this.refreshState();
   }
 
