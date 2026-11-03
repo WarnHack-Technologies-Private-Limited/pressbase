@@ -176,6 +176,17 @@ function buildDoc(
   };
 }
 
+/** A page's address with the changeset's preview parameter, as its preview_link adds it to the home page. */
+function previewUrl(link: string, changeset: Pick<Changeset, 'uuid' | 'preview_link'>): string {
+  try {
+    const url = new URL(link, window.location.origin);
+    url.searchParams.set('changeset_uuid', changeset.uuid);
+    return url.toString();
+  } catch {
+    return changeset.preview_link;
+  }
+}
+
 const errorMessage = (error: unknown) =>
   error instanceof ApiError || error instanceof Error ? error.message : String(error);
 
@@ -314,7 +325,8 @@ export default function Studio(props: StudioProps) {
     setBusy('preview');
     try {
       const changeset = await saveDraft();
-      const url = changeset?.preview_link ?? link;
+      // The page itself, with the draft laid over it (changeset_uuid; see changesets.md#preview).
+      const url = changeset ? previewUrl(link, changeset) : link;
       if (win) win.location.href = url;
       else window.open(url, '_blank', 'noopener');
     } catch (error) {
