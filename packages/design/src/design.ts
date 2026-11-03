@@ -96,12 +96,18 @@ export function createDesign(choice: DesignChoice): Design {
   };
 }
 
+type JsonValue = string | number | boolean | null | JsonValue[] | JsonObject;
+/** A JSON object, as theme.json data is typed in @pressbase/theme-json. */
+export interface JsonObject {
+  [key: string]: JsonValue | undefined;
+}
+
 /** A user global styles document (the `wp_global_styles` post's content). */
-export interface DesignGlobalStyles {
+export interface DesignGlobalStyles extends JsonObject {
   version: 3;
   isGlobalStylesUserThemeJSON: true;
-  settings: Record<string, unknown>;
-  styles: Record<string, unknown>;
+  settings: JsonObject;
+  styles: JsonObject;
 }
 
 const fontVar = (slug: string) => `var:preset|font-family|${slug}`;
@@ -127,8 +133,8 @@ export function toGlobalStyles(design: Design): DesignGlobalStyles {
     isGlobalStylesUserThemeJSON: true,
     settings: {
       color: { palette: { theme: design.palette.map((entry) => ({ ...entry })) } },
-      border: { radiusSizes: { theme: radiusPresets(design.radius) } },
-      spacing: { spacingSizes: { theme: spacingPresets(design.density) } },
+      border: { radiusSizes: { theme: radiusPresets(design.radius).map((p) => ({ ...p })) } },
+      spacing: { spacingSizes: { theme: spacingPresets(design.density).map((p) => ({ ...p })) } },
       ...(systemFonts.length ? { typography: { fontFamilies: { custom: systemFonts } } } : {}),
     },
     styles: {

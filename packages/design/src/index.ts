@@ -30,6 +30,7 @@ export {
   type Design,
   type DesignChoice,
   type DesignGlobalStyles,
+  type JsonObject,
   toGlobalStyles,
 } from './design';
 export {

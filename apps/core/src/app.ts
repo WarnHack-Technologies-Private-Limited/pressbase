@@ -32,6 +32,7 @@ import { permalinksRoutes } from './routes/permalinks';
 import { pluginAdminRoutes, pluginModuleRoutes } from './routes/plugin-admin';
 import { pluginsRoutes } from './routes/plugins';
 import { postsRoutes } from './routes/posts';
+import { qualityRoutes } from './routes/quality';
 import { searchRoutes } from './routes/search';
 import { settingsRoutes } from './routes/settings';
 import { siteHealthRoutes, wpSiteHealthRoutes } from './routes/site-health';
@@ -190,6 +191,8 @@ export function createApp(kernel: Kernel) {
   // /pressbase/v1/ai. See docs/architecture/ai.md.
   installed.route('/wp-abilities/v1', abilitiesRoutes());
   installed.route('/pressbase/v1/ai', aiRoutes());
+  // Quality checks (v0.8): core/check-page over POST. See docs/architecture/quality-checks.md.
+  installed.route('/pressbase/v1/check-page', qualityRoutes());
 
   // Plugins (v0.5): /wp/v2/plugins, then — last, as a catch-all — the post
   // types, taxonomies and REST namespaces of active plugins, looked up per
