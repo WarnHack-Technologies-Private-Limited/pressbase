@@ -119,7 +119,7 @@ Every other WordPress core block (Group, Columns, Buttons, Image…) is register
 
 ## Patterns
 
-- **Registered patterns**: `kernel.blocks.registerBlockPattern(name, { title, content, categories, … })` and `registerBlockPatternCategory(name, { label, description })`. Core registers WordPress's pattern categories and six built-in patterns (hero, two columns of text, call to action, quote, about me, image and text) made of core blocks in exactly the markup the editor saves. Served by `/wp/v2/block-patterns/patterns` and `/categories`; `core/pattern` references inside are resolved before they're sent.
+- **Registered patterns**: `kernel.blocks.registerBlockPattern(name, { title, content, categories, … })` and `registerBlockPatternCategory(name, { label, description })`. Core registers WordPress's pattern categories and six built-in patterns (hero, two columns of text, call to action, quote, about me, image and text) made of core blocks in exactly the markup the editor saves. The Pressbase pattern library (`@pressbase/patterns`) adds its section patterns as `pressbase/<name>`. Served by `/wp/v2/block-patterns/patterns` and `/categories`; `core/pattern` references inside are resolved before they're sent, and declared slots are served as `slots`. See [Patterns and slots](patterns.md).
 - **Synced patterns** are `wp_block` posts at `/wp/v2/blocks`. A post shows one with `<!-- wp:block {"ref":12} /-->`. Responses carry `title.raw` and `content.raw` in every context and no rendered fields, and `wp_pattern_sync_status` (`''` synced, `unsynced`, `partial`) as a top-level field; it is written through `meta.wp_pattern_sync_status`. Reading needs `edit_posts`, creating `publish_posts`.
 
 ## How it maps to WordPress

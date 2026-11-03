@@ -222,7 +222,7 @@ For Pressbase:
 
 ### Patterns in PHP files
 
-Theme patterns are `patterns/*.php`: a header comment and block markup with small PHP snippets. `themes/php-patterns.ts` reads the headers WordPress reads (`Title`, `Slug`, `Description`, `Categories`, `Keywords`, `Block Types`, `Post Types`, `Template Types`, `Viewport Width`, `Inserter`) and **interprets** a tiny, safe subset of PHP instead of running it:
+Theme patterns are `patterns/*.php`: a header comment and block markup with small PHP snippets. `themes/php-patterns.ts` reads the headers WordPress reads (`Title`, `Slug`, `Description`, `Categories`, `Keywords`, `Block Types`, `Post Types`, `Template Types`, `Viewport Width`, `Inserter`), plus Pressbase's `Slots` (declared [slots](patterns.md#ids-roles-and-limits), one line of JSON), and **interprets** a tiny, safe subset of PHP instead of running it:
 
 - statements: `echo expr[, expr];` and calls to `_e()`, `esc_html_e()`, `esc_attr_e()`, `printf()`;
 - expressions: quoted strings (no variable interpolation), `.` concatenation, and calls to `__()`, `_x()`, `esc_html__()`, `esc_attr__()`, `esc_html_x()`, `esc_attr_x()`, `esc_html()`, `esc_attr()`, `esc_url()`, `wp_kses_post()`, `sprintf()`, `get_template_directory_uri()`, `get_stylesheet_directory_uri()`, `get_theme_file_uri()`, `get_parent_theme_file_uri()`;
