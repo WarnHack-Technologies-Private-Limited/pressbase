@@ -31,6 +31,7 @@ New here? The [README](../README.md#see-it-in-action) shows Pressbase in action:
 - [Comments](architecture/comments.md): the comment pipeline, moderation, blocks and the comment form.
 - [Themes and the public site](architecture/themes.md): theme.json, block themes, routing, the template hierarchy and page rendering.
 - [The public site: caching, feeds, sitemaps](architecture/public-site.md): the page cache and its invalidation, RSS and Atom feeds, XML sitemaps, robots.txt, permalink settings.
+- [Changesets](architecture/changesets.md): one draft across styles, templates, pages, menus and options; publishing in one transaction; previews with `?changeset_uuid=`.
 - [Public page hooks, scripts and styles](architecture/scripts-and-styles.md): `wp_head`, `wp_body_open`, `wp_footer`, `kernel.scripts` and `kernel.styles`.
 - [Plugins](architecture/plugins.md): writing a plugin, plugin.json, the lifecycle, installing, the security model and its limits.
 - [REST API](architecture/rest-api.md): endpoints, errors, authentication.
