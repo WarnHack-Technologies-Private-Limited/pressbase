@@ -611,12 +611,14 @@ export class ChangesetsService {
     for (const name of PREVIEW_QUERY_VARS) exit.searchParams.delete(name);
     const studio = `${siteUrl}/admin/studio?changeset_uuid=${encodeURIComponent(preview.uuid)}`;
     const count = Object.keys(this.data(preview.changeset)).length;
-    const summary =
-      count === 1
-        ? i18n.__('You’re seeing 1 unpublished change. Visitors don’t see it yet.', 'pressbase')
-        : i18n
-            .__('You’re seeing %d unpublished changes. Visitors don’t see them yet.', 'pressbase')
-            .replace('%d', String(count));
+    const summary = i18n
+      ._n(
+        'You’re seeing %d unpublished change. Visitors don’t see it yet.',
+        'You’re seeing %d unpublished changes. Visitors don’t see them yet.',
+        count,
+        'pressbase',
+      )
+      .replace('%d', String(count));
     return `<div id="pressbase-preview-banner" role="region" aria-label="${escAttr(i18n.__('Preview', 'pressbase'))}">
 <style>#pressbase-preview-banner{position:sticky;top:0;z-index:100000;display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:10px 16px;background:#1e1e1e;color:#fff;font:14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}#pressbase-preview-banner p{margin:0;flex:1 1 16rem}#pressbase-preview-banner a{color:#fff;text-decoration:underline;text-underline-offset:2px}#pressbase-preview-banner a:focus-visible{outline:2px solid #fff;outline-offset:2px}#pressbase-preview-banner strong{margin-inline-end:6px}</style>
 <p><strong>${escHtml(i18n.__('Preview', 'pressbase'))}</strong>${escHtml(summary)}</p>

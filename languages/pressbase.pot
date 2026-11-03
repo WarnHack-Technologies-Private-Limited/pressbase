@@ -12,6 +12,25 @@ msgstr ""
 "X-Generator: pressbase i18n:extract\n"
 "X-Domain: pressbase\n"
 
+#: apps/core/src/changesets/service.ts:614
+#, js-format
+msgid "You’re seeing %d unpublished change. Visitors don’t see it yet."
+msgid_plural "You’re seeing %d unpublished changes. Visitors don’t see them yet."
+msgstr[0] ""
+msgstr[1] ""
+
+#: apps/core/src/changesets/service.ts:622 apps/core/src/changesets/service.ts:624
+msgid "Preview"
+msgstr ""
+
+#: apps/core/src/changesets/service.ts:625
+msgid "Back to Studio"
+msgstr ""
+
+#: apps/core/src/changesets/service.ts:626
+msgid "Exit preview"
+msgstr ""
+
 #: apps/core/src/http.ts:111
 msgid "Sorry, you are not allowed to do that."
 msgstr ""
@@ -70,7 +89,7 @@ msgstr ""
 msgid "WordPress.org has no translation for that language."
 msgstr ""
 
-#: apps/core/src/i18n/language-packs.ts:322
+#: apps/core/src/i18n/language-packs.ts:323
 msgid "No translation for this language."
 msgstr ""
 
