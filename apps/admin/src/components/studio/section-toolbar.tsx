@@ -14,6 +14,7 @@ import {
 } from 'react';
 import { useI18n } from '@/lib/i18n/context';
 import { ActionMenu } from '../ui/menu';
+import { addButtonPlace } from './sections-model';
 import { contentRootId, sectionOf } from './sections-panel';
 import styles from './studio.module.css';
 import { SwapArrows, useSwapLayout } from './swap-layout';
@@ -42,15 +43,35 @@ interface Box {
   height: number;
   /** The visible part of the canvas (the iframe), relative to the frame. */
   view: { top: number; left: number; width: number; height: number };
+  /** Free space above and below the section, before the next thing on the page. */
+  spaceAbove: number;
+  spaceBelow: number;
 }
 
 const HIDE_DELAY = 400;
+/** The nearest element before (or after) this one in the page, at any level. */
+function neighbour(element: Element, side: 'previous' | 'next'): Element | null {
+  let current: Element | null = element;
+  while (current && current.tagName !== 'BODY') {
+    let sibling =
+      side === 'previous' ? current.previousElementSibling : current.nextElementSibling;
+    // Skip what takes no room (hidden blocks, the block editor's own markers).
+    while (sibling && sibling.getBoundingClientRect().height === 0) {
+      sibling = side === 'previous' ? sibling.previousElementSibling : sibling.nextElementSibling;
+    }
+    if (sibling) return sibling;
+    current = current.parentElement;
+  }
+  return null;
+}
+
 
 /**
  * Over the canvas (#44): the outline of the section under the pointer (or
  * holding the selection) and its floating toolbar: move up and down,
- * duplicate, Ask AI (coming with #63), and more. "＋ Add section" on its top
- * and bottom edges opens the Sections panel at that place. Swap layout
+ * duplicate, Ask AI (coming with #63), and more. "＋ Add section" above and
+ * below it (in the gap, never over the page: addButtonPlace()) opens the
+ * Sections panel at that place. Swap layout
  * (#45): ‹ 2/5 › changes the section to the previous or next layout of its
  * kind, keeping its content.
  *
@@ -185,6 +206,9 @@ export function SectionToolbar({
       const frameRect = frame.getBoundingClientRect();
       const iframeRect = iframe.getBoundingClientRect();
       const rect = element.getBoundingClientRect();
+      const win = doc.defaultView;
+      const before = neighbour(element, 'previous')?.getBoundingClientRect();
+      const after = neighbour(element, 'next')?.getBoundingClientRect();
       const offsetTop = iframeRect.top - frameRect.top;
       const offsetLeft = iframeRect.left - frameRect.left;
       setBox({
@@ -198,6 +222,10 @@ export function SectionToolbar({
           width: iframeRect.width,
           height: iframeRect.height,
         },
+        spaceAbove: before ? Math.max(0, rect.top - before.bottom) : rect.top,
+        spaceBelow: after
+          ? Math.max(0, after.top - rect.bottom)
+          : Math.max(0, doc.documentElement.scrollHeight - (win?.scrollY ?? 0) - rect.bottom),
       });
     };
     const schedule = () => {
@@ -228,10 +256,11 @@ export function SectionToolbar({
   const toolbarTop = Math.min(Math.max(box.top + 8, view.top + 8), box.top + box.height - 40);
   const toolbarRight = Math.min(box.left + box.width, view.left + view.width) - 8;
   const showToolbar = box.top + box.height > view.top + 40 && box.top < viewBottom - 40;
-  const middle = box.left + box.width / 2;
-  const showBefore = box.top >= view.top + 12 && box.top <= viewBottom - 12;
   const bottom = box.top + box.height;
-  const showAfter = bottom >= view.top + 12 && bottom <= viewBottom - 12;
+  const abovePlace = addButtonPlace(box.top, box.spaceAbove, 'above', box);
+  const belowPlace = addButtonPlace(bottom, box.spaceBelow, 'below', box);
+  const showBefore = abovePlace.top >= view.top + 12 && abovePlace.top <= viewBottom - 12;
+  const showAfter = belowPlace.top >= view.top + 12 && belowPlace.top <= viewBottom - 12;
 
   const onToolbarKey = (event: ReactKeyboardEvent<HTMLDivElement>) => {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
@@ -359,24 +388,28 @@ export function SectionToolbar({
         <button
           type="button"
           className={styles.addSection}
-          style={{ top: box.top, left: middle }}
+          data-round={abovePlace.round || undefined}
+          style={{ top: abovePlace.top, left: abovePlace.left }}
           aria-label={sprintf(__('Add a section above %s', 'pressbase-admin'), label)}
+          title={abovePlace.round ? __('Add section', 'pressbase-admin') : undefined}
           onClick={() => onAddSection(index)}
         >
           <Plus size={14} aria-hidden="true" />
-          {__('Add section', 'pressbase-admin')}
+          {!abovePlace.round && __('Add section', 'pressbase-admin')}
         </button>
       )}
       {showAfter && (
         <button
           type="button"
           className={styles.addSection}
-          style={{ top: bottom, left: middle }}
+          data-round={belowPlace.round || undefined}
+          style={{ top: belowPlace.top, left: belowPlace.left }}
           aria-label={sprintf(__('Add a section below %s', 'pressbase-admin'), label)}
+          title={belowPlace.round ? __('Add section', 'pressbase-admin') : undefined}
           onClick={() => onAddSection(index + 1)}
         >
           <Plus size={14} aria-hidden="true" />
-          {__('Add section', 'pressbase-admin')}
+          {!belowPlace.round && __('Add section', 'pressbase-admin')}
         </button>
       )}
     </div>

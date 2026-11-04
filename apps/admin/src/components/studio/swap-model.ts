@@ -128,10 +128,24 @@ export function sectionSlots(markup: string, pattern: Pick<LayoutPattern, 'slots
   return extractSlots(withoutRootName(rootsOf(markup)), { declarations: pattern.slots });
 }
 
+const rootName = (blocks: ParsedBlock[]): string => {
+  const name = (blocks[0]?.attrs.metadata as { name?: unknown } | undefined)?.name;
+  return typeof name === 'string' ? name : '';
+};
+
 /** The section's name in Layers (`metadata.name`), if it has one. */
 export function sectionName(markup: string): string {
-  const name = (rootsOf(markup)[0]?.attrs.metadata as { name?: unknown } | undefined)?.name;
-  return typeof name === 'string' ? name : '';
+  return rootName(rootsOf(markup));
+}
+
+/**
+ * The name the person gave the section, to keep through a swap: not one
+ * that came with its pattern (its title, as WordPress's inserter names a
+ * section, or the pattern's own block name).
+ */
+export function personalName(markup: string, pattern: Pick<LayoutPattern, 'title' | 'content'>): string {
+  const name = sectionName(markup);
+  return name && name !== pattern.title && name !== rootName(patternBlocks(pattern)) ? name : '';
 }
 
 export interface SwappedLayout {

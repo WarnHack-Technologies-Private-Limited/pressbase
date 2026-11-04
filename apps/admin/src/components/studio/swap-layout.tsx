@@ -22,6 +22,7 @@ import {
   type SectionLayouts,
   type SwapMemory,
   sectionLayouts,
+  personalName,
   sectionName,
   swapLayout,
   swapSource,
@@ -130,7 +131,7 @@ export function useSwapLayout(clientId: string | null): SwapState {
   const memory = clientId ? memories.get(clientId) : undefined;
   const nameInLayers = markup ? sectionName(markup) : '';
   const label =
-    (nameInLayers && nameInLayers !== layouts?.current.title ? nameInLayers : '') ||
+    (layouts ? personalName(markup, layouts.current) : nameInLayers) ||
     layouts?.current.title ||
     (clientId
       ? sectionLabel(registry.select(blockEditorStore) as unknown as Selectors, clientId)
@@ -149,9 +150,7 @@ export function useSwapLayout(clientId: string | null): SwapState {
     if (!target || target === current) return;
     const { from, carried } = swapSource(memories.get(clientId), markup, current);
     // A name the person gave the section stays; one that was only the old pattern's title goes.
-    const swapped = swapLayout(from, target, {
-      name: nameInLayers === current.title ? '' : nameInLayers,
-    });
+    const swapped = swapLayout(from, target, { name: personalName(markup, current) });
     const blocks = parse(swapped.markup);
     const next = blocks[0];
     if (!next) return;

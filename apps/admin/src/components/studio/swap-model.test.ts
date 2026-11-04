@@ -2,6 +2,7 @@ import { type ParsedBlock, parseBlocks } from '@pressbase/blocks';
 import { describe, expect, it } from 'vitest';
 import {
   type LayoutPattern,
+  personalName,
   sectionLayouts,
   sectionName,
   sectionSlots,
@@ -180,6 +181,14 @@ describe('swapLayout', () => {
     expect(slots.map((s) => s.id)).toContain('title');
     const { markup } = swapLayout(slots, CENTRED, { name: 'Welcome' });
     expect(markup).toContain('"name":"Welcome"');
+  });
+
+  it('tells a name the person gave from one that came with the pattern', () => {
+    const named = (name: string) => group([heading('Fresh bread')], `{"metadata":{"name":"${name}"}}`);
+    const withOwnName = pattern('own', group([heading('Hi')], '{"metadata":{"name":"Hero"}}'));
+    expect(personalName(named('Welcome'), withOwnName)).toBe('Welcome');
+    expect(personalName(named('Hero'), withOwnName)).toBe('');
+    expect(personalName(named('own'), withOwnName)).toBe('');
   });
 });
 

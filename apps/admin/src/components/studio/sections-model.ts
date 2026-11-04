@@ -190,3 +190,31 @@ export function sectionCategories(
     count: sections.filter((s) => s.categories.includes(group.category)).length,
   }));
 }
+
+/* ------------------------------------------------------- ＋ Add section */
+
+/** The ＋ Add section pill's height, and the round ＋ used where there's less room. */
+const PILL = 28;
+const ROUND = 24;
+
+/**
+ * Where ＋ Add section goes on one side of a section, so it never covers
+ * the page: in the gap beside the section (at most 20px from its edge) when
+ * the pill fits there; a small round ＋ in a narrower gap; and where
+ * sections touch, a round ＋ at the left end of the edge, outside the
+ * section's outline (#44 put the pill across the edge, over the text).
+ */
+export function addButtonPlace(
+  edge: number,
+  space: number,
+  side: 'above' | 'below',
+  box: { left: number; width: number },
+): { top: number; left: number; round: boolean } {
+  const direction = side === 'above' ? -1 : 1;
+  const middle = box.left + box.width / 2;
+  if (space >= PILL + 4) {
+    return { top: edge + direction * Math.min(space / 2, 20), left: middle, round: false };
+  }
+  if (space >= ROUND + 2) return { top: edge + (direction * space) / 2, left: middle, round: true };
+  return { top: edge, left: box.left - ROUND / 2 - 2, round: true };
+}
