@@ -1,0 +1,43 @@
+{
+  "title": "Services, cards with what’s included",
+  "description": "A centred heading on a soft background above cards, two to a row, each with a name, a description and a short list of what’s included.",
+  "categories": ["services"],
+  "keywords": ["services", "packages", "included", "cards", "grid", "offer"],
+  "viewportWidth": 1400,
+  "slots": {
+    "eyebrow": {
+      "label": "Label",
+      "description": "A few words above the heading: what the section is about.",
+      "maxLength": 40
+    },
+    "title": {
+      "label": "Heading",
+      "maxLength": 60
+    },
+    "body": {
+      "label": "Introduction"
+    },
+    "services": {
+      "label": "Services",
+      "description": "Two or four fill the rows.",
+      "minItems": 2,
+      "maxItems": 6
+    },
+    "services.title": {
+      "label": "Service",
+      "maxLength": 40
+    },
+    "services.body": {
+      "label": "Description",
+      "maxLength": 140
+    },
+    "services.list": {
+      "label": "What’s included",
+      "minItems": 1,
+      "maxItems": 5
+    },
+    "services.list.item": {
+      "maxLength": 50
+    }
+  }
+}

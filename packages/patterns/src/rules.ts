@@ -17,6 +17,29 @@ export const PORTABLE_PRESETS = {
   color: ['base', 'contrast'],
 } as const;
 
+/**
+ * The Pressbase theme's own presets (themes/pressbase/theme.json), which
+ * every site Pressbase builds has: generated designs (@pressbase/design's
+ * PALETTE_SLUGS) restyle these slugs. A theme without one of them ignores
+ * it (the class or variable matches nothing), so a section must still read
+ * without them: a card on `surface` is a card on the page colour, a
+ * `display` headline is the theme's h1.
+ */
+export const PRESSBASE_PRESETS = {
+  'font-size': ['xxx-large', 'display'],
+  color: [
+    'surface',
+    'muted',
+    'border',
+    'accent',
+    'accent-text',
+    'accent-soft',
+    'on-accent',
+    'violet',
+  ],
+  'border-radius': ['sm', 'md', 'lg', 'xl', 'full'],
+} as const;
+
 /** Block style variations WordPress registers for core blocks. */
 const CORE_BLOCK_STYLES = new Set([
   'is-style-default',
@@ -66,9 +89,11 @@ function* walk(blocks: ParsedBlock[]): Generator<ParsedBlock> {
 }
 
 function presetProblem(kind: string, slug: string): string | null {
-  const allowed = (PORTABLE_PRESETS as Record<string, readonly string[]>)[kind];
-  if (!allowed) return `the ${kind} preset "${slug}" isn't one every theme has`;
-  return allowed.includes(slug) ? null : `the ${kind} preset "${slug}" isn't one every theme has`;
+  const portable = (PORTABLE_PRESETS as Record<string, readonly string[]>)[kind] ?? [];
+  const pressbase = (PRESSBASE_PRESETS as Record<string, readonly string[]>)[kind] ?? [];
+  return portable.includes(slug) || pressbase.includes(slug)
+    ? null
+    : `the ${kind} preset "${slug}" isn't one every theme has`;
 }
 
 /** Every string in `style`: a preset, `0`, or a plain keyword or number, never a raw size or colour. */
@@ -99,7 +124,9 @@ function checkHtml(block: ParsedBlock, name: string, problems: string[]): void {
     problems.push(`${name}: event handler attributes aren't allowed`);
   if (/javascript:/i.test(html)) problems.push(`${name}: javascript: links aren't allowed`);
   for (const m of html.matchAll(/\sstyle="([^"]*)"/g)) {
-    const css = (m[1] as string).replace(CSS_PRESET, '');
+    let css = (m[1] as string).replace(CSS_PRESET, '');
+    // A column's width (saved as its flex-basis) is a share of the row, not a size.
+    if (name === 'core/column') css = css.replace(/flex-basis:\d+(?:\.\d+)?%/g, '');
     if (RAW_COLOUR.test(css) || RAW_LENGTH.test(css)) {
       problems.push(`${name}: inline style "${m[1]}" has a raw value`);
     }
@@ -139,6 +166,12 @@ function checkBlock(block: ParsedBlock, problems: string[]): void {
   const layout = attrs.layout as Record<string, unknown> | undefined;
   for (const key of ['contentSize', 'wideSize']) {
     if (layout?.[key] !== undefined) problems.push(`${name}: layout.${key} is a raw size`);
+  }
+  // A grid's minimum column width is what lets it wrap on small screens. In
+  // rem, it follows the text size rather than fixing a width.
+  const minimum = layout?.minimumColumnWidth;
+  if (minimum !== undefined && !(typeof minimum === 'string' && /^\d+(?:\.\d+)?rem$/.test(minimum))) {
+    problems.push(`${name}: layout.minimumColumnWidth must be in rem`);
   }
   for (const [key, value] of Object.entries(attrs)) {
     if (key === 'style' || key === 'metadata' || typeof value !== 'string') continue;

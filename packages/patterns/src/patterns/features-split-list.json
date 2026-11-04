@@ -1,0 +1,38 @@
+{
+  "title": "Features, heading beside a list",
+  "description": "A heading, an introduction and a button beside a list of features separated by lines.",
+  "categories": ["features"],
+  "keywords": ["features", "benefits", "list", "why us", "split"],
+  "viewportWidth": 1400,
+  "slots": {
+    "eyebrow": {
+      "label": "Label",
+      "description": "A few words above the heading: what the section is about.",
+      "maxLength": 40
+    },
+    "title": {
+      "label": "Heading",
+      "maxLength": 60
+    },
+    "body": {
+      "label": "Introduction"
+    },
+    "actions": {
+      "label": "Button",
+      "maxItems": 1
+    },
+    "features": {
+      "label": "Features",
+      "minItems": 2,
+      "maxItems": 6
+    },
+    "features.title": {
+      "label": "Feature",
+      "maxLength": 40
+    },
+    "features.body": {
+      "label": "Why it matters",
+      "maxLength": 130
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "title": "About, approach and values",
+  "description": "A heading, a short introduction and a button beside a column of cards, one per value or promise.",
+  "categories": ["about"],
+  "keywords": ["about", "values", "approach", "promises", "principles", "cards"],
+  "viewportWidth": 1400,
+  "slots": {
+    "eyebrow": {
+      "label": "Label",
+      "description": "A few words above the heading: what the section is about.",
+      "maxLength": 40
+    },
+    "title": {
+      "label": "Heading",
+      "maxLength": 70
+    },
+    "body": {
+      "label": "Introduction"
+    },
+    "actions": {
+      "label": "Button",
+      "maxItems": 1
+    },
+    "values": {
+      "label": "Values",
+      "description": "What customers can count on, one per card.",
+      "minItems": 2,
+      "maxItems": 5
+    },
+    "values.title": {
+      "label": "Value",
+      "maxLength": 40
+    },
+    "values.body": {
+      "label": "What it means",
+      "maxLength": 160
+    }
+  }
+}

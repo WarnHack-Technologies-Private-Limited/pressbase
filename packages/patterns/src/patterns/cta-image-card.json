@@ -1,0 +1,27 @@
+{
+  "title": "Call to action, card with an image",
+  "description": "A rounded card with an image beside a heading, a sentence and two buttons.",
+  "categories": ["call-to-action"],
+  "keywords": ["call to action", "cta", "visit", "image", "card", "contact"],
+  "viewportWidth": 1400,
+  "slots": {
+    "image": {
+      "label": "Image",
+      "subject": "the entrance, the place or a friendly welcome"
+    },
+    "title": {
+      "label": "Heading",
+      "description": "An invitation to act, in a few words.",
+      "maxLength": 50
+    },
+    "body": {
+      "label": "Text",
+      "description": "What happens when they do, in one sentence."
+    },
+    "actions": {
+      "label": "Buttons",
+      "description": "The main action first (call, book, order, ask for a quote), then a secondary one.",
+      "maxItems": 2
+    }
+  }
+}
