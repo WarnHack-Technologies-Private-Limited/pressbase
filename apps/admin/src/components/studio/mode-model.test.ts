@@ -56,7 +56,7 @@ describe('the mode map', () => {
   it('lists the controls each mode shows, Advanced a superset of Simple', () => {
     const simple = CONTROLS.filter((c) => showsControl('simple', c.id)).map((c) => c.id);
     const advanced = CONTROLS.filter((c) => showsControl('advanced', c.id)).map((c) => c.id);
-    expect(simple).toEqual(['presets', 'alignment', 'visibility']);
+    expect(simple).toEqual(['presets', 'alignment', 'visibility', 'swap-layout']);
     expect(advanced).toEqual(CONTROLS.map((c) => c.id));
     for (const id of [
       'custom-values',

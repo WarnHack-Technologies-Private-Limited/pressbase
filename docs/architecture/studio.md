@@ -2,7 +2,7 @@
 
 Studio is Pressbase's site editor: a full-screen screen at `/admin/studio` where a site owner edits their pages in the real theme, header and footer included. It does what WordPress's *Appearance → Editor* does, with the direct feel the [plan](../plans/visual-site-builder.md#the-screen) describes. The decision to build our own editor around `@wordpress/block-editor`, rather than use `@wordpress/edit-site`, is in [ADR 0021](../adr/0021-site-editor-and-templates-storage.md#studio-shell).
 
-This page covers the shell (#28), saving through the user's draft (#31), the header and footer in place (#30), the Pages panel (#29), the Sections panel and section toolbar (#44), Simple and Advanced modes (#32), the command palette (#33), the History panel (#34), and where the rest of v0.8 plugs in.
+This page covers the shell (#28), saving through the user's draft (#31), the header and footer in place (#30), the Pages panel (#29), the Elements panel (#35), the Sections panel and section toolbar (#44), Swap layout (#45), Simple and Advanced modes (#32), the command palette (#33), the History panel (#34), and where the rest of v0.8 plugs in.
 
 ![Studio, editing the home page](../assets/screenshots/studio-light.png)
 
@@ -39,7 +39,7 @@ This page covers the shell (#28), saving through the user's draft (#31), the hea
 | Left rail | `rail.tsx` | Eight panels; the open one sits beside the canvas (over it on narrow screens). Escape closes it and returns focus to its button | see below |
 | Canvas | `studio.tsx`, `regions.tsx` | The page in its template, in the active theme; the header and footer editable in place | #35–#37 |
 | Breadcrumb | `breadcrumb.tsx` | Site › Page › Section › Block for the selection; each step selects that level | — |
-| Inspector | `inspector.tsx` | Nothing selected: the page (status, its template to choose, how to edit). A template part: that it's on every page, and *Reset to theme* once it differs from the theme's. A block: its card and the Content / Style / Layout tabs, under a note when it sits in a part. At its foot, [Simple and Advanced](#simple-and-advanced) (#32) | #46, #49 (controls the mode map lists) |
+| Inspector | `inspector.tsx` | Nothing selected: the page (status, its template to choose, how to edit). A template part: that it's on every page, and *Reset to theme* once it differs from the theme's. A block: its card and the Content / Style / Layout tabs, under a note when it sits in a part; a section also gets [Swap layout](#swap-layout) (#45). At its foot, [Simple and Advanced](#simple-and-advanced) (#32) | #46, #49 (controls the mode map lists) |
 
 ### Left rail panels
 
@@ -48,8 +48,8 @@ Listed in `RAIL_PANELS` (`layout-model.ts`). A built panel (`interim: 'built'`) 
 | Panel | Today | Issue |
 | --- | --- | --- |
 | Pages | Built (#29): the page tree; add, rename, reorder and nest pages, choose the home page. See [The Pages panel](#the-pages-panel) | — |
-| Elements | WordPress's block library (blocks, patterns, media) | #35: large tiles, drag and drop |
-| Sections | Built (#44): the section library, searchable, click or drag to add. See [The Sections panel](#the-sections-panel) | #45 (Swap layout) |
+| Elements | Built (#35): blocks as large tiles, grouped, searchable, click or drag to add. See [The Elements panel](#the-elements-panel) | — |
+| Sections | Built (#44): the section library, searchable, click or drag to add. See [The Sections panel](#the-sections-panel) | — |
 | Layers | WordPress's list view | #50: rename, hide per device, drag to nest |
 | Styles | A note and a link to Appearance → Styles | #46, #47 |
 | Media | A note | #58 |
@@ -207,6 +207,7 @@ Someone who can edit pages but not the site's design (`edit_pages` without `edit
 - **Search:** every word must appear in the title, description, keywords or category names.
 - **Previews:** `BlockPreview` from `@wordpress/block-editor`, inside Studio's editor, so they're drawn in the site's own styles. Each is drawn only once it scrolls near view (`IntersectionObserver`), so the panel opens fast.
 - **Adding:** click a section (or Enter on it) to add it after the selected section, or at the end; or at the place ＋ *Add section* chose (*"Adding after “Breads”."*, with a button to clear it). Or drag it onto the page: the tile hands the canvas's drop zones the same `wp-blocks` data WordPress's inserter does. Each add is one undo step, saved to the draft like any edit.
+- **Its pattern:** a section of one block is added with `metadata.patternName` (`sectionBlocks()`), as WordPress's inserter does, so [Swap layout](#swap-layout) knows where it came from. The name is saved with the page, as WordPress saves it.
 
 ### The section toolbar
 
@@ -216,10 +217,37 @@ Someone who can edit pages but not the site's design (`edit_pages` without `edit
 | --- | --- |
 | ↑ / ↓ | Move the section up or down (`moveBlocksUp/Down`); disabled at the top or bottom |
 | ⧉ | Duplicate it |
+| ‹ 2/5 › | [Swap layout](#swap-layout): the previous or next layout of its kind (shown when it has others) |
 | ✦ | Ask AI: disabled until #63, and says so |
 | ⋯ | Select section, Add a section above / below, Remove section |
 
-*＋ Add section* buttons sit on the section's top and bottom edges and open the Sections panel at that place. Everything here is also in WordPress's block toolbar and Layers.
+*＋ Add section* buttons sit above and below the section and open the Sections panel at that place. They never cover the page (`addButtonPlace()` in `sections-model.ts`): the pill sits in the gap beside the section (at most 20px from its edge) when it fits there; a narrower gap gets a round ＋; where sections touch, the round ＋ sits at the left end of the edge, outside the outline. Both are in the tab order, after the toolbar, with the full name (*Add a section below Breads*). Everything here is also in WordPress's block toolbar and Layers.
+
+## Swap layout
+
+![Swap layout: the hero in its second layout, ‹ 2/4 › in the toolbar and the inspector, and the button that didn't fit listed as kept](../assets/screenshots/studio-swap.png)
+
+Swap layout (#45) changes a section to another pattern of its kind, keeping its text, links and images: ‹ 2/5 › in the [section toolbar](#the-section-toolbar), the same arrows at the top of the inspector when a section is selected, and *Swap layout: next* / *previous* / *to: {layout}* in the [command palette](#command-palette). The arrows wrap around. `swap-model.ts` does the work (pure, tested); `swap-layout.tsx` has the hook and the controls.
+
+- **Where the section came from** (`sectionLayouts()`): its `metadata.patternName` (sections added from Studio and WordPress's inserter name it); otherwise the single-block pattern with the same *shape* (`shapeOf()`: block names, heading levels and nesting, with runs of alike blocks counted once, so a hero with three buttons matches one with two). A section that matches nothing has no arrows.
+- **Its layouts:** the single-block patterns whose categories include the section's own category (`banner` for heroes), in the Sections panel's order: the Pressbase library, then the theme's, then plugins'. ‹ 2/5 › is where the current one sits among them.
+- **Moving the content:** `extractSlots()` on the section (with its pattern's declared slots), `transferSlots()` into the next pattern's slots, `fillSlots()`, then `serializeBlocks()` (see [patterns.md](patterns.md#swap-layout)). The new section names its pattern; a name the person gave the section in Layers stays (`personalName()`), one that came with the pattern doesn't. A slot the section had nothing for keeps the pattern's own text.
+- **One undo step:** `replaceBlocks()` on the section, named in History (*Swapped layout of “Hero”*). The new section is selected without moving focus, so the arrows can be pressed again.
+- **Nothing is lost:** content the next layout has no room for (a fourth card in three columns, a third button where two fit) comes back from `transferSlots()` as `unused`. The toast says how much (*1 piece of content doesn’t fit this layout. It’s kept: swap back to see it again.*, with *Undo*), and the inspector lists it under *Not shown in this layout, but kept*. Studio remembers each swapped section's content from before its first swap (`SwapMemory`, by client ID): while the section is as the last swap left it, the next swap starts from that original, so going to a smaller layout and back restores everything. After an edit, the next swap starts from the section as it is; what was left out stays listed (`swapSource()`), so it can still be copied, and undo still brings it back.
+
+## The Elements panel
+
+![The Elements panel: blocks as tiles in Text, Media and Layout, an Image dragged into an empty column that lights up](../assets/screenshots/studio-elements.png)
+
+`elements-panel.tsx`, with the grouping, search and insertion place in `elements-model.ts`. Elementor's Widgets panel, for blocks (#35).
+
+- **Which blocks:** the block editor's own inserter list for the page (`getInserterItems()` on the page's content), so a block the page can't take isn't offered, and plugins' blocks appear by themselves. Saved patterns are left to the Sections panel.
+- **Groups** (`elementGroupOf()`): *Text* (`text`), *Media* (`media`, `embed`), *Layout* (`design`), *Site* (`theme`, `widgets`, and core blocks of other categories), *Plugins* (any block outside `core/`). Within a group, the block editor's order.
+- **Search:** every word must appear in the title, keywords, description or group name, ignoring case and accents. The forty-odd embed services and search-only variations are listed only when searching.
+- **Tiles:** a large tile per block with its icon and name, a button named *Add block: Image* (described by the block's description). A block a page can have only once, already there, is shown but disabled.
+- **Click (or Enter):** adds the block where WordPress's inserter would (`insertionPlace()`): after the selected block, in the nearest container that takes it; inside a selected empty block that takes it (a column, a group, an empty section); with nothing selected, at the end of the page. A line under the search says where (*Click a block to add it after “Paragraph”.*). It's the block editor's `insertBlock()`, so one undo step, named *Added block “Image”* in History, and the new block is selected.
+- **Drag:** a tile hands the canvas's drop zones the `wp-blocks` data WordPress's inserter does, so WordPress draws the drop line between blocks and inserts on drop (one undo step). `CanvasDragAssist` (`canvas-drag.tsx`) adds the rest while something is dragged over the canvas: the group, column or empty section the drop goes into gets a dashed outline and a tint (`data-studio-drop-target`, styled in `canvas.css`; the page's content itself only gets the line), and the canvas scrolls when the pointer is within 60px of its top or bottom edge, faster nearer the edge (`autoScrollSpeed()`).
+- **Keyboard:** every drag has a keyboard way. Select the place on the canvas (arrow keys, or Tab into it), then press Enter on a tile, or run *Add block: …* from the [command palette](#command-palette). To put a block in an empty column, select the column first.
 
 ## Simple and Advanced
 
@@ -233,7 +261,7 @@ Principle 3 of the [plan](../plans/visual-site-builder.md#principles): beginners
 | Part of the map | Simple | Advanced adds |
 | --- | --- | --- |
 | `GROUP_MODES`: the inspector groups (`modeTabs()`, `tabGroups()`) | `default`, `content`, `list`, `styles` (style variations), `typography`, `color`, `layout`, `dimensions` | `bindings`, `advanced` (anchor, CSS classes), `background`, `elements`, `border`, `effects` (shadows), `filter` (duotone), `position` |
-| `CONTROLS`: kinds of control, and features still to come (`showsControl()`) | presets, alignment, visibility (#49) | any colour or size, units, line height and letter spacing, values per device (#49), borders, shadows, hover and focus styles (#46), Additional CSS (#46) |
+| `CONTROLS`: kinds of control, and features still to come (`showsControl()`) | presets, alignment, visibility (#49), [Swap layout](#swap-layout) (#45) | any colour or size, units, line height and letter spacing, values per device (#49), borders, shadows, hover and focus styles (#46), Additional CSS (#46) |
 | `modeEditorSettings()`: the editor settings | the theme's presets only: `color.custom`, `color.customGradient`, `color.customDuotone`, `typography.customFontSize`, `spacing.customSpacingSize`, `typography.lineHeight`, `letterSpacing`, `textDecoration` and `writingMode` off; spacing units `px` only. Set in `__experimentalFeatures` (and any block's own settings there) and in the top-level switches core moves them to (`disableCustomColors`…), which the block editor reads when the features don't say | the theme's settings, unchanged |
 
 - **Nothing hidden without a word:** when a tab has nothing in Simple but has settings in Advanced (a heading's anchor, say), it says *More settings for this block are in Advanced*, with a button to switch.
@@ -251,11 +279,13 @@ Principle 3 of the [plan](../plans/visual-site-builder.md#principles): beginners
 | --- | --- |
 | Actions | Undo, Redo, Preview in a new tab, *Publish N changes* (opens the Publish list on its button), Discard all changes (asks first), Back to the dashboard |
 | Pages | Every page Studio lists (and *Home (latest posts)*), marked *Open now*, *Home page*, *New* or *Draft* |
+| Actions (#45) | *Swap layout: next* and *previous* for the selected section (disabled, saying why, when no section with other layouts is selected); *Swap layout to: {layout}* once you type |
 | Add a section | *Add section: {name}* for every section in the library, listed once you type; added after the selected section, or last, as one undo step |
+| Add a block (#35) | *Add block: {name}* for every block in the Elements panel, listed once you type; added where a click on its tile puts it |
 | Panels | *Open the {name} panel* for each rail panel |
 | View and settings | Switch to Simple or Advanced settings; switch to Desktop, Tablet or Mobile view |
 
-**The registry.** `commands-model.ts` holds `CommandRegistry` and Studio's instance, `studioCommands`. A command is `{ id, label, group, keywords?, hint?, icon?, disabled?, searchOnly?, run }`; `register()` takes one or a list and returns a function that removes them (registering an id again replaces it). In React, `useStudioCommands(build, deps)` (`command-palette.tsx`) registers while the component is mounted. Studio registers its own in `studio.tsx`; the ones that need the canvas (undo, redo, sections) come from `EditorCommands` (`editor-commands.tsx`) inside the block editor. Groups other than the five above are listed last, under *More*. AI commands (#62) and, later, plugins add theirs the same way.
+**The registry.** `commands-model.ts` holds `CommandRegistry` and Studio's instance, `studioCommands`. A command is `{ id, label, group, keywords?, hint?, icon?, disabled?, searchOnly?, run }`; `register()` takes one or a list and returns a function that removes them (registering an id again replaces it). In React, `useStudioCommands(build, deps)` (`command-palette.tsx`) registers while the component is mounted. Studio registers its own in `studio.tsx`; the ones that need the canvas (undo, redo, sections) come from `EditorCommands` (`editor-commands.tsx`) inside the block editor. Groups other than the six above are listed last, under *More*. AI commands (#62) and, later, plugins add theirs the same way.
 
 **Search** (`filterCommands()`): every word must appear in the label, keywords or group name, ignoring case and accents. Within a group, a label that starts with the search comes first, then one with it at the start of a word, then one with every word starting a word; the group with the best match comes first. With no search, search-only commands (sections) are left out and the groups keep their order. Each group lists at most 20.
 
@@ -273,7 +303,7 @@ The *History* rail panel (Elementor's History panel) has two parts.
 
 - **The stack:** `useStudioHistory()` (`use-history.ts`) replaces `@wordpress/compose`'s `useStateWithHistory` with the same rules (a *staged* change, such as typing on in the same block, joins the current step; changes before the first step become the starting point), but keeps the steps as a list (`history-model.ts`: `historyRecord()`, `historyGo()`), so the panel can show them and jump.
 - **The words:** `describeEdit(before, after, selected)` compares the canvas before and after a step by client ID: text, style, alignment, layout, link, image or description changed; a block added, removed, duplicated, turned into another, moved up or down, or moved into another block; or several blocks changed. `editLabel()` puts that into words: *Changed heading text*, *Moved section up* (a top-level block of the page is a *section* when it moves, comes or goes), *Added section “Pricing”*, *Changed paragraph to heading*, *Changed site title text in the Header*. Block names are their titles, lower case in English only (`blockNoun()`: German keeps its capitals). When two sections swap places, the selected one is the one that moved.
-- **Named steps:** a feature that knows better names the next step with `labelNext()`: adding a section from the panel or the palette (*Added section “Pricing, three tiers”*), restoring a version (*Restored the version from …*).
+- **Named steps:** a feature that knows better names the next step with `labelNext()`: adding a section from the panel or the palette (*Added section “Pricing, three tiers”*), swapping a layout (*Swapped layout of “Hero”*), adding a block from the Elements panel or the palette (*Added block “Image”*), restoring a version (*Restored the version from …*). Controls on the canvas reach it through `CanvasEventsProvider` (`swap-layout.tsx`).
 
 **Published versions**, below the steps:
 
@@ -313,9 +343,7 @@ Nothing here writes to the live site: restoring is a draft change like any other
 | #46 Additional CSS and states; #49 per-device values and visibility | their entries in `CONTROLS` (`mode-model.ts`), read with `showsControl()` |
 | #62 AI commands; plugins | `studioCommands.register()` or `useStudioCommands()` (`commands-model.ts`, `command-palette.tsx`) |
 | #57 AI operations, Keep and Undo | `editor.labelNext()` names the step an operation makes in History |
-| #35 Elements | the `elements` panel in `rail.tsx` |
 | #36 Context menu, #37 handles | the canvas in `StudioEditor` |
-| #45 Swap layout | the section toolbar (`section-toolbar.tsx`, marked where ‹ 2/5 › goes) and the inspector |
 | #50 Layers | its panel in `rail.tsx` |
 | #49 Responsive editing | `DEVICES` and the `device` state |
 | #62, #63 AI | the `ai` panel; `onAskAi` in the top bar |
@@ -328,7 +356,9 @@ Nothing here writes to the live site: restoring is a draft change like any other
 - `apps/core/src/changesets.test.ts`: `source: theme` entries (reset a part).
 - `components/studio/site-model.test.ts`: which page opens, template candidates, the page tree.
 - `components/studio/pages-model.test.ts`: the draft's pages and home page, new pages' slugs and addresses, moves (up, down, in, out, drops), the entries they make, shared page entries, who opens which pages.
-- `components/studio/sections-model.test.ts`: which patterns are sections, their order and categories, search.
+- `components/studio/sections-model.test.ts`: which patterns are sections, their order and categories, search; where ＋ Add section goes (in the gap, round, outside the outline).
+- `components/studio/swap-model.test.ts` (#45): a section's pattern by name and by shape, its layouts, moving the text there and back, what a smaller layout leaves out (a fourth card), names kept or not, starting again from the original until an edit.
+- `components/studio/elements-model.test.ts` (#35): groups (plugins' blocks under Plugins, saved patterns left out), search by title, keyword, description, group and translated group, where a click puts a block (after the selection, into an empty column, up to the container that takes it, at the end), auto-scroll speeds.
 - `apps/core/src/changesets.test.ts` (#29): pages created by slug, nested under a new page, with a template; a preview at the new address; refusals.
 - `e2e/tests/studio-panels.spec.ts`: add a page, nest it (drag and keyboard), set the home page, publish; Edit with Studio from Pages and the editor; an editor with the header, footer and styles locked; a pricing section added between two others, moved with the toolbar and undone, then published.
 - `components/studio/layout-model.test.ts`: the tabs cover every inspector group; the rail's panels each name their issue; device widths.
@@ -339,6 +369,7 @@ Nothing here writes to the live site: restoring is a draft change like any other
 - `e2e/tests/studio-modes.spec.ts`: Simple hides borders and Advanced shows them, remembered when Studio reopens; the palette from *Find* and from Ctrl+K in the canvas, going to a page, a device and a panel, adding a section, nothing matching, Discard all; History naming a step, going back and forward, previewing an older published version and restoring it, then publishing it.
 - `apps/core/src/block-editor-settings.test.ts`: `/wp-block-editor/v1/settings`.
 - `e2e/tests/studio.spec.ts`: opening a page with its header and footer, inline editing, undo and redo, selecting the header, Publish through a changeset, and the keyboard path.
+- `e2e/tests/studio-swap-elements.spec.ts`: a hero swapped through three layouts and back with the same text, one undo step per swap, named in History, from the toolbar, the inspector and the palette; an Image dragged into an empty column (lit up while over it) and undone, a block added after the selection with the keyboard, and from the palette.
 - `e2e/tests/studio-saving.spec.ts`: an edit saved to the draft, reopened, previewed and published; undoing one change from the list and Discard all; the footer edited on one page and shown on every page, then Reset to theme.
 
 ## Not yet
@@ -354,3 +385,6 @@ Nothing here writes to the live site: restoring is a draft change like any other
 - A restored version of the site's styles shows in Preview, not yet on the canvas (#46).
 - Simple narrows the inspector, not the block toolbar.
 - Plugins can't reach `studioCommands` yet: it needs a place in the plugin SDK's admin API.
+- Swap layout swaps only sections of one block, and between patterns of one block, as WordPress's *Change design* does. Its memory of what a smaller layout left out lasts while the page is open.
+- A section built some other way that happens to have a pattern's shape is offered that pattern's layouts; a section whose shape no pattern has gets no arrows.
+- The Elements panel has no "most used" row yet, and its tiles can't be dragged by keyboard (Enter on a tile after selecting the place does the same).
