@@ -46,7 +46,8 @@ export async function mostRecentNavigation(kernel: Kernel): Promise<Post | undef
 /** A published `wp_navigation` post, or undefined. */
 export async function publishedNavigation(kernel: Kernel, id: unknown): Promise<Post | undefined> {
   const ref = Number(id);
-  if (!Number.isInteger(ref) || ref <= 0) return undefined;
+  // Negative IDs are menus a changeset preview creates (v0.8, ADR 0022).
+  if (!Number.isInteger(ref) || ref === 0) return undefined;
   const post = await kernel.posts.get(ref);
   return post?.type === NAVIGATION && post.status === 'publish' ? post : undefined;
 }

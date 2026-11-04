@@ -514,6 +514,21 @@ function settingFor(kernel: Kernel, option: string): SettingDefinition | undefin
   return EXTRA_SETTINGS[option];
 }
 
+/**
+ * Options holding a post ID that an entry may give as the slug of a post
+ * instead, such as a page the same changeset creates (the site builder's
+ * home page and menu): the ID is looked up when the entry is published or
+ * previewed, after the post's own entry (`after()`).
+ */
+export const POST_ID_OPTIONS: Record<string, string> = {
+  page_on_front: 'page',
+  page_for_posts: 'page',
+  pressbase_navigation_fallback: 'wp_navigation',
+};
+
+const slugRef = (id: string, value: unknown): string | undefined =>
+  POST_ID_OPTIONS[id] && typeof value === 'string' && !/^\d+$/.test(value) ? value : undefined;
+
 /** Options on the allow-list, keyed by option name: `option:blogname`. */
 export function optionEntityHandler(allowed: ReadonlySet<string>): ChangesetEntityHandler<unknown> {
   const setting = (kernel: Kernel, id: string) => {
@@ -532,6 +547,13 @@ export function optionEntityHandler(allowed: ReadonlySet<string>): ChangesetEnti
 
     async validate(kernel, id, value) {
       const definition = setting(kernel, id);
+      const slug = slugRef(id, value);
+      if (slug !== undefined) {
+        if (sanitizeSlug(slug) !== slug) {
+          throw new ChangesetEntryError('rest_invalid_param', 'Give a post ID or a post’s slug.');
+        }
+        return slug;
+      }
       const parsed = definition.schema.safeParse(value);
       if (!parsed.success) {
         throw new ChangesetEntryError(
@@ -554,13 +576,36 @@ export function optionEntityHandler(allowed: ReadonlySet<string>): ChangesetEnti
     },
 
     async apply(kernel, id, value) {
+      let stored = value;
+      const slug = slugRef(id, value);
+      if (slug !== undefined) {
+        // Written after the post's entry, so a post the changeset creates exists by now.
+        const post = await findPost(kernel, slug, POST_ID_OPTIONS[id] as string);
+        if (!post) throw new ChangesetEntryError('rest_post_invalid_id', 'Invalid post ID.');
+        stored = post.id;
+      }
       // update_option(): sanitize_option() and the pre_update_option filters run now.
-      const next = await sanitizeSettingValue(kernel, setting(kernel, id), value);
+      const next = await sanitizeSettingValue(kernel, setting(kernel, id), stored);
       await kernel.options.set(id, next);
     },
 
-    async preview(_kernel, id, value, preview) {
-      preview.options.set(id, value);
+    after(id, value) {
+      const slug = slugRef(id, value);
+      return slug === undefined ? [] : [`${POST_ID_OPTIONS[id]}:${slug}`];
+    },
+
+    async preview(kernel, id, value, preview) {
+      const slug = slugRef(id, value);
+      if (slug === undefined) {
+        preview.options.set(id, value);
+        return;
+      }
+      const type = POST_ID_OPTIONS[id] as string;
+      const created = [...preview.created.values()].find(
+        (c) => c.post.type === type && c.post.slug === slug,
+      );
+      const postId = created?.post.id ?? (await findPost(kernel, slug, type))?.id;
+      if (postId !== undefined) preview.options.set(id, postId);
     },
   };
 }

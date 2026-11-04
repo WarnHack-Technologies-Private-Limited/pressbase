@@ -1,6 +1,6 @@
 # 0024: AI site building: pipeline, slots, operations, honest content
 
-- **Status:** Proposed. Slots (v0.8, #38 and #39), the design generator (#54), the quality checks (#55) and the site-building abilities (#56) are accepted and built; the pipeline, the operations the admin applies and the enforcement of honest content are pending and will be added to this record before it is accepted.
+- **Status:** Proposed. Slots (v0.8, #38 and #39), the design generator (#54), the quality checks (#55), the site-building abilities (#56) and the pipeline with its honest-content rules (#59) are accepted and built; the operations the admin applies and the publish confirmation are pending and will be added to this record before it is accepted.
 - **Date:** 2026-11-03
 
 ## Context
@@ -54,11 +54,26 @@ WordPress has related pieces but not this one. Pattern overrides (6.5) let a syn
 - **The brief is an option** (`pressbase_site_brief`), a REST setting, with the Brief stage's shape: facts are the person's, kept apart from copy.
 - **Content from the site is data, not instructions**: what the reads return goes into prompts as labelled data; the abilities enforce permissions and the changeset whatever a model asks.
 
+### Pipeline (accepted)
+
+- **A fixed pipeline in code, not an agent**: brief → design → sitemap → pages → assemble → check. Each stage is one structured call with a JSON Schema (`asJsonResponse()`), parsed and validated as `generateJson()` does, checked again in code, and **retried once** with what was wrong; a second bad answer fails the stage (a page fails alone, the others go on). Each request is attributed to its stage (`site-builder/brief`, `/design`, `/sitemap`, `/page`) in the usage log. A five-page site is eight requests.
+- **One call per page**, its sections together so the copy flows. The schema has one property per planned section, each a choice (`anyOf`) of up to four patterns of the section's category with their slots, so a valid answer always names a pattern that fits. Up to **three pages at a time**.
+- **Writes through the abilities**, as the person who started the run, into one changeset: `core/update-global-styles`, `core/create-page`, `core/update-template-part`, and changeset entries for the menu, the home page and the brief. Writes are serialised, because pages finish together. Nothing publishes; pages go live with their default status when a person publishes the changeset.
+- **Changesets name new posts by slug**: `wp_navigation` entries may create a menu, and `page_on_front`, `page_for_posts` and `pressbase_navigation_fallback` may hold a post's slug, resolved to its ID when published or previewed. So a generated home page and menu need no publishing first.
+- **Steps the person already took are passed in** (brief, design, sitemap), and the stage makes no request: the guided flow lets them edit each before generating.
+- **A run is a record and a job**: a private `pressbase_site_run` post holding the run as JSON, events included, and a `pressbase/site-builder` job that isn't retried. Progress is Server-Sent Events from `GET /pressbase/v1/site-builder/runs/{id}`, replayed from `Last-Event-ID`, so closing the tab loses nothing.
+- **The daily cap stops a run cleanly**: no new request, the rest of the pages skipped, assemble and checks still done (they need no AI), status `stopped` with the tokens used. The run counts its own requests in flight against the cap.
+
+### Honest content (accepted)
+
+- **Facts only from the person**: the form's fields, and facts the model drew from the description only where the description supports them.
+- **Enforced in code after every answer**, not just asked for: fact slots (declared, and the items and citations of sections about facts: testimonials, team, pricing, statistics, contact, hours) keep only values found in the facts; any other slot keeps its copy unless it gives a number, an email or a web address the facts don't have; `tel:`, `mailto:` and outside links must be in the facts. Otherwise the slot gets its placeholder (or the link `#`), and the run lists what it replaced.
+- **The person's words are labelled data**: separate prompt parts in tags, JSON-encoded so they can't close the tag, with a system instruction never to follow instructions in them.
+
 ### Pending
 
-- **The pipeline**: brief, design, sitemap, page and check stages as structured calls, run as a job, with progress over Server-Sent Events.
 - **Operations in the admin**: the edit set the AI panel applies through the editor's stores, with Keep and Undo (#57). The abilities already take the page operations in core; `updateBlockAttributes` and `updateMenu` aren't abilities yet.
-- **Honest content enforcement**: the brief's facts versus written copy, the checks after generation, and the publish confirmation.
+- **The publish confirmation** for placeholders left (#61).
 - **Custom sections** (v2): model-written markup, parsed, checked and sanitised.
 
 ## Consequences
@@ -73,6 +88,9 @@ WordPress has related pieces but not this one. Pattern overrides (6.5) let a syn
 - Saturated light hues (yellow, lime) come out darker on light pages than a brand colour might be: white button text on them needs it.
 - Generated designs restyle the Pressbase theme fully. Other block themes get the presets whose slugs they share (spacing 20–80, often `base` and `contrast`); a slug mapping per theme is future work. The theme's tinted shadows aren't regenerated.
 - `metadata.decorative` and `POST /pressbase/v1/check-page` are Pressbase extensions.
+- Honest content is strict by words, not meaning: a fact the model rephrases becomes a placeholder for the person to fill. Safer than a site that states something untrue.
+- A run's cost is predictable (one request per stage and per page, plus at most one retry each), and a run that hits the cap leaves a usable, smaller site rather than nothing.
+- Changesets now create menus and take slugs for post-ID options; anything reading those options from a changeset entry must expect a slug.
 
 - The abilities write whole entries: an AI edit and a person's edit to the same page in Studio meet in one changeset entry, and the last save wins, as for two people in Studio.
 - A section's pattern is known only when its block names it (`metadata.patternName`); sections pasted or built by hand are read through inferred slots.
@@ -84,6 +102,9 @@ WordPress has related pieces but not this one. Pattern overrides (6.5) let a syn
 
 - **Pattern overrides only** (WordPress's bindings): needs every pattern prepared by hand and covers no repeated groups or item counts.
 - **Templates with placeholders** (`{{title}}` in markup): invalid blocks until filled, and no theme pattern has them.
+- **A free-running agent with the abilities as tools** for the whole site: fewer lines of code, but an unpredictable number of requests, no per-stage retry or test, and a run that can't be resumed or shown as progress.
+- **Honest content left to the prompt**: models invent plausible hours and quotes even when told not to; checking in code is cheap and testable.
+- **Progress by polling only**: simpler, but the guided flow wants pages to appear as they finish; SSE with replay costs little more and polling still works (`GET` without the event-stream header).
 - **The model writes block markup**, validated afterwards: more tokens, retries on invalid output, and quality depends on the model. Kept for v2's custom sections only.
 - **The model picks colours (hex) and code checks them afterwards**: retries when a pair fails, and a model's sense of contrast is unreliable. Generating from a hue costs nothing and can't fail.
 - **Palettes in HSL**: equal lightness in HSL isn't equal perceived lightness (yellow versus blue), so one recipe gives uneven palettes across hues.

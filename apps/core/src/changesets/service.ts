@@ -151,7 +151,8 @@ export class ChangesetsService {
 
     // Pages: an entry may name, by slug, a page Studio adds (#29); publishing creates it.
     this.entities.register(postEntityHandler('page', { create: {} }));
-    this.entities.register(postEntityHandler('wp_navigation'));
+    // Menus too: the site builder adds one (#59), named by slug.
+    this.entities.register(postEntityHandler('wp_navigation', { create: {} }));
     // Templates and parts save through saveBlockTemplate() (changesets/templates.ts).
     this.entities.register(templateEntityHandler(TEMPLATE_POST_TYPE));
     this.entities.register(templateEntityHandler(TEMPLATE_PART_POST_TYPE));

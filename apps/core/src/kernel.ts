@@ -28,6 +28,7 @@ import { registerCoreSettings, SettingsRegistry } from './options/settings';
 import { Options } from './options/store';
 import { CliCommands } from './plugins/cli';
 import { PluginManager } from './plugins/manager';
+import { registerSiteBuilder } from './site-builder';
 import { SiteHealth } from './site-health/service';
 import { registerGlobalStylesHooks, registerGlobalStylesPostType } from './themes/global-styles';
 import { ThemesService } from './themes/service';
@@ -128,6 +129,8 @@ export class Kernel {
     // Changesets (v0.8): the customize_changeset post type, publishing and
     // previews. See docs/architecture/changesets.md.
     this.changesets.register();
+    // The site builder (v0.8, #59): runs, the pipeline's job. See docs/architecture/site-builder.md.
+    registerSiteBuilder(this);
   }
 
   get state(): SiteState {
