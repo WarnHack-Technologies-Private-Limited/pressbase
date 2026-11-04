@@ -21,6 +21,7 @@ A user is a row in `users` plus `usermeta` entries under WordPress's keys:
 | `capabilities` | Roles and directly granted capabilities: `{ "editor": true }`. WordPress calls it `wp_capabilities`. |
 | `_application_passwords` | The user's application passwords (below). |
 | `pressbase_admin_color_scheme` | The admin theme: `system` (default), `light` or `dark`. Chosen in the user menu. |
+| `pressbase_studio_mode` | Studio's inspector: `simple` (default) or `advanced`. Chosen at the foot of Studio's inspector ([studio.md](studio.md#simple-and-advanced)). |
 
 ### Meta in the REST API
 

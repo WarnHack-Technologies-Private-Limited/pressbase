@@ -74,3 +74,18 @@ registerUserMeta(ADMIN_COLOR_SCHEME_META, {
   default: 'system',
   description: 'The admin colour scheme: system, light or dark.',
 });
+
+/**
+ * Studio's inspector mode (#32): Simple shows presets, alignment and
+ * visibility; Advanced adds exact values, units, borders, shadows and more.
+ * Remembered per person, as WordPress remembers editor preferences.
+ */
+export const STUDIO_MODE_META = 'pressbase_studio_mode';
+
+registerUserMeta(STUDIO_MODE_META, {
+  schema: z.enum(['simple', 'advanced'], {
+    error: 'Choose simple or advanced.',
+  }),
+  default: 'simple',
+  description: 'Studio’s inspector: simple (presets) or advanced (every setting).',
+});

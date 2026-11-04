@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { Studio } from '@/components/studio';
+import { parseMode, STUDIO_MODE_META } from '@/components/studio/mode-model';
 import type { StudioPage } from '@/components/studio/site-model';
 import { ButtonLink } from '@/components/ui/button';
 import { Notice } from '@/components/ui/surface';
@@ -70,6 +71,7 @@ export default async function StudioScreen({ searchParams }: Props) {
         canPublishPages: Boolean(caps.publish_pages),
         canEditOthersPages: Boolean(caps.edit_others_pages),
       }}
+      mode={parseMode(me.data.meta?.[STUDIO_MODE_META])}
     />
   );
 }

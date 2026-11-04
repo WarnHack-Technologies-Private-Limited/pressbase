@@ -83,6 +83,12 @@ import { useEntityEdits } from './entity-edits';
 import { Inspector, type PageSummary } from './inspector';
 import { DEVICES, type Device, type InspectorTabId, type RailPanelId } from './layout-model';
 import {
+  DEFAULT_MODE,
+  modeEditorSettings,
+  STUDIO_MODE_META,
+  type StudioMode,
+} from './mode-model';
+import {
   arrangementChanges,
   draftPages,
   draftReading,
@@ -205,6 +211,8 @@ export interface StudioProps {
   canUnfilteredHtml: boolean;
   /** Who's editing, and what they may change (#29). */
   user: StudioUser;
+  /** Simple or Advanced (#32), as the person last chose (user meta). */
+  mode?: StudioMode;
 }
 
 /** What the person in Studio may do. Without `edit_theme_options`, the header, footer and styles are read-only. */
@@ -412,6 +420,7 @@ export default function Studio(props: StudioProps) {
   // Where the Sections panel adds the next section (＋ Add section on the canvas, #44).
   const [sectionsAt, setSectionsAt] = useState<number | null>(null);
   const [tab, setTab] = useState<InspectorTabId>('content');
+  const [mode, setModeState] = useState<StudioMode>(props.mode ?? DEFAULT_MODE);
   const [narrow, setNarrow] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [busy, setBusy] = useState<'preview' | 'publish' | 'discard' | 'revert' | null>(null);
@@ -777,6 +786,24 @@ export default function Studio(props: StudioProps) {
 
   const staleNames = stale.map((key) => changes.find((c) => c.key === key)?.title ?? key);
 
+  /** Simple or Advanced (#32): shown at once, remembered for the person in their user meta. */
+  const setMode = (next: StudioMode) => {
+    if (next === mode) return;
+    setModeState(next);
+    api('/wp/v2/users/me', {
+      method: 'POST',
+      body: { meta: { [STUDIO_MODE_META]: next } },
+    }).catch(() =>
+      toast(
+        __(
+          'Studio couldn’t remember this choice for next time. It applies until you leave.',
+          'pressbase-admin',
+        ),
+        { tone: 'danger' },
+      ),
+    );
+  };
+
   const askAi = () =>
     toast(
       __(
@@ -963,6 +990,8 @@ export default function Studio(props: StudioProps) {
         device={device}
         tab={tab}
         onTab={setTab}
+        mode={mode}
+        onMode={setMode}
         narrow={narrow}
         inspectorOpen={inspectorOpen}
         onCloseInspector={() => setInspectorOpen(false)}
@@ -1168,6 +1197,8 @@ interface StudioEditorProps {
   device: Device;
   tab: InspectorTabId;
   onTab: (tab: InspectorTabId) => void;
+  mode: StudioMode;
+  onMode: (mode: StudioMode) => void;
   narrow: boolean;
   inspectorOpen: boolean;
   onCloseInspector: () => void;
@@ -1396,7 +1427,7 @@ function StudioEditor(props: StudioEditorProps) {
       __unstableResolvedAssets: _assets,
       ...themeSettings
     } = props.library.theme;
-    return {
+    const base = {
       ...editorSettings({
         features: props.features,
         canUnfilteredHtml: props.canUnfilteredHtml,
@@ -1411,7 +1442,16 @@ function StudioEditor(props: StudioEditorProps) {
       // Sections from patterns stay fully editable: Studio is for building pages.
       disableContentOnlyForUnsyncedPatterns: true,
     };
-  }, [props.features, props.canUnfilteredHtml, props.assets, props.library.theme, doc.page?.id]);
+    // Simple offers the theme's presets only (#32, mode-model.ts).
+    return modeEditorSettings(base, props.mode);
+  }, [
+    props.features,
+    props.canUnfilteredHtml,
+    props.assets,
+    props.library.theme,
+    doc.page?.id,
+    props.mode,
+  ]);
 
   const editor: EditorState = {
     canUndo: history.hasUndo,
@@ -1480,6 +1520,8 @@ function StudioEditor(props: StudioEditorProps) {
                   }}
                   onClose={props.narrow ? props.onCloseInspector : undefined}
                   partsLocked={props.partsLocked}
+                  mode={props.mode}
+                  onMode={props.onMode}
                 />
               )
             }

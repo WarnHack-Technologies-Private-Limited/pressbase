@@ -18,6 +18,7 @@ import { lightScope } from '../block-editor';
 import { Button } from '../ui/button';
 import { TEMPLATE_PART } from './canvas-model';
 import { INSPECTOR_TABS, type InspectorTab, type InspectorTabId } from './layout-model';
+import { MODES, modeTabs, type StudioMode } from './mode-model';
 import { type PartInfo, useSelectedPart } from './regions';
 import styles from './studio.module.css';
 
@@ -52,6 +53,9 @@ interface InspectorProps {
   onClose?: () => void;
   /** The header and footer can't be changed by this person (no `edit_theme_options`, #29). */
   partsLocked?: boolean;
+  /** Simple or Advanced (#32): which settings show. */
+  mode: StudioMode;
+  onMode: (mode: StudioMode) => void;
 }
 
 const select = (s: unknown) =>
@@ -108,7 +112,13 @@ export function Inspector(props: InspectorProps) {
             onSelectPart={() => selectBlock(inPart.clientId)}
           />
         )}
-        <BlockSettings clientId={clientId} tab={props.tab} onTab={props.onTab} />
+        <BlockSettings
+          clientId={clientId}
+          tab={props.tab}
+          onTab={props.onTab}
+          mode={props.mode}
+          onMode={props.onMode}
+        />
       </>
     );
   }
@@ -132,8 +142,46 @@ export function Inspector(props: InspectorProps) {
           onClick={props.onClose}
         />
       )}
-      {body}
+      <div className={styles.inspectorBody}>{body}</div>
+      <ModeSwitch mode={props.mode} onMode={props.onMode} />
     </aside>
+  );
+}
+
+/**
+ * Simple ◉ Advanced (#32), at the foot of the inspector: a segmented
+ * control (toggle buttons with `aria-pressed`) and what the mode shows.
+ */
+export function ModeSwitch({
+  mode,
+  onMode,
+}: {
+  mode: StudioMode;
+  onMode: (mode: StudioMode) => void;
+}) {
+  const { __ } = useI18n();
+  const hintId = useId();
+  const current = MODES.find((m) => m.id === mode) ?? MODES[0];
+  return (
+    <fieldset className={styles.modeSwitch} aria-describedby={hintId}>
+      <legend className="visually-hidden">{__('Settings to show', 'pressbase-admin')}</legend>
+      <div className={styles.modeButtons}>
+        {MODES.map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            className={styles.modeButton}
+            aria-pressed={m.id === mode}
+            onClick={() => onMode(m.id)}
+          >
+            {__(m.label, 'pressbase-admin')}
+          </button>
+        ))}
+      </div>
+      <p id={hintId} className={styles.modeHint}>
+        {current && __(current.hint, 'pressbase-admin')}
+      </p>
+    </fieldset>
   );
 }
 
@@ -302,10 +350,14 @@ function BlockSettings({
   clientId,
   tab,
   onTab,
+  mode,
+  onMode,
 }: {
   clientId: string;
   tab: InspectorTabId;
   onTab: (tab: InspectorTabId) => void;
+  mode: StudioMode;
+  onMode: (mode: StudioMode) => void;
 }) {
   const { __ } = useI18n();
   const info = useBlockDisplayInformation(clientId) as {
@@ -325,8 +377,15 @@ function BlockSettings({
   const hasControls = useTabsWithControls();
   const baseId = useId();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const active = INSPECTOR_TABS.find((t) => t.id === tab) ?? (INSPECTOR_TABS[0] as InspectorTab);
+  // The tabs with only the groups this mode shows (mode-model.ts).
+  const tabs = modeTabs(mode);
+  const active = tabs.find((t) => t.id === tab) ?? (tabs[0] as InspectorTab);
   const activeHas = hasControls(active) || (active.id === 'style' && hasStyles);
+  // In Simple, a tab can be empty while Advanced has settings for the block.
+  const moreInAdvanced =
+    !activeHas &&
+    mode === 'simple' &&
+    hasControls(INSPECTOR_TABS.find((t) => t.id === active.id) as InspectorTab);
 
   const onTabKey = (event: ReactKeyboardEvent, index: number) => {
     const last = INSPECTOR_TABS.length - 1;
@@ -400,7 +459,17 @@ function BlockSettings({
             />
           ),
         )}
-        {!activeHas && <p className={styles.tabEmpty}>{__(active.empty, 'pressbase-admin')}</p>}
+        {!activeHas && !moreInAdvanced && (
+          <p className={styles.tabEmpty}>{__(active.empty, 'pressbase-admin')}</p>
+        )}
+        {moreInAdvanced && (
+          <div className={styles.tabEmpty}>
+            <p>{__('This block’s settings here are in Advanced.', 'pressbase-admin')}</p>
+            <Button size="sm" variant="secondary" onClick={() => onMode('advanced')}>
+              {__('Show Advanced settings', 'pressbase-admin')}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
