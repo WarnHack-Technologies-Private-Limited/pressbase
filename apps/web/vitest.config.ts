@@ -1,7 +1,11 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  // A cache of its own: packages without a config share the workspace's
-  // node_modules/.vitest-cache, and Turborepo's parallel runs race to clear it.
-  cacheDir: 'node_modules/.vite',
+  test: {
+    // Vitest's module cache, per package: by default every package shares the
+    // workspace's node_modules/.vitest-cache, and Turborepo's parallel runs race
+    // to clear it (ENOTEMPTY).
+    fsModuleCachePath: fileURLToPath(new URL('./node_modules/.vitest-cache', import.meta.url)),
+  },
 });
