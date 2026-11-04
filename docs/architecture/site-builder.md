@@ -45,7 +45,7 @@ The site states as facts only what the person gave ([plan](../plans/visual-site-
 
 ## Runs
 
-A run is a `pressbase_site_run` post (private, `edit_theme_options`, like a changeset), its content the run as JSON, so it survives a closed tab, a reload or another device. It runs as one job (`pressbase/site-builder`, [the job queue](jobs.md)), not retried (that would spend the day's requests twice), with a 30-minute timeout. A run whose job dies is marked failed.
+A run is a `pressbase_site_run` post (private, `edit_theme_options`, like a changeset), its content the run as JSON, so it survives a closed tab, a reload or another device. It runs as one job (`pressbase/site-builder`, [the job queue](jobs.md)), not retried (that would spend the day's requests twice), with a 30-minute timeout (then it fails with `site_builder_timeout`). A run whose job dies is marked failed (`site_builder_job_failed`). A sitemap with no page the patterns can build fails with `site_builder_empty_sitemap`.
 
 | Field | |
 | --- | --- |
