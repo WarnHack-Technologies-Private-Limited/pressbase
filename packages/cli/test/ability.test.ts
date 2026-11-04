@@ -9,6 +9,8 @@ describe('pressbase ability', () => {
     const s = await site();
     const list = await s.ok(['ability', 'list', '--format=json']);
     expect(JSON.parse(list)).toEqual([
+      // The quality checks (v0.8, docs/architecture/quality-checks.md); listed by name.
+      expect.objectContaining({ name: 'core/check-page' }),
       expect.objectContaining({ name: 'core/get-site-info', category: 'site' }),
     ]);
     const one = JSON.parse(await s.ok(['ability', 'get', 'core/get-site-info', '--format=json']));
