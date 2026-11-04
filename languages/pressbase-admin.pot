@@ -194,7 +194,7 @@ msgstr ""
 msgid "No comments yet. When readers comment, they’ll show here."
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:354 apps/admin/src/components/studio/swap-layout.tsx:292
+#: apps/admin/src/app/admin/page.tsx:354 apps/admin/src/components/studio/swap-layout.tsx:307
 msgid "(empty)"
 msgstr ""
 
@@ -876,8 +876,10 @@ msgstr ""
 
 #: apps/admin/src/components/studio/elements-panel.tsx:163
 #, js-format
-msgid "%d blocks found."
-msgstr ""
+msgid "%d block found."
+msgid_plural "%d blocks found."
+msgstr[0] ""
+msgstr[1] ""
 
 #: apps/admin/src/components/studio/elements-panel.tsx:168
 msgid "No blocks match. Try another word."
@@ -1389,7 +1391,7 @@ msgstr ""
 msgid "Hide on a device"
 msgstr ""
 
-#: apps/admin/src/components/studio/mode-model.ts:106 apps/admin/src/components/studio/swap-layout.tsx:271
+#: apps/admin/src/components/studio/mode-model.ts:106 apps/admin/src/components/studio/swap-layout.tsx:286
 msgid "Swap layout"
 msgstr ""
 
@@ -1934,60 +1936,88 @@ msgstr ""
 msgid "You’re editing the %s. It’s on every page, so your changes show everywhere once you publish."
 msgstr ""
 
+#: apps/admin/src/components/studio/swap-layout.tsx:169 apps/admin/src/components/studio/swap-layout.tsx:170
+msgid "[Add a heading]"
+msgstr ""
+
+#: apps/admin/src/components/studio/swap-layout.tsx:171
+msgid "[Add a short label]"
+msgstr ""
+
 #: apps/admin/src/components/studio/swap-layout.tsx:172
+msgid "[Add text]"
+msgstr ""
+
+#: apps/admin/src/components/studio/swap-layout.tsx:173
+msgid "[Add an item]"
+msgstr ""
+
+#: apps/admin/src/components/studio/swap-layout.tsx:174
+msgid "[Add a question]"
+msgstr ""
+
+#: apps/admin/src/components/studio/swap-layout.tsx:175
+msgid "[Add a name]"
+msgstr ""
+
+#: apps/admin/src/components/studio/swap-layout.tsx:176
+msgid "[Add a button label]"
+msgstr ""
+
+#: apps/admin/src/components/studio/swap-layout.tsx:187
 #, js-format
 msgid "Swapped layout of “%s”"
 msgstr ""
 
-#: apps/admin/src/components/studio/swap-layout.tsx:181
+#: apps/admin/src/components/studio/swap-layout.tsx:196
 #, js-format
 msgid "Layout %1$d of %2$d: %3$s."
 msgstr ""
 
-#: apps/admin/src/components/studio/swap-layout.tsx:188
+#: apps/admin/src/components/studio/swap-layout.tsx:203
 #, js-format
 msgid "%d piece of content doesn’t fit this layout. It’s kept: swap back to see it again."
 msgid_plural "%d pieces of content don’t fit this layout. They’re kept: swap back to see them again."
 msgstr[0] ""
 msgstr[1] ""
 
-#: apps/admin/src/components/studio/swap-layout.tsx:225
+#: apps/admin/src/components/studio/swap-layout.tsx:240
 #, js-format
 msgid "Layout %1$d of %2$d"
 msgstr ""
 
-#: apps/admin/src/components/studio/swap-layout.tsx:234
+#: apps/admin/src/components/studio/swap-layout.tsx:249
 #, js-format
 msgid "Previous layout (%s)"
 msgstr ""
 
-#: apps/admin/src/components/studio/swap-layout.tsx:235
+#: apps/admin/src/components/studio/swap-layout.tsx:250
 msgid "Previous layout"
 msgstr ""
 
-#: apps/admin/src/components/studio/swap-layout.tsx:247
+#: apps/admin/src/components/studio/swap-layout.tsx:262
 #, js-format
 msgid "Next layout (%s)"
 msgstr ""
 
-#: apps/admin/src/components/studio/swap-layout.tsx:248
+#: apps/admin/src/components/studio/swap-layout.tsx:263
 msgid "Next layout"
 msgstr ""
 
-#: apps/admin/src/components/studio/swap-layout.tsx:283
+#: apps/admin/src/components/studio/swap-layout.tsx:298
 #, js-format
 msgid "%s. Your text and images move with you."
 msgstr ""
 
-#: apps/admin/src/components/studio/swap-layout.tsx:289
+#: apps/admin/src/components/studio/swap-layout.tsx:304
 msgid "Not shown in this layout, but kept:"
 msgstr ""
 
-#: apps/admin/src/components/studio/swap-layout.tsx:297
+#: apps/admin/src/components/studio/swap-layout.tsx:312
 msgid "Swap to a layout with more room to show it again, or undo the swap."
 msgstr ""
 
-#: apps/admin/src/components/studio/swap-layout.tsx:301
+#: apps/admin/src/components/studio/swap-layout.tsx:316
 msgid "You’ve edited the section since, so swapping won’t bring it back. Undo to get it, or copy it from here."
 msgstr ""
 

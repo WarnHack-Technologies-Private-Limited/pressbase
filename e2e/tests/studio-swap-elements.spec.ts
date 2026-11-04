@@ -70,7 +70,7 @@ test('Swap layout moves a hero through three layouts and back, keeping its text'
   try {
     const canvas = await openStudio(page, id);
     const content = canvas.locator('.wp-block-post-content');
-    const original = await content.innerText();
+    const original = await content.textContent();
     for (const text of HERO_TEXT) expect(original).toContain(text);
 
     // The section toolbar has ‹ 1/N ›: the hero's pattern and the others of its kind.
@@ -94,7 +94,7 @@ test('Swap layout moves a hero through three layouts and back, keeping its text'
     // One undo step per swap: undo puts the first layout back, redo the second.
     await page.keyboard.press('Control+z');
     await expect(position).toHaveText(`1/${total}`);
-    await expect.poll(() => content.innerText()).toBe(original);
+    await expect.poll(() => content.textContent()).toBe(original);
     await page.keyboard.press('Control+Shift+z');
     await expect(position).toHaveText(`2/${total}`);
 
@@ -102,7 +102,10 @@ test('Swap layout moves a hero through three layouts and back, keeping its text'
     await inspector.getByRole('button', { name: /^Next layout/ }).click();
     await expect(position).toHaveText(`3/${total}`);
     await expect(content).toContainText('Fresh bread, every morning');
-    await page.getByRole('toolbar', { name: /^Section 1 of 1/ }).getByRole('button', { name: /^Next layout/ }).click();
+    await page
+      .getByRole('toolbar', { name: /^Section 1 of 1/ })
+      .getByRole('button', { name: /^Next layout/ })
+      .click();
     await expect(position).toHaveText(`4/${total}`);
 
     // And back to the first: the same text as before, nothing from the other layouts.
@@ -110,12 +113,15 @@ test('Swap layout moves a hero through three layouts and back, keeping its text'
       await inspector.getByRole('button', { name: /^Previous layout/ }).click();
       await expect(position).toHaveText(`${at - 1}/${total}`);
     }
-    await expect.poll(() => content.innerText()).toBe(original);
+    await expect.poll(() => content.textContent()).toBe(original);
 
     // History names the steps.
     await page.getByRole('button', { name: 'History', exact: true }).click();
     await expect(
-      page.locator('#studio-panel').getByText(/^Swapped layout of “/).first(),
+      page
+        .locator('#studio-panel')
+        .getByText(/^Swapped layout of “/)
+        .first(),
     ).toBeVisible();
 
     // The palette swaps the selected section too.
