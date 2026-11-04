@@ -223,6 +223,12 @@ importers:
 
   apps/admin:
     dependencies:
+      "@pressbase/blocks":
+        specifier: workspace:*
+        version: link:../../packages/blocks
+      "@pressbase/slots":
+        specifier: workspace:*
+        version: link:../../packages/slots
       "@wordpress/api-fetch":
         specifier: 8.0.0
         version: 8.0.0
