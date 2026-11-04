@@ -220,6 +220,14 @@ describe('settings', () => {
     const ok = await request('POST', '/wp/v2/settings', { title: 'Renamed', unknown_field: 1 });
     expect(ok.status).toBe(200);
     expect(ok.body.title).toBe('Renamed');
+
+    // OPTIONS tells the block editor whether the site title can be edited.
+    const options = await request('OPTIONS', '/wp/v2/settings');
+    expect(options.status).toBe(200);
+    expect(options.headers.get('allow')).toContain('POST');
+    // So does the GET it reads them with (core-data takes permissions from either).
+    const read = await request('GET', '/wp/v2/settings');
+    expect(read.headers.get('allow')).toBe('GET, POST, PUT, PATCH');
   });
 
   it('is closed to logged-out visitors', async () => {
@@ -227,6 +235,7 @@ describe('settings', () => {
     await request('POST', '/pressbase/v1/install', { site: SITE });
     clearCookie();
     expect((await request('GET', '/wp/v2/settings')).status).toBe(401);
+    expect((await request('OPTIONS', '/wp/v2/settings')).status).toBe(401);
   });
 });
 

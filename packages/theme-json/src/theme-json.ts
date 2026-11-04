@@ -43,6 +43,7 @@ import {
   resolveCustomCssFormat,
   toKebabCase,
 } from './util';
+import { getViewportMediaQueries, sanitizeViewportSettings } from './viewport';
 
 /**
  * WP_Theme_JSON (wordpress/wp-includes/class-wp-theme-json.php), the parts
@@ -50,9 +51,13 @@ import {
  * get_stylesheet() — preset custom properties, preset classes, root layout
  * rules and the styles of the body, elements and blocks.
  *
- * Not ported: responsive (viewport) style states, duotone SVG filters, the
- * editor-only settings API and remove_insecure_properties() beyond a
- * conservative value filter for user (`custom`) data.
+ * Responsive style states (`@mobile`, `@tablet`, WordPress 7.1) become
+ * extra style nodes that carry a media query (get_block_nodes()), printed
+ * right after the node they override. See viewport.ts.
+ *
+ * Not ported: duotone SVG filters, the editor-only settings API and
+ * remove_insecure_properties() beyond a conservative value filter for user
+ * (`custom`) data.
  */
 
 interface StyleNode {
@@ -64,6 +69,8 @@ interface StyleNode {
   duotone?: string;
   variations?: { name: string; path: string[]; selector: string }[];
   css?: string | null;
+  /** A responsive node's media query (`@media (width <= 480px)`): its rules are wrapped in it. */
+  mediaQuery?: string;
 }
 
 interface SettingNode {
@@ -335,6 +342,10 @@ export class ThemeJson {
         continue;
       }
       const tree = clone(value);
+      // `viewport` is sanitized where it is set (WordPress 7.1, sanitize()).
+      if (subtree === 'settings' && 'viewport' in tree) {
+        tree.viewport = sanitizeViewportSettings(tree.viewport) as JsonObject;
+      }
       const blocks = tree.blocks;
       if (isObject(blocks)) {
         for (const [name, node] of Object.entries(blocks)) {
@@ -342,6 +353,11 @@ export class ThemeJson {
           if (!metadata || !isObject(node)) {
             delete blocks[name];
             continue;
+          }
+          // `viewport` and `blockVisibility` are global-only settings (sanitize()'s schema).
+          if (subtree === 'settings') {
+            delete node.viewport;
+            delete node.blockVisibility;
           }
           if (subtree === 'styles' && isObject(node.variations)) {
             for (const variation of Object.keys(node.variations)) {
@@ -510,9 +526,21 @@ export class ThemeJson {
     return nodes;
   }
 
-  /** get_block_nodes() */
+  /** The media query of each viewport style state, from the merged `settings.viewport`. */
+  #viewportMediaQueries(data: ThemeJsonData = this.#data): Record<string, string> {
+    return getViewportMediaQueries(arrayGet(data, ['settings', 'viewport']));
+  }
+
+  /**
+   * get_block_nodes(). Each `@mobile` / `@tablet` state of a block, of its
+   * pseudo states and of its elements is a node of its own, with the
+   * breakpoint's media query, emitted right after the node it overrides so
+   * the cascade reads `.block{}` → `@media{.block{}}`.
+   */
   #blockNodes(blocks: JsonObject, options: StylesheetOptions): StyleNode[] {
     const nodes: StyleNode[] = [];
+    const mediaQueries = this.#viewportMediaQueries();
+    const breakpoints = Object.keys(mediaQueries);
     for (const [name, node] of Object.entries(blocks)) {
       const metadata = this.blocks[name];
       const selector = metadata?.selector ?? null;
@@ -540,8 +568,26 @@ export class ThemeJson {
       });
 
       if (!isObject(node)) continue;
+      for (const breakpoint of breakpoints) {
+        if (node[breakpoint] === undefined) continue;
+        nodes.push({
+          name,
+          path: ['styles', 'blocks', name, breakpoint],
+          mediaQuery: mediaQueries[breakpoint],
+          selector,
+          selectors: metadata?.selectors,
+          elements: metadata?.elements ?? {},
+          variations,
+          css: selector,
+        });
+      }
       for (const pseudo of VALID_BLOCK_PSEUDO_SELECTORS[name] ?? []) {
-        if (node[pseudo] === undefined || !selector) continue;
+        const hasPseudo = node[pseudo] !== undefined;
+        const responsive = breakpoints.filter((breakpoint) => {
+          const state = node[breakpoint];
+          return isObject(state) && state[pseudo] !== undefined;
+        });
+        if ((!hasPseudo && !responsive.length) || !selector) continue;
         const pseudoSelectors: JsonObject = {};
         for (const [feature, featureSelector] of Object.entries(metadata?.selectors ?? {})) {
           if (isObject(featureSelector)) {
@@ -554,16 +600,30 @@ export class ThemeJson {
             pseudoSelectors[feature] = appendToSelector(featureSelector, pseudo);
           }
         }
-        nodes.push({
-          name,
-          path: ['styles', 'blocks', name, pseudo],
-          selector: appendToSelector(selector, pseudo),
-          selectors: pseudoSelectors,
-          elements: metadata?.elements ?? {},
-          duotone: metadata?.duotone,
-          variations,
-          css: appendToSelector(selector, pseudo),
-        });
+        if (hasPseudo) {
+          nodes.push({
+            name,
+            path: ['styles', 'blocks', name, pseudo],
+            selector: appendToSelector(selector, pseudo),
+            selectors: pseudoSelectors,
+            elements: metadata?.elements ?? {},
+            duotone: metadata?.duotone,
+            variations,
+            css: appendToSelector(selector, pseudo),
+          });
+        }
+        for (const breakpoint of responsive) {
+          nodes.push({
+            name,
+            path: ['styles', 'blocks', name, breakpoint, pseudo],
+            mediaQuery: mediaQueries[breakpoint],
+            selector: appendToSelector(selector, pseudo),
+            selectors: pseudoSelectors,
+            elements: metadata?.elements ?? {},
+            variations,
+            css: appendToSelector(selector, pseudo),
+          });
+        }
       }
       for (const state of VALID_BLOCK_CUSTOM_STATES[name] ?? []) {
         const stateSelector = metadata?.states?.[state];
@@ -579,23 +639,52 @@ export class ThemeJson {
         });
       }
 
-      const elements = node.elements;
-      if (isObject(elements)) {
-        for (const element of Object.keys(elements)) {
-          const elementSelector = metadata?.elements[element];
-          if (!elementSelector) continue;
+      // An element styled only inside a breakpoint still needs its nodes.
+      const elements = isObject(node.elements) ? node.elements : {};
+      const elementNames = new Set(Object.keys(elements));
+      for (const breakpoint of breakpoints) {
+        const state = node[breakpoint];
+        if (isObject(state) && isObject(state.elements)) {
+          for (const element of Object.keys(state.elements)) elementNames.add(element);
+        }
+      }
+      const responsiveElement = (breakpoint: string, element: string): JsonValue | undefined => {
+        const state = node[breakpoint];
+        return isObject(state) && isObject(state.elements) ? state.elements[element] : undefined;
+      };
+      for (const element of elementNames) {
+        const elementSelector = metadata?.elements[element];
+        if (!elementSelector) continue;
+        const elementNode = elements[element];
+        if (elementNode !== undefined) {
           nodes.push({
             path: ['styles', 'blocks', name, 'elements', element],
             selector: elementSelector,
           });
-          const elementNode = elements[element];
-          for (const pseudo of VALID_ELEMENT_PSEUDO_SELECTORS[element] ?? []) {
-            if (isObject(elementNode) && elementNode[pseudo] !== undefined) {
-              nodes.push({
-                path: ['styles', 'blocks', name, 'elements', element],
-                selector: appendToSelector(elementSelector, pseudo),
-              });
-            }
+        }
+        for (const breakpoint of breakpoints) {
+          if (responsiveElement(breakpoint, element) === undefined) continue;
+          nodes.push({
+            path: ['styles', 'blocks', name, breakpoint, 'elements', element],
+            selector: elementSelector,
+            mediaQuery: mediaQueries[breakpoint],
+          });
+        }
+        for (const pseudo of VALID_ELEMENT_PSEUDO_SELECTORS[element] ?? []) {
+          if (isObject(elementNode) && elementNode[pseudo] !== undefined) {
+            nodes.push({
+              path: ['styles', 'blocks', name, 'elements', element],
+              selector: appendToSelector(elementSelector, pseudo),
+            });
+          }
+          for (const breakpoint of breakpoints) {
+            const state = responsiveElement(breakpoint, element);
+            if (!isObject(state) || state[pseudo] === undefined) continue;
+            nodes.push({
+              path: ['styles', 'blocks', name, breakpoint, 'elements', element],
+              selector: appendToSelector(elementSelector, pseudo),
+              mediaQuery: mediaQueries[breakpoint],
+            });
           }
         }
       }
@@ -920,12 +1009,15 @@ export class ThemeJson {
     const features = isObject(node) ? this.#featureDeclarations(metadata, node) : new Map();
     const blockName =
       metadata.name ?? (metadata.path[1] === 'blocks' ? metadata.path[2] : undefined);
+    const mediaQuery = metadata.mediaQuery;
 
-    // Block style variations (only when requested, as WordPress does).
+    // Block style variations (only when requested, as WordPress does), not for responsive nodes.
     const variationDeclarations = new Map<string, Declaration[]>();
     const variationCss = new Map<string, string>();
     const variationLayout = new Map<string, { metadata: StyleNode; node: JsonObject }>();
-    for (const variation of metadata.variations ?? []) {
+    const variationResponsiveCss = new Map<string, string>();
+    const variationResponsivePseudoCss: string[] = [];
+    for (const variation of mediaQuery ? [] : (metadata.variations ?? [])) {
       const variationNode = clone(arrayGet(this.#data, variation.path, {})) as JsonObject;
       if (!isObject(variationNode)) continue;
       for (const [featureSelector, declarations] of this.#featureDeclarations(
@@ -963,6 +1055,14 @@ export class ThemeJson {
           node: variationNode,
         });
       }
+      const [responsiveCss, responsivePseudoCss] = this.#variationResponsiveCss(
+        variationNode,
+        variation,
+        metadata,
+        blockName,
+      );
+      if (responsiveCss) variationResponsiveCss.set(variation.selector, responsiveCss);
+      if (responsivePseudoCss) variationResponsivePseudoCss.push(responsivePseudoCss);
     }
 
     // The node itself; element pseudo states use their own sub-node.
@@ -1014,7 +1114,10 @@ export class ThemeJson {
       const layout = variationLayout.get(variationSelector);
       if (layout) css += this.getLayoutStyles(layout.metadata, layout.node);
       css += variationCss.get(variationSelector) ?? '';
+      css += variationResponsiveCss.get(variationSelector) ?? '';
     }
+    // Responsive pseudo styles come after the default pseudo styles, so they win.
+    css += variationResponsivePseudoCss.join('');
     if (typeof node.css === 'string' && !isRoot) {
       const cssFeature = metadata.selectors?.css;
       const cssSelector =
@@ -1025,11 +1128,91 @@ export class ThemeJson {
             : selector;
       css += ThemeJson.processBlocksCustomCss(node.css, cssSelector);
     }
+    // A responsive node's rules all go inside its media query.
+    if (mediaQuery && css) css = `${mediaQuery}{${css}}`;
     return css;
   }
 
+  /**
+   * The `@mobile` / `@tablet` states of a block style variation, as
+   * get_styles_for_block() builds them: feature, base, pseudo, custom CSS,
+   * block gap and element rules, each in its own media query. Returns the
+   * CSS and, separately, the pseudo-state CSS that must come last.
+   */
+  #variationResponsiveCss(
+    variationNode: JsonObject,
+    variation: { name: string; path: string[]; selector: string },
+    metadata: StyleNode,
+    blockName: string | undefined,
+  ): [string, string] {
+    let css = '';
+    let pseudoCss = '';
+    const mediaQueries = this.#viewportMediaQueries();
+    const blockElements = metadata.elements ?? {};
+    for (const [breakpoint, media] of Object.entries(mediaQueries)) {
+      if (!isObject(variationNode[breakpoint])) continue;
+      const breakpointNode = clone(variationNode[breakpoint]) as JsonObject;
+      for (const [featureSelector, declarations] of this.#featureDeclarations(
+        metadata,
+        breakpointNode,
+      )) {
+        const combined = blockStyleVariationFeatureSelector(variation, featureSelector);
+        css += `${media}{${toRuleset(`:root :where(${combined})`, declarations)}}`;
+      }
+      const declarations = this.computeStyleProperties(breakpointNode);
+      if (declarations.length) {
+        css += `${media}{${toRuleset(`:root :where(${variation.selector})`, declarations)}}`;
+      }
+      for (const [pseudoSelector, pseudoDeclarations] of this.#pseudoDeclarations(
+        breakpointNode,
+        variation.selector,
+        blockName,
+        metadata,
+        variation,
+      )) {
+        if (!pseudoDeclarations.length) continue;
+        pseudoCss += `${media}{${toRuleset(`:root :where(${pseudoSelector})`, pseudoDeclarations)}}`;
+      }
+      if (typeof breakpointNode.css === 'string') {
+        css += `${media}{${ThemeJson.processBlocksCustomCss(breakpointNode.css, variation.selector)}}`;
+      }
+      if (arrayGet(breakpointNode, ['spacing', 'blockGap']) !== undefined) {
+        css += this.getLayoutStyles(
+          { ...variation, name: blockName, selector: `${variation.selector}${metadata.css ?? ''}` },
+          breakpointNode,
+          media,
+        );
+      }
+      if (isObject(breakpointNode.elements) && Object.keys(blockElements).length) {
+        for (const [elementName, elementNode] of Object.entries(breakpointNode.elements)) {
+          const elementSelector = blockElements[elementName];
+          if (!elementSelector || !isObject(elementNode)) continue;
+          const variationElementSelector = blockStyleVariationFeatureSelector(
+            variation,
+            elementSelector,
+          );
+          const elementDeclarations = this.computeStyleProperties(elementNode);
+          if (elementDeclarations.length) {
+            css += `${media}{${toRuleset(`:root :where(${variationElementSelector})`, elementDeclarations)}}`;
+          }
+          if (typeof elementNode.css === 'string') {
+            css += `${media}{${ThemeJson.processBlocksCustomCss(elementNode.css, variationElementSelector)}}`;
+          }
+          for (const pseudo of VALID_ELEMENT_PSEUDO_SELECTORS[elementName] ?? []) {
+            if (elementNode[pseudo] === undefined) continue;
+            const pseudoDeclarations = this.computeStyleProperties(elementNode[pseudo]);
+            if (!pseudoDeclarations.length) continue;
+            const pseudoSelector = appendToSelector(variationElementSelector, pseudo);
+            pseudoCss += `${media}{${toRuleset(`:root :where(${pseudoSelector})`, pseudoDeclarations)}}`;
+          }
+        }
+      }
+    }
+    return [css, pseudoCss];
+  }
+
   /** get_layout_styles(): block gap rules per layout type, and base layout styles at the root. */
-  getLayoutStyles(metadata: StyleNode, nodeOverride?: JsonObject): string {
+  getLayoutStyles(metadata: StyleNode, nodeOverride?: JsonObject, mediaQuery?: string): string {
     let css = '';
     const block = metadata.name ? this.blocks[metadata.name] : undefined;
     if (metadata.name) {
@@ -1106,6 +1289,7 @@ export class ThemeJson {
         }
       }
     }
+    if (mediaQuery && css) css = `${mediaQuery}{${css}}`;
     return css;
   }
 

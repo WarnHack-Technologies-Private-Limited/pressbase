@@ -1,0 +1,44 @@
+{
+  "title": "Opening hours",
+  "description": "A heading, a short note and a directions button beside a list of days and times. Stacks on small screens.",
+  "categories": ["opening-hours", "contact"],
+  "keywords": ["opening hours", "hours", "open", "times", "schedule", "visit"],
+  "viewportWidth": 1000,
+  "slots": {
+    "body": {
+      "label": "Introduction",
+      "description": "An invitation to visit or call, in one sentence."
+    },
+    "note": {
+      "description": "Exceptions such as holiday closures.",
+      "facts": true,
+      "placeholder": "[Add holiday closures, or remove this line]"
+    },
+    "actions": {
+      "label": "Button",
+      "description": "Usually a link to a map or the contact page.",
+      "maxItems": 1
+    },
+    "hours": {
+      "label": "Opening hours",
+      "description": "One row per day, or per run of days with the same hours, in week order.",
+      "minItems": 1,
+      "maxItems": 7,
+      "facts": true,
+      "placeholder": "[Add your opening hours]"
+    },
+    "hours.day": {
+      "label": "Days",
+      "maxLength": 30,
+      "facts": true,
+      "placeholder": "[Add days]"
+    },
+    "hours.time": {
+      "label": "Hours",
+      "description": "Opening and closing time, or Closed.",
+      "maxLength": 30,
+      "facts": true,
+      "placeholder": "[Add hours]"
+    }
+  }
+}

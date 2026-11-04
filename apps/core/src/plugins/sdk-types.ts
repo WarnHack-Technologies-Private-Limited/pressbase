@@ -33,16 +33,20 @@ export type {
   AbilityQuery,
 } from '../abilities/registry';
 export type { AiAttribution, AiRequestLogEntry, AiSettings } from '../ai/client';
-export type { AiPromptBuilder } from '../ai/prompt-builder';
+export type { AiPromptBuilder, AiTextStream } from '../ai/prompt-builder';
 export type {
   AiError,
   AiFinishReason,
   AiFunctionDeclaration,
+  AiImageMimeType,
+  AiImagePart,
   AiMessage,
   AiMessagePart,
+  AiModelTier,
   AiProvider,
   AiProviderContext,
   AiResult,
+  AiStreamEvent,
   AiTextRequest,
   AiTokenUsage,
 } from '../ai/types';

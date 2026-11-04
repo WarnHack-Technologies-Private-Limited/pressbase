@@ -1,7 +1,10 @@
+import { schema } from '@pressbase/db';
+import { and, eq, inArray } from 'drizzle-orm';
 import { type Context, Hono } from 'hono';
 import { z } from 'zod';
 import { currentUserCan } from '../auth/meta-caps';
 import { type CurrentUser, userCan } from '../auth/users';
+import { PAGE_TEMPLATE_META } from '../changesets/entities';
 import { parseRestDate, toGmtString, toLocalString } from '../content/dates';
 import { type PermalinkContext, permalink, permalinkContext } from '../content/permalinks';
 import type { PostType } from '../content/post-types';
@@ -49,6 +52,8 @@ interface Prepared {
   sticky: Set<number>;
   /** Featured image (_thumbnail_id) per post. */
   thumbnails: Map<number, number>;
+  /** Custom template (_wp_page_template) per post that has one. */
+  templates: Map<number, string>;
   /** Registered meta shown in REST (routes/meta-fields.ts), when the type supports custom fields. */
   meta: Map<number, Record<string, unknown>> | undefined;
   password?: string;
@@ -81,11 +86,28 @@ async function prepareContext(
     terms,
     sticky,
     thumbnails: await featuredMediaIds(kernel, ids),
+    templates: await pageTemplateSlugs(kernel, ids),
     meta: type.supports.has('custom-fields')
       ? await readRestMeta(kernel, 'post', type.name, ids)
       : undefined,
     password,
   };
+}
+
+/** get_page_template_slug() for each post: '' and 'default' mean none. */
+async function pageTemplateSlugs(kernel: Kernel, ids: number[]): Promise<Map<number, string>> {
+  const out = new Map<number, string>();
+  if (!ids.length) return out;
+  const rows = await kernel.db
+    .select({ postId: schema.postmeta.postId, value: schema.postmeta.value })
+    .from(schema.postmeta)
+    .where(and(inArray(schema.postmeta.postId, ids), eq(schema.postmeta.key, PAGE_TEMPLATE_META)));
+  for (const row of rows) {
+    if (typeof row.value === 'string' && row.value && row.value !== 'default') {
+      out.set(row.postId, row.value);
+    }
+  }
+  return out;
 }
 
 /** wp_trim_excerpt(): the first 55 words of the content, tags removed. */
@@ -142,7 +164,7 @@ async function prepareItem(post: Post, p: Prepared): Promise<Record<string, unkn
     ...(type.supports.has('thumbnail') ? { featured_media: p.thumbnails.get(post.id) ?? 0 } : {}),
     comment_status: post.commentStatus,
     ping_status: post.pingStatus,
-    template: '',
+    template: p.templates.get(post.id) ?? '',
     meta: p.meta?.get(post.id) ?? {},
   };
   if (type.hierarchical) {

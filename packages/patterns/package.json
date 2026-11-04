@@ -1,0 +1,24 @@
+{
+  "name": "@pressbase/patterns",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Pressbase pattern library: section patterns in core blocks and theme presets, with categories and slots, for Studio, starter sites and AI.",
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@pressbase/blocks": "workspace:*",
+    "@pressbase/slots": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  }
+}

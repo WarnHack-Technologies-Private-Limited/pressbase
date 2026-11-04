@@ -1,6 +1,6 @@
 # 0021: The site editor shell and templates storage
 
-- **Status:** Accepted (templates storage); the Studio shell is pending [#28](https://github.com/WarnHack-Technologies-Private-Limited/pressbase/issues/28)
+- **Status:** Accepted
 - **Date:** 2026-11-03
 
 ## Context
@@ -29,7 +29,15 @@ The constraints:
 
 ### Studio shell
 
-*Pending [#28](https://github.com/WarnHack-Technologies-Private-Limited/pressbase/issues/28).* The plan's direction is our own editor around `@wordpress/block-editor` at `/admin/studio`, not `@wordpress/edit-site`, editing the templates and parts stored as described above through the REST routes. This section will record that decision when the shell is built.
+Built in [#28](https://github.com/WarnHack-Technologies-Private-Limited/pressbase/issues/28). Details: [Studio](../architecture/studio.md).
+
+- **Our own editor around `@wordpress/block-editor`, not `@wordpress/edit-site`.** Edit-site expects WordPress's full core-data entity layer, PHP-printed settings and its own routing; the post editor already shows the lower-level packages work well in our admin. Studio is a screen at `/admin/studio` (`edit_theme_options`, as `site-editor.php`), full-screen, with its own admin menu item; *Appearance → Editor* leads there.
+- **One kit for both editors.** The pieces the post editor had (setup, canvas assets, feature probes, plugin blocks, settings, undo shortcuts, notices, the inserter's Media tab) moved to `components/block-editor/kit.tsx`; the post editor and Studio both compose them, so they don't drift apart.
+- **The canvas is one block tree.** The page's template is parsed, and its `core/template-part` and `core/post-content` blocks get the part's and the page's blocks as inner blocks. Both save as self-closing comments, so the template serializes back unchanged and each region's inner blocks are that entity's content. One `BlockEditorProvider` value and one undo history cover the whole screen; changesets (ADR 0022) are where edits split per entity. Inside Studio, those two blocks edit as plain containers (an `editor.BlockEdit` filter), instead of WordPress's components, which load each region as its own core-data entity with its own undo stack.
+- **The template is locked, the page is editable.** Block editing modes: the root `disabled`, `core/post-content` `default`, each template part selectable as a whole with its blocks `disabled` until header and footer editing (#30) turns them on.
+- **The theme's styles come from core.** A new `GET /wp-block-editor/v1/settings` (a port of Gutenberg's block editor settings controller, limited to what depends on the theme) returns the global styles split as `get_block_editor_settings()` splits them, the theme.json features, and the theme's fonts and stylesheets for the iframe. WordPress prints these into the editor page with PHP; Pressbase's admin is a separate app, so it asks.
+- **The template follows core's hierarchy,** chosen in the browser from `/wp/v2/templates`, as WordPress's editor does; `/wp/v2/templates/lookup` stays unported.
+- **Nothing is saved behind the user's back.** Preview and Publish write the page's content to the user's changeset only when asked; continuous saving to the changeset is #31.
 
 ## Consequences
 
@@ -38,9 +46,12 @@ The constraints:
 - Only the active theme's templates are listed and rendered, as in WordPress. Copies for other themes stay in the database and come back when their theme is active again. Deleting a theme leaves them, as with `wp_global_styles`.
 - A plugin's `pre_get_block_templates` / `get_block_templates` filters (and the other lookup filters) can add or replace templates, as in WordPress. WordPress's plugin template registry (`register_block_template()`) and block hooks inside templates are not ported yet.
 - Deferred: `/wp/v2/templates/lookup` (`get_template_hierarchy()`), `rest_pre_insert_{type}`, and the `plugin` field.
+- Studio's canvas edits a copy of each region's content inside one tree. Anything that edits the same entities through core-data at the same time (the Navigation block's menus, the site title) is outside that tree and its undo history; #30 decides how those join it.
 
 ## Alternatives considered
 
 - **A `templates` table, or one JSON option per theme.** Simpler queries, but it would differ from WordPress's data model, so imports, exports, revisions and the REST API would each need translation. Revisions and autosaves come free with posts.
 - **Keep custom copies in memory with the theme** (like the theme files) and refresh on save. Faster, but it would bypass the content layer that changeset previews hook into, and add one more cache to invalidate across processes.
 - **Find the theme by post slug, as `wp_global_styles` does** (`wp-global-styles-{stylesheet}`). That works for one post per theme but not for many templates per theme, and WordPress data (and WXR files) carry the `wp_theme` term.
+- **`@wordpress/edit-site` for Studio.** WordPress's own site editor, ready-made, but built on core-data entities for everything (templates, parts, global styles, settings), PHP-printed editor settings and its own routing and layout. Adapting it would mean emulating much of wp-admin, and the Elementor-style interactions the plan asks for would fight its UI.
+- **WordPress's template-part and post-content components in Studio, each region a core-data entity.** Closer to WordPress, but every region gets its own undo history and save path, and undo across "the footer, then the page" would need a coordinator. One tree with one history is simpler; the split happens once, when saving to the changeset.

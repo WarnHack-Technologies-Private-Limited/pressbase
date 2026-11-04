@@ -9,7 +9,7 @@ Everything is served under `/wp-json`, as in WordPress:
 
 | Method                   | Route                              | Access           | Purpose                                                           |
 | ------------------------ | ---------------------------------- | ---------------- | ----------------------------------------------------------------- |
-| GET                      | `/wp-json`                         | public           | Site name, description, URL, namespaces, Pressbase version and state; once installed, `site_logo`, `site_icon` and `site_icon_url`, as WordPress's index has them. |
+| GET                      | `/wp-json`                         | public           | Site name, description, URL, namespaces, Pressbase version and state; once installed, `timezone_string`, `show_on_front`, `page_on_front`, `page_for_posts`, `site_logo`, `site_icon` and `site_icon_url`, as WordPress's index has them. |
 | GET                      | `/pressbase/v1/install`                | public           | Install state, system checks, whether a setup code is needed.     |
 | POST                     | `/pressbase/v1/install/database-check` | before install   | Test database details.                                            |
 | POST                     | `/pressbase/v1/install`                | before install   | Install the site and sign in the administrator.                   |
@@ -19,7 +19,7 @@ Everything is served under `/wp-json`, as in WordPress:
 | POST                     | `/pressbase/v1/auth/lost-password` | public           | `{ login }` → emails a reset link. Same answer whether or not the account exists. See [People](people.md#password-reset). |
 | POST                     | `/pressbase/v1/auth/check-reset-key` | public         | `{ login, key }` → `200`, or `400 invalid_key` / `expired_key`.   |
 | POST                     | `/pressbase/v1/auth/reset-password` | public          | `{ login, key, password }` → sets the password and logs the user out everywhere. |
-| GET / POST / PUT / PATCH | `/wp/v2/settings`                  | `manage_options` | Read or update registered settings, including `site_logo` and `site_icon` (attachment IDs, `0` for none). |
+| GET / POST / PUT / PATCH | `/wp/v2/settings`                  | `manage_options` | Read or update registered settings, including `site_logo` and `site_icon` (attachment IDs, `0` for none). `OPTIONS` answers with an `Allow` header, which the block editor reads before offering to edit the site title. |
 | GET                      | `/pressbase/v1/dashboard`              | `read`           | Counts, recent content and system facts for the dashboard.        |
 | GET                      | `/pressbase/v1/post-counts/{type}`     | `edit_{type}s`   | Items per status, for the admin's status tabs (`wp_count_posts`). |
 | GET / POST               | `/wp/v2/posts`, `/wp/v2/pages`         | read: public · write: see below | List and create. Supports WordPress's collection parameters. |
@@ -72,6 +72,7 @@ Everything is served under `/wp-json`, as in WordPress:
 | GET / POST               | `/wp/v2/navigation`                    | read: public for published menus · create: `edit_theme_options` | Navigation menus (`wp_navigation`). The posts controller; same parameters as posts. `OPTIONS` answers with an `Allow` header. See [Navigation](navigation.md). |
 | GET / POST / PUT / PATCH / DELETE | `/wp/v2/navigation/{id}`      | `edit_theme_options` to write | One menu; `Allow` header, revisions at `…/revisions`. |
 | GET                      | `/wp-block-editor/v1/navigation-fallback` | `edit_theme_options` | The menu a Navigation block without one uses, created from the page list when there's none (`WP_REST_Navigation_Fallback_Controller`). `?_embed` embeds it. |
+| GET                      | `/wp-block-editor/v1/settings`         | `edit_posts` (any REST type) | The block editor's theme-dependent settings (Gutenberg's `WP_REST_Block_Editor_Settings_Controller`): `styles` (global styles as `get_block_editor_settings()` splits them: preset variables, preset classes, theme styles, custom CSS), `__experimentalFeatures` (theme.json settings, presets keyed by origin) with `colors`, `fontSizes`, `gradients`, `spacingSizes` and the `disableCustom*` / `enableCustom*` switches, `__unstableResolvedAssets` (the theme's fonts, block style CSS and stylesheets for the canvas iframe) and `__unstableIsBlockBasedTheme`. Studio's canvas is built from it. `rest_cannot_read_block_editor_settings` otherwise. |
 | GET / PUT                | `/pressbase/v1/navigation-fallback`    | `edit_theme_options` | Which menu the header (ref-less Navigation blocks) shows: `{ id, current }`; `PUT { id }`. |
 | POST                     | `/pressbase/v1/navigation-preview`     | `edit_theme_options` | A public page rendered with unsaved menu markup in the header, for Appearance → Menus. |
 | GET / POST               | `/wp/v2/blocks`                        | read: `edit_posts` · create: `publish_posts` | Synced patterns (`wp_block`). Same parameters as posts. |
@@ -80,11 +81,12 @@ Everything is served under `/wp-json`, as in WordPress:
 | GET                      | `/pressbase/v1/site-health`, `/pressbase/v1/site-health/info` | `view_site_health_checks` | Site Health: the direct tests' results and the async tests to run; the Info tab's sections and copy text. See [Site Health](site-health.md#rest-api). |
 | GET / POST               | `/pressbase/v1/site-health/result` | `view_site_health_checks` | The last check's counts and rating, for the Dashboard; `POST { counts }` saves them. |
 | GET                      | `/wp-site-health/v1/tests/{test}`, `/wp-site-health/v1/directory-sizes` | `view_site_health_checks` (`site_health_test_rest_capability_{check}`) | WordPress's Site Health routes: one async test's result; folder and database sizes. |
-| GET / POST               | `/pressbase/v1/ai/settings`, `POST /pressbase/v1/ai/test` | `manage_options` | Settings → AI: provider, model, daily limit, key status (never the key); test the connection. See [AI](ai.md#keys-and-settings--ai). |
+| GET / POST               | `/pressbase/v1/ai/settings`, `POST /pressbase/v1/ai/test` | `manage_options` | Settings → AI: provider, model, model for quick edits, daily limit, key status (never the key); test the connection. See [AI](ai.md#keys-and-settings--ai). |
+| POST                     | `/pressbase/v1/check-page` | `edit_posts` (`edit_post` for an `id`) | Quality checks for block markup or a saved page: `{ findings, errors, warnings, passed }`. See [quality checks](quality-checks.md). |
 | GET                      | `/wp-abilities/v1/categories`, `/wp-abilities/v1/abilities`, `/wp-abilities/v1/abilities/{name}` | `read` | WordPress's Abilities API: categories and REST-visible abilities with their schemas. |
 | GET / POST / DELETE      | `/wp-abilities/v1/abilities/{name}/run` | the ability's permission callback | Runs an ability: GET for read-only ones, DELETE for destructive idempotent ones, POST otherwise. See [AI](ai.md#rest-wp-abilitiesv1). |
 
-`posts_per_rss` and `rss_use_excerpt` (Settings → Reading's feed settings) are Pressbase additions to `/wp/v2/settings`; WordPress keeps them out of the REST settings.
+`posts_per_rss` and `rss_use_excerpt` (Settings → Reading's feed settings) are Pressbase additions to `/wp/v2/settings`; WordPress keeps them out of the REST settings. `pressbase_site_brief` (the site brief for building with AI: `name`, `kind`, `audience`, `tone`, `facts`, `pages`, `language`) is Pressbase's own; see [site abilities](site-abilities.md#the-brief).
 
 `apps/web` also answers `POST /_pressbase/revalidate` (outside `/wp-json`, not part of core): core's cache purges, `{ "tags": [...] }` with `Authorization: Bearer <PRESSBASE_REVALIDATE_SECRET>`. It answers `401 pressbase_invalid_secret`, `400 rest_invalid_param` without tags, `404 pressbase_cache_disabled` when caching is off, and `{ purged, tags }` otherwise. See [ADR 0008](../adr/0008-public-page-caching.md).
 

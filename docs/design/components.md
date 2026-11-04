@@ -76,7 +76,7 @@ The kit lives in `apps/admin/src/components/ui/`. Use these before writing new m
 - **Focus starts on Cancel**, so a stray Enter never destroys anything.
 - The title asks the question. The body says what will happen, in one sentence.
 
-`Dialog` (same file) is for a task rather than a question, such as uploading a file: a title, any content, and a footer of actions. Escape closes it (unless `busy`); focus starts on `initialFocus` and returns where it was when it closes. It's wider than `ConfirmDialog`, and its footer buttons stack full width on phones.
+`Dialog` (same file) is for a task rather than a question, such as uploading a file: a title, any content, and a footer of actions. Escape closes it (unless `busy`); focus starts on `initialFocus` and returns where it was when it closes. It's wider than `ConfirmDialog` (`size="large"` for previews), and its footer buttons stack full width on phones.
 
 ## Menu: `ui/menu.tsx`
 
@@ -164,3 +164,18 @@ Gutenberg inside Pressbase's chrome. Architecture and wiring: [Block editor](../
 - **Panels.** Add block and List view open a panel on the canvas's left edge: beside the canvas when there's room, over it when there isn't. Opening moves focus into the panel (search field / tree); Escape closes it and returns focus to its toggle. Choosing a block closes the inserter and focuses the new block.
 - **Narrow screens.** Below 1100px the sidebar is a drawer from the right, opened with the Settings toggle and closed with Escape or its close button. Below 480px the canvas runs edge to edge.
 - **Unavailable features are hidden, not broken.** Blocks that need server pieces that aren't there yet are left out of the inserter; uploads without a media library explain what to do instead ("Use “Insert from URL” instead").
+
+## Studio: `components/studio/`
+
+The full-screen site editor. Architecture: [Studio](../architecture/studio.md).
+
+- **Calm by default.** The page fills the screen; the rail's panels are closed until asked for, and the inspector describes the page in plain words until something is selected. The only primary button is Publish, enabled once there's something to publish.
+- **Saved without asking, live only when asked.** Edits go to the draft by themselves; the top bar says *Saving…*, *Draft saved* or *Couldn’t save. Try again* (a polite live region). *Publish N* counts the draft's changes and opens a panel listing them in plain words (*Footer · On every page*, *About us · Page*), each with an undo button, plus *Discard all* (it asks first) and *Publish N changes*.
+- **Three levels, always visible.** The breadcrumb under the canvas names Site › Page › Section › Block; the inspector's eyebrow says the same (*Home page*, *On all pages*).
+- **What's coming says so.** Panels and buttons that later issues build (Sections, Media, AI, Ask AI) are present, explain what they'll do and name their issue (“Sections arrive with #44”), rather than being hidden or looking broken. Ask AI wears a *Coming soon* badge and explains itself in a toast when pressed.
+- **Say “every page” before the first keystroke.** Hovering a header or footer outlines it with its label (*Header · all pages*); selecting it, or anything in it, keeps a solid outline, shows a note over the canvas (*You’re editing the Header. It’s on every page…*) and one above the block's settings. Clicking the label selects the part as a whole; its settings offer *Reset to theme* once it differs from the theme's design.
+- **Nothing moves under the pointer.** Notes about the selection float over the canvas instead of pushing it down.
+- **Same light islands as the post editor.** Our chrome follows the admin theme; WordPress's controls (the inspector's tab panels, Elements, Layers, popovers) stay light, and the canvas is the site itself.
+- **Simple first, Advanced one click away.** A segmented control at the foot of the inspector (*Simple* · *Advanced*, toggle buttons with `aria-pressed`) and one line on what the mode shows. Simple offers the site's presets only; a tab that's empty in Simple but not in Advanced says so, with *Show Advanced settings*. The choice follows the person to other browsers.
+- **Command palette.** ⌘K / Ctrl+K, or *Find* in the top bar: a modal dialog with a WAI-ARIA combobox (the input keeps focus, `aria-activedescendant` names the active option) over a listbox grouped by kind (Actions, Pages, Add a section, Panels, View and settings). ↑/↓ and Page Up/Down move between commands that can run now, Enter runs, Escape closes and focus goes back. Commands that can't run now are listed, greyed, with the reason (*Nothing to publish yet*). The active option has a bar as well as a tint. The number of matches is announced politely.
+- **History in plain words.** Each step reads as a sentence (*Changed heading text*, *Moved section up*, *Added section “Pricing”*); the current one is marked *Now*, and steps undone stay listed, muted, until a new edit replaces them. Published versions below have *Preview* (a large dialog) and *Restore*, which goes into the draft, never straight to the live site.

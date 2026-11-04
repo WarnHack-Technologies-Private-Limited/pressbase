@@ -529,6 +529,15 @@ export function PostList({ config }: { config: ContentType }) {
                                 <Link href={editHref} className={styles.rowAction}>
                                   Edit
                                 </Link>
+                                {config.type === 'page' && (
+                                  // #29: the page in its design, header and footer included.
+                                  <a
+                                    href={`/admin/studio?page=${post.id}`}
+                                    className={styles.rowAction}
+                                  >
+                                    Edit with Studio
+                                  </a>
+                                )}
                                 <button
                                   type="button"
                                   className={styles.rowAction}

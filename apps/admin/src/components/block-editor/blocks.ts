@@ -12,7 +12,7 @@ export const UNSUPPORTED_BLOCKS: ReadonlySet<string> = new Set([
   'core/freeform',
   // Stores its notes in post meta through core-data's entity editing.
   'core/footnotes',
-  // Site editing arrives later. (Navigation blocks: see NAVIGATION_BLOCKS.)
+  // Site editing: offered in Studio only (STUDIO_BLOCKS). (Navigation blocks: see NAVIGATION_BLOCKS.)
   'core/navigation-overlay-close',
   'core/template-part',
   'core/post-content',
@@ -21,6 +21,23 @@ export const UNSUPPORTED_BLOCKS: ReadonlySet<string> = new Set([
   'core/site-title',
   'core/site-tagline',
 ]);
+
+/**
+ * Unsupported in the post editor, offered in Studio (#30): Studio edits the
+ * template's regions (template parts, the page's content) and the site's
+ * identity (logo, title, tagline) through its changeset, as WordPress's site
+ * editor offers these blocks there.
+ */
+export const STUDIO_BLOCKS: ReadonlySet<string> = new Set([
+  'core/template-part',
+  'core/post-content',
+  'core/site-logo',
+  'core/site-title',
+  'core/site-tagline',
+]);
+
+/** Which editor asks: the post editor, or Studio (the site editor). */
+export type EditorContext = 'post' | 'studio';
 
 /**
  * The Navigation block and its items. They edit `wp_navigation` menus through
@@ -124,8 +141,16 @@ export type BlockFeatures = Pick<EditorFeatures, 'blockRenderer' | 'oembed' | 's
  * Static blocks (image, gallery, cover, media & text, file, audio, video…)
  * are always offered; without the media library they still take URLs.
  */
-export function unavailableReason(name: string, features: BlockFeatures): string | null {
-  if (UNSUPPORTED_BLOCKS.has(name)) return 'not supported in the post editor yet';
+export function unavailableReason(
+  name: string,
+  features: BlockFeatures,
+  context: EditorContext = 'post',
+): string | null {
+  if (UNSUPPORTED_BLOCKS.has(name) && !(context === 'studio' && STUDIO_BLOCKS.has(name))) {
+    return context === 'studio'
+      ? 'not supported in Studio yet'
+      : 'not supported in the post editor yet';
+  }
   if (NAVIGATION_BLOCKS.has(name) && !features.navigation) return 'needs navigation menus';
   if (DYNAMIC_BLOCKS.has(name)) {
     if (!features.blockRenderer) return 'needs the block engine';
@@ -142,8 +167,9 @@ export function unavailableReason(name: string, features: BlockFeatures): string
 export function allowedBlockTypes(
   registered: readonly string[],
   features: BlockFeatures,
+  context: EditorContext = 'post',
 ): string[] {
-  return registered.filter((name) => unavailableReason(name, features) === null);
+  return registered.filter((name) => unavailableReason(name, features, context) === null);
 }
 
 /** Words in a piece of block markup, for the "N words · M min read" line. */

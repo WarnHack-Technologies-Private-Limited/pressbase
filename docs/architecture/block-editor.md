@@ -2,7 +2,7 @@
 
 The post and page editor is WordPress's block editor (Gutenberg), running inside Pressbase's admin. Content is saved as standard block markup (`<!-- wp:paragraph -->…`), so it moves between WordPress and Pressbase unchanged.
 
-Code: `apps/admin/src/components/block-editor/` (the editor) and `apps/admin/src/components/content/post-editor.tsx` (the screen around it). Design notes: [Components](../design/components.md#block-editor-componentsblock-editor).
+Code: `apps/admin/src/components/block-editor/` (the editor) and `apps/admin/src/components/content/post-editor.tsx` (the screen around it). Studio, the site editor, is built from the same pieces; see [Studio](studio.md). Design notes: [Components](../design/components.md#block-editor-componentsblock-editor).
 
 ## Packages
 
@@ -24,9 +24,9 @@ All are GPL-2.0-or-later and declare `react ^18 || ^19`, so they run on React 19
 
 ## How it's loaded
 
-- `components/block-editor/index.tsx` exports `BlockEditor` through `next/dynamic` with `ssr: false`. Gutenberg needs `window`, and the dynamic import keeps it out of every other admin page. Only the post and page editors download it (about 5.6 MB of JavaScript, 1.3 MB gzipped; the posts list is unchanged at ~0.5 MB). A skeleton with the canvas's shape shows while it loads.
+- `components/block-editor/index.tsx` exports `BlockEditor` through `next/dynamic` with `ssr: false`. Gutenberg needs `window`, and the dynamic import keeps it out of every other admin page. Only the post and page editors (and Studio, through its own dynamic import) download it (about 5.6 MB of JavaScript, 1.3 MB gzipped; the posts list is unchanged at ~0.5 MB). A skeleton with the canvas's shape shows while it loads.
 - `@wordpress/vips/worker` is aliased to `vips-stub.ts` in `next.config.ts`. It's a 22 MB WebAssembly image processor that `@wordpress/upload-media` would only load for client-side media processing, which Pressbase leaves off.
-- On first import, `block-editor.tsx` configures api-fetch, calls `registerCoreBlocks()` and makes **Custom HTML** (`core/html`) the handler for content that isn't block markup. WordPress uses the Classic block, which needs TinyMCE; Custom HTML keeps such content exactly as it was.
+- On first import, `kit.tsx` configures api-fetch, calls `registerCoreBlocks()` and makes **Custom HTML** (`core/html`) the handler for content that isn't block markup. WordPress uses the Classic block, which needs TinyMCE; Custom HTML keeps such content exactly as it was.
 
 ### Stylesheets
 
@@ -35,6 +35,8 @@ WordPress's CSS is served by `app/editor-assets/[name]/route.ts`, which reads th
 - **Admin page** (`UI_STYLESHEETS`): components, block-editor UI, block-library editor styles, format-library. They're rendered as React 19 `<link rel="stylesheet" precedence>` elements, so they load with the editor and never on other pages.
 - **Canvas iframe** (`CANVAS_STYLESHEETS`): components, block-library front-end and theme styles, block-editor content styles, block-library editor styles, and `canvas.css`. They're passed as `__unstableResolvedAssets`, as WordPress does in `_wp_get_iframed_editor_assets()`.
 
+Studio's canvas uses the same list without `canvas.css` and `block-library-theme.css` (the active theme styles it instead, from `/wp-block-editor/v1/settings`), plus `studio-canvas.css`.
+
 For right-to-left languages, `directional()` swaps each file for its `-rtl` copy (WordPress's `wp_style_add_data( …, 'rtl', 'replace' )`), and the editor gets `isRTL: true`.
 
 ### Translations
@@ -42,6 +44,10 @@ For right-to-left languages, `directional()` swaps each file for its `-rtl` copy
 Before `block-editor.tsx` loads, `translations.ts` fetches `/pressbase/v1/i18n/editor?_locale=user` and calls `setLocaleData(data, 'default')` on `@wordpress/i18n`'s shared instance, as `wp_set_script_translations()` arranges in WordPress; `registerCoreBlocks()` translates block titles as it registers them, so the order matters. The data is the installed core language pack's script translations for `wp-includes/js/dist/*` plus the block metadata strings from its `.mo`. The editor's toolbar ("Add block", "Undo", "Add title") uses the same instance. See [Internationalisation](i18n.md#the-block-editor).
 
 `canvas.css` stands in for a theme until themes arrive in v0.4. It provides serif typography, a 680px content column (1000px wide), the title field, and the layout rules WordPress's global stylesheet would emit (`is-layout-flow`, `-constrained`, `-flex`, `-grid`).
+
+## Shared pieces: `kit.tsx`
+
+What every block editor screen needs lives in `kit.tsx`, so the post editor and Studio behave alike: the one-time setup above, `resolvedAssets()` (the canvas iframe's `<head>`), `EditorUiStylesheets`, `usePluginBlocks()` (plugin blocks before parsing, below), `useEditorFeatures()` (the feature probes), `editorSettings()` (the settings table below), `saveEditedMenus()`, and the store bridges `UndoShortcuts`, `NoticesBridge` and `MediaCategories`. A new editor screen composes these with its own `BlockEditorProvider` rather than copying them.
 
 ## The editor component
 

@@ -14,6 +14,7 @@ import { abilitiesRoutes } from './routes/abilities';
 import { aiRoutes } from './routes/ai';
 import { authRoutes } from './routes/auth';
 import { autosavesRoutes } from './routes/autosaves';
+import { blockEditorSettingsRoutes } from './routes/block-editor-settings';
 import { blockRoutes } from './routes/blocks';
 import { changesetsRoutes } from './routes/changesets';
 import { commentCountRoutes, commentsRoutes } from './routes/comments';
@@ -31,6 +32,7 @@ import { permalinksRoutes } from './routes/permalinks';
 import { pluginAdminRoutes, pluginModuleRoutes } from './routes/plugin-admin';
 import { pluginsRoutes } from './routes/plugins';
 import { postsRoutes } from './routes/posts';
+import { qualityRoutes } from './routes/quality';
 import { searchRoutes } from './routes/search';
 import { settingsRoutes } from './routes/settings';
 import { siteHealthRoutes, wpSiteHealthRoutes } from './routes/site-health';
@@ -87,6 +89,15 @@ export function createApp(kernel: Kernel) {
       url: ready ? await kernel.options.get<string>('home', '') : '',
       namespaces: ['pressbase/v1', 'wp/v2', 'wp-abilities/v1', ...kernel.plugins.namespaces()],
       pressbase: { version: PRESSBASE_VERSION, state: kernel.state },
+      // The reading settings, as WP_REST_Server::get_index() gives them to anyone.
+      ...(ready
+        ? {
+            timezone_string: await kernel.options.get<string>('timezone_string', ''),
+            page_for_posts: Number(await kernel.options.get('page_for_posts', 0)) || 0,
+            page_on_front: Number(await kernel.options.get('page_on_front', 0)) || 0,
+            show_on_front: await kernel.options.get<string>('show_on_front', 'posts'),
+          }
+        : {}),
       // site_logo, site_icon, site_icon_url, as WordPress's index has them.
       ...(ready ? await siteIdentityIndex(kernel) : {}),
     });
@@ -173,6 +184,9 @@ export function createApp(kernel: Kernel) {
   // Templates and template parts (v0.8, Studio): /wp/v2/templates and
   // /wp/v2/template-parts, with revisions and autosaves. See routes/templates.ts.
   installed.route('/', templatesRoutes(kernel));
+  // The block editor's theme-dependent settings (v0.8, Studio): global styles,
+  // theme.json features and the theme's canvas assets. See routes/block-editor-settings.ts.
+  installed.route('/', blockEditorSettingsRoutes(kernel));
   // Changesets (v0.8): one draft across styles, templates, pages, menus and
   // options, published together. See docs/architecture/changesets.md, ADR 0022.
   installed.route('/pressbase/v1/changesets', changesetsRoutes());
@@ -186,6 +200,8 @@ export function createApp(kernel: Kernel) {
   // /pressbase/v1/ai. See docs/architecture/ai.md.
   installed.route('/wp-abilities/v1', abilitiesRoutes());
   installed.route('/pressbase/v1/ai', aiRoutes());
+  // Quality checks (v0.8): core/check-page over POST. See docs/architecture/quality-checks.md.
+  installed.route('/pressbase/v1/check-page', qualityRoutes());
 
   // Plugins (v0.5): /wp/v2/plugins, then — last, as a catch-all — the post
   // types, taxonomies and REST namespaces of active plugins, looked up per

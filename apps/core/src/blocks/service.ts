@@ -9,6 +9,7 @@ import {
   type WPBlock,
 } from '@pressbase/blocks';
 import { schema } from '@pressbase/db';
+import { LIBRARY_CATEGORIES, libraryPatterns } from '@pressbase/patterns';
 import { and, eq } from 'drizzle-orm';
 import type { CurrentUser } from '../auth/users';
 import type { Post } from '../content/posts';
@@ -61,6 +62,7 @@ export class BlocksService {
       this.registerBlockPatternCategory(category.name, category);
     }
     for (const pattern of CORE_PATTERNS) this.registerBlockPattern(pattern.name, pattern);
+    this.#registerLibraryPatterns();
     this.#registerSyncedPatternFields();
     this.#enqueueBlockStyles();
   }
@@ -78,6 +80,21 @@ export class BlocksService {
       }
       return content;
     });
+  }
+
+  /**
+   * The Pressbase pattern library (@pressbase/patterns), registered beside
+   * the theme's patterns as `pressbase/<name>`, with the library's section
+   * categories WordPress doesn't have (features, pricing, faq, opening-hours).
+   * See docs/architecture/patterns.md.
+   */
+  #registerLibraryPatterns(): void {
+    for (const { name, label, description, wordpress } of LIBRARY_CATEGORIES) {
+      if (!wordpress) this.registerBlockPatternCategory(name, { label, description });
+    }
+    for (const { name, ...pattern } of libraryPatterns()) {
+      this.registerBlockPattern(name, { ...pattern, source: 'core' });
+    }
   }
 
   /* ----------------------------------------------------------- block types */

@@ -454,6 +454,53 @@ describe('changesets: templates and template parts', () => {
     expect((await ctx.kernel.posts.revisions(copy?.wpId ?? 0)).length).toBeGreaterThan(0);
   });
 
+  it('resets a customised part to the theme’s file with source: theme', async () => {
+    const ctx = await site();
+    const first = await ctx.request('POST', '/pressbase/v1/changesets', {
+      entries: { 'wp_template_part:header': { content: HEADER('Corner Bakery header') } },
+    });
+    await ctx.request('POST', `/pressbase/v1/changesets/${first.body.uuid}/publish`);
+    const copy = await header(ctx.kernel);
+    expect(copy?.source).toBe('custom');
+
+    const reset = await ctx.request('POST', '/pressbase/v1/changesets', {
+      entries: { 'wp_template_part:header': { source: 'theme' } },
+    });
+    expect(reset.status).toBe(201);
+    expect(reset.body.entries['wp_template_part:header'].value).toEqual({ source: 'theme' });
+    // The preview shows the theme's header; everyone else still sees the copy.
+    const preview = await visitAsAdmin(ctx, `/opening-hours/?changeset_uuid=${reset.body.uuid}`);
+    expect(preview.html).not.toContain('Corner Bakery header');
+    expect(preview.html).toContain('wp-block-template-part');
+    expect((await visit(ctx, '/opening-hours/')).html).toContain('Corner Bakery header');
+
+    const published = await ctx.request(
+      'POST',
+      `/pressbase/v1/changesets/${reset.body.uuid}/publish`,
+    );
+    expect(published.status).toBe(200);
+    expect((await header(ctx.kernel))?.source).toBe('theme');
+    expect(await ctx.kernel.posts.get(copy?.wpId ?? 0)).toBeFalsy();
+    expect((await visit(ctx, '/opening-hours/')).html).not.toContain('Corner Bakery header');
+  });
+
+  it('refuses a reset with other fields, or for a template without a theme file', async () => {
+    const ctx = await site();
+    const mixed = await ctx.request('POST', '/pressbase/v1/changesets', {
+      entries: { 'wp_template_part:header': { source: 'theme', content: '<p>Both</p>' } },
+    });
+    expect(mixed.status).toBe(400);
+    expect(mixed.body.data.entries['wp_template_part:header'].code).toBe('rest_invalid_param');
+
+    const noFile = await ctx.request('POST', '/pressbase/v1/changesets', {
+      entries: { 'wp_template_part:made-up': { source: 'theme' } },
+    });
+    expect(noFile.status).toBe(400);
+    expect(noFile.body.data.entries['wp_template_part:made-up'].code).toBe(
+      'rest_template_not_found',
+    );
+  });
+
   it('needs edit_theme_options, and the active theme', async () => {
     const ctx = await site();
     const editor = await ctx.loginAs('editor', 'editor');
@@ -558,5 +605,113 @@ describe('changesets: preview (?changeset_uuid=)', () => {
     const unknown = await visitAsAdmin(ctx, '/?changeset_uuid=not-a-uuid');
     expect(unknown.status).toBe(200);
     expect(unknown.headers['cache-control']).toBe('private, no-store');
+  });
+});
+
+describe('changesets: pages Studio adds and arranges (#29)', () => {
+  it('creates pages named by slug on publish, a child under a new parent, with their template', async () => {
+    const ctx = await site();
+    // The child comes first: publishing writes its new parent before it (after()).
+    const res = await ctx.request('POST', '/pressbase/v1/changesets', {
+      entries: {
+        'page:our-team': {
+          title: 'Our team',
+          status: 'publish',
+          parent: 'about-us',
+          menu_order: 1,
+        },
+        'page:about-us': {
+          title: 'About us',
+          status: 'publish',
+          parent: ctx.page.id,
+          menu_order: 2,
+          template: 'page-no-title',
+        },
+      },
+    });
+    expect(res.status).toBe(201);
+    const uuid = res.body.uuid as string;
+
+    // Nothing exists until publish; the preview shows both pages, nested.
+    expect((await visit(ctx, '/opening-hours/about-us/')).status).toBe(404);
+    const preview = await visitAsAdmin(
+      ctx,
+      `/opening-hours/about-us/our-team/?changeset_uuid=${uuid}`,
+    );
+    expect(preview.status).toBe(200);
+    expect(preview.html).toContain('Our team');
+
+    const published = await ctx.request('POST', `/pressbase/v1/changesets/${uuid}/publish`);
+    expect(published.status).toBe(200);
+    const pages = await ctx.request('GET', '/wp/v2/pages?context=edit&per_page=100');
+    const about = pages.body.find((p: { slug: string }) => p.slug === 'about-us');
+    const team = pages.body.find((p: { slug: string }) => p.slug === 'our-team');
+    expect(about).toMatchObject({ parent: ctx.page.id, menu_order: 2, status: 'publish' });
+    expect(about.template).toBe('page-no-title');
+    expect(team).toMatchObject({ parent: about.id, menu_order: 1, template: '' });
+    expect((await visit(ctx, '/opening-hours/about-us/our-team/')).status).toBe(200);
+  });
+
+  it('changes an existing page’s parent, order and template; the preview uses the template', async () => {
+    const ctx = await site();
+    const parent = await ctx.kernel.posts.insert('page', {
+      title: 'Visit',
+      status: 'publish',
+      authorId: 1,
+    });
+    const res = await ctx.request('POST', '/pressbase/v1/changesets', {
+      entries: {
+        [`page:${ctx.page.id}`]: { parent: parent.id, menu_order: 3, template: 'page-no-title' },
+      },
+    });
+    const uuid = res.body.uuid as string;
+    const preview = await visitAsAdmin(ctx, `/visit/opening-hours/?changeset_uuid=${uuid}`);
+    expect(preview.status).toBe(200);
+    expect(preview.html).toContain('wp-block-template-page-no-title');
+    expect((await visit(ctx, '/opening-hours/')).html).not.toContain(
+      'wp-block-template-page-no-title',
+    );
+
+    await ctx.request('POST', `/pressbase/v1/changesets/${uuid}/publish`);
+    const page = await ctx.request('GET', `/wp/v2/pages/${ctx.page.id}?context=edit`);
+    expect(page.body).toMatchObject({
+      parent: parent.id,
+      menu_order: 3,
+      template: 'page-no-title',
+    });
+    // Back to the default template.
+    const back = await ctx.request('POST', '/pressbase/v1/changesets', {
+      entries: { [`page:${ctx.page.id}`]: { template: '' } },
+    });
+    await ctx.request('POST', `/pressbase/v1/changesets/${back.body.uuid}/publish`);
+    expect((await ctx.request('GET', `/wp/v2/pages/${ctx.page.id}`)).body.template).toBe('');
+  });
+
+  it('gives anyone the home page settings in the REST index, as WordPress does', async () => {
+    const ctx = await site();
+    await ctx.kernel.options.set('show_on_front', 'page');
+    await ctx.kernel.options.set('page_on_front', ctx.page.id);
+    const index = await ctx.app.request('/wp-json/');
+    expect(await index.json()).toMatchObject({
+      show_on_front: 'page',
+      page_on_front: ctx.page.id,
+      page_for_posts: 0,
+    });
+  });
+
+  it('refuses a template the theme doesn’t offer, a page under itself, and a missing ID', async () => {
+    const ctx = await site();
+    const res = await ctx.request('POST', '/pressbase/v1/changesets', {
+      entries: {
+        [`page:${ctx.page.id}`]: { template: 'no-such-template' },
+        'page:loop': { title: 'Loop', parent: 'loop' },
+        'page:999999': { title: 'Gone' },
+      },
+    });
+    expect(res.status).toBe(400);
+    const entries = res.body.data.entries;
+    expect(entries[`page:${ctx.page.id}`].code).toBe('rest_invalid_param');
+    expect(entries['page:loop'].code).toBe('rest_post_invalid_parent');
+    expect(entries['page:999999'].code).toBe('rest_post_invalid_id');
   });
 });

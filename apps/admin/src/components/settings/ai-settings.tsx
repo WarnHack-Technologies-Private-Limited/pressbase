@@ -16,6 +16,8 @@ export interface AiSettingsData {
   enabled: boolean;
   provider: string;
   model: string;
+  /** The model for quick edits; empty: the main model. */
+  fast_model: string;
   daily_limit: number;
   requests_today: number;
   supports_ai: boolean;
@@ -44,6 +46,7 @@ export function AiSettingsForm({ initial }: { initial: AiSettingsData }) {
   const [enabled, setEnabled] = useState(initial.enabled);
   const [provider, setProvider] = useState(initial.provider);
   const [model, setModel] = useState(initial.model);
+  const [fastModel, setFastModel] = useState(initial.fast_model ?? '');
   const [limit, setLimit] = useState(String(initial.daily_limit));
   const [apiKey, setApiKey] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -55,6 +58,7 @@ export function AiSettingsForm({ initial }: { initial: AiSettingsData }) {
   const key = current?.key ?? { source: 'none', last4: null };
   const models = current?.models ?? [];
   const knownModel = model === '' || models.some((m) => m.id === model);
+  const knownFastModel = fastModel === '' || models.some((m) => m.id === fastModel);
 
   async function send(body: Record<string, unknown>) {
     const next = await api<AiSettingsData>('/pressbase/v1/ai/settings', { method: 'POST', body });
@@ -78,6 +82,7 @@ export function AiSettingsForm({ initial }: { initial: AiSettingsData }) {
         enabled,
         provider,
         model,
+        fast_model: fastModel,
         daily_limit: Number(limit),
       };
       // An empty field keeps the saved key.
@@ -178,6 +183,7 @@ export function AiSettingsForm({ initial }: { initial: AiSettingsData }) {
             onChange={(e) => {
               setProvider(e.target.value);
               setModel('');
+              setFastModel('');
             }}
             error={errors.provider}
           >
@@ -202,6 +208,24 @@ export function AiSettingsForm({ initial }: { initial: AiSettingsData }) {
               </option>
             ))}
             {!knownModel && <option value={model}>{model}</option>}
+          </SelectField>
+          <SelectField
+            label={__('Model for quick edits', 'pressbase-admin')}
+            value={fastModel}
+            onChange={(e) => setFastModel(e.target.value)}
+            error={errors.fast_model}
+            hint={__(
+              'Used for rewrites and small changes. A smaller model answers faster and costs less. Building pages always uses the main model.',
+              'pressbase-admin',
+            )}
+          >
+            <option value="">{__('Same as the main model', 'pressbase-admin')}</option>
+            {models.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+            {!knownFastModel && <option value={fastModel}>{fastModel}</option>}
           </SelectField>
         </div>
       </Card>

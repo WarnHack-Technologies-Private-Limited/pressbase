@@ -16,6 +16,7 @@ import {
   saveGlobalStyles,
   userGlobalStylesPost,
 } from '../themes/global-styles';
+import { getBlockTemplates } from '../themes/templates';
 import type { ChangesetPreview } from './preview';
 
 /**
@@ -60,6 +61,11 @@ export interface ChangesetEntityHandler<V = unknown> {
   apply(kernel: Kernel, id: string, value: V, author: CurrentUser | null): Promise<void>;
   /** Lays the value over a preview (WP_Customize_Setting::preview()). */
   preview(kernel: Kernel, id: string, value: V, preview: ChangesetPreview): Promise<void>;
+  /**
+   * Entry keys this entry needs written (or previewed) before it: a page
+   * placed under a page the same changeset creates. Unknown keys are ignored.
+   */
+  after?(id: string, value: V): string[];
 }
 
 export class ChangesetEntities {
@@ -90,6 +96,32 @@ export function parseEntryKey(key: string): { type: string; id: string } | undef
   return match?.[1] && match[2] ? { type: match[1], id: match[2] } : undefined;
 }
 
+/**
+ * Entries in the order they're written: by handler order, then each after
+ * the entries it names in `after()` (a stable topological sort; a loop keeps
+ * the given order).
+ */
+export function orderEntries<
+  T extends { key: string; id: string; value: unknown; handler: ChangesetEntityHandler },
+>(entries: T[]): T[] {
+  const sorted = [...entries].sort((a, b) => a.handler.order - b.handler.order);
+  const byKey = new Map(sorted.map((e) => [e.key, e]));
+  const out: T[] = [];
+  const state = new Map<string, 'visiting' | 'done'>();
+  const visit = (entry: T) => {
+    if (state.has(entry.key)) return;
+    state.set(entry.key, 'visiting');
+    for (const key of entry.handler.after?.(entry.id, entry.value) ?? []) {
+      const before = byKey.get(key);
+      if (before) visit(before);
+    }
+    state.set(entry.key, 'done');
+    out.push(entry);
+  };
+  for (const entry of sorted) visit(entry);
+  return out;
+}
+
 /* ------------------------------------------------------------------ posts */
 
 /** A post entry's value: the WordPress REST fields Studio changes. */
@@ -100,8 +132,11 @@ const postValue = z
     excerpt: rawText.optional(),
     status: z.enum(['publish', 'draft', 'pending', 'private']).optional(),
     slug: z.string().max(200).optional(),
-    parent: z.number().int().min(0).optional(),
+    /** A post ID, or the slug of a post (one this changeset creates, say). */
+    parent: z.union([z.number().int().min(0), z.string().min(1).max(200)]).optional(),
     menu_order: z.number().int().optional(),
+    /** The custom template (`_wp_page_template`); '' for the default. */
+    template: z.string().max(200).optional(),
   })
   .strict()
   .refine((v) => Object.keys(v).length > 0, { message: 'Give at least one field to change.' });
@@ -142,16 +177,28 @@ async function findPost(kernel: Kernel, id: string, type: string): Promise<Post 
   return post;
 }
 
-function postInput(value: PostEntryValue): PostInput {
+function postInput(value: PostEntryValue, parentId?: number | null): PostInput {
   const input: PostInput = {};
   if (value.title !== undefined) input.title = value.title;
   if (value.content !== undefined) input.content = value.content;
   if (value.excerpt !== undefined) input.excerpt = value.excerpt;
   if (value.status !== undefined) input.status = value.status;
   if (value.slug !== undefined) input.slug = value.slug;
-  if (value.parent !== undefined) input.parentId = value.parent || null;
+  if (parentId !== undefined) input.parentId = parentId || null;
   if (value.menu_order !== undefined) input.menuOrder = value.menu_order;
   return input;
+}
+
+/** The meta key holding a post's custom template (get_page_template_slug()). */
+export const PAGE_TEMPLATE_META = '_wp_page_template';
+
+/**
+ * The templates a post of `type` may choose (WP_Theme::get_page_templates()
+ * for a block theme: custom templates for the type), by slug.
+ */
+async function pageTemplates(kernel: Kernel, type: string): Promise<Set<string>> {
+  const templates = await getBlockTemplates(kernel, { post_type: type });
+  return new Set(templates.map((t) => t.slug));
 }
 
 /** Term IDs for slugs, creating missing terms (for posts a changeset creates). */
@@ -221,6 +268,32 @@ export function postEntityHandler(
       }
       const v = { ...parsed.data };
       if (v.parent !== undefined && !postType.hierarchical) delete v.parent;
+      if (typeof v.parent === 'string') {
+        if (/^\d+$/.test(v.parent)) v.parent = Number(v.parent);
+        else if (sanitizeSlug(v.parent) !== v.parent || v.parent === id) {
+          throw new ChangesetEntryError('rest_post_invalid_parent', 'Invalid post parent ID.');
+        }
+      }
+      if (v.parent === Number(id)) {
+        throw new ChangesetEntryError('rest_post_invalid_parent', 'Invalid post parent ID.');
+      }
+      if (v.template !== undefined) {
+        // check_template(): the default, the post's own, or one the type may choose.
+        if (v.template === 'default') v.template = '';
+        const current = post
+          ? await kernel.meta.get('post', post.id, PAGE_TEMPLATE_META, true)
+          : '';
+        if (
+          v.template &&
+          v.template !== current &&
+          !(await pageTemplates(kernel, type)).has(v.template)
+        ) {
+          throw new ChangesetEntryError(
+            'rest_invalid_param',
+            `template is not one of ${[...(await pageTemplates(kernel, type))].join(', ')}.`,
+          );
+        }
+      }
       if (v.slug !== undefined) v.slug = sanitizeSlug(v.slug);
       if (!userCan(user, 'unfiltered_html')) {
         if (v.title !== undefined) v.title = sanitizePostTitle(v.title);
@@ -247,21 +320,42 @@ export function postEntityHandler(
     },
 
     async apply(kernel, id, value, author) {
-      const input = postInput(value);
+      let parentId: number | undefined;
+      if (typeof value.parent === 'string') {
+        // A page placed under one the changeset creates: written first (after()).
+        const parent = await find(kernel, value.parent, type);
+        if (!parent) {
+          throw new ChangesetEntryError('rest_post_invalid_parent', 'Invalid post parent ID.');
+        }
+        parentId = parent.id;
+      } else if (value.parent !== undefined) {
+        parentId = value.parent;
+      }
+      const input = postInput(value, parentId);
       // The value was sanitised for its author when it was written; publishing
       // filters it again for an author without unfiltered_html, as wp_insert_post() would.
       input.filterHtml = !userCan(author, 'unfiltered_html');
+      const setTemplate = async (postId: number) => {
+        if (value.template === undefined) return;
+        // update_post_meta( $post_id, '_wp_page_template', … ), as WP_REST_Posts_Controller::handle_template() does.
+        if (value.template)
+          await kernel.meta.update('post', postId, PAGE_TEMPLATE_META, value.template);
+        else await kernel.meta.delete('post', postId, PAGE_TEMPLATE_META);
+      };
       const post = await find(kernel, id, type);
       if (post) {
-        await kernel.posts.update(post.id, input);
+        const { filterHtml: _filter, ...fields } = input;
+        if (Object.keys(fields).length) await kernel.posts.update(post.id, input);
+        await setTemplate(post.id);
         return;
       }
-      if (!options.create)
+      // Only an entry named by slug creates a post; a missing ID is a deleted post.
+      if (!options.create || /^\d+$/.test(id))
         throw new ChangesetEntryError('rest_post_invalid_id', 'Invalid post ID.');
       const terms = options.create.terms
         ? await termIds(kernel, await options.create.terms(kernel))
         : {};
-      await kernel.posts.insert(type, {
+      const created = await kernel.posts.insert(type, {
         ...input,
         title: input.title ?? id,
         slug: id,
@@ -269,12 +363,28 @@ export function postEntityHandler(
         authorId: author?.id ?? null,
         terms,
       });
+      await setTemplate(created.id);
+    },
+
+    after(_id, value) {
+      return typeof value.parent === 'string' ? [`${type}:${value.parent}`] : [];
     },
 
     async preview(kernel, id, value, preview) {
       const post = await find(kernel, id, type);
-      const input = postInput(value);
+      let parentId: number | undefined;
+      if (typeof value.parent === 'string') {
+        const slug = value.parent;
+        const created = [...preview.created.values()].find(
+          (c) => c.post.type === type && c.post.slug === slug,
+        );
+        parentId = created?.post.id ?? (await find(kernel, slug, type))?.id;
+      } else if (value.parent !== undefined) {
+        parentId = value.parent;
+      }
+      const input = postInput(value, parentId);
       if (post) {
+        if (value.template !== undefined) preview.templates.set(post.id, value.template);
         preview.posts.set(post.id, {
           ...(preview.posts.get(post.id) ?? post),
           ...(input.title !== undefined ? { title: input.title } : {}),
@@ -288,9 +398,10 @@ export function postEntityHandler(
         });
         return;
       }
-      if (!options.create) return;
+      if (!options.create || /^\d+$/.test(id)) return;
       const now = new Date();
       const previewId = preview.nextId();
+      if (value.template !== undefined) preview.templates.set(previewId, value.template);
       preview.created.set(previewId, {
         post: {
           id: previewId,

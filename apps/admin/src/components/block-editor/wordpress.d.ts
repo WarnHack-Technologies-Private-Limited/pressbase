@@ -55,7 +55,29 @@ declare module '@wordpress/block-editor' {
     props?: Record<string, unknown>,
     options?: Record<string, unknown>,
   ): Record<string, unknown>;
-  export const InspectorControls: ComponentType<Record<string, unknown>>;
+  export const InspectorControls: ComponentType<Record<string, unknown>> & {
+    Slot: ComponentType<{ group?: string; label?: string; className?: string }>;
+  };
+  // Studio (components/studio/).
+  export const BlockContextProvider: ComponentType<{
+    value: Record<string, unknown>;
+    children?: ReactNode;
+  }>;
+  export const BlockIcon: ComponentType<{ icon?: unknown; showColors?: boolean }>;
+  export const BlockStyles: ComponentType<{ clientId: string }>;
+  export function useBlockDisplayInformation(clientId?: string | null): {
+    title?: string;
+    icon?: unknown;
+    description?: string;
+    name?: string;
+  } | null;
+  // Studio's Sections panel (#44): a pattern drawn in the editor's styles, scaled to fit.
+  export const BlockPreview: ComponentType<{
+    blocks: BlockInstance[];
+    viewportWidth?: number;
+    minHeight?: number;
+    additionalStyles?: { css: string }[];
+  }>;
   export const BlockControls: ComponentType<Record<string, unknown>>;
   export const RichText: ComponentType<Record<string, unknown>> & {
     Content: ComponentType<Record<string, unknown>>;

@@ -3,6 +3,7 @@ import {
   FileText,
   Image,
   LayoutDashboard,
+  LayoutTemplate,
   MessageSquare,
   Paintbrush,
   PenSquare,
@@ -72,6 +73,13 @@ export const SECTION_GROUPS: SectionGroup[] = [
   {
     label: msgid('Design'),
     items: [
+      // The site editor (WordPress's Appearance → Editor), full-screen. See docs/architecture/studio.md.
+      {
+        slug: 'studio',
+        label: msgid('Studio'),
+        icon: LayoutTemplate,
+        capability: 'edit_theme_options',
+      },
       {
         slug: 'appearance',
         label: msgid('Appearance'),

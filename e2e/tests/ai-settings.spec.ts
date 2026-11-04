@@ -25,7 +25,7 @@ test('Settings → AI saves a key and shows it masked', async ({ page }) => {
   await expect(test).toBeDisabled();
 
   await page.getByRole('checkbox', { name: 'Turn on AI features' }).check();
-  await page.getByLabel('Model').selectOption('claude-sonnet-5-5');
+  await page.getByLabel('Model', { exact: true }).selectOption('claude-sonnet-5-5');
   await page.getByLabel('API key', { exact: true }).fill(key);
   await page.getByLabel('Requests per day').fill('25');
   await page.getByRole('button', { name: 'Save changes' }).click();
@@ -39,7 +39,7 @@ test('Settings → AI saves a key and shows it masked', async ({ page }) => {
   await page.reload();
   await expect(page.getByText('Saved, ends in …7f3a')).toBeVisible();
   await expect(page.getByRole('checkbox', { name: 'Turn on AI features' })).toBeChecked();
-  await expect(page.getByLabel('Model')).toHaveValue('claude-sonnet-5-5');
+  await expect(page.getByLabel('Model', { exact: true })).toHaveValue('claude-sonnet-5-5');
   await expect(page.getByLabel('Requests per day')).toHaveValue('25');
   expect(await page.content()).not.toContain(key);
   const api = await page.request.get('/wp-json/pressbase/v1/ai/settings');

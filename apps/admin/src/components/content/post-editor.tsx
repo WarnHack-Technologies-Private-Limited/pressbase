@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, ChevronDown, PanelRight, X } from 'lucide-react';
+import { ArrowLeft, ChevronDown, LayoutPanelTop, PanelRight, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
   type KeyboardEvent as ReactKeyboardEvent,
@@ -198,6 +198,8 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
   const [newCategory, setNewCategory] = useState<string | null>(null);
   const [pages, setPages] = useState<RestPost[]>([]);
   const [revisions, setRevisions] = useState<Revision[]>([]);
+  // Where Leave goes once confirmed: the list, or Studio.
+  const leaveTo = useRef<string | null>(null);
   const [confirm, setConfirm] = useState<'unpublish' | 'trash' | 'leave' | 'prepublish' | null>(
     null,
   );
@@ -765,7 +767,12 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
   /* ------------------------------------------------------------ render */
 
   const listHref = `/admin/${config.base}`;
-  const leave = () => (dirty ? setConfirm('leave') : router.push(listHref));
+  /** Leaves the editor (for the list, or Studio), asking first when there are unsaved changes. */
+  const leave = (to: string = listHref) => {
+    leaveTo.current = to;
+    if (dirty) setConfirm('leave');
+    else router.push(to);
+  };
 
   if (loading) {
     return (
@@ -860,7 +867,7 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
           : `Add new ${config.singular.toLowerCase()}`}
       </h1>
       <div className={styles.bar}>
-        <button type="button" className={styles.back} onClick={leave}>
+        <button type="button" className={styles.back} onClick={() => leave()}>
           <ArrowLeft size={16} aria-hidden="true" /> {config.plural}
         </button>
         <span className={styles.hideTiny}>
@@ -878,6 +885,19 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
           {saveState}
         </span>
         <span className={styles.spacer} />
+        {config.type === 'page' && post && (
+          // #29: open the page in Studio, in its design. Unsaved changes ask first (leave()).
+          <Button
+            size="sm"
+            variant="ghost"
+            className={styles.hideTiny}
+            icon={<LayoutPanelTop size={16} aria-hidden="true" />}
+            onClick={() => leave(`/admin/studio?page=${post.id}`)}
+            disabled={Boolean(busy)}
+          >
+            Edit with Studio
+          </Button>
+        )}
         {isLive && canPublish ? (
           <Button
             size="sm"
@@ -1488,7 +1508,7 @@ export function PostEditor({ config, id }: { config: ContentType; id?: number })
           setSaved(form);
           setSavedContent(current);
           clearBackup(browserStorage(), storageKey);
-          router.push(listHref);
+          router.push(leaveTo.current ?? listHref);
         }}
       >
         Your unsaved changes will be lost.

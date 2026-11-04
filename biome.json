@@ -15,6 +15,7 @@
       "!**/.claude",
       "!**/.pressbase",
       "!themes",
+      "!packages/patterns/src/patterns",
       "!apps/core/static"
     ]
   },
