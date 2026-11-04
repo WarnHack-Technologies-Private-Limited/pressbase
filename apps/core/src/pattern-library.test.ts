@@ -288,7 +288,9 @@ describe('the library’s sections (#40, #41)', () => {
         for (const f of findings) {
           // Images left to choose and `#` links are placeholders a person fills in.
           if (f.rule === 'placeholder') continue;
-          problems.push(`${scheme} ${pattern.name}: ${f.rule} ${f.message} ${JSON.stringify(f.block)}`);
+          problems.push(
+            `${scheme} ${pattern.name}: ${f.rule} ${f.message} ${JSON.stringify(f.block)}`,
+          );
         }
       }
     }

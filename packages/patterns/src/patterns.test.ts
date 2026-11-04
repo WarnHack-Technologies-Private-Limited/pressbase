@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { parseBlocks, serializeBlocks } from '@pressbase/blocks';
 import {
   extractSlots,
@@ -7,7 +8,6 @@ import {
   slotsJsonSchema,
   slotValues,
 } from '@pressbase/slots';
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   checkPattern,

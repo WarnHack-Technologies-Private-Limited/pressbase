@@ -170,7 +170,10 @@ function checkBlock(block: ParsedBlock, problems: string[]): void {
   // A grid's minimum column width is what lets it wrap on small screens. In
   // rem, it follows the text size rather than fixing a width.
   const minimum = layout?.minimumColumnWidth;
-  if (minimum !== undefined && !(typeof minimum === 'string' && /^\d+(?:\.\d+)?rem$/.test(minimum))) {
+  if (
+    minimum !== undefined &&
+    !(typeof minimum === 'string' && /^\d+(?:\.\d+)?rem$/.test(minimum))
+  ) {
     problems.push(`${name}: layout.minimumColumnWidth must be in rem`);
   }
   for (const [key, value] of Object.entries(attrs)) {
