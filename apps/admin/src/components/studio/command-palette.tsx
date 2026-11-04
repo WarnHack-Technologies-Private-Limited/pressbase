@@ -111,12 +111,15 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     const dialog = dialogRef.current;
     if (!dialog) return;
     if (open && !dialog.open) {
-      setQuery('');
-      setActive(0);
       dialog.showModal();
       inputRef.current?.focus();
     }
-    if (!open && dialog.open) dialog.close();
+    if (!open) {
+      if (dialog.open) dialog.close();
+      // Cleared on closing, so the next opening starts empty from its first render.
+      setQuery('');
+      setActive(0);
+    }
   }, [open]);
 
   // Keep the active option in view.
