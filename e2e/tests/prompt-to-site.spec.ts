@@ -37,7 +37,10 @@ test('builds a site from a description, then publishes it from Studio', async ({
   test.setTimeout(240_000);
   const outgoing: string[] = [];
   page.on('request', (request) => {
-    if (!request.url().startsWith('http://localhost')) outgoing.push(request.url());
+    // Blob and data URLs are the editor's own; anything on the network but this site is not.
+    if (/^https?:/.test(request.url()) && !request.url().startsWith('http://localhost')) {
+      outgoing.push(request.url());
+    }
   });
   await logInAsAdmin(page);
   await discardDrafts(page);
@@ -121,7 +124,7 @@ test('builds a site from a description, then publishes it from Studio', async ({
   await expect(page.getByRole('heading', { name: 'Your site is ready to review' })).toBeVisible({
     timeout: 120_000,
   });
-  await expect(page.getByText('4 pages built')).toBeVisible();
+  await expect(page.getByText('4 pages built', { exact: true })).toBeVisible();
   await expect(page.getByText(/\d+ things? to fill in before you publish/)).toBeVisible();
   await expect(
     page.getByText(/Building it used \d+ AI requests?, about [\d,]+ tokens/),
