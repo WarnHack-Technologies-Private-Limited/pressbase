@@ -10,6 +10,7 @@ import {
   swapLayout,
   swapSource,
   unusedText,
+  withPlaceholders,
 } from './swap-model';
 
 const heading = (text: string, level = 1) =>
@@ -141,8 +142,9 @@ describe('swapLayout', () => {
     expect(markup).toContain('Sourdough, rye and croissants');
     expect(markup).toContain('See the menu');
     expect(markup).toContain('Find us');
-    // The label the hero had no text for keeps the pattern's own.
-    expect(markup).toContain('Repairs and upkeep');
+    // The label the hero had no text for is a placeholder, not another business's sample text.
+    expect(markup).not.toContain('Repairs and upkeep');
+    expect(markup).toContain('[Add a short label]');
     expect(markup).toContain('"patternName":"pressbase/hero-centered"');
     expect(unused).toEqual([]);
   });
@@ -230,5 +232,33 @@ describe('swapSource', () => {
 
   it('without a memory, reads the section', () => {
     expect(swapSource(undefined, section, HERO).from).toHaveLength(3);
+  });
+});
+
+describe('withPlaceholders', () => {
+  const slots = (markup: string) => sectionSlots(markup, {});
+
+  it('puts placeholders in text and buttons the section had nothing for', () => {
+    const target = slots(CENTRED.content);
+    const values = withPlaceholders(target, { title: 'Fresh bread' });
+    expect(values.title).toBe('Fresh bread');
+    expect(values.eyebrow).toBe('[Add a short label]');
+    expect(values.body).toBe('[Add text]');
+    // The buttons group had no source: its fewest items, as placeholders.
+    expect(values.actions).toEqual([{ text: '[Add a button label]', url: '#' }]);
+  });
+
+  it('fills the missing parts of each card, and uses the given words', () => {
+    const target = slots(CARDS(3).content);
+    const values = withPlaceholders(
+      target,
+      { items: [{ title: 'Bread' }, { title: 'Cakes', body: 'Every day.' }] },
+      (slot) => `[${slot.role}]`,
+    );
+    expect(values.items).toEqual([
+      { title: 'Bread', body: '[body]' },
+      { title: 'Cakes', body: 'Every day.' },
+    ]);
+    expect(values.title).toBe('[title]');
   });
 });

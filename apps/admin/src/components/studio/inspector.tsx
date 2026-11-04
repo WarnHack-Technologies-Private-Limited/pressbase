@@ -18,7 +18,7 @@ import { lightScope } from '../block-editor';
 import { Button } from '../ui/button';
 import { TEMPLATE_PART } from './canvas-model';
 import { INSPECTOR_TABS, type InspectorTab, type InspectorTabId } from './layout-model';
-import { MODES, modeTabs, showsControl, type StudioMode } from './mode-model';
+import { MODES, modeTabs, type StudioMode, showsControl } from './mode-model';
 import { type PartInfo, useSelectedPart } from './regions';
 import { contentRootId } from './sections-panel';
 import styles from './studio.module.css';

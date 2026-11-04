@@ -1,6 +1,6 @@
 'use client';
 
-import type { UnusedValue } from '@pressbase/slots';
+import { placeholderFor, type Slot, type UnusedValue } from '@pressbase/slots';
 import { store as blockEditorStore } from '@wordpress/block-editor';
 import { type Block as BlockInstance, parse, serialize } from '@wordpress/blocks';
 import { useDispatch, useRegistry, useSelect } from '@wordpress/data';
@@ -164,7 +164,22 @@ export function useSwapLayout(clientId: string | null): SwapState {
     if (!target || target === current) return;
     const { from, carried } = swapSource(memories.get(clientId), markup, current);
     // A name the person gave the section stays; one that was only the old pattern's title goes.
-    const swapped = swapLayout(from, target, { name: personalName(markup, current) });
+    // Placeholders for what the section had nothing for, in the person's language.
+    const placeholders: Record<string, string> = {
+      title: __('[Add a heading]', 'pressbase-admin'),
+      heading: __('[Add a heading]', 'pressbase-admin'),
+      eyebrow: __('[Add a short label]', 'pressbase-admin'),
+      body: __('[Add text]', 'pressbase-admin'),
+      item: __('[Add an item]', 'pressbase-admin'),
+      summary: __('[Add a question]', 'pressbase-admin'),
+      citation: __('[Add a name]', 'pressbase-admin'),
+      action: __('[Add a button label]', 'pressbase-admin'),
+    };
+    const swapped = swapLayout(from, target, {
+      name: personalName(markup, current),
+      placeholder: (slot: Slot) =>
+        slot.placeholder || placeholders[slot.role] || placeholderFor(slot),
+    });
     const blocks = parse(swapped.markup);
     const next = blocks[0];
     if (!next) return;

@@ -12,9 +12,13 @@ import { type ParsedBlock, parseBlocks, serializeBlocks } from '@pressbase/block
 import {
   extractSlots,
   fillSlots,
+  placeholderFor,
+  plainToRichText,
   richTextToPlain,
   type Slot,
   type SlotDeclarations,
+  type SlotValue,
+  type SlotValues,
   transferSlots,
   type UnusedValue,
 } from '@pressbase/slots';
@@ -158,21 +162,83 @@ export interface SwappedLayout {
   unused: UnusedValue[];
 }
 
+/** Makes a placeholder's text for a slot ("[Add a short label]"), in the person's language. */
+export type PlaceholderText = (slot: Slot) => string;
+
+function placeholderValue(slot: Slot, placeholder: PlaceholderText): SlotValue | undefined {
+  if (slot.kind === 'heading' || slot.kind === 'text') return plainToRichText(placeholder(slot));
+  if (slot.kind === 'button') return { text: plainToRichText(placeholder(slot)), url: '#' };
+  // Images keep the pattern's picture; groups are filled item by item.
+  return undefined;
+}
+
+/**
+ * Honest content (plan, Principle 7): text slots the section had nothing
+ * for get a placeholder (`[Add a short label]`) instead of keeping the
+ * pattern's sample text, which describes some other business. A group the
+ * section had nothing for keeps its fewest items, as placeholders. Images
+ * keep the pattern's picture.
+ */
+export function withPlaceholders(
+  slots: Slot[],
+  values: SlotValues,
+  placeholder: PlaceholderText = placeholderFor,
+): SlotValues {
+  const out: SlotValues = { ...values };
+  for (const slot of slots) {
+    const value = values[slot.id];
+    if (slot.kind !== 'group') {
+      if (value === undefined) {
+        const filled = placeholderValue(slot, placeholder);
+        if (filled !== undefined) out[slot.id] = filled;
+      }
+      continue;
+    }
+    const template = (index: number) => slot.items[Math.min(index, slot.items.length - 1)] ?? [];
+    if (Array.isArray(value)) {
+      if (!slot.flat) {
+        out[slot.id] = value.map((item, index) =>
+          item && typeof item === 'object' && !Array.isArray(item)
+            ? withPlaceholders(template(index), item as SlotValues, placeholder)
+            : item,
+        );
+      }
+      continue;
+    }
+    const items: SlotValue[] = [];
+    for (let index = 0; index < Math.max(1, slot.minItems); index++) {
+      const children = template(index);
+      const only = children[0];
+      if (slot.flat && only) {
+        const filled = placeholderValue(only, placeholder);
+        if (filled === undefined) break;
+        items.push(filled);
+      } else items.push(withPlaceholders(children, {}, placeholder));
+    }
+    if (items.length) out[slot.id] = items;
+  }
+  return out;
+}
+
 /**
  * The pattern `to`, holding the content in `from` (the section's slots):
- * the same text, links and images where the layout has room, the pattern's
- * own content where the section had nothing to give. `name` keeps the name
- * the person gave the section in Layers.
+ * the same text, links and images where the layout has room, and a
+ * placeholder where the section had nothing to give (withPlaceholders()).
+ * `name` keeps the name the person gave the section in Layers.
  */
 export function swapLayout(
   from: Slot[],
   to: LayoutPattern,
-  { name = '' }: { name?: string } = {},
+  {
+    name = '',
+    placeholder = placeholderFor,
+  }: { name?: string; placeholder?: PlaceholderText } = {},
 ): SwappedLayout {
   const blocks = patternBlocks(to);
   const declarations = to.slots;
-  const { values, unused } = transferSlots(from, extractSlots(blocks, { declarations }));
-  const filled = fillSlots(blocks, values, { declarations });
+  const target = extractSlots(blocks, { declarations });
+  const { values, unused } = transferSlots(from, target);
+  const filled = fillSlots(blocks, withPlaceholders(target, values, placeholder), { declarations });
   const root = filled[0];
   if (root) {
     const metadata = { ...(root.attrs.metadata as Record<string, unknown> | undefined) };
