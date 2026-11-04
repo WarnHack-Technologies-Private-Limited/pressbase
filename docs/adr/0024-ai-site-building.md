@@ -1,6 +1,6 @@
 # 0024: AI site building: pipeline, slots, operations, honest content
 
-- **Status:** Proposed. Slots (v0.8, #38 and #39), the design generator (#54) and the quality checks (#55) are accepted and built; the pipeline, operations and the enforcement of honest content are pending and will be added to this record before it is accepted.
+- **Status:** Proposed. Slots (v0.8, #38 and #39), the design generator (#54), the quality checks (#55) and the site-building abilities (#56) are accepted and built; the pipeline, the operations the admin applies and the enforcement of honest content are pending and will be added to this record before it is accepted.
 - **Date:** 2026-11-03
 
 ## Context
@@ -44,10 +44,20 @@ WordPress has related pieces but not this one. Pattern overrides (6.5) let a syn
 - **Rules**: invalid or unknown blocks (delimiters, schema, `parent`/`ancestor`/`allowedBlocks`), contrast below AA following colours down the tree as CSS does, one `h1` and no skipped levels, alt text unless decorative, placeholders (the slots' rules), empty or vague link text, raw colours outside presets. Where the checker can't know (text over images or gradients) it says nothing rather than guess.
 - **Decorative images are marked** with `metadata.decorative` (or `role="presentation"` / `aria-hidden`), because WordPress always saves an empty `alt` and can't tell decorative from forgotten.
 
+### Abilities (accepted)
+
+- **Eight abilities in core, WordPress-style names**: reads `core/get-site-brief`, `core/get-design-system`, `core/list-patterns`, `core/get-page-structure`; writes `core/create-page`, `core/update-page-sections`, `core/update-global-styles`, `core/update-template-part` (with `core/check-page` above). The AI panel's tool loop, the pipeline, the CLI and a future MCP server use the same ones. See [site abilities](../architecture/site-abilities.md).
+- **Permissions as the user**: `edit_theme_options` for styles and parts; `edit_post` on a page, `edit_pages` and `publish_pages` to create one; `edit_posts` for the reads that hold nothing private (brief, presets, patterns).
+- **Writes go into the user's changeset**, the open one or one named by `changeset_uuid`, started when there's none, through the changeset's entity handlers (which validate, sanitise and check each entry again). **No ability publishes.** A write needs a person (a changeset has an author), so the CLI needs `--user` for writes.
+- **Sections by pattern and slots, never markup.** Page edits are the plan's operations (`insertSection`, `replaceSection`, `moveSection`, `removeSection`, `updateSlots`), each naming a registered pattern and plain-text slot values checked against the slots' schema; code renders with `fillSlots()` and records the pattern in `metadata.patternName`, as the block editor does, so a later read knows it. Replacing keeps content with `transferSlots()`, and reports what didn't fit.
+- **Styles through a design direction or preset references.** `design` reuses the design generator, so colours are made by code; `styles` may hold preset references, sizes and keywords only, never raw colours, `url()` or CSS.
+- **The brief is an option** (`pressbase_site_brief`), a REST setting, with the Brief stage's shape: facts are the person's, kept apart from copy.
+- **Content from the site is data, not instructions**: what the reads return goes into prompts as labelled data; the abilities enforce permissions and the changeset whatever a model asks.
+
 ### Pending
 
 - **The pipeline**: brief, design, sitemap, page and check stages as structured calls, run as a job, with progress over Server-Sent Events.
-- **Operations**: the edit set (`insertSection`, `replaceSection`, `updateSlots`…) the AI panel applies through the editor's stores, with Keep and Undo.
+- **Operations in the admin**: the edit set the AI panel applies through the editor's stores, with Keep and Undo (#57). The abilities already take the page operations in core; `updateBlockAttributes` and `updateMenu` aren't abilities yet.
 - **Honest content enforcement**: the brief's facts versus written copy, the checks after generation, and the publish confirmation.
 - **Custom sections** (v2): model-written markup, parsed, checked and sanitised.
 
@@ -64,7 +74,13 @@ WordPress has related pieces but not this one. Pattern overrides (6.5) let a syn
 - Generated designs restyle the Pressbase theme fully. Other block themes get the presets whose slugs they share (spacing 20–80, often `base` and `contrast`); a slug mapping per theme is future work. The theme's tinted shadows aren't regenerated.
 - `metadata.decorative` and `POST /pressbase/v1/check-page` are Pressbase extensions.
 
+- The abilities write whole entries: an AI edit and a person's edit to the same page in Studio meet in one changeset entry, and the last save wins, as for two people in Studio.
+- A section's pattern is known only when its block names it (`metadata.patternName`); sections pasted or built by hand are read through inferred slots.
+
 ## Alternatives considered
+
+- **Abilities that publish, or write the live site**: simpler for agents, but a model's mistake would reach visitors; a changeset makes every AI change reviewable and undoable as a whole.
+- **Raw `styles` and `settings` passed through**: the model would write hex values and CSS, which the design generator exists to avoid.
 
 - **Pattern overrides only** (WordPress's bindings): needs every pattern prepared by hand and covers no repeated groups or item counts.
 - **Templates with placeholders** (`{{title}}` in markup): invalid blocks until filled, and no theme pattern has them.

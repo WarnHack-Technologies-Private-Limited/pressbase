@@ -25,6 +25,7 @@ Code: `apps/core/src/ai/` (client, prompt builder, function resolver, providers)
 | `/wp-abilities/v1` controllers | `routes/abilities.ts` |
 | `core/get-site-info` (`abilities.php`) | the same, in `abilities/core-abilities.ts` |
 | — | `core/check-page`: the [quality checks](quality-checks.md) for a page, as data |
+| — | The [site-building abilities](site-abilities.md): `core/get-site-brief`, `core/get-design-system`, `core/list-patterns`, `core/get-page-structure`, `core/create-page`, `core/update-page-sections`, `core/update-global-styles`, `core/update-template-part`; writes go into the user's changeset, none publishes |
 
 ## The AI client
 
@@ -204,4 +205,5 @@ export default function register(api) {
 - Prompts, outputs and keys are never logged. Keys are redacted from errors.
 - Text and JSON output have HTML stripped before they're returned.
 - Every ability needs a permission callback, checked over REST, in the CLI (for `--user`) and when a model calls it, for the user the prompt runs for.
+- Text an ability returns from the site (page copy, the brief, pattern samples) is data, never instructions: pass it to a model in a separate, labelled part of the prompt. The site-building abilities enforce permissions and write only into a changeset whatever a model asks ([site abilities](site-abilities.md#content-is-data-not-instructions)).
 - Plugins are trusted code ([Plugins](plugins.md#security-model-and-limits)): a plugin can read the options table, so it can read a saved key. Prefer the environment variable on sites with plugins you don't fully trust.

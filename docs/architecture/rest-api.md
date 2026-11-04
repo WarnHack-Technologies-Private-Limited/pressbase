@@ -86,7 +86,7 @@ Everything is served under `/wp-json`, as in WordPress:
 | GET                      | `/wp-abilities/v1/categories`, `/wp-abilities/v1/abilities`, `/wp-abilities/v1/abilities/{name}` | `read` | WordPress's Abilities API: categories and REST-visible abilities with their schemas. |
 | GET / POST / DELETE      | `/wp-abilities/v1/abilities/{name}/run` | the ability's permission callback | Runs an ability: GET for read-only ones, DELETE for destructive idempotent ones, POST otherwise. See [AI](ai.md#rest-wp-abilitiesv1). |
 
-`posts_per_rss` and `rss_use_excerpt` (Settings → Reading's feed settings) are Pressbase additions to `/wp/v2/settings`; WordPress keeps them out of the REST settings.
+`posts_per_rss` and `rss_use_excerpt` (Settings → Reading's feed settings) are Pressbase additions to `/wp/v2/settings`; WordPress keeps them out of the REST settings. `pressbase_site_brief` (the site brief for building with AI: `name`, `kind`, `audience`, `tone`, `facts`, `pages`, `language`) is Pressbase's own; see [site abilities](site-abilities.md#the-brief).
 
 `apps/web` also answers `POST /_pressbase/revalidate` (outside `/wp-json`, not part of core): core's cache purges, `{ "tags": [...] }` with `Authorization: Bearer <PRESSBASE_REVALIDATE_SECRET>`. It answers `401 pressbase_invalid_secret`, `400 rest_invalid_param` without tags, `404 pressbase_cache_disabled` when caching is off, and `{ purged, tags }` otherwise. See [ADR 0008](../adr/0008-public-page-caching.md).
 

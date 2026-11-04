@@ -1,12 +1,14 @@
 import type { Kernel } from '../kernel';
 import { registerCheckPageAbility } from '../quality/ability';
+import { registerSiteAbilities } from '../site-building/abilities';
 import { PRESSBASE_VERSION } from '../version';
 
 /**
  * Core's ability categories and abilities, ported from
  * wordpress/wp-includes/abilities.php (wp_register_core_ability_categories(),
  * wp_register_core_abilities()): `core/get-site-info`, and Pressbase's
- * `core/check-page` (the quality checks, docs/architecture/quality-checks.md).
+ * `core/check-page` (the quality checks, docs/architecture/quality-checks.md)
+ * and the site-building abilities (docs/architecture/site-abilities.md).
  */
 
 const SITE_INFO_PROPERTIES = {
@@ -102,4 +104,5 @@ export function registerCoreAbilities(kernel: Kernel): void {
   });
 
   registerCheckPageAbility(kernel);
+  registerSiteAbilities(kernel);
 }
