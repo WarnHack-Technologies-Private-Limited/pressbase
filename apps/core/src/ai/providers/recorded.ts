@@ -36,6 +36,8 @@ type Json = Record<string, unknown>;
 
 export const RECORDED_PROVIDER_ID = 'recorded';
 export const TEST_PROVIDER_ENV = 'PRESSBASE_AI_TEST_PROVIDER';
+/** Milliseconds to wait before each answer (default none), to watch progress. */
+export const TEST_DELAY_ENV = 'PRESSBASE_AI_TEST_DELAY_MS';
 
 const QUESTIONS = [
   'Can people order online, or only in the shop?',
@@ -80,6 +82,8 @@ const COPY = [
   'Seasonal bakes and old favourites, side by side.',
 ];
 
+const SHORT = ['Come and visit', 'Our bakes', 'Visit us', 'Say hello', 'Visit'];
+
 function firstType(s: Schema): string | undefined {
   return Array.isArray(s.type) ? s.type[0] : s.type;
 }
@@ -101,11 +105,12 @@ export function fillSchema(s: Schema, key = '', n = { i: 0 }): unknown {
   if (type === 'integer' || type === 'number') return Number(s.minimum ?? 0);
   if (type === 'boolean') return false;
   if (/url|href|link/i.test(key)) return '/visit/';
-  const text = COPY[n.i++ % COPY.length] as string;
-  const max = Number(s.maxLength ?? text.length);
+  const max = Number(s.maxLength ?? Number.POSITIVE_INFINITY);
   const min = Number(s.minLength ?? 0);
-  let out =
-    text.length > max ? text.slice(0, max).replace(/\s+\S*$/, '') || text.slice(0, max) : text;
+  const next = COPY[n.i++ % COPY.length] as string;
+  // Short slots (buttons, labels) get a short phrase rather than a cut sentence.
+  const text = next.length <= max ? next : (SHORT.find((t) => t.length <= max) ?? next);
+  let out = text.length > max ? text.slice(0, max) : text;
   while (out.length < min) out += ' fresh';
   return out;
 }
@@ -191,8 +196,19 @@ export function createRecordedProvider(): AiProvider {
     envVar: 'PRESSBASE_RECORDED_API_KEY',
     defaultModel: 'recorded-1',
     models: [{ id: 'recorded-1', name: 'Recorded answers' }],
-    async generateText(request): Promise<AiResult> {
+    async generateText(request, context): Promise<AiResult> {
       n++;
+      // A pause before each answer, so progress can be watched (and screenshotted).
+      const delay = Number(process.env[TEST_DELAY_ENV] ?? 0);
+      if (delay > 0) {
+        await new Promise<void>((resolve) => {
+          const timer = setTimeout(resolve, Math.min(delay, 20_000));
+          context.signal?.addEventListener('abort', () => {
+            clearTimeout(timer);
+            resolve();
+          });
+        });
+      }
       const value = request.outputSchema ? recordedAnswer(request) : 'Recorded answer.';
       const text = typeof value === 'string' ? value : JSON.stringify(value);
       const promptTokens = Math.ceil(
