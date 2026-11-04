@@ -188,8 +188,11 @@ export function PromptToSite(props: PromptToSiteProps) {
     if (runId) {
       setState({ ...(saved ?? INITIAL), runId, step: 'generate' });
     } else if (saved) {
-      // A finished build isn't reopened from here: that's what ?run= is for.
-      setState(saved.runId ? { ...saved, runId: null, step: 'sitemap' } : saved);
+      // A finished build isn't reopened from here (that's what ?run= is for): back to Pages.
+      const building = saved.runId || saved.step === 'generate' || saved.step === 'review';
+      setState(
+        building ? { ...saved, runId: null, step: saved.sitemap ? 'sitemap' : 'describe' } : saved,
+      );
     }
     setRestored(true);
   }, [props.requestedRun, props.status.active_run]);
@@ -247,7 +250,7 @@ export function PromptToSite(props: PromptToSiteProps) {
           if (live && error instanceof ApiError && error.status === 404) {
             finish();
             setProblem({ title: __('That build can’t be found any more.', 'pressbase-admin') });
-            update({ runId: null, step: 'sitemap' });
+            update({ runId: null, step: stateRef.current.sitemap ? 'sitemap' : 'describe' });
           }
         });
     load();
@@ -482,7 +485,7 @@ export function PromptToSite(props: PromptToSiteProps) {
     }
     if (thenBack) {
       setRun(null);
-      update({ runId: null, step: 'sitemap' });
+      update({ runId: null, step: stateRef.current.sitemap ? 'sitemap' : 'describe' });
       window.history.replaceState(window.history.state, '', window.location.pathname);
     }
   };
@@ -530,9 +533,10 @@ export function PromptToSite(props: PromptToSiteProps) {
     const previous = previousStep(step, finished);
     if (step === 'generate' && !finished && run) return setConfirmStop('back');
     if (step === 'review' || (step === 'generate' && finished)) {
-      // Building again starts a new build, into the same draft.
+      // Building again starts a new build, into the same draft. (A build opened from
+      // its link in another browser has no pages here to go back to: start from the top.)
       setRun(null);
-      update({ runId: null, step: 'sitemap' });
+      update({ runId: null, step: stateRef.current.sitemap ? 'sitemap' : 'describe' });
       window.history.replaceState(window.history.state, '', window.location.pathname);
       return;
     }
