@@ -70,7 +70,9 @@ test('Swap layout moves a hero through three layouts and back, keeping its text'
   try {
     const canvas = await openStudio(page, id);
     const content = canvas.locator('.wp-block-post-content');
-    const original = await content.textContent();
+    // The text on the page, without the zero-width characters the editor puts by a caret.
+    const pageText = async () => ((await content.textContent()) ?? '').replace(/\uFEFF/g, '');
+    const original = await pageText();
     for (const text of HERO_TEXT) expect(original).toContain(text);
 
     // The section toolbar has ‹ 1/N ›: the hero's pattern and the others of its kind.
@@ -94,7 +96,7 @@ test('Swap layout moves a hero through three layouts and back, keeping its text'
     // One undo step per swap: undo puts the first layout back, redo the second.
     await page.keyboard.press('Control+z');
     await expect(position).toHaveText(`1/${total}`);
-    await expect.poll(() => content.textContent()).toBe(original);
+    await expect.poll(pageText).toBe(original);
     await page.keyboard.press('Control+Shift+z');
     await expect(position).toHaveText(`2/${total}`);
 
@@ -113,7 +115,7 @@ test('Swap layout moves a hero through three layouts and back, keeping its text'
       await inspector.getByRole('button', { name: /^Previous layout/ }).click();
       await expect(position).toHaveText(`${at - 1}/${total}`);
     }
-    await expect.poll(() => content.textContent()).toBe(original);
+    await expect.poll(pageText).toBe(original);
 
     // History names the steps.
     await page.getByRole('button', { name: 'History', exact: true }).click();
