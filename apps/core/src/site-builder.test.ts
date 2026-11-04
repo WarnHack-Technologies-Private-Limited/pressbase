@@ -664,6 +664,28 @@ describe('site builder runs', () => {
     expect(fake2.requests.length).toBeLessThan(4);
   });
 
+  it('previews the generated home page and menu before anything is published', async () => {
+    const ctx = await site();
+    const run = await runToEnd(ctx);
+    const render = async (url: string) =>
+      (await ctx.request('GET', `/pressbase/v1/render?url=${encodeURIComponent(url)}`)).body as {
+        status: number;
+        html: string;
+      };
+    const preview = await render(`/?changeset_uuid=${run.changeset_uuid}`);
+    expect(preview.status).toBe(200);
+    // The generated home page, with the generated menu in the header.
+    expect(preview.html).toContain('[Add holiday closures, or remove this line]');
+    expect(preview.html).toMatch(/href="[^"]*\/visit\/[^"]*"[^>]*>(<span[^>]*>)?Visit/);
+    // A generated page at its own address, with its title.
+    const visit = await render(`/visit/?changeset_uuid=${run.changeset_uuid}`);
+    expect(visit.status).toBe(200);
+    expect(visit.html).toMatch(/<h1[^>]*>Visit<\/h1>/);
+    expect(visit.html).toContain('[Add holiday closures, or remove this line]');
+    const live = await render('/');
+    expect(live.html).not.toMatch(/>(<span[^>]*>)?Visit</);
+  });
+
   it('goes live only when a person publishes the changeset', async () => {
     const ctx = await site();
     const run = await runToEnd(ctx);
