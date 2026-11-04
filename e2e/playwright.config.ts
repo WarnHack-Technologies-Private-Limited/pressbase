@@ -77,8 +77,15 @@ export default defineConfig({
     },
     {
       name: 'site',
-      testIgnore: /install\.spec\.ts/,
+      testIgnore: /(install|prompt-to-site)\.spec\.ts/,
       dependencies: ['install'],
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      // Builds and publishes a whole site (home page, menu, styles): after everything else.
+      name: 'site-builder',
+      testMatch: /prompt-to-site\.spec\.ts/,
+      dependencies: ['site'],
       use: { ...devices['Desktop Chrome'] },
     },
   ],
@@ -98,6 +105,9 @@ export default defineConfig({
         PRESSBASE_SMTP_HOST: '',
         // Site Health's release check stays off GitHub, so runs don't depend on the network.
         PRESSBASE_UPDATE_CHECK: 'off',
+        // AI answers recorded for one site, for the site builder's tests: no provider, no key.
+        // It's only offered once a test chooses it in Settings → AI (prompt-to-site.spec.ts).
+        PRESSBASE_AI_TEST_PROVIDER: 'recorded',
       },
       reuseExistingServer: false,
       timeout: 120_000,
