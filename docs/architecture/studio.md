@@ -14,6 +14,7 @@ This page covers the shell (#28), saving through the user's draft (#31), the hea
 - **Full-screen:** `AdminShell` renders `/admin/studio` without its sidebar and top bar (`isFullScreen()` in `components/shell/admin-shell.tsx`), keeping the toasts, the current user and plugins' UI modules.
 - **Which page:** `?page={id}` opens that page; without it, the home page: the static front page (`show_on_front: page`), or the latest posts. The address follows the page picker, so a reload reopens the same page (a page the draft adds has no ID yet, so it isn't in the address). The reading settings come from the REST index (`show_on_front`, `page_on_front`, as WordPress's `get_index()` gives them to anyone), so people without `manage_options` open the right home page too.
 - **Which draft:** the user's open changeset (`GET /pressbase/v1/changesets`), or the one `?changeset_uuid=` names (a preview's *Back to Studio* link). See [Saving](#saving-the-draft-publish-preview-discard).
+- **After building a site** (`?run=`, [the guided flow](site-builder.md#the-guided-flow)): the draft's home page opens (its `page_on_front` names the new page by slug, and `draftReading()` and `frontPage()` follow it), with a note above the canvas of what's left to fill in, page by page (`studio-note.tsx`).
 - **Loading:** `components/studio/index.tsx` loads Studio with `next/dynamic` (`ssr: false`) after the editor's translations, like the post editor.
 
 ## The screen
@@ -53,7 +54,7 @@ Listed in `RAIL_PANELS` (`layout-model.ts`). A built panel (`interim: 'built'`) 
 | Layers | WordPress's list view | #50: rename, hide per device, drag to nest |
 | Styles | A note and a link to Appearance → Styles | #46, #47 |
 | Media | A note | #58 |
-| AI | A note | #62 |
+| AI | A note, and *Build my site* ([the guided flow](site-builder.md#the-guided-flow), #60), or where to turn AI on | #62 |
 | History | Built (#34): this session's steps, then the published versions. See [History](#history) | — |
 
 ### Inspector tabs

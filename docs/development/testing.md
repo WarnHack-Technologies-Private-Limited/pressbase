@@ -39,7 +39,9 @@ PGlite takes a few seconds to boot, so database-backed packages set `testTimeout
 | `settings.spec.ts` | Settings → General: the save bar, Discard, saving, the toast, values surviving a reload |
 | `theme.spec.ts` | The user menu's System / Light / Dark switch, by keyboard, saved to the account |
 
-The `install` project runs first; every other spec depends on it and logs in as the administrator it created (`tests/helpers.ts`). Tests run one at a time.
+The `install` project runs first; every other spec depends on it and logs in as the administrator it created (`tests/helpers.ts`). Tests run one at a time. `prompt-to-site.spec.ts` (the guided site builder, #60) builds and publishes a whole site, so it's a project of its own (`site-builder`) that runs after all the others.
+
+**AI in e2e:** core starts with `PRESSBASE_AI_TEST_PROVIDER=recorded`, which adds a provider that answers from a recording and never reaches the network ([AI: testing without a provider](../architecture/ai.md#testing-without-a-provider)). A spec that needs AI chooses it in Settings → AI with any key. No spec calls a real provider or uses a real key.
 
 ### Running them
 
