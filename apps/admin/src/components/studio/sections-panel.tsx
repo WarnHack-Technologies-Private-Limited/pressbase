@@ -112,6 +112,8 @@ export interface SectionsPanelProps {
   insertAt: number | null;
   /** Forgets the position (the person cleared it, or a section went there). */
   onClearInsertAt: () => void;
+  /** Just before a section goes in (History names the step after it). */
+  onInserting?: (title: string) => void;
   onInserted: (title: string) => void;
 }
 
@@ -172,6 +174,7 @@ export function SectionsPanel(props: SectionsPanelProps) {
 
   const add = (section: Section) => {
     if (!addSection) return;
+    props.onInserting?.(section.title);
     addSection(section, props.insertAt);
     props.onClearInsertAt();
     props.onInserted(section.title);

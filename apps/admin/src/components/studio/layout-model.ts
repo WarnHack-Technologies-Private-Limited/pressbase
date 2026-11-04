@@ -98,7 +98,15 @@ export const INSPECTOR_TABS: readonly InspectorTab[] = [
 
 /* --------------------------------------------------------------- left rail */
 
-export type RailPanelId = 'pages' | 'elements' | 'sections' | 'layers' | 'styles' | 'media' | 'ai';
+export type RailPanelId =
+  | 'pages'
+  | 'elements'
+  | 'sections'
+  | 'layers'
+  | 'styles'
+  | 'media'
+  | 'ai'
+  | 'history';
 
 export interface RailPanel {
   id: RailPanelId;
@@ -176,6 +184,13 @@ export const RAIL_PANELS: readonly RailPanel[] = [
     coming: msgid(
       'The AI panel arrives with #62: ask for site-wide changes and keep or undo each one.',
     ),
+  },
+  {
+    id: 'history',
+    label: msgid('History'),
+    summary: msgid('Go back to an earlier point, or restore a published version'),
+    issue: 34,
+    interim: 'built',
   },
 ];
 

@@ -7,6 +7,7 @@ import {
 import {
   Blocks,
   FileText,
+  History,
   Image,
   Layers,
   LayoutPanelTop,
@@ -30,6 +31,7 @@ export const RAIL_ICONS: Record<RailPanelId, LucideIcon> = {
   styles: Palette,
   media: Image,
   ai: Sparkles,
+  history: History,
 };
 
 /** The left rail: one button per panel. Pressing the open panel's button closes it. */

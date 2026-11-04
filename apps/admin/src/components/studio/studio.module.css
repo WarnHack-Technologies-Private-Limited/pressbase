@@ -1117,6 +1117,142 @@
   line-height: var(--leading-normal);
 }
 
+/* ------------------------------------------------------- History (#34) */
+
+.historyPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-2) var(--space-4) var(--space-5);
+}
+
+.historyPanel section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.historyHeading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.historySteps,
+.versionList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.historyStep {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.historyStep:hover {
+  background: var(--color-surface-sunken);
+}
+
+.historyStep[aria-current="step"] {
+  background: var(--color-accent-soft);
+  box-shadow: inset 3px 0 0 var(--color-accent);
+  font-weight: var(--weight-medium);
+}
+
+.historyStep[data-undone] {
+  color: var(--color-text-subtle);
+}
+
+.historyStep[data-undone] .historyLabel {
+  text-decoration: line-through;
+}
+
+.historyLabel {
+  flex: 1;
+  min-width: 0;
+}
+
+.historyMeta {
+  flex: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-regular);
+}
+
+.historyFailed {
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+}
+
+.version {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-1) var(--space-2);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.versionIcon {
+  margin-top: 2px;
+  color: var(--color-text-muted);
+}
+
+.versionText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: var(--text-sm);
+}
+
+.versionDate {
+  font-weight: var(--weight-medium);
+}
+
+.versionMeta {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.versionActions {
+  display: flex;
+  grid-column: 2;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.versionLive {
+  color: var(--color-success);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+}
+
+.versionPreview {
+  display: flex;
+  flex-direction: column;
+  height: min(36rem, 60vh);
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+}
+
 /* -------------------------------------------------- command palette (#33) */
 
 .palette {

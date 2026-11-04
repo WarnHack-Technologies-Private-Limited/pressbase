@@ -106,13 +106,18 @@ describe('naming a step', () => {
 
   const withHeading = (attributes: Record<string, unknown>) =>
     canvas([
-      { ...hero, innerBlocks: [{ ...heading, attributes: { ...heading.attributes, ...attributes } }, text] },
+      {
+        ...hero,
+        innerBlocks: [{ ...heading, attributes: { ...heading.attributes, ...attributes } }, text],
+      },
       pricing,
       faq,
     ]);
 
   it('names text, style, alignment and settings changes by the block', () => {
-    expect(label(start, withHeading({ content: 'Fresh bread daily' }))).toBe('Changed heading text');
+    expect(label(start, withHeading({ content: 'Fresh bread daily' }))).toBe(
+      'Changed heading text',
+    );
     expect(label(start, withHeading({ textColor: 'accent' }))).toBe('Changed heading style');
     expect(label(start, withHeading({ style: { typography: { fontSize: '3rem' } } }))).toBe(
       'Changed heading style',
@@ -169,9 +174,7 @@ describe('naming a step', () => {
 
   it('adds, duplicates and removes sections and blocks', () => {
     const added = b('core/group', { metadata: { name: 'Opening hours' } }, [], 'new');
-    expect(label(start, canvas([hero, added, pricing, faq]))).toBe(
-      'Added section “Opening hours”',
-    );
+    expect(label(start, canvas([hero, added, pricing, faq]))).toBe('Added section “Opening hours”');
     expect(
       label(start, canvas([hero, pricing, faq, b('core/group', { tagName: 'section' })])),
     ).toBe('Added section');
@@ -180,7 +183,10 @@ describe('naming a step', () => {
     expect(label(start, canvas([hero, faq]))).toBe('Removed section “Pricing”');
     expect(label(start, canvas([hero, pricing]))).toBe('Removed section');
     expect(
-      label(start, canvas([{ ...hero, innerBlocks: [heading, text, b('core/paragraph')] }, pricing, faq])),
+      label(
+        start,
+        canvas([{ ...hero, innerBlocks: [heading, text, b('core/paragraph')] }, pricing, faq]),
+      ),
     ).toBe('Added paragraph');
     expect(label(start, canvas([{ ...hero, innerBlocks: [heading] }, pricing, faq]))).toBe(
       'Removed paragraph',
@@ -190,9 +196,9 @@ describe('naming a step', () => {
 
   it('names a block turned into another', () => {
     const asHeading = b('core/heading', { content: 'Every morning.' }, [], 'h2');
-    expect(label(start, canvas([{ ...hero, innerBlocks: [heading, asHeading] }, pricing, faq]))).toBe(
-      'Changed paragraph to heading',
-    );
+    expect(
+      label(start, canvas([{ ...hero, innerBlocks: [heading, asHeading] }, pricing, faq])),
+    ).toBe('Changed paragraph to heading');
   });
 
   it('says when a change is in the header', () => {

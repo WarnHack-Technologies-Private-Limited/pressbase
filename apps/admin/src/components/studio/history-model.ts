@@ -136,7 +136,16 @@ function flatten(blocks: readonly CanvasBlock[]): Map<string, Placed> {
 }
 
 /** Attributes by what they change, in the order a step is named by. */
-const TEXT = new Set(['content', 'text', 'value', 'citation', 'caption', 'label', 'title', 'summary']);
+const TEXT = new Set([
+  'content',
+  'text',
+  'value',
+  'citation',
+  'caption',
+  'label',
+  'title',
+  'summary',
+]);
 const ALIGNMENT = new Set(['align', 'textAlign', 'verticalAlignment', 'justification']);
 const STYLE = new Set([
   'style',
@@ -204,7 +213,11 @@ const tops = (ids: readonly string[], placed: Map<string, Placed>) => {
 };
 
 /** A copy of the block before it (Duplicate), apart from client IDs. */
-function isDuplicate(id: string, after: Map<string, Placed>, parents: Map<string | null, string[]>) {
+function isDuplicate(
+  id: string,
+  after: Map<string, Placed>,
+  parents: Map<string | null, string[]>,
+) {
   const placed = after.get(id);
   if (!placed) return false;
   const siblings = parents.get(placed.parent) ?? [];

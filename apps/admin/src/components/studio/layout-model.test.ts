@@ -44,15 +44,17 @@ describe('left rail', () => {
       'Styles',
       'Media',
       'AI',
+      'History',
     ]);
     for (const panel of RAIL_PANELS) {
       if (panel.interim === 'built') expect(panel.coming).toBeUndefined();
       else expect(panel.coming).toContain(`#${panel.issue}`);
     }
-    // Pages (#29) and Sections (#44) are built.
+    // Pages (#29), Sections (#44) and History (#34) are built.
     expect(RAIL_PANELS.filter((p) => p.interim === 'built').map((p) => p.id)).toEqual([
       'pages',
       'sections',
+      'history',
     ]);
   });
 });

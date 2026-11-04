@@ -31,7 +31,6 @@ import {
 } from '@wordpress/block-editor';
 import { type Block as BlockInstance, createBlock, parse, serialize } from '@wordpress/blocks';
 import { Popover } from '@wordpress/components';
-import { useStateWithHistory } from '@wordpress/compose';
 import { useDispatch, useRegistry } from '@wordpress/data';
 import { ShortcutProvider } from '@wordpress/keyboard-shortcuts';
 import {
@@ -100,6 +99,7 @@ import {
 } from './command-palette';
 import { EditorCommands } from './editor-commands';
 import { useEntityEdits } from './entity-edits';
+import { type CanvasValue, HistoryPanel } from './history-panel';
 import { Inspector, type PageSummary } from './inspector';
 import {
   DEVICES,
@@ -147,6 +147,7 @@ import {
 import styles from './studio.module.css';
 import { TopBar } from './top-bar';
 import { useDraft } from './use-draft';
+import { type StudioHistory, useStudioHistory } from './use-history';
 
 registerStudioRegions();
 
@@ -1030,80 +1031,138 @@ export default function Studio(props: StudioProps) {
         }}
       />
     ),
-    panel: panel && (
-      <RailPanelView
-        id={panel}
-        onClose={() => {
-          setPanel(null);
-          setSectionsAt(null);
-        }}
-        note={
-          panel === 'styles' && !props.user.canEditTheme ? (
-            <p className={styles.panelNote}>
-              <Lock size={16} aria-hidden="true" />
-              <span>
-                {__(
-                  'Only people who can change the site’s design can change its styles. You can edit your pages.',
-                  'pressbase-admin',
-                )}
-              </span>
-            </p>
-          ) : undefined
-        }
-        content={
-          panel === 'pages' ? (
-            <PagesPanel
-              pages={pages}
-              target={target}
-              postsOnFront={postsOnFront}
-              frontPageId={frontPageId}
-              onTarget={(next) => {
-                chooseTarget(next);
-                if (narrow) setPanel(null);
-              }}
-              can={{
-                add: props.user.canPublishPages,
-                arrange: props.user.canEditOthersPages,
-                home: props.user.canManageOptions,
-              }}
-              onAdd={(title) => {
-                const entry = newPageEntry(title, allPages);
-                draft.wantFields(new Map([[entry.key, entry.value as Record<string, unknown>]]));
-                chooseTarget({ kind: 'page', id: entry.slug });
-              }}
-              onRename={(ref, title) =>
-                draft.wantFields(fieldChange(ref, 'title', title, livePages))
-              }
-              onMove={(ref, to) => {
-                const arranged = movePage(allPages, ref, to);
-                if (!arranged) return false;
-                if (arranged.size) draft.wantFields(arrangementChanges(arranged, livePages));
-                return true;
-              }}
-              onHome={(id) => {
-                draft.want(homePageEntries(id, liveReading));
-                // A theme with a front-page template shows the home page in it.
-                if (library?.templates.some((t) => t.slug === 'front-page')) reloadCanvas();
-              }}
-            />
-          ) : panel === 'sections' ? (
-            editorReady ? (
-              <SectionsPanel
-                insertAt={sectionsAt}
-                onClearInsertAt={() => setSectionsAt(null)}
-                onInserted={(title) =>
-                  toast(sprintf(__('Section added: %s.', 'pressbase-admin'), title))
-                }
-              />
-            ) : (
-              <p className={styles.pagesEmpty} aria-busy="true">
-                {__('Opening the page…', 'pressbase-admin')}
+    panel: (editor) =>
+      panel && (
+        <RailPanelView
+          id={panel}
+          onClose={() => {
+            setPanel(null);
+            setSectionsAt(null);
+          }}
+          note={
+            panel === 'styles' && !props.user.canEditTheme ? (
+              <p className={styles.panelNote}>
+                <Lock size={16} aria-hidden="true" />
+                <span>
+                  {__(
+                    'Only people who can change the site’s design can change its styles. You can edit your pages.',
+                    'pressbase-admin',
+                  )}
+                </span>
               </p>
-            )
-          ) : undefined
-        }
-      />
-    ),
+            ) : undefined
+          }
+          content={
+            panel === 'pages' ? (
+              <PagesPanel
+                pages={pages}
+                target={target}
+                postsOnFront={postsOnFront}
+                frontPageId={frontPageId}
+                onTarget={(next) => {
+                  chooseTarget(next);
+                  if (narrow) setPanel(null);
+                }}
+                can={{
+                  add: props.user.canPublishPages,
+                  arrange: props.user.canEditOthersPages,
+                  home: props.user.canManageOptions,
+                }}
+                onAdd={(title) => {
+                  const entry = newPageEntry(title, allPages);
+                  draft.wantFields(new Map([[entry.key, entry.value as Record<string, unknown>]]));
+                  chooseTarget({ kind: 'page', id: entry.slug });
+                }}
+                onRename={(ref, title) =>
+                  draft.wantFields(fieldChange(ref, 'title', title, livePages))
+                }
+                onMove={(ref, to) => {
+                  const arranged = movePage(allPages, ref, to);
+                  if (!arranged) return false;
+                  if (arranged.size) draft.wantFields(arrangementChanges(arranged, livePages));
+                  return true;
+                }}
+                onHome={(id) => {
+                  draft.want(homePageEntries(id, liveReading));
+                  // A theme with a front-page template shows the home page in it.
+                  if (library?.templates.some((t) => t.slug === 'front-page')) reloadCanvas();
+                }}
+              />
+            ) : panel === 'sections' ? (
+              editorReady ? (
+                <SectionsPanel
+                  insertAt={sectionsAt}
+                  onClearInsertAt={() => setSectionsAt(null)}
+                  onInserting={(title) =>
+                    editor?.labelNext(sprintf(__('Added section “%s”', 'pressbase-admin'), title))
+                  }
+                  onInserted={(title) =>
+                    toast(sprintf(__('Section added: %s.', 'pressbase-admin'), title))
+                  }
+                />
+              ) : (
+                <p className={styles.pagesEmpty} aria-busy="true">
+                  {__('Opening the page…', 'pressbase-admin')}
+                </p>
+              )
+            ) : panel === 'history' ? (
+              editor && doc ? (
+                <HistoryPanel
+                  entries={editor.history.entries}
+                  index={editor.history.index}
+                  onGo={editor.history.go}
+                  partTitle={(slug) => parts.get(slug)?.title ?? slug}
+                  page={
+                    doc.page && typeof doc.page.id === 'number' && !isNewPage(doc.page.id)
+                      ? {
+                          id: doc.page.id,
+                          title: pageTitle(drafted ?? doc.page),
+                          live: doc.regions.get(pageKey(doc.page.id))?.live ?? '',
+                        }
+                      : undefined
+                  }
+                  onRestorePage={(content, when) => {
+                    const label = sprintf(
+                      __('Restored the version from %s', 'pressbase-admin'),
+                      when,
+                    );
+                    if (editor.restorePage(content, label)) {
+                      toast(
+                        sprintf(
+                          __(
+                            'The version from %s is on the page and in your draft. Publish to make it live.',
+                            'pressbase-admin',
+                          ),
+                          when,
+                        ),
+                      );
+                    }
+                  }}
+                  canEditStyles={props.user.canEditTheme}
+                  onRestoreStyles={(stylesheet, config, when) => {
+                    draft.want(new Map([[`wp_global_styles:${stylesheet}`, config]]));
+                    toast(
+                      sprintf(
+                        __(
+                          'The site’s styles from %s are in your draft. Preview to see them; they go live when you publish.',
+                          'pressbase-admin',
+                        ),
+                        when,
+                      ),
+                    );
+                  }}
+                  siteUrl={props.site.url}
+                  userId={props.user.id}
+                />
+              ) : (
+                <p className={styles.pagesEmpty} aria-busy="true">
+                  {__('Opening the page…', 'pressbase-admin')}
+                </p>
+              )
+            ) : undefined
+          }
+        />
+      ),
     notice: stale.length > 0 && (
       <div className={styles.stageNotice} role="status" data-tone="warning">
         <Info size={16} aria-hidden="true" />
@@ -1307,12 +1366,18 @@ interface EditorState {
   canRedo: boolean;
   undo: () => void;
   redo: () => void;
+  /** The steps for the History panel (#34). */
+  history: Pick<StudioHistory<CanvasValue>, 'entries' | 'index' | 'go'>;
+  /** Names the next step (a section added from a panel). */
+  labelNext: (label: string) => void;
+  /** Puts a version of the page's content on the canvas as one named step; false if it can't. */
+  restorePage: (content: string, label: string) => boolean;
 }
 
 interface Chrome {
   topBar: (editor: EditorState | null) => ReactNode;
   rail: ReactNode;
-  panel: ReactNode;
+  panel: (editor: EditorState | null) => ReactNode;
   /** A note above the canvas (the draft changed on the live site meanwhile). */
   notice?: ReactNode;
 }
@@ -1342,7 +1407,7 @@ function StudioFrame({
       {chrome.topBar(editor)}
       <div className={styles.workspace}>
         {chrome.rail}
-        {chrome.panel}
+        {chrome.panel(editor)}
         <main id="studio-canvas" className={styles.stage} tabIndex={-1}>
           {chrome.notice}
           {notice}
@@ -1419,9 +1484,9 @@ interface StoreBridge {
 const REPORT_DELAY = 300;
 
 function StudioEditor(props: StudioEditorProps) {
-  const { __ } = useI18n();
+  const { __, sprintf } = useI18n();
   const { doc } = props;
-  const history = useStateWithHistory<{ blocks: BlockInstance[]; selection?: unknown }>({
+  const history = useStudioHistory<{ blocks: BlockInstance[]; selection?: unknown }>({
     blocks: doc.blocks,
   });
   const value = history.value as { blocks: BlockInstance[]; selection?: unknown };
@@ -1645,6 +1710,13 @@ function StudioEditor(props: StudioEditorProps) {
     canRedo: history.hasRedo,
     undo: history.undo,
     redo: history.redo,
+    history: history as unknown as EditorState['history'],
+    labelNext: history.labelNext,
+    restorePage: (content, label) => {
+      if (!doc.page) return false;
+      history.labelNext(label);
+      return replaceRegion(pageKey(doc.page.id), content);
+    },
   };
   const width = DEVICES.find((d) => d.id === props.device)?.width ?? null;
   const frameRef = useRef<HTMLDivElement>(null);
@@ -1684,7 +1756,12 @@ function StudioEditor(props: StudioEditorProps) {
         canRedo={history.hasRedo}
         undo={history.undo}
         redo={history.redo}
-        onSectionAdded={props.onSectionAdded}
+        onSectionAdded={(title, phase) => {
+          if (phase === 'before') {
+            history.labelNext(sprintf(__('Added section “%s”', 'pressbase-admin'), title));
+          }
+          props.onSectionAdded(title, phase);
+        }}
       />
       {/* React events bubble out of the canvas iframe's portal, so this sees typing there too. */}
       {/* biome-ignore lint/a11y/noStaticElementInteractions: listens for keys pressed in the canvas. */}
