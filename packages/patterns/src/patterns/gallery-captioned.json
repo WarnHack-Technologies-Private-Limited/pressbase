@@ -29,11 +29,15 @@
     "projects.title": {
       "label": "Project",
       "description": "What the project was, in a few words.",
-      "maxLength": 40
+      "maxLength": 40,
+      "facts": true,
+      "placeholder": "[Project name]"
     },
     "projects.body": {
       "label": "About it",
-      "maxLength": 100
+      "maxLength": 100,
+      "facts": true,
+      "placeholder": "[What was done, and for whom]"
     }
   }
 }

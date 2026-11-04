@@ -22,6 +22,7 @@ import {
   renderPostCommentsForm,
 } from './comments';
 import { renderLatestPosts } from './latest-posts';
+import { renderGallery, renderImage } from './media';
 import {
   renderHomeLink,
   renderNavigation,
@@ -103,7 +104,9 @@ const RENDERERS: Record<string, RenderCallback<BlockServices>> = {
  */
 const THEME_RENDERERS: Record<string, RenderCallback<BlockServices>> = {
   'core/avatar': renderAvatar,
+  'core/gallery': renderGallery,
   'core/home-link': renderHomeLink,
+  'core/image': renderImage,
   'core/navigation': renderNavigation,
   'core/navigation-link': renderNavigationLink,
   'core/navigation-submenu': renderNavigationSubmenu,
