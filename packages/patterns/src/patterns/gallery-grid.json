@@ -1,0 +1,30 @@
+{
+  "title": "Gallery, grid of six",
+  "description": "A centred heading and introduction above six square images, three to a row (two on small screens).",
+  "categories": ["gallery"],
+  "keywords": ["gallery", "photos", "images", "portfolio", "work", "grid"],
+  "viewportWidth": 1400,
+  "slots": {
+    "eyebrow": {
+      "label": "Label",
+      "description": "A few words above the heading: what the section is about.",
+      "maxLength": 40
+    },
+    "title": {
+      "label": "Heading",
+      "maxLength": 60
+    },
+    "body": {
+      "label": "Introduction"
+    },
+    "gallery": {
+      "label": "Images",
+      "minItems": 3,
+      "maxItems": 12
+    },
+    "gallery.image": {
+      "label": "Image",
+      "subject": "the business’s own work, place or products"
+    }
+  }
+}

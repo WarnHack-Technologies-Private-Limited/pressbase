@@ -1,0 +1,39 @@
+{
+  "title": "Features, image beside a grid",
+  "description": "A tall image beside a heading, an introduction and four features in two columns.",
+  "categories": ["features"],
+  "keywords": ["features", "benefits", "image", "grid", "why us"],
+  "viewportWidth": 1400,
+  "slots": {
+    "image": {
+      "label": "Image",
+      "subject": "a close-up of the work or the product that shows its quality"
+    },
+    "eyebrow": {
+      "label": "Label",
+      "description": "A few words above the heading: what the section is about.",
+      "maxLength": 40
+    },
+    "title": {
+      "label": "Heading",
+      "maxLength": 60
+    },
+    "body": {
+      "label": "Introduction"
+    },
+    "features": {
+      "label": "Features",
+      "description": "Two or four fill the rows.",
+      "minItems": 2,
+      "maxItems": 6
+    },
+    "features.title": {
+      "label": "Feature",
+      "maxLength": 40
+    },
+    "features.body": {
+      "label": "Why it matters",
+      "maxLength": 130
+    }
+  }
+}

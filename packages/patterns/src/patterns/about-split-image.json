@@ -1,0 +1,34 @@
+{
+  "title": "About, image beside text",
+  "description": "A tall image beside a label, a heading, two paragraphs and a button.",
+  "categories": ["about"],
+  "keywords": ["about", "about us", "story", "introduction", "image", "who we are"],
+  "viewportWidth": 1400,
+  "slots": {
+    "image": {
+      "label": "Image",
+      "subject": "the people behind the business, or the place where they work"
+    },
+    "eyebrow": {
+      "label": "Label",
+      "description": "A few words above the heading: what the section is about.",
+      "maxLength": 40
+    },
+    "title": {
+      "label": "Heading",
+      "maxLength": 70
+    },
+    "body": {
+      "label": "Introduction",
+      "description": "Who the business is and why it exists, in one or two sentences."
+    },
+    "more": {
+      "label": "More",
+      "description": "A second, shorter thought: how it works with its customers."
+    },
+    "actions": {
+      "label": "Button",
+      "maxItems": 1
+    }
+  }
+}

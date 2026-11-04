@@ -6,13 +6,16 @@ import { checkPattern, LIBRARY_CATEGORIES, libraryPatterns } from '@pressbase/pa
 import {
   extractSlots,
   fillSlots,
+  findPlaceholders,
   type GroupSlot,
   type Slot,
   slotValues,
   transferSlots,
 } from '@pressbase/slots';
+import { applyStyleVariation, type StyleVariation } from '@pressbase/theme-json';
 import { describe, expect, it } from 'vitest';
 import { CORE_PATTERNS } from './blocks/patterns';
+import { checkPage, pageStylesFromThemeJson } from './quality/check-page';
 import { setup } from './test-utils';
 import { loadPhpPattern } from './themes/php-patterns';
 
@@ -198,5 +201,130 @@ describe('the Pressbase pattern library', () => {
     expect(categories.find((c) => c.name === 'banner')?.label).toBe('Banners');
     expect(categories.find((c) => c.name === 'opening-hours')?.label).toBe('Opening hours');
     expect(new Set(names).size).toBe(names.length);
+  });
+});
+
+/** Every image slot in a list of slots, through groups. */
+const imagesIn = (slots: Slot[]): Extract<Slot, { kind: 'image' }>[] =>
+  slots.flatMap((s) =>
+    s.kind === 'image' ? [s] : s.kind === 'group' ? s.items.flatMap(imagesIn) : [],
+  );
+
+describe('the library’s sections (#40, #41)', () => {
+  const sections = ['banner', 'about', 'call-to-action', 'features', 'services', 'gallery'];
+  const byCategory = (category: string) =>
+    libraryPatterns().filter((p) => p.categories[0] === category);
+
+  it('offers two to four layouts per section, as many as the site builder offers', () => {
+    for (const category of sections) {
+      const count = byCategory(category).length;
+      expect(count, category).toBeGreaterThanOrEqual(2);
+      expect(count, category).toBeLessThanOrEqual(4);
+    }
+  });
+
+  it('leaves images to be chosen: no file, alt text that says what to show, and a subject', () => {
+    let images = 0;
+    for (const pattern of libraryPatterns()) {
+      const slots = extractSlots(parseBlocks(pattern.content), { declarations: pattern.slots });
+      for (const image of imagesIn(slots)) {
+        images++;
+        expect(image.value.url, `${pattern.name} ${image.id}`).toBe('');
+        expect(image.value.alt.length, `${pattern.name} ${image.id}`).toBeGreaterThan(10);
+        expect(image.subject, `${pattern.name} ${image.id}`).toBeTruthy();
+      }
+      // An image not chosen is a placeholder on the "Before you publish" checklist.
+      const unchosen = findPlaceholders(slots).filter((f) => f.reason === 'image');
+      expect(unchosen).toHaveLength(imagesIn(slots).length);
+    }
+    expect(images).toBeGreaterThan(20);
+  });
+
+  it('swap layouts within a section and keep the heading', () => {
+    for (const category of sections) {
+      const patterns = byCategory(category);
+      for (const from of patterns) {
+        const fromSlots = extractSlots(parseBlocks(from.content), { declarations: from.slots });
+        const title = fromSlots.find((s) => s.id === 'title');
+        for (const to of patterns) {
+          if (to === from) continue;
+          const blocks = parseBlocks(to.content);
+          const options = { declarations: to.slots };
+          const { values, unused } = transferSlots(fromSlots, extractSlots(blocks, options));
+          const where = `${from.name} → ${to.name}`;
+          expect(values.title, where).toBe(title?.kind === 'heading' ? title.value : undefined);
+          expect(
+            unused.map((u) => u.path),
+            where,
+          ).not.toContain('title');
+          const markup = serializeBlocks(fillSlots(blocks, values, options));
+          expect(serializeBlocks(parseBlocks(markup)), where).toBe(markup);
+          expect(checkPattern({ ...to, content: markup }), where).toEqual([]);
+        }
+      }
+    }
+  });
+
+  it('pass the quality checks in the Pressbase theme and its dark Midnight style', async () => {
+    const ctx = await setup();
+    await ctx.install();
+    await ctx.kernel.themes.activate('pressbase');
+    const active = await ctx.kernel.themes.active();
+    const midnight = active.variations.find((v) => v.title === 'Midnight');
+    const dark = await ctx.kernel.themes.withUserStyles(
+      applyStyleVariation({ version: 3 }, midnight as StyleVariation),
+    );
+    const problems: string[] = [];
+    for (const [scheme, theme] of [
+      ['default', active],
+      ['Midnight', dark],
+    ] as const) {
+      const styles = pageStylesFromThemeJson(theme.themeJson.tree.getRawData());
+      for (const pattern of libraryPatterns()) {
+        const findings = checkPage(pattern.content, styles, {
+          blockTypes: ctx.kernel.blocks.registry,
+          titleIsH1: pattern.categories[0] !== 'banner',
+        });
+        for (const f of findings) {
+          // Images left to choose and `#` links are placeholders a person fills in.
+          if (f.rule === 'placeholder') continue;
+          problems.push(
+            `${scheme} ${pattern.name}: ${f.rule} ${f.message} ${JSON.stringify(f.block)}`,
+          );
+        }
+      }
+    }
+    expect(problems).toEqual([]);
+  });
+
+  it('render without the images not chosen yet; galleries keep their columns', async () => {
+    const ctx = await setup();
+    await ctx.install();
+    await ctx.kernel.themes.activate('pressbase');
+    const content = ['hero-split-image', 'gallery-grid']
+      .map((name) => libraryPatterns().find((p) => p.name === `pressbase/${name}`)?.content)
+      .join('\n\n');
+    const chosen =
+      '<!-- wp:image -->\n<figure class="wp-block-image"><img src="/a.jpg" alt="A chosen image"/></figure>\n<!-- /wp:image -->';
+    const created = await ctx.request('POST', '/wp/v2/pages', {
+      title: 'Sections',
+      slug: 'sections',
+      status: 'publish',
+      content: `${content}\n\n${chosen}`,
+    });
+    expect(created.status).toBe(201);
+    const res = await ctx.app.request(
+      `/wp-json/pressbase/v1/render?url=${encodeURIComponent('/sections/')}`,
+    );
+    const { html } = (await res.json()) as { html: string };
+    expect(html).toContain('Thoughtful work for people who notice the details');
+    // render_block_core_image(): no source, no image.
+    expect(html).not.toContain('A bright, welcoming workspace');
+    expect(html.match(/<img\b[^>]*\balt="A chosen image"/g)).toHaveLength(1);
+    // block_core_gallery_render(): a unique class and the gap its image widths subtract.
+    expect(html).toMatch(/<figure class="wp-block-gallery [^"]*\bwp-block-gallery-1\b/);
+    expect(html).toContain(
+      '.wp-block-gallery.wp-block-gallery-1{--wp--style--unstable-gallery-gap:var( --wp--style--gallery-gap-default, var( --gallery-block--gutter-size, var( --wp--style--block-gap, 0.5em ) ) );}',
+    );
   });
 });

@@ -1,0 +1,42 @@
+{
+  "title": "Services, three with images",
+  "description": "A heading beside a short introduction and a button, then three services, each with an image, a name and a description.",
+  "categories": ["services"],
+  "keywords": ["services", "what we do", "offer", "images", "columns", "cards"],
+  "viewportWidth": 1400,
+  "slots": {
+    "eyebrow": {
+      "label": "Label",
+      "description": "A few words above the heading: what the section is about.",
+      "maxLength": 40
+    },
+    "title": {
+      "label": "Heading",
+      "maxLength": 60
+    },
+    "body": {
+      "label": "Introduction"
+    },
+    "actions": {
+      "label": "Button",
+      "maxItems": 1
+    },
+    "services": {
+      "label": "Services",
+      "minItems": 2,
+      "maxItems": 3
+    },
+    "services.image": {
+      "label": "Image",
+      "subject": "the service being carried out, or its result"
+    },
+    "services.title": {
+      "label": "Service",
+      "maxLength": 40
+    },
+    "services.body": {
+      "label": "Description",
+      "maxLength": 140
+    }
+  }
+}

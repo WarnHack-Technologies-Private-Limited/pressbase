@@ -1,0 +1,40 @@
+{
+  "title": "Gallery, one large and four small",
+  "description": "A heading beside a sentence and a button, then one large image beside four smaller ones.",
+  "categories": ["gallery"],
+  "keywords": ["gallery", "photos", "images", "portfolio", "work", "mosaic", "projects"],
+  "viewportWidth": 1400,
+  "slots": {
+    "eyebrow": {
+      "label": "Label",
+      "description": "A few words above the heading: what the section is about.",
+      "maxLength": 40
+    },
+    "title": {
+      "label": "Heading",
+      "maxLength": 60
+    },
+    "body": {
+      "label": "Introduction"
+    },
+    "actions": {
+      "label": "Button",
+      "maxItems": 1
+    },
+    "featured-image": {
+      "label": "Large image",
+      "subject": "the business’s own work, place or products",
+      "description": "The best picture: it is shown largest."
+    },
+    "gallery": {
+      "label": "Small images",
+      "description": "Four fill the square.",
+      "minItems": 2,
+      "maxItems": 4
+    },
+    "gallery.image": {
+      "label": "Image",
+      "subject": "the business’s own work, place or products"
+    }
+  }
+}

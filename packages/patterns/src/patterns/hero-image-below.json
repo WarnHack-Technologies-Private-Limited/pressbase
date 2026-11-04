@@ -1,0 +1,33 @@
+{
+  "title": "Hero, centred with a wide image",
+  "description": "A centred label, headline, introduction and two buttons above a wide, rounded image.",
+  "categories": ["banner", "featured"],
+  "keywords": ["hero", "intro", "headline", "banner", "image", "centred", "welcome"],
+  "viewportWidth": 1400,
+  "slots": {
+    "eyebrow": {
+      "label": "Label",
+      "description": "A few words above the heading: what the section is about.",
+      "maxLength": 40
+    },
+    "title": {
+      "label": "Headline",
+      "description": "The promise of the site in one line: what visitors get, not the business name.",
+      "maxLength": 60
+    },
+    "body": {
+      "label": "Introduction",
+      "description": "Who it is for and what to do next, in one or two sentences."
+    },
+    "actions": {
+      "label": "Buttons",
+      "description": "The main action first (call, book, order, ask for a quote), then a secondary one.",
+      "maxItems": 2
+    },
+    "image": {
+      "label": "Image",
+      "subject": "a wide view of the place or the work, with room to breathe",
+      "description": "A wide, landscape picture."
+    }
+  }
+}

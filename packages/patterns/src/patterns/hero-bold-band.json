@@ -1,0 +1,28 @@
+{
+  "title": "Hero, bold colour band",
+  "description": "A very large headline on the theme’s text colour, swapped with its background, with the introduction and two buttons beside it.",
+  "categories": ["banner", "featured"],
+  "keywords": ["hero", "intro", "headline", "banner", "bold", "dark", "statement"],
+  "viewportWidth": 1400,
+  "slots": {
+    "eyebrow": {
+      "label": "Label",
+      "description": "A few words above the heading: what the section is about.",
+      "maxLength": 40
+    },
+    "title": {
+      "label": "Headline",
+      "description": "The promise of the site in one line: what visitors get, not the business name.",
+      "maxLength": 60
+    },
+    "body": {
+      "label": "Introduction",
+      "description": "Who it is for and what to do next, in one or two sentences."
+    },
+    "actions": {
+      "label": "Buttons",
+      "description": "The main action first (call, book, order, ask for a quote), then a secondary one.",
+      "maxItems": 2
+    }
+  }
+}

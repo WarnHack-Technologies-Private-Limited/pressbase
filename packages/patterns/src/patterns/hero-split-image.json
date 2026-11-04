@@ -1,0 +1,33 @@
+{
+  "title": "Hero, text beside an image",
+  "description": "A label, a large headline, an introduction and two buttons beside a tall image. The image goes below the text on small screens.",
+  "categories": ["banner", "featured"],
+  "keywords": ["hero", "intro", "headline", "banner", "image", "split", "welcome"],
+  "viewportWidth": 1400,
+  "slots": {
+    "eyebrow": {
+      "label": "Label",
+      "description": "A few words above the heading: what the section is about.",
+      "maxLength": 40
+    },
+    "title": {
+      "label": "Headline",
+      "description": "The promise of the site in one line: what visitors get, not the business name.",
+      "maxLength": 70
+    },
+    "body": {
+      "label": "Introduction",
+      "description": "Who it is for and what to do next, in one or two sentences."
+    },
+    "actions": {
+      "label": "Buttons",
+      "description": "The main action first (call, book, order, ask for a quote), then a secondary one.",
+      "maxItems": 2
+    },
+    "image": {
+      "label": "Image",
+      "subject": "the business at its best: its place, its work or its products",
+      "description": "A tall picture that shows what the business does."
+    }
+  }
+}

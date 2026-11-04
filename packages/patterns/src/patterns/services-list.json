@@ -1,0 +1,39 @@
+{
+  "title": "Services, list with buttons",
+  "description": "A heading and introduction above rows of services, each with a name, a description and a button, separated by lines.",
+  "categories": ["services"],
+  "keywords": ["services", "what we do", "list", "rows", "menu", "offer"],
+  "viewportWidth": 1400,
+  "slots": {
+    "eyebrow": {
+      "label": "Label",
+      "description": "A few words above the heading: what the section is about.",
+      "maxLength": 40
+    },
+    "title": {
+      "label": "Heading",
+      "maxLength": 60
+    },
+    "body": {
+      "label": "Introduction"
+    },
+    "services": {
+      "label": "Services",
+      "minItems": 1,
+      "maxItems": 8
+    },
+    "services.title": {
+      "label": "Service",
+      "maxLength": 40
+    },
+    "services.body": {
+      "label": "Description",
+      "maxLength": 140
+    },
+    "services.actions": {
+      "label": "Button",
+      "description": "Usually a link to the contact page or a page about the service.",
+      "maxItems": 1
+    }
+  }
+}

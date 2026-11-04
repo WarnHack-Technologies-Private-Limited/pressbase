@@ -26,7 +26,13 @@ Each library pattern is two files: `<name>.html`, the markup exactly as the bloc
 
 The rules every library pattern follows (theme presets only, core blocks only, one heading level at the start, real alt text, mobile, no JavaScript, honest sample text, alike repeated items) are in the [package README](../../packages/patterns/README.md). `checkPattern()` checks them: `packages/patterns/src/patterns.test.ts` and `apps/core/src/pattern-library.test.ts` fail any pattern that uses a raw colour or size, a non-core block, a script, a theme's class or a skipped heading level. Library names must not clash with the Pressbase theme's (`pressbase/hero-gradient`…) or core's built-ins (`pressbase/hero`…), and a test checks that too.
 
-Issues #40–#43 add about forty patterns; v0.8 starts with two that set the bar: `pressbase/hero-centered` and `pressbase/opening-hours`.
+Issues #40–#43 add about forty patterns. Twenty are in: hero, about and call to action (#40), features, services and gallery (#41), and opening hours, two to four layouts per section; the [package README](../../packages/patterns/README.md#catalogue) lists them with screenshots. Layouts of one section share slot shapes (`eyebrow`, `title`, `body`, `actions`, `image`, repeated items), so Swap layout carries content between them; `pattern-library.test.ts` checks every pair, and checks every pattern against the quality checks in the Pressbase theme's default and Midnight styles.
+
+Library patterns may use the Pressbase theme's own colour, font size and radius presets besides the portable ones (`PRESSBASE_PRESETS`): every generated design restyles those slugs, and other themes ignore them.
+
+### Images
+
+The library ships no image files. A pattern's image is an Image block (or a Gallery of them) with no `url`, an aspect ratio, and alt text that says what it should show, plus a declared `subject` for image search. In the editor it's the block's placeholder; `findPlaceholders()` and `checkPage()` report it as "Choose an image"; on the public site it renders as nothing until one is chosen, as WordPress's `render_block_core_image()` does (`apps/core/src/blocks/library/media.ts`). The same file ports the Gallery's `--wp--style--unstable-gallery-gap`, so a gallery keeps its columns in a theme whose block gap is wider than 16px.
 
 ## Slots
 
@@ -114,6 +120,6 @@ A value that isn't known is a placeholder in square brackets, such as `[Add a cu
 
 ## Not yet
 
-- Images in library patterns: the library ships no image files yet; patterns with images will need neutral placeholder images served by core, or an empty image the editor shows as a placeholder.
+- Choosing images for library patterns' image slots (uploads, Openverse); until then they stay empty and are left out of the public page.
 - Table cells and image captions as slots.
 - The AI pipeline that fills slots ([plan](../plans/visual-site-builder.md#pipeline)). Studio's Swap layout (#45) is described in [studio.md](studio.md#swap-layout).
