@@ -169,6 +169,7 @@ export async function authorOf(
 /** The post a post-context block points at: `postId` from block context. */
 export async function contextPost(block: CoreBlock): Promise<Post | undefined> {
   const id = Number(block.context.postId);
-  if (!Number.isInteger(id) || id <= 0) return undefined;
+  // Negative IDs are posts a changeset preview creates (ADR 0022): kernel.posts.get() knows them.
+  if (!Number.isInteger(id) || id === 0) return undefined;
   return block.services.kernel.posts.get(id);
 }

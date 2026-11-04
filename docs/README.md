@@ -31,6 +31,7 @@ New here? The [README](../README.md#see-it-in-action) shows Pressbase in action:
 - [Design generator](architecture/design-generator.md): palettes from a hue and a mood that always pass WCAG AA, font pairs, corner and spacing presets, as user global styles.
 - [Quality checks](architecture/quality-checks.md): `checkPage()` and `core/check-page`: invalid blocks, contrast, headings, alt text, placeholders, link text and raw colours, each finding with its block.
 - [Site-building abilities](architecture/site-abilities.md): the abilities AI, the CLI and agents read and change a site with: brief, design system, patterns, page structure; pages, sections, styles and template parts written into a changeset, never published.
+- [Site builder](architecture/site-builder.md): "build my site from a prompt": the brief, design, sitemap, page and check stages as a job, honest content enforced in code, runs and their progress over Server-Sent Events, everything in a changeset.
 - [People](architecture/people.md): users and roles, application passwords, mail, password reset.
 - [Comments](architecture/comments.md): the comment pipeline, moderation, blocks and the comment form.
 - [Themes and the public site](architecture/themes.md): theme.json, block themes, routing, the template hierarchy and page rendering.

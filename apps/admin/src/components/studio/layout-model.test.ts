@@ -50,9 +50,10 @@ describe('left rail', () => {
       if (panel.interim === 'built') expect(panel.coming).toBeUndefined();
       else expect(panel.coming).toContain(`#${panel.issue}`);
     }
-    // Pages (#29), Sections (#44) and History (#34) are built.
+    // Pages (#29), Elements (#35), Sections (#44) and History (#34) are built.
     expect(RAIL_PANELS.filter((p) => p.interim === 'built').map((p) => p.id)).toEqual([
       'pages',
+      'elements',
       'sections',
       'history',
     ]);

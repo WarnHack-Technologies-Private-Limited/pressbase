@@ -12,22 +12,22 @@ msgstr ""
 "X-Generator: pressbase i18n:extract\n"
 "X-Domain: pressbase\n"
 
-#: apps/core/src/changesets/service.ts:625
+#: apps/core/src/changesets/service.ts:626
 #, js-format
 msgid "You’re seeing %d unpublished change. Visitors don’t see it yet."
 msgid_plural "You’re seeing %d unpublished changes. Visitors don’t see them yet."
 msgstr[0] ""
 msgstr[1] ""
 
-#: apps/core/src/changesets/service.ts:633 apps/core/src/changesets/service.ts:635
+#: apps/core/src/changesets/service.ts:634 apps/core/src/changesets/service.ts:636
 msgid "Preview"
 msgstr ""
 
-#: apps/core/src/changesets/service.ts:636
+#: apps/core/src/changesets/service.ts:637
 msgid "Back to Studio"
 msgstr ""
 
-#: apps/core/src/changesets/service.ts:637
+#: apps/core/src/changesets/service.ts:638
 msgid "Exit preview"
 msgstr ""
 

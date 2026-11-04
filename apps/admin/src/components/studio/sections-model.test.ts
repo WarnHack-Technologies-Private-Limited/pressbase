@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  addButtonPlace,
   groupSections,
   matches,
   type RestPattern,
@@ -119,5 +120,29 @@ describe('sections', () => {
       ),
     ).toEqual(['Hero', 'Hero with animated gradient']);
     expect(groupSections(sections, CATEGORIES, { search: 'nothing like this' })).toEqual([]);
+  });
+});
+
+describe('addButtonPlace', () => {
+  const box = { left: 100, width: 600 };
+
+  it('puts the pill in the gap beside the section, never across its edge', () => {
+    // A 40px gap above: the pill (28px) sits 20px above the edge, clear of both sections.
+    expect(addButtonPlace(500, 40, 'above', box)).toEqual({ top: 480, left: 400, round: false });
+    expect(addButtonPlace(800, 40, 'below', box)).toEqual({ top: 820, left: 400, round: false });
+    // A large gap: still close to the edge it belongs to.
+    expect(addButtonPlace(800, 300, 'below', box).top).toBe(820);
+  });
+
+  it('uses a round ＋ in a narrower gap', () => {
+    expect(addButtonPlace(500, 26, 'above', box)).toEqual({ top: 487, left: 400, round: true });
+  });
+
+  it('where sections touch, puts a round ＋ outside the outline, at the left', () => {
+    const place = addButtonPlace(500, 0, 'below', box);
+    expect(place.round).toBe(true);
+    expect(place.top).toBe(500);
+    // Its right side (12px from its centre) stays left of the section.
+    expect(place.left + 12).toBeLessThan(box.left);
   });
 });

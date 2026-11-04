@@ -50,6 +50,11 @@ function describe(slot: Slot): string {
   return parts.join(' ');
 }
 
+/** The slot's length limit, long enough for its placeholder, which a model may be told to write. */
+function maxLengthOf(slot: Exclude<Slot, { kind: 'group' | 'image' }>): number {
+  return Math.max(slot.maxLength, placeholderFor(slot).length);
+}
+
 function leafSchema(slot: Exclude<Slot, { kind: 'group' }>): JsonSchema {
   const description = describe(slot);
   if (slot.kind === 'button') {
@@ -57,7 +62,7 @@ function leafSchema(slot: Exclude<Slot, { kind: 'group' }>): JsonSchema {
       type: 'object',
       description,
       properties: {
-        text: { type: 'string', maxLength: slot.maxLength, description: 'The button text.' },
+        text: { type: 'string', maxLength: maxLengthOf(slot), description: 'The button text.' },
         url: {
           type: 'string',
           description:
@@ -89,7 +94,7 @@ function leafSchema(slot: Exclude<Slot, { kind: 'group' }>): JsonSchema {
       additionalProperties: false,
     };
   }
-  return { type: 'string', maxLength: slot.maxLength, description };
+  return { type: 'string', maxLength: maxLengthOf(slot), description };
 }
 
 function slotSchema(slot: Slot): JsonSchema {

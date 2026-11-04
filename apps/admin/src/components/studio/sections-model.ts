@@ -5,6 +5,8 @@
  * sections-model.test.ts. See docs/architecture/studio.md#the-sections-panel.
  */
 
+import type { SlotDeclarations } from '@pressbase/slots';
+
 /** A pattern as `/wp/v2/block-patterns/patterns` gives it (the fields Studio reads). */
 export interface RestPattern {
   name: string;
@@ -20,6 +22,8 @@ export interface RestPattern {
   template_types?: string[];
   /** `core` (WordPress's and the Pressbase library), `theme`, or a plugin's. */
   source?: string;
+  /** Pressbase: the pattern's declared slots (see @pressbase/slots), for Swap layout. */
+  slots?: SlotDeclarations;
 }
 
 export interface RestPatternCategory {
@@ -42,6 +46,8 @@ export interface Section {
   keywords: string[];
   viewportWidth: number;
   source: SectionSource;
+  /** Declared slots, when the pattern has any (#45). */
+  slots?: SlotDeclarations;
 }
 
 export interface SectionGroup {
@@ -104,6 +110,7 @@ export function sectionsOf(patterns: readonly RestPattern[]): Section[] {
       keywords: pattern.keywords ?? [],
       viewportWidth: pattern.viewport_width || 1200,
       source: sourceOf(pattern),
+      ...(pattern.slots ? { slots: pattern.slots } : {}),
     });
   }
   // Stable: the library first, then the theme, then plugins; registration order within each.
@@ -182,4 +189,32 @@ export function sectionCategories(
     label: group.label,
     count: sections.filter((s) => s.categories.includes(group.category)).length,
   }));
+}
+
+/* ------------------------------------------------------- ＋ Add section */
+
+/** The ＋ Add section pill's height, and the round ＋ used where there's less room. */
+const PILL = 28;
+const ROUND = 24;
+
+/**
+ * Where ＋ Add section goes on one side of a section, so it never covers
+ * the page: in the gap beside the section (at most 20px from its edge) when
+ * the pill fits there; a small round ＋ in a narrower gap; and where
+ * sections touch, a round ＋ at the left end of the edge, outside the
+ * section's outline (#44 put the pill across the edge, over the text).
+ */
+export function addButtonPlace(
+  edge: number,
+  space: number,
+  side: 'above' | 'below',
+  box: { left: number; width: number },
+): { top: number; left: number; round: boolean } {
+  const direction = side === 'above' ? -1 : 1;
+  const middle = box.left + box.width / 2;
+  if (space >= PILL + 4) {
+    return { top: edge + direction * Math.min(space / 2, 20), left: middle, round: false };
+  }
+  if (space >= ROUND + 2) return { top: edge + (direction * space) / 2, left: middle, round: true };
+  return { top: edge, left: box.left - ROUND / 2 - 2, round: true };
 }
