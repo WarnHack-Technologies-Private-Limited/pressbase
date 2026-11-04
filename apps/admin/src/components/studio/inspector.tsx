@@ -464,7 +464,7 @@ function BlockSettings({
         )}
         {moreInAdvanced && (
           <div className={styles.tabEmpty}>
-            <p>{__('This block’s settings here are in Advanced.', 'pressbase-admin')}</p>
+            <p>{__('More settings for this block are in Advanced.', 'pressbase-admin')}</p>
             <Button size="sm" variant="secondary" onClick={() => onMode('advanced')}>
               {__('Show Advanced settings', 'pressbase-admin')}
             </Button>
