@@ -149,7 +149,10 @@ export interface DesignOption {
 export const DESIGN_MOODS = MOODS;
 export const DESIGN_RADII = RADII;
 export const DESIGN_DENSITIES = DENSITIES;
-export const DESIGN_FONT_PAIRS = FONT_PAIRS.map((p) => ({ id: p.id, label: p.label }));
+export const DESIGN_FONT_PAIRS: { id: string; label: string }[] = FONT_PAIRS.map((p) => ({
+  id: p.id,
+  label: p.label,
+}));
 
 /** The words for each choice, for people (the values are the model's). */
 export const MOOD_LABELS: Record<string, string> = {
@@ -239,7 +242,11 @@ export function move<T>(list: readonly T[], from: number, to: number): T[] {
 }
 
 /** A page added at the end, with one section to start from; none past the limit. */
-export function addPage(pages: readonly SitemapPage[], title: string, first: string): SitemapPage[] {
+export function addPage(
+  pages: readonly SitemapPage[],
+  title: string,
+  first: string,
+): SitemapPage[] {
   const clean = title.trim();
   if (!clean || pages.length >= MAX_PAGES) return [...pages];
   return [...pages, { title: clean, slug: '', sections: [{ category: first, intent: '' }] }];
@@ -351,7 +358,11 @@ export function applyEvent(run: Run, type: string, data: Record<string, unknown>
         preview_link: (data.preview_link as string) ?? run.preview_link,
       };
     case 'stage':
-      return { ...run, status: 'running', stage: data.status === 'started' ? String(data.stage) : run.stage };
+      return {
+        ...run,
+        status: 'running',
+        stage: data.status === 'started' ? String(data.stage) : run.stage,
+      };
     case 'sitemap': {
       const sitemap = data.sitemap as Sitemap | undefined;
       if (!sitemap || run.pages.length) return run;
@@ -383,7 +394,9 @@ export function applyEvent(run: Run, type: string, data: Record<string, unknown>
         slug: String(data.slug ?? run.pages[index]?.slug ?? ''),
         status: data.status as PageStatus,
         ...(data.preview_link ? { preview_link: String(data.preview_link) } : {}),
-        ...(Array.isArray(data.placeholders) ? { placeholders: data.placeholders as string[] } : {}),
+        ...(Array.isArray(data.placeholders)
+          ? { placeholders: data.placeholders as string[] }
+          : {}),
         ...(data.error ? { error: data.error as RunPage['error'] } : {}),
       };
       const pages = [...run.pages];
