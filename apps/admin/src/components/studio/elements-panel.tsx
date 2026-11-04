@@ -21,6 +21,7 @@ import {
 } from './elements-model';
 import { contentRootId, sectionLabel } from './sections-panel';
 import styles from './studio.module.css';
+import { useCanvasEvents } from './swap-layout';
 
 interface Selectors extends InsertSelectors {
   getBlocks: () => BlockInstance[];
@@ -48,6 +49,8 @@ export function blockFor(item: ElementItem): BlockInstance {
  * content (the latest posts). Shared by the panel and the command palette.
  */
 export function useInsertElement(): ((item: ElementItem) => InsertionPlace | null) | null {
+  const { __, sprintf } = useI18n();
+  const events = useCanvasEvents();
   const registry = useRegistry();
   const { insertBlock } = useDispatch(blockEditorStore) as unknown as {
     insertBlock: (
@@ -66,6 +69,7 @@ export function useInsertElement(): ((item: ElementItem) => InsertionPlace | nul
     const select = registry.select(blockEditorStore) as unknown as Selectors;
     const place = insertionPlace(select, item.name, root);
     if (!place) return null;
+    events?.labelNext(sprintf(__('Added block “%s”', 'pressbase-admin'), item.title));
     insertBlock(blockFor(item), place.index, place.rootClientId, true);
     return place;
   };

@@ -51,24 +51,27 @@ function remember(clientId: string, memory: SwapMemory) {
 
 /* ------------------------------------------------------------ context */
 
-export interface SwapEvents {
-  /** Just before the swap: names the History step. */
-  onSwapping: (label: string) => void;
-  /** After it: tells the person which layout it is now, and what didn't fit. */
+/** What the canvas's own controls tell the editor (Swap layout, Elements). */
+export interface CanvasEvents {
+  /** Names the next History step ("Swapped layout of “Hero”"). */
+  labelNext: (label: string) => void;
+  /** After a swap: says which layout it is now, and what didn't fit. */
   onSwapped: (message: string, unused: number) => void;
 }
 
-const SwapContext = createContext<SwapEvents | null>(null);
+const CanvasEventsContext = createContext<CanvasEvents | null>(null);
 
-export function SwapLayoutProvider({
+export function CanvasEventsProvider({
   value,
   children,
 }: {
-  value: SwapEvents;
+  value: CanvasEvents;
   children: ReactNode;
 }) {
-  return <SwapContext.Provider value={value}>{children}</SwapContext.Provider>;
+  return <CanvasEventsContext.Provider value={value}>{children}</CanvasEventsContext.Provider>;
 }
+
+export const useCanvasEvents = () => useContext(CanvasEventsContext);
 
 /** The section library, once it has loaded (shared with the Sections panel). */
 function useLibrary(): Section[] | null {
@@ -112,7 +115,7 @@ export interface SwapState {
  */
 export function useSwapLayout(clientId: string | null): SwapState {
   const { __, sprintf, _n } = useI18n();
-  const events = useContext(SwapContext);
+  const events = useCanvasEvents();
   const registry = useRegistry();
   const { replaceBlocks, selectBlock } = useDispatch(blockEditorStore) as unknown as {
     replaceBlocks: (
@@ -166,7 +169,7 @@ export function useSwapLayout(clientId: string | null): SwapState {
     const next = blocks[0];
     if (!next) return;
     const unused = [...swapped.unused, ...carried];
-    events?.onSwapping(sprintf(__('Swapped layout of “%s”', 'pressbase-admin'), label));
+    events?.labelNext(sprintf(__('Swapped layout of “%s”', 'pressbase-admin'), label));
     registry.batch(() => {
       // Select the section first, so the new one is selected after, without moving focus.
       selectBlock(clientId, null);

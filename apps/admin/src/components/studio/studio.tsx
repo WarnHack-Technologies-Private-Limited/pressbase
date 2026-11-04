@@ -147,7 +147,7 @@ import {
   templateCandidates,
 } from './site-model';
 import styles from './studio.module.css';
-import { SwapLayoutProvider } from './swap-layout';
+import { CanvasEventsProvider } from './swap-layout';
 import { TopBar } from './top-bar';
 import { useDraft } from './use-draft';
 import { type StudioHistory, useStudioHistory } from './use-history';
@@ -1734,9 +1734,9 @@ function StudioEditor(props: StudioEditorProps) {
       return replaceRegion(pageKey(doc.page.id), content);
     },
   };
-  const swapEvents = useMemo(
+  const canvasEvents = useMemo(
     () => ({
-      onSwapping: history.labelNext,
+      labelNext: history.labelNext,
       onSwapped: (message: string) => propsRef.current.onSwapped(message, history.undo),
     }),
     [history.labelNext, history.undo],
@@ -1801,7 +1801,7 @@ function StudioEditor(props: StudioEditorProps) {
           props.onOpenPalette();
         }}
       >
-        <SwapLayoutProvider value={swapEvents}>
+        <CanvasEventsProvider value={canvasEvents}>
           <StudioRegionsProvider
             value={{
               parts: props.parts,
@@ -1863,7 +1863,7 @@ function StudioEditor(props: StudioEditorProps) {
               </div>
             </StudioFrame>
           </StudioRegionsProvider>
-        </SwapLayoutProvider>
+        </CanvasEventsProvider>
       </div>
       <div className={lightScope}>
         <Popover.Slot />
