@@ -7,8 +7,16 @@ import {
   slotsJsonSchema,
   slotValues,
 } from '@pressbase/slots';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { checkPattern, LIBRARY_CATEGORIES, type LibraryPattern, libraryPatterns } from './index';
+import {
+  checkPattern,
+  LIBRARY_CATEGORIES,
+  type LibraryPattern,
+  libraryPatterns,
+  PORTABLE_PRESETS,
+  PRESSBASE_PRESETS,
+} from './index';
 
 const patterns = libraryPatterns();
 
@@ -153,12 +161,57 @@ describe('checkPattern', () => {
       'core/group: layout.contentSize is a raw size',
     ]);
     expect(raw('{"backgroundColor":"accent-3"}', '')[0]).toContain("isn't one every theme has");
+    // The Pressbase theme's presets, which every generated design restyles.
+    expect(
+      raw(
+        '{"backgroundColor":"accent-soft","fontSize":"display","style":{"border":{"radius":"var:preset|border-radius|xl"}}}',
+        ' style="border-radius:var(--wp--preset--border-radius--xl)"',
+      ),
+    ).toEqual([]);
+    expect(raw('{"style":{"border":{"radius":"var:preset|border-radius|huge"}}}', '')).toEqual([
+      'core/group style.border.radius: the border-radius preset "huge" isn\'t one every theme has',
+    ]);
+    // A grid wraps at a minimum column width in rem.
+    expect(raw('{"layout":{"type":"grid","minimumColumnWidth":"16rem"}}', '')).toEqual([]);
+    expect(raw('{"layout":{"type":"grid","minimumColumnWidth":"240px"}}', '')).toEqual([
+      'core/group: layout.minimumColumnWidth must be in rem',
+    ]);
     expect(
       raw(
         '{"style":{"spacing":{"padding":{"top":"var:preset|spacing|50"}}}}',
         ' style="padding-top:var(--wp--preset--spacing--50)"',
       ),
     ).toEqual([]);
+  });
+
+  it('takes a column’s width as a share of the row', () => {
+    const column = (width: string) =>
+      checkPattern(
+        sample(
+          `${heading}\n\n<!-- wp:columns -->\n<div class="wp-block-columns"><!-- wp:column {"width":"${width}"} -->\n<div class="wp-block-column" style="flex-basis:${width}"><!-- wp:paragraph -->\n<p>Text</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:column --></div>\n<!-- /wp:columns -->`,
+        ),
+      );
+    expect(column('40%')).toEqual([]);
+    expect(column('320px')).toEqual([
+      'core/column: "width" is a raw value ("320px")',
+      'core/column: inline style "flex-basis:320px" has a raw value',
+    ]);
+  });
+
+  it('allows the Pressbase theme’s presets, which its theme.json defines', () => {
+    const theme = JSON.parse(
+      readFileSync(new URL('../../../themes/pressbase/theme.json', import.meta.url), 'utf8'),
+    );
+    const slugs = (list: { slug: string }[]) => list.map((p) => p.slug);
+    expect(slugs(theme.settings.color.palette)).toEqual(
+      expect.arrayContaining([...PRESSBASE_PRESETS.color, ...PORTABLE_PRESETS.color]),
+    );
+    expect(slugs(theme.settings.typography.fontSizes)).toEqual(
+      expect.arrayContaining([...PRESSBASE_PRESETS['font-size'], ...PORTABLE_PRESETS['font-size']]),
+    );
+    expect(slugs(theme.settings.border.radiusSizes)).toEqual(
+      expect.arrayContaining([...PRESSBASE_PRESETS['border-radius']]),
+    );
   });
 
   it('fails other blocks, scripts, theme classes and fonts', () => {

@@ -112,6 +112,7 @@ Ported from `wp-includes/blocks/*.php`, with the same markup and class names so 
 | `core/query`, `core/post-template`, `core/query-pagination` (+ `-previous`, `-next`, `-numbers`), `core/query-title`, `core/query-no-results`, `core/term-description` | the main query or `queryPosts` | `inherit` uses the page's main query. |
 | `core/navigation`, `core/navigation-link`, `core/navigation-submenu`, `core/home-link` | `wp_navigation`, pages | A menu by `ref`, its own items, or the fallback (chosen menu, newest menu, page list). Accessible submenus, current items, links to unpublished posts hidden, responsive overlay with a tiny script and a no-JS fallback. See [Navigation](navigation.md). |
 | `core/post-featured-image`, `core/post-navigation-link`, `core/read-more`, `core/post-author`, `core/avatar`, `core/site-logo` | media, adjacent posts, users | Avatars are initials, never Gravatar. |
+| `core/image`, `core/gallery` | their saved HTML | An image without a source renders as nothing; a gallery gets a unique class and `--wp--style--unstable-gallery-gap` (`blocks/library/media.ts`). Lightbox and random order aren't ported. |
 
 Comment block metadata lives in `apps/core/src/blocks/comment-metadata.ts`. Render calls can pass `query` (the page's query variables) for the comment blocks; see [Comments](comments.md#showing-comments-blocks).
 
