@@ -6,6 +6,7 @@ import {
   type Changeset,
   type EntryValue,
   entriesPatch,
+  mergeFields,
   pendingKeys,
   type StoredEntry,
 } from './changes-model';
@@ -36,6 +37,11 @@ export interface Draft {
   unsaved: boolean;
   /** The canvas wants these entries (null: no entry). Saved after SAVE_DELAY. */
   want(entries: ReadonlyMap<string, EntryValue | null>): void;
+  /**
+   * Merges fields into object entries (page entries, which the canvas and the
+   * Pages panel share; see mergeFields()). `undefined` takes a field out.
+   */
+  wantFields(changes: ReadonlyMap<string, Readonly<Record<string, unknown>>>): void;
   /** Writes what's pending now; resolves with the changeset (null if there's nothing in it). */
   flush(): Promise<Changeset | null>;
   /** Removes one entry from the draft. */
@@ -130,6 +136,20 @@ export function useDraft({ onError }: { onError: (message: string) => void }): D
     [patch, schedule],
   );
 
+  const wantFields = useCallback(
+    (changes: ReadonlyMap<string, Readonly<Record<string, unknown>>>) => {
+      const next = new Map<string, EntryValue | null>();
+      for (const [key, fields] of changes) {
+        const base = desired.current.has(key)
+          ? desired.current.get(key)
+          : server.current?.entries[key]?.value;
+        next.set(key, mergeFields(base, fields));
+      }
+      want(next);
+    },
+    [want],
+  );
+
   const flush = useCallback(async () => {
     if (timer.current) {
       clearTimeout(timer.current);
@@ -220,6 +240,7 @@ export function useDraft({ onError }: { onError: (message: string) => void }): D
     error,
     unsaved: view.unsaved || status === 'saving' || status === 'error',
     want,
+    wantFields,
     flush,
     revert,
     publish,

@@ -1,5 +1,3 @@
-import { schema } from '@pressbase/db';
-import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Kernel } from '../kernel';
 import type { Post } from './posts';
@@ -56,10 +54,8 @@ async function pagePath(kernel: Kernel, post: Post): Promise<string> {
   const slugs = [post.slug];
   let parentId = post.parentId;
   for (let depth = 0; parentId && depth < 20; depth++) {
-    const [parent] = await kernel.db
-      .select({ slug: schema.posts.slug, parentId: schema.posts.parentId })
-      .from(schema.posts)
-      .where(eq(schema.posts.id, parentId));
+    // kernel.posts.get(): a changeset preview's parents (moved, or created) count too.
+    const parent = await kernel.posts.get(parentId);
     if (!parent) break;
     slugs.unshift(parent.slug);
     parentId = parent.parentId;

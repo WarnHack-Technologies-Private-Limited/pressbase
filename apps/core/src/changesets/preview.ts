@@ -36,6 +36,8 @@ export class ChangesetPreview {
   readonly posts = new Map<number, Post>();
   /** Posts the changeset creates, by their (negative) preview IDs. */
   readonly created = new Map<number, CreatedPost>();
+  /** Posts' custom templates (`_wp_page_template`), as the changeset sets them ('' for the default). */
+  readonly templates = new Map<number, string>();
   /** Options on the allow-list, as the changeset sets them. */
   readonly options = new Map<string, unknown>();
   /** The active theme's user global styles, when the changeset changes them. */

@@ -4,7 +4,7 @@ import { currentUserCan } from '../auth/meta-caps';
 import type { CurrentUser } from '../auth/users';
 import { siteInfo, termLink } from '../blocks/helpers';
 import { addCacheTags, CacheTag } from '../cache/tags';
-import { previewPost } from '../changesets/preview';
+import { type ChangesetPreview, currentChangesetPreview, previewPost } from '../changesets/preview';
 import {
   basePath,
   type PermalinkBases,
@@ -296,7 +296,14 @@ async function pageByPath(kernel: Kernel, pagePath: string): Promise<Post | unde
   const slugs = pagePath.split('/').filter(Boolean);
   let parent: number | null = null;
   let found: Post | undefined;
+  const preview = currentChangesetPreview();
   for (const slug of slugs) {
+    if (preview) {
+      found = await previewPageBySlug(kernel, preview, slug, parent);
+      if (!found) return undefined;
+      parent = found.id;
+      continue;
+    }
     const rows: Post[] = await kernel.db
       .select()
       .from(schema.posts)
@@ -313,6 +320,31 @@ async function pageByPath(kernel: Kernel, pagePath: string): Promise<Post | unde
     parent = found.id;
   }
   return found;
+}
+
+/**
+ * One step of get_page_by_path() in a changeset preview: pages as the
+ * changeset leaves them (moved, renamed, or created), so a page Studio adds
+ * or nests opens at its new address.
+ */
+async function previewPageBySlug(
+  kernel: Kernel,
+  preview: ChangesetPreview,
+  slug: string,
+  parent: number | null,
+): Promise<Post | undefined> {
+  const rows: Post[] = await kernel.db
+    .select()
+    .from(schema.posts)
+    .where(and(eq(schema.posts.type, 'page'), eq(schema.posts.slug, slug)));
+  const candidates = [
+    ...rows.map((row) => preview.posts.get(row.id) ?? row),
+    ...preview.posts.values(),
+    ...[...preview.created.values()].map((c) => c.post),
+  ];
+  return candidates.find(
+    (post) => post.type === 'page' && post.slug === slug && (post.parentId ?? null) === parent,
+  );
 }
 
 async function termBySlug(

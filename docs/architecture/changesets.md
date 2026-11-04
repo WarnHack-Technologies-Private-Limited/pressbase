@@ -48,7 +48,7 @@ Handlers apply in `order`: posts (10), global styles (20), options (30).
 
 | Type | ID | Value | Permission |
 |---|---|---|---|
-| `page`, `wp_navigation` (and any post type registered with `postEntityHandler()`) | post ID, or slug | REST fields: `title`, `content`, `excerpt`, `status` (`publish`, `draft`, `pending`, `private`), `slug`, `parent`, `menu_order` | `edit_post` on the post; `publish_post` to publish it |
+| `page`, `wp_navigation` (and any post type registered with `postEntityHandler()`) | post ID, or slug | REST fields: `title`, `content`, `excerpt`, `status` (`publish`, `draft`, `pending`, `private`), `slug`, `parent` (an ID, or the slug of a post the changeset creates), `menu_order`, `template` (`_wp_page_template`, one of the type's templates; `""` for the default) | `edit_post` on the post; `publish_post` to publish it |
 | `wp_template`, `wp_template_part` | `theme//slug` (the REST id) or the slug, in the active theme | `content`, `title`, `description`; `area` for parts. Or `{ source: "theme" }` alone: back to the theme's file | `edit_theme_options` |
 | `wp_global_styles` | theme stylesheet | `{ styles?, settings? }`, as `POST /wp/v2/global-styles/{id}` takes, prepared the same way (missing keys keep the stored value) | `edit_theme_options` |
 | `option` | option name | the setting's value, checked by its schema | the setting's capability (`manage_options`; `edit_theme_options` for the header menu) |
@@ -63,7 +63,7 @@ import { postEntityHandler } from './changesets/entities';
 kernel.changesets.entities.register(postEntityHandler('wp_block'));
 ```
 
-That is enough for posts that exist. For entries that name, by slug, a post that doesn't exist yet, pass `create` with the terms the new post gets, and optionally `find`, to look it up as the type does. Publishing then creates the post (status `publish`, the slug as its ID) and its terms. Creating needs the type's `create_posts` and `publish_posts`.
+That is enough for posts that exist. Pages are registered with `create`, so Studio's Pages panel can add one as `page:{slug}` (#29), and another page can be put under it with `"parent": "{slug}"`: a handler's optional `after(id, value)` names the entries to write first, and publishing and previews follow it (`orderEntries()`). For entries that name, by slug, a post that doesn't exist yet, pass `create` with the terms the new post gets, and optionally `find`, to look it up as the type does. Publishing then creates the post (status `publish`, the slug as its ID) and its terms. Creating needs the type's `create_posts` and `publish_posts`.
 
 ### Templates and template parts
 
@@ -98,7 +98,9 @@ The entries are laid over the content layer for that render only, in a `Changese
 |---|---|
 | `kernel.posts.get(id)` | the changed post; negative IDs are posts the changeset creates |
 | `queryPosts()` | changed posts in place of their rows; dropped when they no longer match (status, slug, parent), added when they now do; created posts added to lookups by type, status, ID, slug, parent and term slug (`tax_query` with `field: 'slug'`) |
-| The main query's page and post lookups by path or slug, the fallback menu | the changed post |
+| The main query's page and post lookups by path or slug, the fallback menu | the changed post; a page by its path as the changeset leaves it (moved, or created) |
+| A post's custom template (`_wp_page_template`) | the changeset's `template` |
+| A page's address (`get_page_uri()`) | its parents as the changeset leaves them |
 | `kernel.options.get()` for allow-listed options | the changeset's value (`pre_option_{name}`) |
 | Global styles | `RenderRequest.theme`: the active theme with the changeset's user styles |
 

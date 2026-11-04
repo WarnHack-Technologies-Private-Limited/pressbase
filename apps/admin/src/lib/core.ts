@@ -52,6 +52,11 @@ export interface SiteIndex {
   description: string;
   url: string;
   pressbase: { version: string; state: InstallStatus['state'] };
+  /** Reading settings, as WordPress's REST index has them (once installed). */
+  timezone_string?: string;
+  page_for_posts?: number;
+  page_on_front?: number;
+  show_on_front?: string;
   /** Site identity, as WordPress's REST index has it (once installed). */
   site_logo?: number;
   site_icon?: number;

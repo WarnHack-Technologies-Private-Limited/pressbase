@@ -71,6 +71,13 @@ declare module '@wordpress/block-editor' {
     description?: string;
     name?: string;
   } | null;
+  // Studio's Sections panel (#44): a pattern drawn in the editor's styles, scaled to fit.
+  export const BlockPreview: ComponentType<{
+    blocks: BlockInstance[];
+    viewportWidth?: number;
+    minHeight?: number;
+    additionalStyles?: { css: string }[];
+  }>;
   export const BlockControls: ComponentType<Record<string, unknown>>;
   export const RichText: ComponentType<Record<string, unknown>> & {
     Content: ComponentType<Record<string, unknown>>;

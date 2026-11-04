@@ -35,7 +35,7 @@ describe('inspector tabs', () => {
 });
 
 describe('left rail', () => {
-  it('has the panels from the plan, in order, each saying which issue builds it', () => {
+  it('has the panels from the plan, in order, each built or saying which issue builds it', () => {
     expect(RAIL_PANELS.map((panel) => panel.label)).toEqual([
       'Pages',
       'Elements',
@@ -45,7 +45,15 @@ describe('left rail', () => {
       'Media',
       'AI',
     ]);
-    for (const panel of RAIL_PANELS) expect(panel.coming).toContain(`#${panel.issue}`);
+    for (const panel of RAIL_PANELS) {
+      if (panel.interim === 'built') expect(panel.coming).toBeUndefined();
+      else expect(panel.coming).toContain(`#${panel.issue}`);
+    }
+    // Pages (#29) and Sections (#44) are built.
+    expect(RAIL_PANELS.filter((p) => p.interim === 'built').map((p) => p.id)).toEqual([
+      'pages',
+      'sections',
+    ]);
   });
 });
 

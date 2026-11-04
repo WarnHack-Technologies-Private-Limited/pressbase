@@ -27,7 +27,8 @@ export interface Changeset {
   preview_link: string;
 }
 
-export const pageKey = (id: number) => `page:${id}`;
+/** A page's entry key: `page:12`, or `page:about-us` for a page the draft adds (#29). */
+export const pageKey = (id: number | string) => `page:${id}`;
 export const partKey = (slug: string) => `wp_template_part:${slug}`;
 
 /** `{type}:{id}` → its parts; the id may itself contain colons. */
@@ -81,6 +82,27 @@ export function desiredEntry(state: RegionState): EntryValue | null {
   return { content: state.current };
 }
 
+/**
+ * A page entry is shared: the canvas writes its `content`, the Pages panel
+ * its `title`, `parent`, `menu_order`, `template`… Each merges its fields
+ * into the entry's value; `undefined` takes a field out. An entry left with
+ * no fields is no entry (null).
+ */
+export function mergeFields(
+  base: EntryValue | null | undefined,
+  fields: Readonly<Record<string, unknown>>,
+): EntryValue | null {
+  const next: Record<string, unknown> =
+    base && typeof base === 'object' && !Array.isArray(base)
+      ? { ...(base as Record<string, unknown>) }
+      : {};
+  for (const [field, value] of Object.entries(fields)) {
+    if (value === undefined) delete next[field];
+    else next[field] = value;
+  }
+  return Object.keys(next).length ? next : null;
+}
+
 /* ----------------------------------------------------------------- syncing */
 
 const json = (value: unknown) => JSON.stringify(value ?? null);
@@ -130,7 +152,8 @@ export function pendingKeys(
 /* ------------------------------------------------------------ descriptions */
 
 export interface ChangeNames {
-  page(id: number): string | undefined;
+  /** A page's title, by ID or (for a page the draft adds) slug. */
+  page(id: number | string): string | undefined;
   part(slug: string): string | undefined;
   menu?(id: number): string | undefined;
 }
@@ -166,8 +189,17 @@ export function describeChange(
   const d = 'pressbase-admin';
   const value = entry?.value as Record<string, unknown> | undefined;
   switch (type) {
-    case 'page':
-      return { title: names.page(Number(id)) || __('A page', d), detail: __('Page', d) };
+    case 'page': {
+      // A page the draft adds is named by its slug; it gets its ID on Publish.
+      const isNew = !/^\d+$/.test(id);
+      return {
+        title:
+          names.page(isNew ? id : Number(id)) ||
+          (typeof value?.title === 'string' && value.title) ||
+          __('A page', d),
+        detail: isNew ? __('New page', d) : __('Page', d),
+      };
+    }
     case 'wp_template_part': {
       const slug = id.includes('//') ? id.split('//')[1] || id : id;
       return {

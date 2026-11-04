@@ -19,7 +19,7 @@ import { useI18n } from '@/lib/i18n/context';
 import { Button } from '../ui/button';
 import { DEVICES, type Device } from './layout-model';
 import { type PendingChange, PublishButton } from './publish-panel';
-import { type CanvasTarget, pageTitle, pageTree, type StudioPage } from './site-model';
+import { type CanvasTarget, isNewPage, pageTitle, pageTree, type StudioPage } from './site-model';
 import styles from './studio.module.css';
 import type { DraftStatus } from './use-draft';
 
@@ -54,8 +54,16 @@ export interface TopBarProps {
   disabled?: boolean;
 }
 
+/** The picker's value: `posts`, a page ID, or `new:{slug}` for a page the draft adds. */
 const targetValue = (target: CanvasTarget) =>
-  target.kind === 'posts' ? 'posts' : String(target.id);
+  target.kind === 'posts' ? 'posts' : isNewPage(target.id) ? `new:${target.id}` : String(target.id);
+
+const valueTarget = (value: string): CanvasTarget =>
+  value === 'posts'
+    ? { kind: 'posts' }
+    : value.startsWith('new:')
+      ? { kind: 'page', id: value.slice(4) }
+      : { kind: 'page', id: Number(value) };
 
 /**
  * Studio's top bar: back to the admin, the page being edited, the preview
@@ -88,10 +96,7 @@ export function TopBar(props: TopBarProps) {
           value={targetValue(props.target)}
           disabled={props.disabled}
           onChange={(event) => {
-            const value = event.target.value;
-            props.onTarget(
-              value === 'posts' ? { kind: 'posts' } : { kind: 'page', id: Number(value) },
-            );
+            props.onTarget(valueTarget(event.target.value));
           }}
         >
           {props.postsOnFront && (
@@ -104,11 +109,14 @@ export function TopBar(props: TopBarProps) {
             const label =
               isFront && !/\bhome\b/i.test(title)
                 ? sprintf(__('%s (home page)', 'pressbase-admin'), title)
-                : page.status === 'publish'
-                  ? title
-                  : sprintf(__('%s (draft)', 'pressbase-admin'), title);
+                : isNewPage(page.id)
+                  ? sprintf(__('%s (new)', 'pressbase-admin'), title)
+                  : page.status === 'publish'
+                    ? title
+                    : sprintf(__('%s (draft)', 'pressbase-admin'), title);
+            const value = targetValue({ kind: 'page', id: page.id });
             return (
-              <option key={page.id} value={page.id}>
+              <option key={value} value={value}>
                 {`${' '.repeat(depth)}${label}`}
               </option>
             );

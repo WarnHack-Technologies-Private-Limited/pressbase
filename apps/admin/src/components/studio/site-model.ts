@@ -10,17 +10,29 @@
  * the browser (the editor store's getCurrentTemplateId()).
  */
 
+/**
+ * A page's reference: its ID, or, for a page the draft adds (#29), its slug.
+ * Such a page is `page:{slug}` in the changeset and gets its ID on Publish.
+ */
+export type PageRef = number | string;
+
+/** True for a page the draft adds: it has no ID until Publish. */
+export const isNewPage = (ref: PageRef): ref is string => typeof ref === 'string';
+
 /** The /wp/v2/pages fields Studio reads. */
 export interface StudioPage {
-  id: number;
+  id: PageRef;
   title: { raw?: string; rendered?: string };
   slug: string;
   status: string;
   link: string;
-  parent: number;
+  /** The parent's reference; 0 at the top level. */
+  parent: PageRef;
   menu_order: number;
   /** The custom template chosen for the page ('' for the default). */
   template: string;
+  /** Who wrote it (people without `edit_others_pages` open only their own). */
+  author?: number;
 }
 
 /** The /wp/v2/settings fields about the front page. */
@@ -30,14 +42,18 @@ export interface ReadingSettings {
 }
 
 /** What the canvas shows: a page, or the latest posts (a blog home page). */
-export type CanvasTarget = { kind: 'page'; id: number } | { kind: 'posts' };
+export type CanvasTarget = { kind: 'page'; id: PageRef } | { kind: 'posts' };
+
+/** Whether two targets are the same page (or both the latest posts). */
+export const sameTarget = (a: CanvasTarget, b: CanvasTarget) =>
+  a.kind === b.kind && (a.kind === 'posts' || (b.kind === 'page' && a.id === b.id));
 
 /**
  * The page Studio opens: the one asked for (`?page=`), else the home page:
  * the static front page, or the latest posts when the site shows those.
  */
 export function initialTarget(
-  requested: number | undefined,
+  requested: PageRef | undefined,
   reading: ReadingSettings,
   pages: readonly Pick<StudioPage, 'id'>[],
 ): CanvasTarget {
@@ -108,14 +124,14 @@ export function pageTitle(page: Pick<StudioPage, 'title'> | undefined): string {
 
 /**
  * Pages in tree order (parents first, children after their parent, each
- * level by menu_order then title), with their depth, for the page picker.
- * The full tree with drag and drop is the Pages panel (#29).
+ * level by menu_order then title), with their depth: the page picker and the
+ * Pages panel (#29, pages-model.ts) show them in this order.
  */
 export function pageTree<T extends Pick<StudioPage, 'id' | 'parent' | 'menu_order' | 'title'>>(
   pages: readonly T[],
 ): { page: T; depth: number }[] {
-  const ids = new Set(pages.map((page) => page.id));
-  const children = new Map<number, T[]>();
+  const ids = new Set<PageRef>(pages.map((page) => page.id));
+  const children = new Map<PageRef, T[]>();
   for (const page of pages) {
     // A page whose parent isn't listed (trashed, private) shows at the top level.
     const parent = ids.has(page.parent) ? page.parent : 0;
@@ -124,7 +140,7 @@ export function pageTree<T extends Pick<StudioPage, 'id' | 'parent' | 'menu_orde
   const order = (a: T, b: T) =>
     a.menu_order - b.menu_order || pageTitle(a).localeCompare(pageTitle(b));
   const out: { page: T; depth: number }[] = [];
-  const visit = (parent: number, depth: number, seen: Set<number>) => {
+  const visit = (parent: PageRef, depth: number, seen: Set<PageRef>) => {
     for (const page of [...(children.get(parent) ?? [])].sort(order)) {
       if (seen.has(page.id)) continue;
       seen.add(page.id);
@@ -132,7 +148,7 @@ export function pageTree<T extends Pick<StudioPage, 'id' | 'parent' | 'menu_orde
       visit(page.id, depth + 1, seen);
     }
   };
-  const seen = new Set<number>();
+  const seen = new Set<PageRef>();
   visit(0, 0, seen);
   // Pages caught in a parent loop still show, at the top level.
   for (const page of [...pages].sort(order)) {

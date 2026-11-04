@@ -105,12 +105,15 @@ export interface RailPanel {
   label: string;
   /** What the panel is for, in one line (its description and tooltip). */
   summary: string;
-  /** The issue that builds the panel out, shown while it's on the way. */
+  /** The issue that builds the panel out. */
   issue: number;
-  /** What the shell already offers in the panel until then. */
-  interim: 'pages' | 'inserter' | 'list-view' | 'none';
-  /** The note shown in the panel until the issue lands. */
-  coming: string;
+  /**
+   * What the panel shows: Studio's own panel once built (`built`), or what
+   * the shell offers until its issue lands.
+   */
+  interim: 'built' | 'inserter' | 'list-view' | 'none';
+  /** The note shown in the panel until the issue lands; none once it's built. */
+  coming?: string;
 }
 
 export const RAIL_PANELS: readonly RailPanel[] = [
@@ -119,10 +122,7 @@ export const RAIL_PANELS: readonly RailPanel[] = [
     label: msgid('Pages'),
     summary: msgid('Your site’s pages'),
     issue: 29,
-    interim: 'pages',
-    coming: msgid(
-      'Adding, nesting and reordering pages, and choosing the home page, arrive with #29.',
-    ),
+    interim: 'built',
   },
   {
     id: 'elements',
@@ -137,10 +137,7 @@ export const RAIL_PANELS: readonly RailPanel[] = [
     label: msgid('Sections'),
     summary: msgid('Ready-made sections, in your site’s style'),
     issue: 44,
-    interim: 'none',
-    coming: msgid(
-      'Sections arrive with #44: heroes, features, pricing, opening hours and more, ready to drop in.',
-    ),
+    interim: 'built',
   },
   {
     id: 'layers',
