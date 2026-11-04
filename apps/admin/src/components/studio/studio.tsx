@@ -67,6 +67,7 @@ import { Button } from '../ui/button';
 import { ConfirmDialog } from '../ui/dialog';
 import { useToast } from '../ui/toast';
 import { Breadcrumb } from './breadcrumb';
+import { CanvasDragAssist } from './canvas-drag';
 import {
   type CanvasBlock,
   composeCanvas,
@@ -98,6 +99,7 @@ import {
   useStudioCommands,
 } from './command-palette';
 import { EditorCommands } from './editor-commands';
+import { ElementsPanel } from './elements-panel';
 import { useEntityEdits } from './entity-edits';
 import { type CanvasValue, HistoryPanel } from './history-panel';
 import { Inspector, type PageSummary } from './inspector';
@@ -145,6 +147,7 @@ import {
   templateCandidates,
 } from './site-model';
 import styles from './studio.module.css';
+import { CanvasEventsProvider } from './swap-layout';
 import { TopBar } from './top-bar';
 import { useDraft } from './use-draft';
 import { type StudioHistory, useStudioHistory } from './use-history';
@@ -1088,6 +1091,14 @@ export default function Studio(props: StudioProps) {
                   if (library?.templates.some((t) => t.slug === 'front-page')) reloadCanvas();
                 }}
               />
+            ) : panel === 'elements' ? (
+              editorReady ? (
+                <ElementsPanel />
+              ) : (
+                <p className={styles.pagesEmpty} aria-busy="true">
+                  {__('Opening the page…', 'pressbase-admin')}
+                </p>
+              )
             ) : panel === 'sections' ? (
               editorReady ? (
                 <SectionsPanel
@@ -1263,6 +1274,9 @@ export default function Studio(props: StudioProps) {
           handle.current = h;
         }}
         onNotice={(message, tone) => toast(message, { tone })}
+        onSwapped={(message, undo) =>
+          toast(message, { action: { label: __('Undo', 'pressbase-admin'), onClick: undo } })
+        }
       />
     );
   }
@@ -1470,6 +1484,8 @@ interface StudioEditorProps {
   onOpenPalette: () => void;
   /** A section added from the palette: before it goes in, and after. */
   onSectionAdded: (title: string, phase: 'before' | 'after') => void;
+  /** A section swapped its layout (#45): says which, and offers Undo. */
+  onSwapped: (message: string, undo: () => void) => void;
 }
 
 /** The block-editor store calls the editor makes outside React's render. */
@@ -1718,6 +1734,13 @@ function StudioEditor(props: StudioEditorProps) {
       return replaceRegion(pageKey(doc.page.id), content);
     },
   };
+  const canvasEvents = useMemo(
+    () => ({
+      labelNext: history.labelNext,
+      onSwapped: (message: string) => propsRef.current.onSwapped(message, history.undo),
+    }),
+    [history.labelNext, history.undo],
+  );
   const width = DEVICES.find((d) => d.id === props.device)?.width ?? null;
   const frameRef = useRef<HTMLDivElement>(null);
   const showInspector = !props.narrow || props.inspectorOpen;
@@ -1778,64 +1801,69 @@ function StudioEditor(props: StudioEditorProps) {
           props.onOpenPalette();
         }}
       >
-        <StudioRegionsProvider
-          value={{
-            parts: props.parts,
-            partLabel: (slug) =>
-              `${props.parts.get(slug)?.title ?? slug} · ${__('all pages', 'pressbase-admin')}`,
-          }}
-        >
-          <StudioFrame
-            chrome={props.chrome}
-            editor={editor}
-            notice={<PartNotice parts={props.parts} locked={props.partsLocked} />}
-            footer={<Breadcrumb site={props.site} page={props.summary.title} parts={props.parts} />}
-            inspector={
-              showInspector && (
-                <Inspector
-                  page={props.summary}
-                  parts={props.parts}
-                  tab={props.tab}
-                  onTab={props.onTab}
-                  canReset={canReset}
-                  onReset={(slug) => {
-                    const region = regions.current.get(partKey(slug));
-                    if (region?.theme !== undefined) replaceRegion(region.key, region.theme);
-                  }}
-                  onClose={props.narrow ? props.onCloseInspector : undefined}
-                  partsLocked={props.partsLocked}
-                  mode={props.mode}
-                  onMode={props.onMode}
-                />
-              )
-            }
+        <CanvasEventsProvider value={canvasEvents}>
+          <StudioRegionsProvider
+            value={{
+              parts: props.parts,
+              partLabel: (slug) =>
+                `${props.parts.get(slug)?.title ?? slug} · ${__('all pages', 'pressbase-admin')}`,
+            }}
           >
-            <div className={styles.canvasArea} data-device={props.device}>
-              <div
-                ref={frameRef}
-                className={styles.canvasFrame}
-                style={width ? { maxWidth: `${width}px` } : undefined}
-              >
-                <BlockContextProvider
-                  value={
-                    typeof doc.page?.id === 'number'
-                      ? { postId: doc.page.id, postType: 'page' }
-                      : {}
-                  }
+            <StudioFrame
+              chrome={props.chrome}
+              editor={editor}
+              notice={<PartNotice parts={props.parts} locked={props.partsLocked} />}
+              footer={
+                <Breadcrumb site={props.site} page={props.summary.title} parts={props.parts} />
+              }
+              inspector={
+                showInspector && (
+                  <Inspector
+                    page={props.summary}
+                    parts={props.parts}
+                    tab={props.tab}
+                    onTab={props.onTab}
+                    canReset={canReset}
+                    onReset={(slug) => {
+                      const region = regions.current.get(partKey(slug));
+                      if (region?.theme !== undefined) replaceRegion(region.key, region.theme);
+                    }}
+                    onClose={props.narrow ? props.onCloseInspector : undefined}
+                    partsLocked={props.partsLocked}
+                    mode={props.mode}
+                    onMode={props.onMode}
+                  />
+                )
+              }
+            >
+              <div className={styles.canvasArea} data-device={props.device}>
+                <div
+                  ref={frameRef}
+                  className={styles.canvasFrame}
+                  style={width ? { maxWidth: `${width}px` } : undefined}
                 >
-                  <BlockCanvas height="100%" styles={settings.styles as never}>
-                    <BlockList className="wp-site-blocks" />
-                  </BlockCanvas>
-                </BlockContextProvider>
-                <SectionToolbar
-                  frameRef={frameRef}
-                  onAddSection={props.onAddSection}
-                  onAskAi={props.onAskAi}
-                />
+                  <BlockContextProvider
+                    value={
+                      typeof doc.page?.id === 'number'
+                        ? { postId: doc.page.id, postType: 'page' }
+                        : {}
+                    }
+                  >
+                    <BlockCanvas height="100%" styles={settings.styles as never}>
+                      <BlockList className="wp-site-blocks" />
+                    </BlockCanvas>
+                  </BlockContextProvider>
+                  <CanvasDragAssist frameRef={frameRef} />
+                  <SectionToolbar
+                    frameRef={frameRef}
+                    onAddSection={props.onAddSection}
+                    onAskAi={props.onAskAi}
+                  />
+                </div>
               </div>
-            </div>
-          </StudioFrame>
-        </StudioRegionsProvider>
+            </StudioFrame>
+          </StudioRegionsProvider>
+        </CanvasEventsProvider>
       </div>
       <div className={lightScope}>
         <Popover.Slot />

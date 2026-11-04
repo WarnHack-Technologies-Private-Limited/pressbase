@@ -65,7 +65,7 @@ export const CANVAS_STYLESHEETS: EditorStylesheet[] = [
  * Bumped with the @wordpress packages (or canvas.css) so browsers fetch the
  * new files; the URLs are cached as immutable.
  */
-export const EDITOR_ASSETS_VERSION = 'wp12.0.0-2';
+export const EDITOR_ASSETS_VERSION = 'wp12.0.0-3';
 
 export const assetUrl = (name: EditorStylesheet) =>
   `/editor-assets/${name}?v=${EDITOR_ASSETS_VERSION}`;

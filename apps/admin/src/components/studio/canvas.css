@@ -103,3 +103,29 @@ body.editor-styles-wrapper {
 .entry-content > .block-list-appender:only-child {
   min-height: 6rem;
 }
+
+/* ------------------------------------------------- drop area (#35) */
+
+/*
+ * While a block is dragged onto the page, the group, column or empty
+ * section it will go into lights up (canvas-drag.tsx), as well as
+ * WordPress's line between blocks.
+ */
+[data-studio-drop-target] {
+  outline: 2px dashed #3b4cca;
+  outline-offset: 2px;
+  background-color: rgba(59, 76, 202, 0.06);
+  transition: background-color 120ms ease-out;
+}
+
+/* An empty column or group still shows as a place to drop. */
+[data-studio-drop-target]:empty,
+[data-studio-drop-target] > .block-list-appender:only-child {
+  min-height: 3rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-studio-drop-target] {
+    transition: none;
+  }
+}

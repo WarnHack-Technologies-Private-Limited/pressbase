@@ -103,6 +103,7 @@ export const CONTROLS: readonly ModeControl[] = [
   { id: 'presets', label: msgid('Colour, font and spacing presets'), mode: 'simple' },
   { id: 'alignment', label: msgid('Alignment'), mode: 'simple' },
   { id: 'visibility', label: msgid('Hide on a device'), mode: 'simple', issue: 49 },
+  { id: 'swap-layout', label: msgid('Swap layout'), mode: 'simple' },
   { id: 'custom-values', label: msgid('Any colour or size'), mode: 'advanced' },
   { id: 'units', label: msgid('Units (px, em, %…)'), mode: 'advanced' },
   { id: 'type-details', label: msgid('Line height and letter spacing'), mode: 'advanced' },

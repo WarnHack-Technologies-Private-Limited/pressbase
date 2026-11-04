@@ -18,9 +18,11 @@ import { lightScope } from '../block-editor';
 import { Button } from '../ui/button';
 import { TEMPLATE_PART } from './canvas-model';
 import { INSPECTOR_TABS, type InspectorTab, type InspectorTabId } from './layout-model';
-import { MODES, modeTabs, type StudioMode } from './mode-model';
+import { MODES, modeTabs, type StudioMode, showsControl } from './mode-model';
 import { type PartInfo, useSelectedPart } from './regions';
+import { contentRootId } from './sections-panel';
 import styles from './studio.module.css';
+import { SwapLayoutBox } from './swap-layout';
 
 export interface PageSummary {
   /** "Home", "About us"… or "Latest posts". */
@@ -63,6 +65,8 @@ const select = (s: unknown) =>
     getSelectedBlockClientId: () => string | null;
     getBlockName: (id: string) => string | null;
     getBlockAttributes: (id: string) => Record<string, unknown> | null;
+    getBlockRootClientId: (id: string) => string | null;
+    getBlocks: () => import('@wordpress/blocks').Block[];
   };
 
 /**
@@ -84,6 +88,17 @@ export function Inspector(props: InspectorProps) {
         ? String(select(s(blockEditorStore)).getBlockAttributes(clientId)?.slug ?? '')
         : '',
     [clientId, name],
+  );
+
+  // A section of the page (a direct child of its content) can swap its layout (#45).
+  const isSection = useSelect(
+    (s) => {
+      if (!clientId) return false;
+      const store = select(s(blockEditorStore));
+      const root = contentRootId(store);
+      return Boolean(root && store.getBlockRootClientId(clientId) === root);
+    },
+    [clientId],
   );
 
   const inPart = useSelectedPart();
@@ -111,6 +126,9 @@ export function Inspector(props: InspectorProps) {
             title={props.parts.get(inPart.slug)?.title ?? inPart.slug}
             onSelectPart={() => selectBlock(inPart.clientId)}
           />
+        )}
+        {isSection && showsControl(props.mode, 'swap-layout') && (
+          <SwapLayoutBox clientId={clientId} />
         )}
         <BlockSettings
           clientId={clientId}

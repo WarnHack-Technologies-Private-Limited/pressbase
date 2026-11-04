@@ -116,4 +116,4 @@ A value that isn't known is a placeholder in square brackets, such as `[Add a cu
 
 - Images in library patterns: the library ships no image files yet; patterns with images will need neutral placeholder images served by core, or an empty image the editor shows as a placeholder.
 - Table cells and image captions as slots.
-- Swap layout and the Sections panel themselves (#44, #45), and the AI pipeline that fills slots ([plan](../plans/visual-site-builder.md#pipeline)).
+- The AI pipeline that fills slots ([plan](../plans/visual-site-builder.md#pipeline)). Studio's Swap layout (#45) is described in [studio.md](studio.md#swap-layout).

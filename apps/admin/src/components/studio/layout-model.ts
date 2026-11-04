@@ -119,7 +119,7 @@ export interface RailPanel {
    * What the panel shows: Studio's own panel once built (`built`), or what
    * the shell offers until its issue lands.
    */
-  interim: 'built' | 'inserter' | 'list-view' | 'none';
+  interim: 'built' | 'list-view' | 'none';
   /** The note shown in the panel until the issue lands; none once it's built. */
   coming?: string;
 }
@@ -137,8 +137,7 @@ export const RAIL_PANELS: readonly RailPanel[] = [
     label: msgid('Elements'),
     summary: msgid('Blocks to add to the page'),
     issue: 35,
-    interim: 'inserter',
-    coming: msgid('Large tiles you can drag onto the page arrive with #35.'),
+    interim: 'built',
   },
   {
     id: 'sections',
