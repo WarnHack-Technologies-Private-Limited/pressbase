@@ -84,7 +84,7 @@ export function useInsertElement(): ((item: ElementItem) => InsertionPlace | nul
  * where a line shows the place and a container that will hold it lights up.
  */
 export function ElementsPanel({ onInserted }: { onInserted?: (title: string) => void }) {
-  const { __, sprintf } = useI18n();
+  const { __, _n, sprintf } = useI18n();
   const [search, setSearch] = useState('');
   const searchId = useId();
   const insert = useInsertElement();
@@ -160,7 +160,7 @@ export function ElementsPanel({ onInserted }: { onInserted?: (title: string) => 
       </div>
       {search && (
         <p className="visually-hidden" role="status">
-          {sprintf(__('%d blocks found.', 'pressbase-admin'), count)}
+          {sprintf(_n('%d block found.', '%d blocks found.', count, 'pressbase-admin'), count)}
         </p>
       )}
       {groups.length === 0 && (
