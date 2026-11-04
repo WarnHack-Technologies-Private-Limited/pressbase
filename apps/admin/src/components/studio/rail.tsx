@@ -22,7 +22,7 @@ import { Button } from '../ui/button';
 import { RAIL_PANELS, type RailPanel, type RailPanelId } from './layout-model';
 import styles from './studio.module.css';
 
-const ICONS: Record<RailPanelId, LucideIcon> = {
+export const RAIL_ICONS: Record<RailPanelId, LucideIcon> = {
   pages: FileText,
   elements: Blocks,
   sections: LayoutPanelTop,
@@ -45,7 +45,7 @@ export function Rail({
     <nav className={styles.rail} aria-label={__('Studio panels', 'pressbase-admin')}>
       <ul>
         {RAIL_PANELS.map((panel) => {
-          const Icon = ICONS[panel.id];
+          const Icon = RAIL_ICONS[panel.id];
           return (
             <li key={panel.id}>
               <button
@@ -166,7 +166,7 @@ export function RailPanelView(props: PanelProps) {
 
 function Coming({ panel, coming }: { panel: RailPanel; coming: string }) {
   const { __ } = useI18n();
-  const Icon = ICONS[panel.id];
+  const Icon = RAIL_ICONS[panel.id];
   const full = panel.interim === 'none';
   return (
     <div className={styles.coming} data-full={full || undefined}>

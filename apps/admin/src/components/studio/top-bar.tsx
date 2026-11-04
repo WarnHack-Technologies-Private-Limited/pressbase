@@ -8,6 +8,7 @@ import {
   Eye,
   Monitor,
   Redo2,
+  Search,
   SlidersHorizontal,
   Smartphone,
   Sparkles,
@@ -17,6 +18,7 @@ import {
 import { type ReactNode, useId } from 'react';
 import { useI18n } from '@/lib/i18n/context';
 import { Button } from '../ui/button';
+import { paletteShortcutLabel } from './command-palette';
 import { DEVICES, type Device } from './layout-model';
 import { type PendingChange, PublishButton } from './publish-panel';
 import { type CanvasTarget, isNewPage, pageTitle, pageTree, type StudioPage } from './site-model';
@@ -48,6 +50,10 @@ export interface TopBarProps {
   onPublish: () => Promise<boolean>;
   onRevert: (key: string) => void;
   onDiscardAll: () => void;
+  /** Opens the command palette (#33). */
+  onOpenPalette: () => void;
+  /** Changes when the palette asks for the Publish list. */
+  publishSignal: number;
   /** Narrow screens: the inspector is a drawer this button opens. */
   inspectorOpen: boolean;
   onToggleInspector: () => void;
@@ -174,6 +180,20 @@ export function TopBar(props: TopBarProps) {
       <Button
         size="sm"
         variant="ghost"
+        className={styles.paletteButton}
+        icon={<Search size={16} aria-hidden="true" />}
+        aria-label={__('Find a page, section or action', 'pressbase-admin')}
+        aria-keyshortcuts="Control+K Meta+K"
+        title={sprintf(__('Find anything (%s)', 'pressbase-admin'), paletteShortcutLabel())}
+        onClick={props.onOpenPalette}
+      >
+        <span className={styles.collapsible}>{__('Find', 'pressbase-admin')}</span>
+        <kbd className={styles.paletteKey}>{paletteShortcutLabel()}</kbd>
+      </Button>
+
+      <Button
+        size="sm"
+        variant="ghost"
         className={styles.askAi}
         icon={<Sparkles size={16} aria-hidden="true" />}
         aria-disabled="true"
@@ -201,6 +221,7 @@ export function TopBar(props: TopBarProps) {
         onPublish={props.onPublish}
         onRevert={props.onRevert}
         onDiscardAll={props.onDiscardAll}
+        openSignal={props.publishSignal}
       />
       <Button
         size="sm"

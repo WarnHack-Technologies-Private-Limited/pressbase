@@ -31,7 +31,10 @@ export function PublishButton({
   onPublish,
   onRevert,
   onDiscardAll,
+  openSignal = 0,
 }: {
+  /** Opens the list when it changes (the command palette's Publish, #33). */
+  openSignal?: number;
   changes: PendingChange[];
   busy: 'publish' | 'discard' | 'revert' | null;
   disabled?: boolean;
@@ -55,6 +58,17 @@ export function PublishButton({
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
   }, [open]);
+
+  // Asked to open from elsewhere: the list, with focus on its Publish button.
+  const panelRef = useRef<HTMLDivElement>(null);
+  // Only a new signal opens it; `count` is read, not watched.
+  useEffect(() => {
+    if (!openSignal || count === 0) return;
+    setOpen(true);
+    requestAnimationFrame(() =>
+      panelRef.current?.querySelector<HTMLElement>('[data-publish-confirm]')?.focus(),
+    );
+  }, [openSignal]);
 
   // Nothing left to list: the panel has done its job.
   useEffect(() => {
@@ -95,6 +109,7 @@ export function PublishButton({
       </Button>
       {open && (
         <div
+          ref={panelRef}
           id={panelId}
           role="dialog"
           aria-labelledby={titleId}
@@ -163,6 +178,7 @@ export function PublishButton({
             <Button
               size="sm"
               variant="primary"
+              data-publish-confirm
               loading={busy === 'publish'}
               disabled={Boolean(busy) && busy !== 'publish'}
               onClick={async () => {
