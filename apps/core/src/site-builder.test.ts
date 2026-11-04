@@ -575,6 +575,18 @@ describe('site builder runs', () => {
     expect(run.design.hue).toBe(30);
   });
 
+  it('fails when the sitemap has nothing the patterns can build', async () => {
+    const ctx = await site();
+    const run = await runToEnd(ctx, {
+      description: 'A bakery',
+      sitemap: {
+        pages: [{ title: 'Home', slug: 'home', sections: [{ category: 'no-such', intent: '' }] }],
+      },
+    });
+    expect(run.status).toBe('failed');
+    expect(run.error.code).toBe('site_builder_empty_sitemap');
+  });
+
   it('streams progress over Server-Sent Events, and replays from Last-Event-ID', async () => {
     const ctx = await site(fakeProvider({ delayMs: () => 2 }));
     const started = await startRun(ctx);

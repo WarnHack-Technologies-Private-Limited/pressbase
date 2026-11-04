@@ -426,6 +426,14 @@ export function normaliseSitemap(pages: SitemapPage[], categories: Set<string>):
   return { pages: out };
 }
 
+function nonEmpty(sitemap: Sitemap): Sitemap {
+  if (sitemap.pages.length) return sitemap;
+  throw new StageError(
+    'site_builder_empty_sitemap',
+    'The sitemap has no page with a section this site’s patterns can build.',
+  );
+}
+
 async function sitemapStage(
   ctx: RunContext,
   brief: SiteBrief,
@@ -470,7 +478,7 @@ async function sitemapStage(
   };
   // A sitemap the person already edited only needs the header and footer.
   const preset = ctx.run.sitemap;
-  if (preset && !plans.length) return normaliseSitemap(preset.pages, categorySet);
+  if (preset && !plans.length) return nonEmpty(normaliseSitemap(preset.pages, categorySet));
   const answerSchema: JsonSchema = {
     type: 'object',
     properties: { ...(preset ? {} : { pages: pagesSchema }), ...partsSchema(plans) },
@@ -499,7 +507,7 @@ async function sitemapStage(
     const values = answer[plan.slug];
     if (values && typeof values === 'object') ctx.parts[plan.slug] = values as SlotValues;
   }
-  return normaliseSitemap(preset ? preset.pages : answer.pages, categorySet);
+  return nonEmpty(normaliseSitemap(preset ? preset.pages : answer.pages, categorySet));
 }
 
 /* ------------------------------------------------------------------ pages */
@@ -890,12 +898,12 @@ function finish(ctx: RunContext, error?: unknown): void {
   if (ctx.stopped) {
     run.status = 'stopped';
     run.error = { code: ctx.stopped.code, message: ctx.stopped.message };
-  } else if (ctx.cancelled || ctx.signal?.aborted) {
+  } else if (ctx.cancelled) {
     run.status = 'cancelled';
-    run.error =
-      ctx.signal?.aborted && !ctx.cancelled
-        ? { code: 'site_builder_timeout', message: 'The run took too long and was stopped.' }
-        : null;
+    run.error = null;
+  } else if (ctx.signal?.aborted) {
+    run.status = 'failed';
+    run.error = { code: 'site_builder_timeout', message: 'The run took too long and was stopped.' };
   } else if (error) {
     run.status = 'failed';
     run.error = writeError(error);

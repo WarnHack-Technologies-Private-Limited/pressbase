@@ -43,7 +43,7 @@ const startSchema = z
     location: text(200).optional(),
     phone: text(50).optional(),
     email: text(200).optional(),
-    address: text(500).optional(),
+    address: text(400).optional(),
     facts: z.array(text(500)).max(50).optional(),
     pages: z.array(text(100).min(1)).max(MAX_PAGES).optional(),
     language: z
