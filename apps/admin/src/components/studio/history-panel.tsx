@@ -294,7 +294,9 @@ const by = (
     ? __('Published by you', 'pressbase-admin')
     : names[author]
       ? sprintf(__('Published by %s', 'pressbase-admin'), names[author] as string)
-      : __('Published by someone else', 'pressbase-admin');
+      : author
+        ? __('Published by someone else', 'pressbase-admin')
+        : __('Saved by Pressbase', 'pressbase-admin');
 
 /* ---------------------------------------------------------------- the page */
 
@@ -357,7 +359,7 @@ function PageVersions({
               <Button variant="ghost" onClick={() => setPreview(null)}>
                 {__('Close', 'pressbase-admin')}
               </Button>
-              {preview && (
+              {preview && normalized(preview.content.raw) !== live && (
                 <Button
                   variant="primary"
                   icon={<RotateCcw size={16} aria-hidden="true" />}

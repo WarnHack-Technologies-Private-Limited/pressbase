@@ -194,6 +194,16 @@ describe('naming a step', () => {
     expect(label(start, canvas([hero]))).toBe('Removed 2 blocks');
   });
 
+  it('names a top-level block by its type when its settings change, and as a section when it moves', () => {
+    const title = b('core/heading', { content: 'Menu' }, [], 'title');
+    const intro = b('core/paragraph', { content: 'Croissants.' }, [], 'intro');
+    const page = canvas([title, intro]);
+    expect(label(page, canvas([{ ...title, attributes: { content: 'Today’s menu' } }, intro]))).toBe(
+      'Changed heading text',
+    );
+    expect(label(page, canvas([intro, title]), 'title')).toBe('Moved section down');
+  });
+
   it('names a block turned into another', () => {
     const asHeading = b('core/heading', { content: 'Every morning.' }, [], 'h2');
     expect(

@@ -360,11 +360,14 @@ export function editLabel(
   i18n: { __: Translate; _n: Plural; sprintf: Format },
 ): string {
   const { __, _n, sprintf } = i18n;
-  const noun = edit.section
-    ? __('section', 'pressbase-admin')
-    : edit.block
-      ? names.block(edit.block)
-      : __('block', 'pressbase-admin');
+  // A top-level block is a section when it moves, comes or goes; its own settings name the block.
+  const structural = ['added', 'removed', 'duplicated', 'moved-up', 'moved-down', 'moved'];
+  const noun =
+    edit.section && structural.includes(edit.kind)
+      ? __('section', 'pressbase-admin')
+      : edit.block
+        ? names.block(edit.block)
+        : __('block', 'pressbase-admin');
   const count = edit.count ?? 1;
   let label: string;
   switch (edit.kind) {
