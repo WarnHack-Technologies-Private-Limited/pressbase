@@ -4,13 +4,13 @@ import { parseStructuredOutput } from '../ai/prompt-builder';
 import { AiError } from '../ai/types';
 import type { CurrentUser } from '../auth/users';
 import type { Kernel } from '../kernel';
-import { patternIndex } from '../site-building/sections';
 import {
   getSiteBrief,
   SITE_BRIEF_JSON_SCHEMA,
   type SiteBrief,
   siteBriefSchema,
 } from '../site-building/brief';
+import { patternIndex } from '../site-building/sections';
 import {
   briefRequest,
   type ClarifyAnswer,
