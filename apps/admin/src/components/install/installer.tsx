@@ -5,6 +5,7 @@ import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { ApiError, api } from '@/lib/api';
 import type { InstallStatus } from '@/lib/core';
 import { generatePassword, passwordStrength } from '@/lib/password';
+import { BuildOffer } from '../site-builder/build-offer';
 import { Button, ButtonLink } from '../ui/button';
 import { Checkbox, PasswordField, TextField } from '../ui/field';
 import { Badge, Notice } from '../ui/surface';
@@ -100,6 +101,8 @@ export function Installer({ status }: { status: InstallStatus }) {
   ];
 
   const [step, setStep] = useState<StepId>('welcome');
+  // With AI set up (an environment key and Settings → AI), building the site is the next step (#60).
+  const [aiReady, setAiReady] = useState(false);
   const [setupToken, setSetupToken] = useState('');
   const [tokenError, setTokenError] = useState<string>();
   const [database, setDatabase] = useState<DatabaseForm>({
@@ -621,7 +624,11 @@ export function Installer({ status }: { status: InstallStatus }) {
               It’s great for trying things out. Switch to PostgreSQL before you go live.
             </Notice>
           )}
-          <ButtonLink href="/admin" variant="primary" fullWidth>
+          <BuildOffer
+            variant="installer"
+            onStatus={(status) => setAiReady(Boolean(status?.supports_ai))}
+          />
+          <ButtonLink href="/admin" variant={aiReady ? 'secondary' : 'primary'} fullWidth>
             Go to your dashboard
           </ButtonLink>
         </div>

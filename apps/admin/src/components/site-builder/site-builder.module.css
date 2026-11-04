@@ -1023,6 +1023,36 @@
   color: var(--color-accent-text);
 }
 
+/* ----------------------------------------------------- the note in Studio */
+
+.note {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.noteLink {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--color-accent-text);
+  text-decoration: underline;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.noteLink:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.noteHint {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
 /* ---------------------------------------------------------------- offers */
 
 .offer {

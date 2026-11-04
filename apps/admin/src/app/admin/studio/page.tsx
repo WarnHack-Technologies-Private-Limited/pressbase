@@ -9,7 +9,7 @@ import { coreGet, type Me, type SiteIndex } from '@/lib/core';
 
 export const metadata: Metadata = { title: 'Studio' };
 
-type Props = { searchParams: Promise<{ page?: string; changeset_uuid?: string }> };
+type Props = { searchParams: Promise<{ page?: string; changeset_uuid?: string; run?: string }> };
 
 /** The pages Studio can open: every status an editor works with, as the page picker lists them. */
 const PAGES =
@@ -63,6 +63,7 @@ export default async function StudioScreen({ searchParams }: Props) {
       pages={pages.status === 200 ? pages.data : []}
       requestedPage={requested}
       requestedChangeset={query.changeset_uuid}
+      requestedRun={Number(query.run) || undefined}
       canUnfilteredHtml={Boolean(caps.unfiltered_html)}
       user={{
         id: me.data.id,

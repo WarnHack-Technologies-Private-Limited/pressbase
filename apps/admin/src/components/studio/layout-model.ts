@@ -181,7 +181,7 @@ export const RAIL_PANELS: readonly RailPanel[] = [
     issue: 62,
     interim: 'none',
     coming: msgid(
-      'The AI panel arrives with #62: ask for site-wide changes and keep or undo each one.',
+      'Asking for changes in your own words arrives with #62, with keep or undo for each one.',
     ),
   },
   {

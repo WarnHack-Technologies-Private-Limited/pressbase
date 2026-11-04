@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { DashboardWidgets } from '@/components/extensions/dashboard-widgets';
 import styles from '@/components/shell/page.module.css';
 import { PageHeader } from '@/components/shell/page-header';
+import { BuildOffer, type SiteBuilderStatus } from '@/components/site-builder/build-offer';
 import { SiteHealthSummary } from '@/components/site-health/site-health-summary';
 import { Badge, Card, Notice } from '@/components/ui/surface';
 import { commentPlainText, type RestComment } from '@/lib/comments';
@@ -70,6 +71,16 @@ export default async function DashboardPage() {
     ? await coreGet<RestComment[]>('/wp/v2/comments?per_page=5&status=all&context=edit')
     : undefined;
   const recentComments = comments?.status === 200 ? comments.data : [];
+  // An empty site (the installer's sample page and post only) is offered the guided flow (#60).
+  const canDesign = Boolean(me.capabilities.edit_theme_options);
+  const builder = canDesign
+    ? await coreGet<SiteBuilderStatus>('/pressbase/v1/site-builder/status')
+    : undefined;
+  const emptySite =
+    data.counts.pages <= 1 &&
+    data.counts.posts + data.counts.drafts <= 1 &&
+    !data.appearance.customized;
+  const offerBuild = builder?.status === 200 && (emptySite || builder.data.active_run !== null);
 
   const steps: {
     label: string;
@@ -165,6 +176,14 @@ export default async function DashboardPage() {
                 'pressbase-admin',
               )}
             </Notice>
+          </div>
+        )}
+
+        {offerBuild && builder?.status === 200 && (
+          <div className={styles.span12}>
+            <Card>
+              <BuildOffer status={builder.data} />
+            </Card>
           </div>
         )}
 

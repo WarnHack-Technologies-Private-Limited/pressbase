@@ -63,6 +63,7 @@ import {
   useEditorFeatures,
   usePluginBlocks,
 } from '../block-editor/kit';
+import { SiteBuilderNote } from '../site-builder/studio-note';
 import { Button } from '../ui/button';
 import { ConfirmDialog } from '../ui/dialog';
 import { useToast } from '../ui/toast';
@@ -136,6 +137,7 @@ import { SectionToolbar } from './section-toolbar';
 import { SectionsPanel } from './sections-panel';
 import {
   type CanvasTarget,
+  frontPage,
   initialTarget,
   isHome,
   isNewPage,
@@ -233,6 +235,8 @@ export interface StudioProps {
   requestedPage?: number;
   /** `?changeset_uuid=` from the URL: *Back to Studio* in a preview. */
   requestedChangeset?: string;
+  /** `?run=`: a site the guided flow just built (#60), for the note above the canvas. */
+  requestedRun?: number;
   canUnfilteredHtml: boolean;
   /** Who's editing, and what they may change (#29). */
   user: StudioUser;
@@ -478,7 +482,7 @@ export default function Studio(props: StudioProps) {
   readingRef.current = reading;
 
   const postsOnFront = reading.show_on_front !== 'page' || !reading.page_on_front;
-  const frontPageId = Number(reading.page_on_front) || 0;
+  const frontPageId = frontPage(reading);
   const homeTarget = (): CanvasTarget =>
     initialTarget(undefined, readingRef.current, pagesRef.current);
 
@@ -1174,27 +1178,41 @@ export default function Studio(props: StudioProps) {
           }
         />
       ),
-    notice: stale.length > 0 && (
-      <div className={styles.stageNotice} role="status" data-tone="warning">
-        <Info size={16} aria-hidden="true" />
-        <p>
-          {sprintf(
-            __(
-              'Since you last worked on your draft, someone published changes to %s. If you publish your draft, your version replaces theirs.',
-              'pressbase-admin',
-            ),
-            staleNames.join(', '),
-          )}
-        </p>
-        <Button
-          size="sm"
-          variant="ghost"
-          className={styles.iconButton}
-          icon={<X size={16} aria-hidden="true" />}
-          aria-label={__('Dismiss', 'pressbase-admin')}
-          onClick={() => setStale([])}
-        />
-      </div>
+    notice: (
+      <>
+        {props.requestedRun && opened && (
+          <SiteBuilderNote
+            runId={props.requestedRun}
+            isOpenable={(slug) => allPages.some((p) => p.slug === slug)}
+            onOpenPage={(slug) => {
+              const page = allPages.find((p) => p.slug === slug);
+              if (page) chooseTarget({ kind: 'page', id: page.id });
+            }}
+          />
+        )}
+        {stale.length > 0 && (
+          <div className={styles.stageNotice} role="status" data-tone="warning">
+            <Info size={16} aria-hidden="true" />
+            <p>
+              {sprintf(
+                __(
+                  'Since you last worked on your draft, someone published changes to %s. If you publish your draft, your version replaces theirs.',
+                  'pressbase-admin',
+                ),
+                staleNames.join(', '),
+              )}
+            </p>
+            <Button
+              size="sm"
+              variant="ghost"
+              className={styles.iconButton}
+              icon={<X size={16} aria-hidden="true" />}
+              aria-label={__('Dismiss', 'pressbase-admin')}
+              onClick={() => setStale([])}
+            />
+          </div>
+        )}
+      </>
     ),
   };
 

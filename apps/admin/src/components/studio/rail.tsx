@@ -16,6 +16,7 @@ import {
 import { type KeyboardEvent as ReactKeyboardEvent, type ReactNode, useEffect, useRef } from 'react';
 import { useI18n } from '@/lib/i18n/context';
 import { lightScope } from '../block-editor';
+import { BuildOffer } from '../site-builder/build-offer';
 import { Button } from '../ui/button';
 import { RAIL_PANELS, type RailPanel, type RailPanelId } from './layout-model';
 import styles from './studio.module.css';
@@ -163,6 +164,8 @@ function Coming({ panel, coming }: { panel: RailPanel; coming: string }) {
       {full && <Icon size={28} aria-hidden="true" className={styles.comingIcon} />}
       {full && <p className={styles.comingSummary}>{__(panel.summary, 'pressbase-admin')}</p>}
       <p>{__(coming, 'pressbase-admin')}</p>
+      {/* Until #62: the guided flow, to build the site from a description (#60). */}
+      {panel.id === 'ai' && <BuildOffer variant="panel" />}
       {panel.id === 'styles' && (
         <a href="/admin/appearance/styles" className={styles.comingLink}>
           {__('Open Appearance → Styles', 'pressbase-admin')}

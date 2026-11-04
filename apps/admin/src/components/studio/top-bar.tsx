@@ -21,7 +21,14 @@ import { Button } from '../ui/button';
 import { paletteShortcutLabel } from './command-palette';
 import { DEVICES, type Device } from './layout-model';
 import { type PendingChange, PublishButton } from './publish-panel';
-import { type CanvasTarget, isNewPage, pageTitle, pageTree, type StudioPage } from './site-model';
+import {
+  type CanvasTarget,
+  isNewPage,
+  type PageRef,
+  pageTitle,
+  pageTree,
+  type StudioPage,
+} from './site-model';
 import styles from './studio.module.css';
 import type { DraftStatus } from './use-draft';
 
@@ -32,7 +39,7 @@ export interface TopBarProps {
   target: CanvasTarget;
   /** The site shows its latest posts on the home page (no static front page). */
   postsOnFront: boolean;
-  frontPageId: number;
+  frontPageId: PageRef;
   onTarget: (target: CanvasTarget) => void;
   device: Device;
   onDevice: (device: Device) => void;

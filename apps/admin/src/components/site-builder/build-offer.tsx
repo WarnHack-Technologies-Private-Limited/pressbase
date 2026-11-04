@@ -27,9 +27,12 @@ export const BUILD_PATH = '/admin/studio/build';
 export function BuildOffer({
   status: given,
   variant = 'card',
+  onStatus,
 }: {
   status?: SiteBuilderStatus | null;
   variant?: 'card' | 'panel' | 'installer';
+  /** Called once the status is known (the installer makes this the main action when AI is on). */
+  onStatus?: (status: SiteBuilderStatus | null) => void;
 }) {
   const { __ } = useI18n();
   const [status, setStatus] = useState<SiteBuilderStatus | null | undefined>(given);
@@ -38,8 +41,16 @@ export function BuildOffer({
     if (given !== undefined) return;
     let live = true;
     api<SiteBuilderStatus>('/pressbase/v1/site-builder/status')
-      .then((s) => live && setStatus(s))
-      .catch(() => live && setStatus(null));
+      .then((s) => {
+        if (!live) return;
+        setStatus(s);
+        onStatus?.(s);
+      })
+      .catch(() => {
+        if (!live) return;
+        setStatus(null);
+        onStatus?.(null);
+      });
     return () => {
       live = false;
     };
