@@ -53,7 +53,9 @@ Handlers apply in `order`: posts (10), global styles (20), options (30).
 | `wp_global_styles` | theme stylesheet | `{ styles?, settings? }`, as `POST /wp/v2/global-styles/{id}` takes, prepared the same way (missing keys keep the stored value) | `edit_theme_options` |
 | `option` | option name | the setting's value, checked by its schema | the setting's capability (`manage_options`; `edit_theme_options` for the header menu) |
 
-Options a changeset may change: `blogname`, `blogdescription`, `show_on_front`, `page_on_front`, `page_for_posts`, `site_logo`, `site_icon`, `pressbase_navigation_fallback`. `kernel.changesets.allowOption(name)` adds one with a registered setting.
+Options a changeset may change: `blogname`, `blogdescription`, `show_on_front`, `page_on_front`, `page_for_posts`, `site_logo`, `site_icon`, `pressbase_navigation_fallback` (and `pressbase_site_brief`, which the [site builder](site-builder.md) adds). `kernel.changesets.allowOption(name)` adds one with a registered setting.
+
+The post-ID options (`page_on_front`, `page_for_posts`: a page; `pressbase_navigation_fallback`: a `wp_navigation` menu) also take a post's **slug**, such as a page the same changeset creates: `"option:page_on_front": "home"`. The entry is written after the post's own entry (`after()`), and the slug becomes the post's ID when it's published, or its preview ID in a preview.
 
 ### Registering a post type
 
@@ -63,7 +65,7 @@ import { postEntityHandler } from './changesets/entities';
 kernel.changesets.entities.register(postEntityHandler('wp_block'));
 ```
 
-That is enough for posts that exist. Pages are registered with `create`, so Studio's Pages panel can add one as `page:{slug}` (#29), and another page can be put under it with `"parent": "{slug}"`: a handler's optional `after(id, value)` names the entries to write first, and publishing and previews follow it (`orderEntries()`). For entries that name, by slug, a post that doesn't exist yet, pass `create` with the terms the new post gets, and optionally `find`, to look it up as the type does. Publishing then creates the post (status `publish`, the slug as its ID) and its terms. Creating needs the type's `create_posts` and `publish_posts`.
+That is enough for posts that exist. Pages and menus (`wp_navigation`, for the site builder's menu) are registered with `create`, so Studio's Pages panel can add one as `page:{slug}` (#29), and another page can be put under it with `"parent": "{slug}"`: a handler's optional `after(id, value)` names the entries to write first, and publishing and previews follow it (`orderEntries()`). For entries that name, by slug, a post that doesn't exist yet, pass `create` with the terms the new post gets, and optionally `find`, to look it up as the type does. Publishing then creates the post (status `publish`, the slug as its ID) and its terms. Creating needs the type's `create_posts` and `publish_posts`.
 
 ### Templates and template parts
 
