@@ -101,6 +101,7 @@ The entries are laid over the content layer for that render only, in a `Changese
 | `kernel.posts.get(id)` | the changed post; negative IDs are posts the changeset creates |
 | `queryPosts()` | changed posts in place of their rows; dropped when they no longer match (status, slug, parent), added when they now do; created posts added to lookups by type, status, ID, slug, parent and term slug (`tax_query` with `field: 'slug'`) |
 | The main query's page and post lookups by path or slug, the fallback menu | the changed post; a page by its path as the changeset leaves it (moved, or created) |
+| Blocks that show their post (post title, content, featured image…) | posts the changeset creates too, by their negative IDs |
 | A post's custom template (`_wp_page_template`) | the changeset's `template` |
 | A page's address (`get_page_uri()`) | its parents as the changeset leaves them |
 | `kernel.options.get()` for allow-listed options | the changeset's value (`pre_option_{name}`) |
