@@ -219,13 +219,14 @@ test('History names each step, steps back, and restores an older published versi
     await expect(steps.getByRole('button', { name: 'Changed paragraph text (now)' })).toBeVisible();
 
     // Step back to the start: the text goes back, the step stays listed as undone.
+    // Typing can land as more than one step when the editor pauses between
+    // keys (as WordPress's undo levels do on a slow machine), so take the newest.
     await steps.getByRole('button', { name: 'Go back to: Opened the page' }).click();
     await expect(canvas.getByText('Pancakes all day.', { exact: true })).toBeVisible();
-    await expect(
-      steps.getByRole('button', { name: 'Changed paragraph text (undone)' }),
-    ).toBeVisible();
-    // And forward again.
-    await steps.getByRole('button', { name: 'Changed paragraph text (undone)' }).click();
+    const undone = steps.getByRole('button', { name: 'Changed paragraph text (undone)' });
+    await expect(undone.first()).toBeVisible();
+    // And forward again, to the newest step (listed first).
+    await undone.first().click();
     await expect(canvas.getByText('Pancakes all day. Every day.')).toBeVisible();
 
     // Published versions: the newest is live; restore the one with porridge.
