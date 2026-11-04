@@ -2,7 +2,7 @@
 
 Studio is Pressbase's site editor: a full-screen screen at `/admin/studio` where a site owner edits their pages in the real theme, header and footer included. It does what WordPress's *Appearance → Editor* does, with the direct feel the [plan](../plans/visual-site-builder.md#the-screen) describes. The decision to build our own editor around `@wordpress/block-editor`, rather than use `@wordpress/edit-site`, is in [ADR 0021](../adr/0021-site-editor-and-templates-storage.md#studio-shell).
 
-This page covers the shell (#28), saving through the user's draft (#31), the header and footer in place (#30), the Pages panel (#29), the Sections panel and section toolbar (#44), and where the rest of v0.8 plugs in.
+This page covers the shell (#28), saving through the user's draft (#31), the header and footer in place (#30), the Pages panel (#29), the Sections panel and section toolbar (#44), Simple and Advanced modes (#32), the command palette (#33), the History panel (#34), and where the rest of v0.8 plugs in.
 
 ![Studio, editing the home page](../assets/screenshots/studio-light.png)
 
@@ -20,7 +20,7 @@ This page covers the shell (#28), saving through the user's draft (#31), the hea
 
 ```
 ┌ TopBar ───────────────────────────────────────────────────────────────────────┐
-│ ← Dashboard  [Home ▾]  [▭ ▯ ▯]  ↶ ↷   ✦ Ask AI (soon)  ✓ Draft saved  Preview  [Publish 2] │
+│ ← Dashboard  [Home ▾]  [▭ ▯ ▯]  ↶ ↷  ⌕ Find ⌘K  ✦ Ask AI (soon)  ✓ Draft saved  Preview  [Publish 2] │
 ├ Rail ┬ Panel ─────────┬ Canvas (iframe) ─────────────────────┬ Inspector ──────┤
 │Pages │ Pages          │  ┌ Header · all pages ────────────┐   │ Heading 3       │
 │Elem. │ Home     Home  │  └────────────────────────────────┘   │ Content Style   │
@@ -29,16 +29,17 @@ This page covers the shell (#28), saving through the user's draft (#31), the hea
 │Styles│                │  └────────────────────────────────┘   │                 │
 │Media │ (#29 note)     ├ Breadcrumb: Site › Home › Hero › Heading │                 │
 │AI    │                │                                       │                 │
+│Hist. │                │                                       │ Simple◉Advanced │
 └──────┴────────────────┴───────────────────────────────────────┴─────────────────┘
 ```
 
 | Part | Component | What it does now | Built out by |
 | --- | --- | --- | --- |
-| Top bar | `top-bar.tsx`, `publish-panel.tsx` | Back to the dashboard; the page picker (a native `<select>` of the page tree, plus *Home (latest posts)* when there's no static front page); Desktop / Tablet / Mobile (canvas widths 100%, 768px, 390px); undo and redo; *Ask AI* (marked *Coming soon*, explains itself on click); whether the draft is saved; Preview; *Publish N* with the list of changes and *Discard all* | #63 (Ask AI), #49 (per-device styles), #33 (command palette) |
-| Left rail | `rail.tsx` | Seven panels; the open one sits beside the canvas (over it on narrow screens). Escape closes it and returns focus to its button | see below |
+| Top bar | `top-bar.tsx`, `publish-panel.tsx` | Back to the dashboard; the page picker (a native `<select>` of the page tree, plus *Home (latest posts)* when there's no static front page); Desktop / Tablet / Mobile (canvas widths 100%, 768px, 390px); undo and redo; *Find* (the [command palette](#command-palette), #33); *Ask AI* (marked *Coming soon*, explains itself on click); whether the draft is saved; Preview; *Publish N* with the list of changes and *Discard all* | #63 (Ask AI), #49 (per-device styles) |
+| Left rail | `rail.tsx` | Eight panels; the open one sits beside the canvas (over it on narrow screens). Escape closes it and returns focus to its button | see below |
 | Canvas | `studio.tsx`, `regions.tsx` | The page in its template, in the active theme; the header and footer editable in place | #35–#37 |
 | Breadcrumb | `breadcrumb.tsx` | Site › Page › Section › Block for the selection; each step selects that level | — |
-| Inspector | `inspector.tsx` | Nothing selected: the page (status, its template to choose, how to edit). A template part: that it's on every page, and *Reset to theme* once it differs from the theme's. A block: its card and the Content / Style / Layout tabs, under a note when it sits in a part | #32 (Simple / Advanced) |
+| Inspector | `inspector.tsx` | Nothing selected: the page (status, its template to choose, how to edit). A template part: that it's on every page, and *Reset to theme* once it differs from the theme's. A block: its card and the Content / Style / Layout tabs, under a note when it sits in a part. At its foot, [Simple and Advanced](#simple-and-advanced) (#32) | #46, #49 (controls the mode map lists) |
 
 ### Left rail panels
 
@@ -53,6 +54,7 @@ Listed in `RAIL_PANELS` (`layout-model.ts`). A built panel (`interim: 'built'`) 
 | Styles | A note and a link to Appearance → Styles | #46, #47 |
 | Media | A note | #58 |
 | AI | A note | #62 |
+| History | Built (#34): this session's steps, then the published versions. See [History](#history) | — |
 
 ### Inspector tabs
 
@@ -64,7 +66,7 @@ Listed in `RAIL_PANELS` (`layout-model.ts`). A built panel (`interim: 'built'`) 
 | Style | block style variations, `styles`, `typography`, `color`, `background`, `elements`, `border`, `effects`, `filter` |
 | Layout | `layout`, `dimensions`, `position` |
 
-The inspector renders `InspectorControls.Slot` for the active tab's groups, so a block's own controls and block supports appear without Studio knowing about them; plugin blocks' controls too. A tab with nothing for the selected block says so. Simple and Advanced (#32) narrow these lists per mode.
+The inspector renders `InspectorControls.Slot` for the active tab's groups, so a block's own controls and block supports appear without Studio knowing about them; plugin blocks' controls too. A tab with nothing for the selected block says so. [Simple and Advanced](#simple-and-advanced) (#32) narrow these lists per mode (`modeTabs()`).
 
 The inspector's controls are WordPress's, so they sit in a light scope in dark mode, like the post editor's Block tab.
 
@@ -219,6 +221,67 @@ Someone who can edit pages but not the site's design (`edit_pages` without `edit
 
 *＋ Add section* buttons sit on the section's top and bottom edges and open the Sections panel at that place. Everything here is also in WordPress's block toolbar and Layers.
 
+## Simple and Advanced
+
+![Advanced mode: the Style tab adds background, elements and borders, and the font size takes any value](../assets/screenshots/studio-advanced.png)
+
+Principle 3 of the [plan](../plans/visual-site-builder.md#principles): beginners see what they need, designers see everything. A segmented control at the foot of the inspector switches between **Simple** (the default) and **Advanced**, with one line on what each shows.
+
+- **Remembered per person:** the `pressbase_studio_mode` user meta (`simple` or `advanced`), registered in core next to the admin colour scheme (`people/user-meta.ts`, [people.md](people.md)). The Studio page reads it from `GET /wp/v2/users/me?context=edit`; a switch shows at once and is saved with `POST /wp/v2/users/me` (`{ meta: { pressbase_studio_mode } }`). If saving fails, a toast says the choice lasts until the person leaves.
+- **One map:** `mode-model.ts` says what each mode shows, so later issues add their controls in one place:
+
+| Part of the map | Simple | Advanced adds |
+| --- | --- | --- |
+| `GROUP_MODES`: the inspector groups (`modeTabs()`, `tabGroups()`) | `default`, `content`, `list`, `styles` (style variations), `typography`, `color`, `layout`, `dimensions` | `bindings`, `advanced` (anchor, CSS classes), `background`, `elements`, `border`, `effects` (shadows), `filter` (duotone), `position` |
+| `CONTROLS`: kinds of control, and features still to come (`showsControl()`) | presets, alignment, visibility (#49) | any colour or size, units, line height and letter spacing, values per device (#49), borders, shadows, hover and focus styles (#46), Additional CSS (#46) |
+| `modeEditorSettings()`: the editor settings | the theme's presets only: `color.custom`, `color.customGradient`, `color.customDuotone`, `typography.customFontSize`, `spacing.customSpacingSize`, `typography.lineHeight`, `letterSpacing`, `textDecoration` and `writingMode` off; spacing units `px` only. Set in `__experimentalFeatures` (and any block's own settings there) and in the top-level switches core moves them to (`disableCustomColors`…), which the block editor reads when the features don't say | the theme's settings, unchanged |
+
+- **Nothing hidden without a word:** when a tab has nothing in Simple but has settings in Advanced (a heading's anchor, say), it says *More settings for this block are in Advanced*, with a button to switch.
+- **Adding a control:** add it to `CONTROLS` with the lowest mode that shows it (and its issue, while it's being built); read it with `showsControl(mode, id)`. A new group goes in `INSPECTOR_TABS` and `GROUP_MODES` (a test checks every group is in both).
+
+![Simple mode: colour and font size presets only](../assets/screenshots/studio-simple.png)
+
+## Command palette
+
+![The command palette: actions, then pages, panels and settings; sections once you type](../assets/screenshots/studio-command-palette.png)
+
+⌘K (Mac) or Ctrl+K, or *Find* in the top bar, opens a palette like Elementor's Finder and WordPress's `core/commands`. Type to narrow; ↑/↓ (and Page Up/Down) move; Enter runs; Escape closes and focus goes back where it was.
+
+| Group | Commands |
+| --- | --- |
+| Actions | Undo, Redo, Preview in a new tab, *Publish N changes* (opens the Publish list on its button), Discard all changes (asks first), Back to the dashboard |
+| Pages | Every page Studio lists (and *Home (latest posts)*), marked *Open now*, *Home page*, *New* or *Draft* |
+| Add a section | *Add section: {name}* for every section in the library, listed once you type; added after the selected section, or last, as one undo step |
+| Panels | *Open the {name} panel* for each rail panel |
+| View and settings | Switch to Simple or Advanced settings; switch to Desktop, Tablet or Mobile view |
+
+**The registry.** `commands-model.ts` holds `CommandRegistry` and Studio's instance, `studioCommands`. A command is `{ id, label, group, keywords?, hint?, icon?, disabled?, searchOnly?, run }`; `register()` takes one or a list and returns a function that removes them (registering an id again replaces it). In React, `useStudioCommands(build, deps)` (`command-palette.tsx`) registers while the component is mounted. Studio registers its own in `studio.tsx`; the ones that need the canvas (undo, redo, sections) come from `EditorCommands` (`editor-commands.tsx`) inside the block editor. Groups other than the five above are listed last, under *More*. AI commands (#62) and, later, plugins add theirs the same way.
+
+**Search** (`filterCommands()`): every word must appear in the label, keywords or group name, ignoring case and accents. Within a group, a label that starts with the search comes first, then one with it at the start of a word, then one with every word starting a word; the group with the best match comes first. With no search, search-only commands (sections) are left out and the groups keep their order. Each group lists at most 20.
+
+**Shortcut.** A window listener catches ⌘K / Ctrl+K in Studio's own document; key presses inside the canvas iframe don't reach it, so `StudioEditor` passes those on (`isPaletteShortcut()`). A press something else used first is left alone: with text selected, Ctrl+K makes a link, as in WordPress (whose link shortcut applies only to selected text).
+
+**Accessibility** (the WAI-ARIA combobox pattern, in a modal `<dialog>`): the input has `role="combobox"`, `aria-controls` (the listbox), `aria-autocomplete="list"` and `aria-activedescendant` naming the active option, so focus never leaves it; options sit in `role="group"`s named by their heading; commands that can't run now are `aria-disabled`, skipped by the arrow keys, and say why in their hint; the active option has a bar as well as a tint; a polite live region says how many commands match. The dialog is labelled *Command palette* and its input *Search commands*. The *Find* button has `aria-keyshortcuts`.
+
+## History
+
+![History: this session's steps in plain words, then the published versions of the page and of the site's styles](../assets/screenshots/studio-history.png)
+
+The *History* rail panel (Elementor's History panel) has two parts.
+
+**This session.** Every step since the page opened, newest first, in plain words; the current one is marked *Now*, and steps undone stay (muted, *Undone*) until a new edit replaces them. Choosing one goes back, or forward, to that point; Undo and Redo move one step at a time through the same list. The draft follows the canvas as it does for any edit.
+
+- **The stack:** `useStudioHistory()` (`use-history.ts`) replaces `@wordpress/compose`'s `useStateWithHistory` with the same rules (a *staged* change, such as typing on in the same block, joins the current step; changes before the first step become the starting point), but keeps the steps as a list (`history-model.ts`: `historyRecord()`, `historyGo()`), so the panel can show them and jump.
+- **The words:** `describeEdit(before, after, selected)` compares the canvas before and after a step by client ID: text, style, alignment, layout, link, image or description changed; a block added, removed, duplicated, turned into another, moved up or down, or moved into another block; or several blocks changed. `editLabel()` puts that into words: *Changed heading text*, *Moved section up* (a top-level block of the page is a *section* when it moves, comes or goes), *Added section “Pricing”*, *Changed paragraph to heading*, *Changed site title text in the Header*. Block names are their titles, lower case in English only (`blockNoun()`: German keeps its capitals). When two sections swap places, the selected one is the one that moved.
+- **Named steps:** a feature that knows better names the next step with `labelNext()`: adding a section from the panel or the palette (*Added section “Pricing, three tiers”*), restoring a version (*Restored the version from …*).
+
+**Published versions**, below the steps:
+
+- **The page** (a saved one; a page the draft adds has none yet): `GET /wp/v2/pages/{id}/revisions`, newest first, with the date and who published it. The newest, when it matches the live page, says *Live now*. *Preview* opens the version in a large dialog (`BlockPreview`, in the site's styles); *Restore* puts its content on the canvas as one named step, so it's in the draft (`page:{id}: { content }`) and goes live on Publish. The title, place and template aren't restored.
+- **The site's styles** (people with `edit_theme_options`): the active theme's user global styles (its `wp:user-global-styles` link) and `GET /wp/v2/global-styles/{id}/revisions`. *Preview* shows the home page with that version in a large dialog (`StylePreview`, core's `POST /pressbase/v1/global-styles/preview`); *Restore* writes `wp_global_styles:{stylesheet}: { styles, settings }` into the draft, listed as *Site styles* in Publish. Preview shows it; the canvas will once Studio's Styles panel reads the draft (#46).
+
+Nothing here writes to the live site: restoring is a draft change like any other, undone from the Publish list or with Discard all.
+
 ## Header and footer in place
 
 ![Editing the header: its outline and label, the note over the canvas, and Header in the breadcrumb](../assets/screenshots/studio-header.png)
@@ -231,6 +294,7 @@ Someone who can edit pages but not the site's design (`edit_pages` without `edit
 ## Keyboard and accessibility
 
 - The first Tab stop is *Skip to the page*, then the top bar, the rail, the canvas, the breadcrumb and the inspector, in that order.
+- ⌘K / Ctrl+K opens the [command palette](#command-palette) from anywhere, the canvas included.
 - In the canvas, WordPress's keyboard model applies: Tab enters at the first selectable block (the header), the arrow keys move between blocks, Enter starts editing, Escape returns to selecting. Ctrl/⌘+Z and Ctrl/⌘+Shift+Z (or Ctrl+Y) undo and redo from anywhere.
 - The device switch is a fieldset of toggle buttons (`aria-pressed`); the rail buttons have `aria-expanded`; the inspector tabs are a WAI-ARIA tablist (arrow keys, Home, End); the breadcrumb is a `nav` with `aria-current="location"` on the last step, and each step says its level to screen readers ("Section: Hero").
 - Landmarks: the top bar (`header`, with a visually hidden `h1`), `nav` *Studio panels*, the open panel (`aside`, labelled by its heading), `main` (the canvas and breadcrumb), `aside` *Settings*.
@@ -246,9 +310,9 @@ Someone who can edit pages but not the site's design (`edit_pages` without `edit
 | Issue | Where |
 | --- | --- |
 | #46, #47 Styles | a `wp_global_styles:{stylesheet}` entry through `useDraft().want()`; `describeChange()` already names it |
-| #32 Simple / Advanced | `INSPECTOR_TABS` in `layout-model.ts` |
-| #33 Command palette | inside `ShortcutProvider` in `studio.tsx` |
-| #34 History | `useStateWithHistory` in `StudioEditor` |
+| #46 Additional CSS and states; #49 per-device values and visibility | their entries in `CONTROLS` (`mode-model.ts`), read with `showsControl()` |
+| #62 AI commands; plugins | `studioCommands.register()` or `useStudioCommands()` (`commands-model.ts`, `command-palette.tsx`) |
+| #57 AI operations, Keep and Undo | `editor.labelNext()` names the step an operation makes in History |
 | #35 Elements | the `elements` panel in `rail.tsx` |
 | #36 Context menu, #37 handles | the canvas in `StudioEditor` |
 | #45 Swap layout | the section toolbar (`section-toolbar.tsx`, marked where ‹ 2/5 › goes) and the inspector |
@@ -268,6 +332,11 @@ Someone who can edit pages but not the site's design (`edit_pages` without `edit
 - `apps/core/src/changesets.test.ts` (#29): pages created by slug, nested under a new page, with a template; a preview at the new address; refusals.
 - `e2e/tests/studio-panels.spec.ts`: add a page, nest it (drag and keyboard), set the home page, publish; Edit with Studio from Pages and the editor; an editor with the header, footer and styles locked; a pricing section added between two others, moved with the toolbar and undone, then published.
 - `components/studio/layout-model.test.ts`: the tabs cover every inspector group; the rail's panels each name their issue; device widths.
+- `components/studio/mode-model.test.ts` (#32): every group in a mode, what Simple and Advanced show, controls still to come name their issue, the editor settings Simple turns off (blocks' own settings included).
+- `apps/core/src/people.test.ts`: `pressbase_studio_mode` per person, validated.
+- `components/studio/commands-model.test.ts` (#33): registering, replacing and removing commands, listeners, search by words, keywords and group, accents, ranking, search-only commands, limits, unknown groups.
+- `components/studio/history-model.test.ts` (#34): the stack (steps, staged changes, undo, redo, jumping, a new step dropping undone ones) and every step's words: text, style, alignment, settings, images, links, descriptions, moves up, down and into a block, added, duplicated and removed sections and blocks, a block turned into another, a change in the Header, several blocks, lower case in English only.
+- `e2e/tests/studio-modes.spec.ts`: Simple hides borders and Advanced shows them, remembered when Studio reopens; the palette from *Find* and from Ctrl+K in the canvas, going to a page, a device and a panel, adding a section, nothing matching, Discard all; History naming a step, going back and forward, previewing an older published version and restoring it, then publishing it.
 - `apps/core/src/block-editor-settings.test.ts`: `/wp-block-editor/v1/settings`.
 - `e2e/tests/studio.spec.ts`: opening a page with its header and footer, inline editing, undo and redo, selecting the header, Publish through a changeset, and the keyboard path.
 - `e2e/tests/studio-saving.spec.ts`: an edit saved to the draft, reopened, previewed and published; undoing one change from the list and Discard all; the footer edited on one page and shown on every page, then Reset to theme.
@@ -281,3 +350,7 @@ Someone who can edit pages but not the site's design (`edit_pages` without `edit
 - Undo and redo of edits made outside the block tree (site title, tagline, logo, menu items): core-data keeps their own history. Undo one from the Publish list instead.
 - *Create new menu* in the Navigation block saves that menu straight away, as in WordPress; only pointing the header at it waits for Publish.
 - Telling apart "someone else published" from "you saved it in another screen": both show the note on reopening.
+- History starts again when another page opens (each page has its own canvas and undo history), and doesn't list edits outside the block tree (site title, menus).
+- A restored version of the site's styles shows in Preview, not yet on the canvas (#46).
+- Simple narrows the inspector, not the block toolbar.
+- Plugins can't reach `studioCommands` yet: it needs a place in the plugin SDK's admin API.

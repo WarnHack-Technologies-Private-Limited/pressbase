@@ -7,6 +7,7 @@ import {
 import {
   Blocks,
   FileText,
+  History,
   Image,
   Layers,
   LayoutPanelTop,
@@ -22,7 +23,7 @@ import { Button } from '../ui/button';
 import { RAIL_PANELS, type RailPanel, type RailPanelId } from './layout-model';
 import styles from './studio.module.css';
 
-const ICONS: Record<RailPanelId, LucideIcon> = {
+export const RAIL_ICONS: Record<RailPanelId, LucideIcon> = {
   pages: FileText,
   elements: Blocks,
   sections: LayoutPanelTop,
@@ -30,6 +31,7 @@ const ICONS: Record<RailPanelId, LucideIcon> = {
   styles: Palette,
   media: Image,
   ai: Sparkles,
+  history: History,
 };
 
 /** The left rail: one button per panel. Pressing the open panel's button closes it. */
@@ -45,7 +47,7 @@ export function Rail({
     <nav className={styles.rail} aria-label={__('Studio panels', 'pressbase-admin')}>
       <ul>
         {RAIL_PANELS.map((panel) => {
-          const Icon = ICONS[panel.id];
+          const Icon = RAIL_ICONS[panel.id];
           return (
             <li key={panel.id}>
               <button
@@ -108,7 +110,9 @@ export function RailPanelView(props: PanelProps) {
     requestAnimationFrame(() => toggle?.focus());
   };
   const onKeyDown = (event: ReactKeyboardEvent) => {
-    if (event.key === 'Escape' && !event.defaultPrevented) {
+    // A dialog opened from the panel (History's previews) closes on its own.
+    const inDialog = (event.target as Element | null)?.closest?.('dialog');
+    if (event.key === 'Escape' && !event.defaultPrevented && !inDialog) {
       event.stopPropagation();
       close();
     }
@@ -166,7 +170,7 @@ export function RailPanelView(props: PanelProps) {
 
 function Coming({ panel, coming }: { panel: RailPanel; coming: string }) {
   const { __ } = useI18n();
-  const Icon = ICONS[panel.id];
+  const Icon = RAIL_ICONS[panel.id];
   const full = panel.interim === 'none';
   return (
     <div className={styles.coming} data-full={full || undefined}>

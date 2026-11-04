@@ -346,12 +346,17 @@ describe('POST /wp/v2/users/{id}', () => {
     const author = await loginAs('ava', 'author');
     const key = 'pressbase_admin_color_scheme';
 
-    expect((await author.request('GET', '/wp/v2/users/me')).body.meta).toEqual({ [key]: 'system' });
+    const mode = 'pressbase_studio_mode';
+
+    expect((await author.request('GET', '/wp/v2/users/me')).body.meta).toEqual({
+      [key]: 'system',
+      [mode]: 'simple',
+    });
     const saved = await author.request('POST', '/wp/v2/users/me', {
       meta: { [key]: 'dark', not_registered: 'ignored' },
     });
     expect(saved.status).toBe(200);
-    expect(saved.body.meta).toEqual({ [key]: 'dark' });
+    expect(saved.body.meta).toEqual({ [key]: 'dark', [mode]: 'simple' });
     expect((await author.request('GET', '/wp/v2/users/me')).body.meta[key]).toBe('dark');
     // Per user: the administrator still follows the system.
     expect((await request('GET', '/wp/v2/users/me')).body.meta[key]).toBe('system');
@@ -377,6 +382,19 @@ describe('POST /wp/v2/users/{id}', () => {
     const reset = await request('POST', `/wp/v2/users/${author.id}`, { meta: { [key]: null } });
     expect(reset.status).toBe(200);
     expect(reset.body.meta[key]).toBe('system');
+  });
+
+  it('remembers Studio’s Simple or Advanced mode per person (#32)', async () => {
+    const { request, loginAs } = await installed();
+    const author = await loginAs('ada', 'author');
+    const mode = 'pressbase_studio_mode';
+    const saved = await author.request('POST', '/wp/v2/users/me', { meta: { [mode]: 'advanced' } });
+    expect(saved.body.meta[mode]).toBe('advanced');
+    expect((await author.request('GET', '/wp/v2/users/me')).body.meta[mode]).toBe('advanced');
+    expect((await request('GET', '/wp/v2/users/me')).body.meta[mode]).toBe('simple');
+    const bad = await author.request('POST', '/wp/v2/users/me', { meta: { [mode]: 'expert' } });
+    expect(bad.status).toBe(400);
+    expect(bad.body.data.params).toHaveProperty(`meta.${mode}`);
   });
 });
 

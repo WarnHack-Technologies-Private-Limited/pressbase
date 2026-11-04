@@ -912,6 +912,15 @@
   min-height: 0;
   border-left: 1px solid var(--color-border);
   background: var(--color-surface);
+  overflow: hidden;
+}
+
+/* Everything above the mode switch scrolls; the switch stays at the foot. */
+.inspectorBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -1052,9 +1061,351 @@
 }
 
 .tabEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
   padding: var(--space-4);
   color: var(--color-text-muted);
   font-size: var(--text-sm);
+}
+
+/* ------------------------------------------------- Simple / Advanced (#32) */
+
+.modeSwitch {
+  flex: none;
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.modeButtons {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+}
+
+.modeButton {
+  flex: 1;
+  height: calc(var(--control-height-sm) - 4px);
+  border: 0;
+  border-radius: calc(var(--radius-md) - 2px);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+}
+
+.modeButton:hover {
+  color: var(--color-text);
+}
+
+.modeButton[aria-pressed="true"] {
+  background: var(--color-surface);
+  color: var(--color-accent-text);
+  box-shadow: var(--shadow-xs);
+}
+
+.modeHint {
+  margin-top: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+}
+
+/* ------------------------------------------------------- History (#34) */
+
+.historyPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-2) var(--space-4) var(--space-5);
+}
+
+.historyPanel section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.historyHeading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.historySteps,
+.versionList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.historyStep {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.historyStep:hover {
+  background: var(--color-surface-sunken);
+}
+
+.historyStep[aria-current="step"] {
+  background: var(--color-accent-soft);
+  box-shadow: inset 3px 0 0 var(--color-accent);
+  font-weight: var(--weight-medium);
+}
+
+.historyStep[data-undone] {
+  color: var(--color-text-subtle);
+}
+
+.historyStep[data-undone] .historyLabel {
+  text-decoration: line-through;
+}
+
+.historyLabel {
+  flex: 1;
+  min-width: 0;
+}
+
+.historyMeta {
+  flex: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-regular);
+}
+
+.historyFailed {
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+}
+
+.version {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-1) var(--space-2);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.versionIcon {
+  margin-top: 2px;
+  color: var(--color-text-muted);
+}
+
+.versionText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: var(--text-sm);
+}
+
+.versionDate {
+  font-weight: var(--weight-medium);
+}
+
+.versionMeta {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.versionActions {
+  display: flex;
+  grid-column: 2;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.versionLive {
+  color: var(--color-success);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+}
+
+.versionPreview {
+  display: flex;
+  flex-direction: column;
+  height: min(36rem, 60vh);
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+}
+
+/* -------------------------------------------------- command palette (#33) */
+
+.palette {
+  width: min(36rem, calc(100vw - 2 * var(--space-4)));
+  max-height: min(32rem, calc(100vh - 6rem));
+  margin: 12vh auto auto;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.palette::backdrop {
+  background: rgb(0 0 0 / 0.35);
+}
+
+.paletteBox {
+  display: flex;
+  flex-direction: column;
+  max-height: inherit;
+}
+
+.paletteSearch {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.paletteSearch input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-1) 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-lg);
+  outline: none;
+}
+
+.paletteKey {
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-subtle);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.paletteButton {
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.paletteList {
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-1) var(--space-2) var(--space-2);
+  overflow-y: auto;
+}
+
+.paletteGroupLabel {
+  padding: var(--space-3) var(--space-2) var(--space-1);
+  color: var(--color-text-subtle);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.paletteOption {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 2.25rem;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.paletteOption[aria-selected="true"] {
+  background: var(--color-accent-soft);
+  /* Not colour alone: a bar on the left marks the active option too. */
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.paletteOption[aria-disabled="true"] {
+  color: var(--color-text-subtle);
+  cursor: default;
+}
+
+.paletteIcon {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.paletteLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.paletteHint {
+  flex: none;
+  color: var(--color-text-subtle);
+  font-size: var(--text-xs);
+}
+
+.paletteEnter {
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.paletteEmpty {
+  padding: var(--space-5) var(--space-4);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.paletteFooter {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-sunken);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .palette[open] {
+    animation: palette-in var(--duration-base) var(--ease-out);
+  }
+}
+
+@keyframes palette-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
 }
 
 /* ------------------------------------------------------------ small screens */

@@ -21,7 +21,7 @@ import styles from './studio.module.css';
 
 /** The patterns and their categories, loaded once per visit (they change only with the theme or plugins). */
 let library: Promise<{ sections: Section[]; categories: RestPatternCategory[] }> | null = null;
-function loadLibrary() {
+export function loadSectionLibrary() {
   library ??= Promise.all([
     api<RestPattern[]>('/wp/v2/block-patterns/patterns'),
     api<RestPatternCategory[]>('/wp/v2/block-patterns/categories'),
@@ -72,11 +72,48 @@ export function sectionLabel(
   return (type && getBlockType(type)?.title) || type || '';
 }
 
+/**
+ * Adds a section to the page: at `insertAt` among the page's sections, else
+ * after the selected section, else last. One undo step. Null when the
+ * canvas has no page content (the latest posts). Shared by the Sections
+ * panel and the command palette (#33).
+ */
+export function useAddSection(): ((section: Section, insertAt?: number | null) => void) | null {
+  const registry = useRegistry();
+  const { insertBlocks } = useDispatch(blockEditorStore) as unknown as {
+    insertBlocks: (
+      blocks: BlockInstance[],
+      index?: number,
+      rootClientId?: string,
+      updateSelection?: boolean,
+    ) => void;
+  };
+  const root = useSelect(
+    (select) => contentRootId(select(blockEditorStore) as unknown as StoreSelectors),
+    [],
+  );
+  if (!root) return null;
+  return (section, insertAt = null) => {
+    const select = registry.select(blockEditorStore) as unknown as StoreSelectors;
+    const order = select.getBlockOrder(root);
+    let index = order.length;
+    if (insertAt !== null) index = Math.min(insertAt, order.length);
+    else {
+      const selected = select.getSelectedBlockClientId();
+      const current = selected ? sectionOf(select, root, selected) : null;
+      if (current) index = order.indexOf(current) + 1;
+    }
+    insertBlocks(parse(section.content), index, root, true);
+  };
+}
+
 export interface SectionsPanelProps {
   /** Where the next section goes among the page's sections; null: after the selected one, or last. */
   insertAt: number | null;
   /** Forgets the position (the person cleared it, or a section went there). */
   onClearInsertAt: () => void;
+  /** Just before a section goes in (History names the step after it). */
+  onInserting?: (title: string) => void;
   onInserted: (title: string) => void;
 }
 
@@ -95,15 +132,7 @@ export function SectionsPanel(props: SectionsPanelProps) {
   const [category, setCategory] = useState('');
   const searchId = useId();
   const categoryId = useId();
-  const registry = useRegistry();
-  const { insertBlocks } = useDispatch(blockEditorStore) as unknown as {
-    insertBlocks: (
-      blocks: BlockInstance[],
-      index?: number,
-      rootClientId?: string,
-      updateSelection?: boolean,
-    ) => void;
-  };
+  const addSection = useAddSection();
   const root = useSelect(
     (select) => contentRootId(select(blockEditorStore) as unknown as StoreSelectors),
     [],
@@ -126,7 +155,7 @@ export function SectionsPanel(props: SectionsPanelProps) {
 
   useEffect(() => {
     let live = true;
-    loadLibrary()
+    loadSectionLibrary()
       .then((loaded) => live && setData(loaded))
       .catch(() => live && setFailed(true));
     return () => {
@@ -143,20 +172,10 @@ export function SectionsPanel(props: SectionsPanelProps) {
     [data],
   );
 
-  /** Where a section goes now: the chosen position, after the selected section, or last. */
-  const position = (): number => {
-    const select = registry.select(blockEditorStore) as unknown as StoreSelectors;
-    if (!root) return 0;
-    const order = select.getBlockOrder(root);
-    if (props.insertAt !== null) return Math.min(props.insertAt, order.length);
-    const selected = select.getSelectedBlockClientId();
-    const section = selected ? sectionOf(select, root, selected) : null;
-    return section ? order.indexOf(section) + 1 : order.length;
-  };
-
   const add = (section: Section) => {
-    if (!root) return;
-    insertBlocks(parse(section.content), position(), root, true);
+    if (!addSection) return;
+    props.onInserting?.(section.title);
+    addSection(section, props.insertAt);
     props.onClearInsertAt();
     props.onInserted(section.title);
   };

@@ -44,6 +44,10 @@
   max-height: calc(100dvh - 2 * var(--space-4));
 }
 
+.large {
+  width: min(64rem, calc(100vw - 2 * var(--space-4)));
+}
+
 @media (max-width: 40rem) {
   .wide .body {
     padding: var(--space-5) var(--space-4);

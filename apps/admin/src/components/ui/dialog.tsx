@@ -18,7 +18,10 @@ export function Dialog({
   busy,
   initialFocus,
   onClose,
+  size = 'wide',
 }: {
+  /** `large` for previews (a page, a version of the site's styles). */
+  size?: 'wide' | 'large';
   open: boolean;
   title: string;
   children: ReactNode;
@@ -43,7 +46,7 @@ export function Dialog({
   return (
     <dialog
       ref={ref}
-      className={`${styles.dialog} ${styles.wide}`}
+      className={`${styles.dialog} ${styles.wide} ${size === 'large' ? styles.large : ''}`}
       aria-labelledby={titleId}
       onCancel={(e) => {
         e.preventDefault();
