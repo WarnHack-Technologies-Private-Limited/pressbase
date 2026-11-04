@@ -82,7 +82,7 @@ test('builds a site from a description, then publishes it from Studio', async ({
 
   // 3. The brief, editable: facts are the person's own.
   await expect(page.getByRole('heading', { name: 'Is this right?' })).toBeVisible();
-  await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Crumb & Co');
+  await expect(page.getByRole('textbox', { name: /^Name/ })).toHaveValue('Crumb & Co');
   const facts = page.getByLabel('Facts the site can state');
   await expect(facts).toHaveValue(/Phone: 0113 496 0000/);
   await facts.fill(`${await facts.inputValue()}\nOpen Tuesday to Saturday, 7am to 3pm`);
@@ -123,7 +123,9 @@ test('builds a site from a description, then publishes it from Studio', async ({
   });
   await expect(page.getByText('4 pages built')).toBeVisible();
   await expect(page.getByText(/\d+ things? to fill in before you publish/)).toBeVisible();
-  await expect(page.getByText(/Building it used \d+ AI requests?, about [\d,]+ tokens/)).toBeVisible();
+  await expect(
+    page.getByText(/Building it used \d+ AI requests?, about [\d,]+ tokens/),
+  ).toBeVisible();
   for (const title of ['Home', 'Visit', 'About us', 'Gallery']) {
     await expect(page.getByRole('link', { name: `Preview ${title}` })).toBeVisible();
   }
@@ -143,7 +145,9 @@ test('builds a site from a description, then publishes it from Studio', async ({
   await expect(page.getByText('Published. Your changes are live.')).toBeVisible();
 
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Bread baked fresh every morning' }).first()).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Bread baked fresh every morning' }).first(),
+  ).toBeVisible();
   const menu = page.getByRole('navigation').first();
   for (const title of ['Visit', 'About us', 'Gallery']) {
     await expect(menu.getByRole('link', { name: title, exact: true })).toBeVisible();

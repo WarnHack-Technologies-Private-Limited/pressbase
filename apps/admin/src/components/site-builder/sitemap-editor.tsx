@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowDown, ArrowUp, GripVertical, Plus, Trash2, X } from 'lucide-react';
-import { type FormEvent, useId, useRef, useState } from 'react';
+import { type SyntheticEvent, useId, useRef, useState } from 'react';
 import { useI18n } from '@/lib/i18n/context';
 import {
   addPage,
@@ -69,8 +69,9 @@ export function SitemapEditor({
     }
   };
 
-  const onAddPage = (event: FormEvent) => {
-    event.preventDefault();
+  // Not a form of its own: the step around it is the form (Build my site).
+  const onAddPage = (event?: SyntheticEvent) => {
+    event?.preventDefault();
     const first = sections.find((s) => s.category === 'text' || s.category === 'about');
     const next = addPage(pages, newTitle, first?.category ?? sections[0]?.category ?? 'text');
     if (next.length === pages.length) return;
@@ -133,6 +134,10 @@ export function SitemapEditor({
                 onChange={(event) =>
                   set(updatePage(pages, i, (p) => ({ ...p, title: event.target.value })))
                 }
+                // Enter keeps the title; it doesn't start the build.
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') event.preventDefault();
+                }}
               />
               {i === 0 && <Badge tone="accent">{__('Home page', 'pressbase-admin')}</Badge>}
               <span className={styles.pageActions}>
@@ -222,7 +227,7 @@ export function SitemapEditor({
           </li>
         ))}
       </ol>
-      <form className={styles.addPage} onSubmit={onAddPage}>
+      <div className={styles.addPage}>
         <label htmlFor={`${newId}-new`} className={styles.addPageLabel}>
           {__('Add a page', 'pressbase-admin')}
         </label>
@@ -235,11 +240,14 @@ export function SitemapEditor({
             disabled={pages.length >= MAX_PAGES}
             aria-describedby={`${newId}-limit`}
             onChange={(event) => setNewTitle(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') onAddPage(event);
+            }}
           />
           <Button
-            type="submit"
             icon={<Plus size={16} aria-hidden="true" />}
             disabled={pages.length >= MAX_PAGES || !newTitle.trim()}
+            onClick={onAddPage}
           >
             {__('Add page', 'pressbase-admin')}
           </Button>
@@ -258,7 +266,7 @@ export function SitemapEditor({
                 MAX_PAGES,
               )}
         </p>
-      </form>
+      </div>
     </div>
   );
 }
