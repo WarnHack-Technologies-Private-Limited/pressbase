@@ -15,7 +15,7 @@ import {
  *   testimonials, team, pricing, statistics, contact and opening hours,
  *   every slot of a repeated item and every citation) keep a value only
  *   when it is found in the facts; otherwise they get their placeholder.
- * - **Every other slot** is copy, and may say anything general, but a
+ * - **Every other slot** (and every button label) is copy, and may say anything general, but a
  *   number, an email address, a phone number or a web address it gives
  *   must come from the facts too; otherwise the slot gets its placeholder.
  * - **Links**: `tel:` and `mailto:` links and addresses on other sites
@@ -142,8 +142,9 @@ function checkLink(url: string, grounding: Grounding): boolean {
   const link = url.trim();
   if (!link || link === '#' || link.startsWith('/') || link.startsWith('#')) return true;
   if (/^tel:/i.test(link)) {
-    const digits = link.replace(/\D/g, '').replace(/^0+/, '');
-    return digits.length >= 3 && grounding.digits.some((d) => d.includes(digits));
+    // The last nine digits: the same number with or without a country code or trunk 0.
+    const digits = link.replace(/\D/g, '').slice(-9);
+    return digits.length >= 6 && grounding.digits.some((d) => d.includes(digits));
   }
   if (/^mailto:/i.test(link)) {
     return grounding.addresses.has(link.slice(7).split('?')[0]?.toLowerCase() ?? '');
@@ -181,9 +182,10 @@ function walkLeaf(
       const text = textOf(button.text);
       const url = textOf(button.url);
       const out = { text, url };
+      // A button's label is copy ("Call us"), unless the button itself is declared a fact.
       const textOk =
         isPlaceholder(text) ||
-        (strictHere ? isGrounded(text, grounding) : !unsupportedDetails(text, grounding).length);
+        (slot.facts ? isGrounded(text, grounding) : !unsupportedDetails(text, grounding).length);
       if (!textOk) {
         out.text = placeholderFor(slot);
         walk.replaced.push(path);

@@ -1,9 +1,9 @@
+import { parseBlocks } from '@pressbase/blocks';
 import { schema } from '@pressbase/db';
 import { extractSlots, type SlotValues } from '@pressbase/slots';
-import { parseBlocks } from '@pressbase/blocks';
 import { and, eq, inArray } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
-import { type AiProvider, type AiResult, type AiTextRequest } from './ai/types';
+import type { AiProvider, AiResult, AiTextRequest } from './ai/types';
 import {
   enforceHonestContent,
   groundedFacts,
@@ -65,7 +65,12 @@ const BAKERY_PAGES = [
 
 interface FakeOptions {
   /** Change or replace an answer: return a string to answer with that text. */
-  answer?: (stage: string, value: Json, request: AiTextRequest, n: number) => Json | string | void;
+  answer?: (
+    stage: string,
+    value: Json,
+    request: AiTextRequest,
+    n: number,
+  ) => Json | string | undefined | Promise<Json | string | undefined>;
   delayMs?: (stage: string) => number;
 }
 
@@ -125,7 +130,7 @@ function fakeProvider(options: FakeOptions = {}) {
         } else {
           value = fill(schema) as Json;
         }
-        const changed = options.answer?.(stage, value, request, n);
+        const changed = await options.answer?.(stage, value, request, n);
         const text = typeof changed === 'string' ? changed : JSON.stringify(changed ?? value);
         const result: AiResult = {
           id: `msg_${n}`,
@@ -219,9 +224,12 @@ describe('honest content', () => {
   it('turns invented facts into placeholders and keeps copy and given facts', async () => {
     const ctx = await site();
     const hours = ctx.kernel.blocks.patterns().find((p) => p.name === 'pressbase/opening-hours');
-    const slots = extractSlots(parseBlocks(hours?.content ?? '').filter((b) => b.blockName), {
-      declarations: hours?.slots,
-    });
+    const slots = extractSlots(
+      parseBlocks(hours?.content ?? '').filter((b) => b.blockName),
+      {
+        declarations: hours?.slots,
+      },
+    );
     const values: SlotValues = {
       title: 'Come and see us',
       body: 'Call 0113 496 0000 or just drop in.',
@@ -238,10 +246,11 @@ describe('honest content', () => {
     expect(honest.values.note).toBe('[Add holiday closures, or remove this line]');
     expect(honest.values.hours).toEqual([
       { day: 'Tuesday to Saturday', time: '7am to 3pm' },
-      { day: 'Sunday', time: '[Add hours]' },
+      // Sunday opening is nowhere in the facts.
+      { day: '[Add days]', time: '[Add hours]' },
     ]);
     expect(honest.values.actions).toEqual([{ text: 'Call us', url: 'tel:+441134960000' }]);
-    expect(honest.replaced).toEqual(['note', 'hours.1.time']);
+    expect(honest.replaced).toEqual(['note', 'hours.1.day', 'hours.1.time']);
   });
 
   it('keeps copy without facts, but not invented numbers, links or quotes', async () => {
@@ -251,39 +260,28 @@ describe('honest content', () => {
     const blocks = parseBlocks(testimonials?.content ?? '').filter((b) => b.blockName);
     const slots = extractSlots(blocks, { declarations: testimonials?.slots });
     const group = slots.find((s) => s.kind === 'group');
-    expect(group).toBeDefined();
-    const invented: SlotValues = {};
-    for (const slot of slots) {
-      if (slot.kind === 'heading') invented[slot.id] = 'What our neighbours say';
-    }
-    const honest = enforceHonestContent(
+    if (group?.kind !== 'group') throw new Error('The testimonials pattern has no cards.');
+    const heading = slots.find((s) => s.kind === 'heading');
+    const quote = (group.items[0] ?? []).find((s) => s.kind === 'text');
+    if (!heading || !quote) throw new Error('The testimonials pattern has no heading or quote.');
+    const out = enforceHonestContent(
       slots,
       {
-        ...invented,
-        [group?.id as string]: [
-          ...(fill({ type: 'array', minItems: 1, maxItems: 1, items: {} }) as unknown[]).map(
-            () => ({}),
-          ),
+        // The section's heading is copy…
+        [heading.id]: 'What our neighbours say',
+        // …a quote in it is a fact: only the one given survives.
+        [group.id]: [
+          { [quote.id]: 'Changed my life, five stars!' },
+          { [quote.id]: 'The best sourdough in Leeds' },
         ],
       },
       grounding,
       'testimonials',
     );
-    for (const [id, value] of Object.entries(invented)) expect(honest.values[id]).toBe(value);
-
-    // A testimonial in a testimonials section is a fact.
-    const item = (group as { items: { id: string; kind: string }[][] }).items[0] ?? [];
-    const quote = item.find((s) => s.kind === 'text');
-    if (quote) {
-      const out = enforceHonestContent(
-        slots,
-        { [group?.id as string]: [{ [quote.id]: 'Changed my life, five stars!' }] },
-        grounding,
-        'testimonials',
-      );
-      const first = (out.values[group?.id as string] as Json[])[0] as Json;
-      expect(first[quote.id]).toMatch(/^\[.+\]$/);
-    }
+    expect(out.values[heading.id]).toBe('What our neighbours say');
+    const items = out.values[group.id] as Json[];
+    expect(items[0]?.[quote.id]).toMatch(/^\[.+\]$/);
+    expect(items[1]?.[quote.id]).toBe('The best sourdough in Leeds');
   });
 
   it('keeps only the facts the person’s own words support', () => {
@@ -310,7 +308,9 @@ describe('site builder runs', () => {
       ctx.kernel.db
         .select({ id: schema.posts.id })
         .from(schema.posts)
-        .where(and(eq(schema.posts.type, 'page'), inArray(schema.posts.status, ['publish', 'draft'])));
+        .where(
+          and(eq(schema.posts.type, 'page'), inArray(schema.posts.status, ['publish', 'draft'])),
+        );
     const before = (await livePages()).length;
     const optionsBefore = {
       show: await ctx.kernel.options.get('show_on_front'),
@@ -349,7 +349,10 @@ describe('site builder runs', () => {
       ['contact', 'done', false],
     ]);
     for (const page of run.pages) {
-      expect(page.checks).toMatchObject({ errors: expect.any(Number), passed: expect.any(Boolean) });
+      expect(page.checks).toMatchObject({
+        errors: expect.any(Number),
+        passed: expect.any(Boolean),
+      });
       expect(page.preview_link).toContain(`changeset_uuid=${run.changeset_uuid}`);
     }
 
@@ -414,14 +417,17 @@ describe('site builder runs', () => {
   it('replaces invented facts in the model’s answer with placeholders', async () => {
     const fake = fakeProvider({
       answer(stage, value) {
-        if (stage !== 'page') return;
+        if (stage !== 'page') return undefined;
         // Every text slot gets an invented phone number and price.
         const poison = (v: unknown): unknown => {
           if (typeof v === 'string') return v.length > 30 ? 'Call 0800 123 4567' : v;
           if (Array.isArray(v)) return v.map(poison);
           if (v && typeof v === 'object') {
             return Object.fromEntries(
-              Object.entries(v).map(([k, x]) => [k, k === 'pattern' || k === 'url' ? x : poison(x)]),
+              Object.entries(v).map(([k, x]) => [
+                k,
+                k === 'pattern' || k === 'url' ? x : poison(x),
+              ]),
             );
           }
           return v;
@@ -442,7 +448,8 @@ describe('site builder runs', () => {
 
   it('retries a stage once when its answer doesn’t fit the schema', async () => {
     const fake = fakeProvider({
-      answer: (stage, _value, _request, n) => (stage === 'design' && n === 2 ? 'not json' : undefined),
+      answer: (stage, _value, _request, n) =>
+        stage === 'design' && n === 2 ? 'not json' : undefined,
     });
     const ctx = await site(fake);
     const started = await startRun(ctx);
@@ -452,7 +459,10 @@ describe('site builder runs', () => {
     expect(run.requests).toBe(9);
     // The retry says what was wrong.
     const retry = fake.requests[2]?.request.messages[0]?.parts.at(-1);
-    expect(retry).toMatchObject({ type: 'text', text: expect.stringContaining('couldn’t be used') });
+    expect(retry).toMatchObject({
+      type: 'text',
+      text: expect.stringContaining('couldn’t be used'),
+    });
   });
 
   it('fails a page whose answer stays invalid, and builds the others', async () => {
@@ -477,7 +487,9 @@ describe('site builder runs', () => {
   });
 
   it('fails cleanly when the brief stays invalid', async () => {
-    const ctx = await site(fakeProvider({ answer: (stage) => (stage === 'brief' ? '{}' : undefined) }));
+    const ctx = await site(
+      fakeProvider({ answer: (stage) => (stage === 'brief' ? '{}' : undefined) }),
+    );
     const run = await runToEnd(ctx);
     expect(run.status).toBe('failed');
     expect(run.error.code).toBe('prompt_invalid_output');
@@ -542,14 +554,18 @@ describe('site builder runs', () => {
         hue: 30,
         contrast: 'standard',
         scheme: 'light',
-        fontPair: 'theme',
+        fontPair: 'slab-humanist',
         radius: 'rounded',
         density: 'comfortable',
       },
       sitemap: {
         pages: [
           { title: 'Home', slug: 'home', sections: [{ category: 'banner', intent: 'Welcome' }] },
-          { title: 'Contact', slug: 'contact', sections: [{ category: 'contact', intent: 'Reach us' }] },
+          {
+            title: 'Contact',
+            slug: 'contact',
+            sections: [{ category: 'contact', intent: 'Reach us' }],
+          },
         ],
       },
     });
@@ -602,14 +618,16 @@ describe('site builder runs', () => {
     const started = await startRun(ctx);
     const other = await ctx.loginAs('other', 'administrator');
     // Administrators may look (manage_options); a second run while one is going is refused.
-    expect((await other.request('GET', `/pressbase/v1/site-builder/runs/${started.id}`)).status).toBe(
-      200,
-    );
+    expect(
+      (await other.request('GET', `/pressbase/v1/site-builder/runs/${started.id}`)).status,
+    ).toBe(200);
     const busy = await ctx.request('POST', '/pressbase/v1/site-builder/runs', BAKERY);
     expect(busy.status).toBe(409);
     expect(busy.body.code).toBe('site_builder_run_active');
 
-    const invalid = await ctx.request('POST', '/pressbase/v1/site-builder/runs', { description: '' });
+    const invalid = await ctx.request('POST', '/pressbase/v1/site-builder/runs', {
+      description: '',
+    });
     expect(invalid.status).toBe(400);
 
     await ctx.kernel.ai.saveSettings({ enabled: false });
@@ -629,8 +647,12 @@ describe('site builder runs', () => {
 
     // Running: the pipeline stops before its next request.
     const fake2 = fakeProvider({
-      answer: (stage) => {
-        if (stage === 'design') void ctx.request('DELETE', `/pressbase/v1/site-builder/runs/${running.id}`);
+      answer: async (stage) => {
+        if (stage === 'design') {
+          const res = await ctx.request('DELETE', `/pressbase/v1/site-builder/runs/${running.id}`);
+          expect(res.status).toBe(202);
+        }
+        return undefined;
       },
       delayMs: () => 5,
     });
@@ -672,4 +694,3 @@ async function sessionCookie(ctx: Ctx): Promise<string> {
   });
   return (res.headers.get('set-cookie') ?? '').split(';')[0] ?? '';
 }
-

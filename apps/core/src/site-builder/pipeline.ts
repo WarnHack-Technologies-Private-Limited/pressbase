@@ -128,6 +128,8 @@ export class RunContext {
   cancelled = false;
   parts: Record<string, SlotValues> = {};
   #saving: Promise<unknown> = Promise.resolve();
+  /** This run's requests on their way: counted against the cap before they are logged. */
+  #inFlight = 0;
   #writing: Promise<unknown> = Promise.resolve();
 
   constructor(
@@ -189,6 +191,22 @@ export class RunContext {
   }
 
   /**
+   * The daily cap, counting this run's requests still on their way: the
+   * client checks the log before each request, so pages sent together
+   * could otherwise pass the cap by a few.
+   */
+  async #checkCap(): Promise<void> {
+    const { dailyLimit } = await this.kernel.ai.settings();
+    if ((await this.kernel.ai.requestsToday()) + this.#inFlight > dailyLimit) {
+      throw new AiError(
+        'ai_daily_limit_reached',
+        'This site has used all of its AI requests for today. The limit resets at midnight UTC.',
+        429,
+      );
+    }
+  }
+
+  /**
    * One structured call: the stage's answer, checked against the schema and
    * `validate`, retried once with what was wrong. Tokens and requests are
    * added to the run either way.
@@ -212,7 +230,9 @@ export class RunContext {
         );
       }
       let result: AiResult;
+      this.#inFlight++;
       try {
+        await this.#checkCap();
         result = await builder.generateTextResult();
       } catch (error) {
         if (error instanceof AiError && error.code === 'ai_daily_limit_reached') {
@@ -221,6 +241,8 @@ export class RunContext {
           this.run.requests++;
         }
         throw error;
+      } finally {
+        this.#inFlight--;
       }
       this.run.requests++;
       this.addUsage(result);
