@@ -60,9 +60,12 @@ const normalise = (text: string) =>
     .trim();
 
 const numbersIn = (text: string) =>
-  (text.normalize('NFKC').replace(/(\d)[,.](?=\d{3}\b)/g, '$1').match(/\d+/g) ?? []).map((n) =>
-    n.replace(/^0+(?=\d)/, ''),
-  );
+  (
+    text
+      .normalize('NFKC')
+      .replace(/(\d)[,.](?=\d{3}\b)/g, '$1')
+      .match(/\d+/g) ?? []
+  ).map((n) => n.replace(/^0+(?=\d)/, ''));
 
 const EMAIL = /[\p{L}\p{N}._%+-]+@[\p{L}\p{N}.-]+\.\p{L}{2,}/gu;
 const WEB = /\b(?:https?:\/\/|www\.)[^\s<>"')]+/giu;
@@ -148,9 +151,16 @@ function checkLink(url: string, grounding: Grounding): boolean {
   return unsupportedDetails(link, grounding).length === 0;
 }
 
-function walkLeaf(slot: Slot, value: SlotValue, path: string, strict: boolean, walk: Walk) {
+function walkLeaf(
+  slot: Slot,
+  value: SlotValue,
+  path: string,
+  strict: boolean,
+  walk: Walk,
+): SlotValue {
   const { grounding } = walk;
-  const strictHere = strict || Boolean(slot.facts) || (walk.factSection && slot.role === 'citation');
+  const strictHere =
+    strict || Boolean(slot.facts) || (walk.factSection && slot.role === 'citation');
   switch (slot.kind) {
     case 'heading':
     case 'text': {
@@ -218,13 +228,19 @@ function walkSlots(
   return out;
 }
 
-function walkSlot(slot: Slot, value: SlotValue, path: string, strict: boolean, walk: Walk) {
+function walkSlot(
+  slot: Slot,
+  value: SlotValue,
+  path: string,
+  strict: boolean,
+  walk: Walk,
+): SlotValue {
   if (slot.kind !== 'group') return walkLeaf(slot, value, path, strict, walk);
   if (!Array.isArray(value)) return value;
   const template = slot.items[slot.items.length - 1] ?? [];
   // In a section about facts, every item is a fact (a quote, a price, a person).
   const itemStrict = strict || Boolean(slot.facts) || walk.factSection;
-  return value.map((item, index) => {
+  return value.map((item, index): SlotValue => {
     if (slot.flat && template[0]) {
       return walkSlot(template[0], item, `${path}.${index}`, itemStrict, walk);
     }

@@ -1,9 +1,15 @@
 import type { ParsedBlock } from '@pressbase/blocks';
 import { schema } from '@pressbase/db';
 import { DESIGN_CHOICE_SCHEMA, type DesignChoice } from '@pressbase/design';
-import { extractSlots, type JsonSchema, type Slot, type SlotValues, slotsJsonSchema } from '@pressbase/slots';
-import { type AbilityContext, AbilityError } from '../abilities/registry';
+import {
+  extractSlots,
+  type JsonSchema,
+  type Slot,
+  type SlotValues,
+  slotsJsonSchema,
+} from '@pressbase/slots';
 import { and, eq } from 'drizzle-orm';
+import { type AbilityContext, AbilityError } from '../abilities/registry';
 import { parseStructuredOutput } from '../ai/prompt-builder';
 import { AiError, type AiResult } from '../ai/types';
 import { type CurrentUser, loadUser, userCan } from '../auth/users';
@@ -33,9 +39,9 @@ import {
   getRun,
   type RunInput,
   type RunPage,
-  type SiteRun,
   type Sitemap,
   type SitemapPage,
+  type SiteRun,
   type StageName,
   saveRun,
 } from './runs';
@@ -266,7 +272,8 @@ async function briefStage(ctx: RunContext): Promise<SiteBrief> {
     data: [labelled('site_owner_input', { ...run.input, facts: given })],
     schema: SITE_BRIEF_JSON_SCHEMA,
     timeoutMs: STAGE_TIMEOUTS_MS.brief,
-    validate: (value) => (siteBriefSchema.safeParse(value).success ? null : 'The brief is invalid.'),
+    validate: (value) =>
+      siteBriefSchema.safeParse(value).success ? null : 'The brief is invalid.',
   });
   // Facts from the form win; the model's are kept only where the owner's own words say them.
   const source = groundingFrom([run.input.description, ...given]);
@@ -354,7 +361,9 @@ async function partPlans(ctx: RunContext): Promise<PartPlan[]> {
       typeof entry?.value.content === 'string' ? entry.value.content : template.content;
     const blocks = pageSections(content, ctx.patterns);
     const declarations =
-      blocks.length === 1 ? sectionPattern(blocks[0] as ParsedBlock, ctx.patterns)?.slots : undefined;
+      blocks.length === 1
+        ? sectionPattern(blocks[0] as ParsedBlock, ctx.patterns)?.slots
+        : undefined;
     const slots = extractSlots(blocks, { declarations });
     if (slots.length) plans.push({ slug, slots });
   }
@@ -456,10 +465,7 @@ async function sitemapStage(
           `At most ${MAX_PAGES} pages and ${MAX_SECTIONS} sections a page. The home page comes first. Include the pages the brief lists.`,
           'Plan a section for facts the brief doesn’t give (testimonials, opening hours…) only when the site needs it: it will hold placeholders for the owner to fill.',
         ].join('\n'),
-    data: [
-      labelled('site_brief', brief),
-      ...(preset ? [labelled('sitemap', preset)] : []),
-    ],
+    data: [labelled('site_brief', brief), ...(preset ? [labelled('sitemap', preset)] : [])],
     schema: answerSchema,
     timeoutMs: STAGE_TIMEOUTS_MS.sitemap,
     validate: (value) =>
@@ -493,7 +499,13 @@ function candidatesFor(ctx: RunContext, categories: Map<string, string[]>, categ
 }
 
 /** The Page stage's schema: one property per section, each a choice of its category's patterns. */
-export function pageSchema(sections: { category: string; intent: string; candidates: (Candidate & { title: string; description?: string })[] }[]): JsonSchema {
+export function pageSchema(
+  sections: {
+    category: string;
+    intent: string;
+    candidates: (Candidate & { title: string; description?: string })[];
+  }[],
+): JsonSchema {
   const properties: Record<string, JsonSchema> = {};
   sections.forEach((section, i) => {
     properties[`section_${i + 1}`] = {
@@ -521,7 +533,10 @@ export function pageSchema(sections: { category: string; intent: string; candida
 const writeError = (error: unknown) =>
   error instanceof AbilityError || error instanceof StageError
     ? { code: error.code, message: error.message }
-    : { code: 'site_builder_error', message: error instanceof Error ? error.message : String(error) };
+    : {
+        code: 'site_builder_error',
+        message: error instanceof Error ? error.message : String(error),
+      };
 
 async function buildPage(
   ctx: RunContext,
@@ -550,7 +565,10 @@ async function buildPage(
         title: page.title,
         home: record.home,
         sections: page.sections,
-        site_pages: sitemap.pages.map((p, i) => ({ title: p.title, path: i === 0 ? '/' : `/${p.slug}/` })),
+        site_pages: sitemap.pages.map((p, i) => ({
+          title: p.title,
+          path: i === 0 ? '/' : `/${p.slug}/`,
+        })),
       }),
     ],
     schema: pageSchema(sections),
@@ -668,7 +686,10 @@ async function assembleStage(ctx: RunContext, brief: SiteBrief): Promise<void> {
       );
       await ctx.emit('part', { slug: plan.slug, replaced: honest.replaced });
     } catch (error) {
-      await warn('site_builder_not_saved', `The ${plan.slug} wasn’t saved: ${writeError(error).message}`);
+      await warn(
+        'site_builder_not_saved',
+        `The ${plan.slug} wasn’t saved: ${writeError(error).message}`,
+      );
     }
   }
 
@@ -684,7 +705,10 @@ async function assembleStage(ctx: RunContext, brief: SiteBrief): Promise<void> {
     const links = done.map((p) => navigationLink(p.title, p === home ? '/' : `/${p.slug}/`));
     if (
       await write('The menu', {
-        [`wp_navigation:${menu}`]: { title: `${brief.name || 'Site'} menu`, content: links.join('\n') },
+        [`wp_navigation:${menu}`]: {
+          title: `${brief.name || 'Site'} menu`,
+          content: links.join('\n'),
+        },
       })
     ) {
       await write('The menu choice', { 'option:pressbase_navigation_fallback': menu });
@@ -692,12 +716,18 @@ async function assembleStage(ctx: RunContext, brief: SiteBrief): Promise<void> {
     await ctx.emit('menu', { slug: menu, items: done.map((p) => p.slug) });
   }
   if (home) {
-    if (await write('The home page', { 'option:show_on_front': 'page', 'option:page_on_front': home.slug })) {
+    if (
+      await write('The home page', {
+        'option:show_on_front': 'page',
+        'option:page_on_front': home.slug,
+      })
+    ) {
       await ctx.emit('home', { slug: home.slug });
     }
   }
   // The brief, so later AI requests know the site (Settings → General, manage_options).
-  if (userCan(user, 'manage_options')) await write('The brief', { [`option:${SITE_BRIEF_OPTION}`]: brief });
+  if (userCan(user, 'manage_options'))
+    await write('The brief', { [`option:${SITE_BRIEF_OPTION}`]: brief });
 }
 
 async function menuExists(kernel: Kernel, slug: string): Promise<boolean> {
@@ -713,7 +743,9 @@ async function menuExists(kernel: Kernel, slug: string): Promise<boolean> {
 
 async function checkStage(ctx: RunContext): Promise<void> {
   const { kernel, run } = ctx;
-  const changeset = run.changeset_uuid ? await kernel.changesets.find(run.changeset_uuid) : undefined;
+  const changeset = run.changeset_uuid
+    ? await kernel.changesets.find(run.changeset_uuid)
+    : undefined;
   const data = entriesOf(kernel, changeset);
   const stylesheet = await kernel.themes.activeStylesheet();
   const styles = findEntry(data, [`wp_global_styles:${stylesheet}`])?.value;
@@ -723,7 +755,9 @@ async function checkStage(ctx: RunContext): Promise<void> {
     if (typeof content !== 'string') continue;
     const result = await runCheckPage(kernel, {
       content,
-      ...(styles ? { global_styles: { version: 3, isGlobalStylesUserThemeJSON: true, ...styles } } : {}),
+      ...(styles
+        ? { global_styles: { version: 3, isGlobalStylesUserThemeJSON: true, ...styles } }
+        : {}),
     });
     page.checks = { errors: result.errors, warnings: result.warnings, passed: result.passed };
     await ctx.emit('checks', { slug: page.slug, ...page.checks, findings: result.findings });
@@ -741,13 +775,20 @@ async function stage<T>(ctx: RunContext, name: StageName, fn: () => Promise<T>):
 }
 
 /** Runs the pipeline for a run (the job's handler). Never throws: the outcome is on the run. */
-export async function runPipeline(kernel: Kernel, runId: number, signal?: AbortSignal): Promise<SiteRun | undefined> {
+export async function runPipeline(
+  kernel: Kernel,
+  runId: number,
+  signal?: AbortSignal,
+): Promise<SiteRun | undefined> {
   const run = await getRun(kernel, runId);
-  if (!run || run.status !== 'queued') return run;
+  if (run?.status !== 'queued') return run;
   const user = await loadUser(kernel, run.author);
   if (!user) {
     run.status = 'failed';
-    run.error = { code: 'rest_user_invalid_id', message: 'The person who started this run no longer exists.' };
+    run.error = {
+      code: 'rest_user_invalid_id',
+      message: 'The person who started this run no longer exists.',
+    };
     await saveRun(kernel, run);
     return run;
   }
@@ -759,7 +800,11 @@ export async function runPipeline(kernel: Kernel, runId: number, signal?: AbortS
     }
     const home = (await kernel.options.get<string>('home', '')).replace(/\/+$/, '');
     run.preview_link = `${home}/?changeset_uuid=${run.changeset_uuid}`;
-    await ctx.emit('run', { status: 'running', changeset_uuid: run.changeset_uuid, preview_link: run.preview_link });
+    await ctx.emit('run', {
+      status: 'running',
+      changeset_uuid: run.changeset_uuid,
+      preview_link: run.preview_link,
+    });
 
     const brief = await stage(ctx, 'brief', () => briefStage(ctx));
     run.brief = brief;
@@ -825,9 +870,10 @@ function finish(ctx: RunContext, error?: unknown): void {
     run.error = { code: ctx.stopped.code, message: ctx.stopped.message };
   } else if (ctx.cancelled || ctx.signal?.aborted) {
     run.status = 'cancelled';
-    run.error = ctx.signal?.aborted && !ctx.cancelled
-      ? { code: 'site_builder_timeout', message: 'The run took too long and was stopped.' }
-      : null;
+    run.error =
+      ctx.signal?.aborted && !ctx.cancelled
+        ? { code: 'site_builder_timeout', message: 'The run took too long and was stopped.' }
+        : null;
   } else if (error) {
     run.status = 'failed';
     run.error = writeError(error);
