@@ -16,6 +16,7 @@ import { useI18n } from '@/lib/i18n/context';
 import { ActionMenu } from '../ui/menu';
 import { contentRootId, sectionOf } from './sections-panel';
 import styles from './studio.module.css';
+import { SwapArrows, useSwapLayout } from './swap-layout';
 
 interface Selectors {
   getBlocks: () => BlockInstance[];
@@ -50,7 +51,8 @@ const HIDE_DELAY = 400;
  * holding the selection) and its floating toolbar: move up and down,
  * duplicate, Ask AI (coming with #63), and more. "＋ Add section" on its top
  * and bottom edges opens the Sections panel at that place. Swap layout
- * (#45) adds its ‹ 2/5 › arrows to this toolbar.
+ * (#45): ‹ 2/5 › changes the section to the previous or next layout of its
+ * kind, keeping its content.
  *
  * Drawn in Studio's document over the iframe, so its buttons follow the
  * canvas in the tab order. Everything here is also in WordPress's own block
@@ -91,6 +93,7 @@ export function SectionToolbar({
   const active = hovered && order.includes(hovered) ? hovered : selectedSection;
   const index = active ? order.indexOf(active) : -1;
   const info = useBlockDisplayInformation(active);
+  const swap = useSwapLayout(active);
   const metadataName = useSelect(
     (select) => {
       if (!active) return '';
@@ -217,7 +220,8 @@ export function SectionToolbar({
 
   if (!active || !box || !root || index < 0) return null;
 
-  const label = metadataName || info?.title || __('Section', 'pressbase-admin');
+  const label =
+    metadataName || swap.label || info?.title || __('Section', 'pressbase-admin');
   const { view } = box;
   const viewBottom = view.top + view.height;
   // The toolbar sits inside the section's top right corner, kept in view while the section is.
@@ -308,7 +312,15 @@ export function SectionToolbar({
           >
             <Copy size={16} aria-hidden="true" />
           </button>
-          {/* Swap layout (#45): ‹ 2/5 › goes here. */}
+          {swap.layouts && (
+            <div className={styles.sectionToolbarGroup}>
+              <SwapArrows
+                state={swap}
+                buttonClassName={styles.sectionToolbarButton}
+                counterClassName={styles.swapCounter}
+              />
+            </div>
+          )}
           <button
             type="button"
             className={styles.sectionToolbarButton}

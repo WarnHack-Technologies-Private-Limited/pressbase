@@ -132,6 +132,7 @@ import {
 } from './regions';
 import { SectionToolbar } from './section-toolbar';
 import { SectionsPanel } from './sections-panel';
+import { SwapLayoutProvider } from './swap-layout';
 import {
   type CanvasTarget,
   initialTarget,
@@ -1263,6 +1264,9 @@ export default function Studio(props: StudioProps) {
           handle.current = h;
         }}
         onNotice={(message, tone) => toast(message, { tone })}
+        onSwapped={(message, undo) =>
+          toast(message, { action: { label: __('Undo', 'pressbase-admin'), onClick: undo } })
+        }
       />
     );
   }
@@ -1470,6 +1474,8 @@ interface StudioEditorProps {
   onOpenPalette: () => void;
   /** A section added from the palette: before it goes in, and after. */
   onSectionAdded: (title: string, phase: 'before' | 'after') => void;
+  /** A section swapped its layout (#45): says which, and offers Undo. */
+  onSwapped: (message: string, undo: () => void) => void;
 }
 
 /** The block-editor store calls the editor makes outside React's render. */
@@ -1718,6 +1724,13 @@ function StudioEditor(props: StudioEditorProps) {
       return replaceRegion(pageKey(doc.page.id), content);
     },
   };
+  const swapEvents = useMemo(
+    () => ({
+      onSwapping: history.labelNext,
+      onSwapped: (message: string) => propsRef.current.onSwapped(message, history.undo),
+    }),
+    [history.labelNext, history.undo],
+  );
   const width = DEVICES.find((d) => d.id === props.device)?.width ?? null;
   const frameRef = useRef<HTMLDivElement>(null);
   const showInspector = !props.narrow || props.inspectorOpen;
@@ -1778,6 +1791,7 @@ function StudioEditor(props: StudioEditorProps) {
           props.onOpenPalette();
         }}
       >
+        <SwapLayoutProvider value={swapEvents}>
         <StudioRegionsProvider
           value={{
             parts: props.parts,
@@ -1836,6 +1850,7 @@ function StudioEditor(props: StudioEditorProps) {
             </div>
           </StudioFrame>
         </StudioRegionsProvider>
+        </SwapLayoutProvider>
       </div>
       <div className={lightScope}>
         <Popover.Slot />

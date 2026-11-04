@@ -73,6 +73,23 @@ export function sectionLabel(
 }
 
 /**
+ * A section's blocks, ready to insert. A section of one block names its
+ * pattern (`metadata.patternName`, as WordPress's inserter does), so Swap
+ * layout (#45) knows where it came from.
+ */
+export function sectionBlocks(section: Pick<Section, 'name' | 'content'>): BlockInstance[] {
+  const blocks = parse(section.content);
+  const [root] = blocks;
+  if (root && blocks.length === 1) {
+    root.attributes = {
+      ...root.attributes,
+      metadata: { ...(root.attributes.metadata ?? {}), patternName: section.name },
+    };
+  }
+  return blocks;
+}
+
+/**
  * Adds a section to the page: at `insertAt` among the page's sections, else
  * after the selected section, else last. One undo step. Null when the
  * canvas has no page content (the latest posts). Shared by the Sections
@@ -103,7 +120,7 @@ export function useAddSection(): ((section: Section, insertAt?: number | null) =
       const current = selected ? sectionOf(select, root, selected) : null;
       if (current) index = order.indexOf(current) + 1;
     }
-    insertBlocks(parse(section.content), index, root, true);
+    insertBlocks(sectionBlocks(section), index, root, true);
   };
 }
 
@@ -322,7 +339,7 @@ const SectionTile = memo(function SectionTile({
 
   const onDragStart = (event: DragEvent) => {
     // What WordPress's inserter hands the canvas's drop zones (InserterDraggableBlocks).
-    const parsed = parse(section.content);
+    const parsed = sectionBlocks(section);
     event.dataTransfer.effectAllowed = 'copy';
     event.dataTransfer.setData('wp-blocks', JSON.stringify({ type: 'inserter', blocks: parsed }));
     for (const name of new Set(parsed.map((block) => block.name))) {

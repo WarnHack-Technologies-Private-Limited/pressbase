@@ -207,7 +207,7 @@ describe('swapSource', () => {
     const memory = { origin, produced: first.markup, kept: first.unused };
     const edited = first.markup.replace('Fresh bread', 'Warm bread');
     const { from, carried } = swapSource(memory, edited, SIMPLE);
-    expect(from.map((s) => s.value)).toEqual(['Warm bread']);
+    expect(from.map((s) => (s as { value?: unknown }).value)).toEqual(['Warm bread']);
     expect(carried.map(unusedText)).toEqual(['Baked at night.', 'Menu', 'Find us']);
   });
 
