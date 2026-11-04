@@ -17,6 +17,7 @@
     "@hono/node-server": "2.1.5",
     "@pressbase/blocks": "workspace:*",
     "@pressbase/db": "workspace:*",
+    "@pressbase/design": "workspace:*",
     "@pressbase/hooks": "workspace:*",
     "@pressbase/patterns": "workspace:*",
     "@pressbase/slots": "workspace:*",

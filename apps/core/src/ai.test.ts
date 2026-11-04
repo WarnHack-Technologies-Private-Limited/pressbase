@@ -287,10 +287,10 @@ describe('/wp-abilities/v1', () => {
     const ctx = await withAbilities();
     const res = await ctx.request('GET', '/wp-abilities/v1/abilities');
     expect(res.status).toBe(200);
-    expect(res.headers.get('x-wp-total')).toBe('2');
+    expect(res.headers.get('x-wp-total')).toBe('3');
     const names = res.body.map((a: { name: string }) => a.name);
-    expect(names).toEqual(['core/get-site-info', 'test/rename']);
-    const info = res.body[0];
+    expect(names).toEqual(['core/check-page', 'core/get-site-info', 'test/rename']);
+    const info = res.body[1];
     expect(Object.keys(info)).toEqual([
       'name',
       'label',

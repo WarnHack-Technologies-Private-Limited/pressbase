@@ -10,8 +10,24 @@ import type { JsonSchema } from '../abilities/json-schema';
 /** A part of a message: text, a call the model asks for, or its response. */
 export type AiMessagePart =
   | { type: 'text'; text: string }
+  | AiImagePart
   | { type: 'function_call'; id: string; name: string; args: Record<string, unknown> }
   | { type: 'function_response'; id: string; name: string; response: unknown };
+
+/**
+ * An image in a user message (`withImage()`), base64-encoded. Never logged.
+ * Providers that can't see images refuse it with `prompt_invalid_argument`.
+ */
+export interface AiImagePart {
+  type: 'image';
+  mimeType: AiImageMimeType;
+  /** Base64, without a `data:` prefix. */
+  data: string;
+}
+
+/** Image types every provider that takes images accepts. */
+export const AI_IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const;
+export type AiImageMimeType = (typeof AI_IMAGE_MIME_TYPES)[number];
 
 /** MessageRoleEnum: `user` or `model` (the assistant). */
 export interface AiMessage {
@@ -68,6 +84,19 @@ export interface AiResult {
   model: string;
 }
 
+/**
+ * What a provider's `streamText()` yields: text as it's written, then the
+ * whole result (the same one `generateText()` would have returned).
+ */
+export type AiStreamEvent = { type: 'text'; text: string } | { type: 'done'; result: AiResult };
+
+/**
+ * Which of the site's models a prompt uses: `default` is Settings → AI's
+ * model; `fast` is its "model for quick edits" (rewrites, small changes),
+ * which falls back to the default when the site hasn't chosen one.
+ */
+export type AiModelTier = 'default' | 'fast';
+
 /** What core hands a provider with each request. */
 export interface AiProviderContext {
   apiKey: string;
@@ -99,6 +128,12 @@ export interface AiProvider {
    * on failure; core redacts keys from its message.
    */
   generateText(request: AiTextRequest, context: AiProviderContext): Promise<AiResult>;
+  /**
+   * Optional: the same request, streamed. Yield `text` events as the reply is
+   * written and end with one `done` event carrying the full result. Without
+   * it, core calls generateText() and yields the reply in one piece.
+   */
+  streamText?(request: AiTextRequest, context: AiProviderContext): AsyncIterable<AiStreamEvent>;
 }
 
 /**

@@ -1,0 +1,20 @@
+{
+  "name": "@pressbase/design",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The design generator: accessible palettes from a hue and a mood (OKLCH, WCAG 2.2 AA), curated font pairs, corner and spacing presets, and user global styles for theme.json.",
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p ."
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  }
+}

@@ -58,6 +58,39 @@ export function stripHtml(text: string): string {
   );
 }
 
+/**
+ * stripHtml() for text that arrives in pieces (streamed replies). push()
+ * returns the new plain text, holding back a tag or entity that isn't
+ * complete yet; end() returns what's left. The pieces joined equal
+ * stripHtml() of the whole text, except in the rare case where later text
+ * changes how earlier text reads (a stray `<` closed much later): then the
+ * difference is dropped, and the stream's `result` has the exact text.
+ */
+export function createHtmlStripper(): { push(text: string): string; end(): string } {
+  let raw = '';
+  let emitted = '';
+  const advance = (next: string): string => {
+    if (!next.startsWith(emitted)) return '';
+    const delta = next.slice(emitted.length);
+    emitted = next;
+    return delta;
+  };
+  return {
+    push(text) {
+      raw += text;
+      let end = raw.length;
+      const lt = raw.lastIndexOf('<');
+      if (lt !== -1 && raw.indexOf('>', lt) === -1) end = lt;
+      const amp = raw.lastIndexOf('&', end - 1);
+      if (amp !== -1 && end - amp <= 10 && !raw.slice(amp, end).includes(';')) end = amp;
+      return advance(stripHtml(raw.slice(0, end)));
+    },
+    end() {
+      return advance(stripHtml(raw));
+    },
+  };
+}
+
 /** stripHtml() through every string of a JSON value. */
 export function stripHtmlDeep<T>(value: T): T {
   if (typeof value === 'string') return stripHtml(value) as T;

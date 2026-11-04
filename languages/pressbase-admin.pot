@@ -291,136 +291,148 @@ msgstr ""
 msgid "Site default"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:87
+#: apps/admin/src/components/settings/ai-settings.tsx:92
 msgid "AI settings saved."
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:89 apps/admin/src/components/settings/general-settings-form.tsx:324 apps/admin/src/components/settings/settings-form.tsx:79
+#: apps/admin/src/components/settings/ai-settings.tsx:94 apps/admin/src/components/settings/general-settings-form.tsx:324 apps/admin/src/components/settings/settings-form.tsx:79
 msgid "Could not save your changes."
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:100
+#: apps/admin/src/components/settings/ai-settings.tsx:105
 msgid "API key removed."
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:102
+#: apps/admin/src/components/settings/ai-settings.tsx:107
 msgid "Could not remove the key."
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:118
+#: apps/admin/src/components/settings/ai-settings.tsx:123
 #, js-format
 msgid "Connected. %1$s answered with %2$s."
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:128
+#: apps/admin/src/components/settings/ai-settings.tsx:133
 msgid "Could not reach the AI provider."
-msgstr ""
-
-#: apps/admin/src/components/settings/ai-settings.tsx:138
-#, js-format
-msgid "Set by the %1$s environment variable, ends in …%2$s"
 msgstr ""
 
 #: apps/admin/src/components/settings/ai-settings.tsx:143
 #, js-format
+msgid "Set by the %1$s environment variable, ends in …%2$s"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:148
+#, js-format
 msgid "Saved, ends in …%s"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:144
+#: apps/admin/src/components/settings/ai-settings.tsx:149
 msgid "No key saved."
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:150
+#: apps/admin/src/components/settings/ai-settings.tsx:155
 msgid "AI features"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:151
+#: apps/admin/src/components/settings/ai-settings.tsx:156
 msgid "Plugins such as Pressbase SEO can suggest titles, descriptions and alt text. Nothing is sent to a provider until someone asks for a suggestion, and suggestions are never applied without a person choosing them."
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:157
+#: apps/admin/src/components/settings/ai-settings.tsx:162
 msgid "Turn on AI features"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:158
+#: apps/admin/src/components/settings/ai-settings.tsx:163
 msgid "Requests are sent from this server, never from visitors’ browsers."
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:168 apps/admin/src/components/settings/ai-settings.tsx:176
+#: apps/admin/src/components/settings/ai-settings.tsx:173 apps/admin/src/components/settings/ai-settings.tsx:181
 msgid "Provider"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:169
+#: apps/admin/src/components/settings/ai-settings.tsx:174
 msgid "The service that answers AI requests, and the model it uses."
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:191
+#: apps/admin/src/components/settings/ai-settings.tsx:197
 msgid "Model"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:197
+#: apps/admin/src/components/settings/ai-settings.tsx:203
 #, js-format
 msgid "Default (%s)"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:210 apps/admin/src/components/settings/ai-settings.tsx:224
+#: apps/admin/src/components/settings/ai-settings.tsx:213
+msgid "Model for quick edits"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:217
+msgid "Used for rewrites and small changes. A smaller model answers faster and costs less. Building pages always uses the main model."
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:222
+msgid "Same as the main model"
+msgstr ""
+
+#: apps/admin/src/components/settings/ai-settings.tsx:234 apps/admin/src/components/settings/ai-settings.tsx:248
 msgid "API key"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:215 apps/admin/src/components/settings/ai-settings.tsx:284
+#: apps/admin/src/components/settings/ai-settings.tsx:239 apps/admin/src/components/settings/ai-settings.tsx:308
 msgid "Remove key"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:225
+#: apps/admin/src/components/settings/ai-settings.tsx:249
 msgid "Replace the key"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:236
+#: apps/admin/src/components/settings/ai-settings.tsx:260
 msgid "The environment variable wins over a saved key."
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:237
+#: apps/admin/src/components/settings/ai-settings.tsx:261
 msgid "Stored on this server and never shown again."
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:244
+#: apps/admin/src/components/settings/ai-settings.tsx:268
 msgid "Daily limit"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:246
+#: apps/admin/src/components/settings/ai-settings.tsx:270
 #, js-format
 msgid "%d requests sent today. The count resets at midnight UTC."
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:252
+#: apps/admin/src/components/settings/ai-settings.tsx:276
 msgid "Requests per day"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:259
+#: apps/admin/src/components/settings/ai-settings.tsx:283
 msgid "For the whole site, all plugins together."
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:267 apps/admin/src/components/settings/general-settings-form.tsx:484 apps/admin/src/components/settings/settings-form.tsx:98 apps/admin/src/components/studio/top-bar.tsx:216
+#: apps/admin/src/components/settings/ai-settings.tsx:291 apps/admin/src/components/settings/general-settings-form.tsx:484 apps/admin/src/components/settings/settings-form.tsx:98 apps/admin/src/components/studio/top-bar.tsx:216
 msgid "Saving…"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:268 apps/admin/src/components/settings/general-settings-form.tsx:484 apps/admin/src/components/settings/settings-form.tsx:98
+#: apps/admin/src/components/settings/ai-settings.tsx:292 apps/admin/src/components/settings/general-settings-form.tsx:484 apps/admin/src/components/settings/settings-form.tsx:98
 msgid "Save changes"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:276
+#: apps/admin/src/components/settings/ai-settings.tsx:300
 msgid "Testing…"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:277
+#: apps/admin/src/components/settings/ai-settings.tsx:301
 msgid "Test connection"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:283
+#: apps/admin/src/components/settings/ai-settings.tsx:307
 msgid "Remove the API key?"
 msgstr ""
 
-#: apps/admin/src/components/settings/ai-settings.tsx:290
+#: apps/admin/src/components/settings/ai-settings.tsx:314
 msgid "AI features stop working until a new key is saved."
 msgstr ""
 

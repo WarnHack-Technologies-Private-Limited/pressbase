@@ -5,6 +5,8 @@ Pressbase 0.7 ports two WordPress 7 APIs into core:
 - **The AI client** (`wp_ai_client_prompt()`, `wp_supports_ai()`): a fluent prompt builder over a registry of providers. Pressbase ships the Anthropic provider (Claude). Plugins call it through `api.ai`.
 - **The Abilities API** (`wp_register_ability()`): named units of work with JSON Schemas for their input and output and a required permission check. The REST API (`/wp-abilities/v1`), the CLI (`pressbase ability`) and AI models (as tools) can all discover and run them, with the same checks.
 
+Pressbase 0.8 adds what Studio's AI features need: streaming, per-call timeouts, a model for quick edits and image input ([plan](../plans/visual-site-builder.md#changes-to-the-ai-client)).
+
 AI is **off until an administrator turns it on** in **Settings → AI**. Pressbase SEO is the first user ([plan](../plans/first-party-plugins.md#ai)). Decisions are in [ADR 0019](../adr/0019-ai-client-and-abilities.md).
 
 Code: `apps/core/src/ai/` (client, prompt builder, function resolver, providers), `apps/core/src/abilities/` (registry, JSON Schema, core abilities), `apps/core/src/routes/ai.ts` and `routes/abilities.ts`, `apps/core/src/plugins/ai.ts`, the admin screen in `apps/admin/src/components/settings/ai-settings.tsx`, the CLI in `packages/cli/src/commands/ability.ts`.
@@ -22,6 +24,7 @@ Code: `apps/core/src/ai/` (client, prompt builder, function resolver, providers)
 | `rest_validate_value_from_schema()`, `wp_prepare_json_schema_for_client()` | `validateJsonSchema()`, `prepareJsonSchemaForClient()` (`abilities/json-schema.ts`) |
 | `/wp-abilities/v1` controllers | `routes/abilities.ts` |
 | `core/get-site-info` (`abilities.php`) | the same, in `abilities/core-abilities.ts` |
+| — | `core/check-page`: the [quality checks](quality-checks.md) for a page, as data |
 
 ## The AI client
 
@@ -44,20 +47,41 @@ const titles = await kernel.ai
 | --- | --- | --- |
 | `prompt(input?)` | `wp_ai_client_prompt()` | a string, or a list of messages |
 | `withText(text)`, `withHistory(...messages)` | `with_text()`, `with_history()` | |
+| `withImage(bytes \| base64, mimeType)` | `with_file()` | JPEG, PNG, GIF or WebP up to 5 MB, for a model that can see images (screenshot to section); never logged |
 | `usingSystemInstruction(text)` | `using_system_instruction()` | |
 | `usingMaxTokens(n)` | `using_max_tokens()` | default 16,000 |
 | `usingTemperature(t)` | `using_temperature()` | ignored by Claude's current models, which reject sampling parameters |
-| `usingRequestTimeout(seconds)` | `using_request_options()` | default 30 s, from `wp_ai_client_default_request_timeout` |
+| `usingTimeout(ms)` | `using_request_options()` | this prompt's timeout per request; default 30 s, from `wp_ai_client_default_request_timeout`. Generation stages use 60–120 s |
+| `usingRequestTimeout(seconds)` | `using_request_options()` | the same, in seconds |
+| `usingModelTier('default' \| 'fast')` | — | `fast` uses Settings → AI's **model for quick edits** (rewrites, small changes), or the main model when none is set |
 | `asJsonResponse(schema)`, `asOutputSchema(schema)` | `as_json_response()`, `as_output_schema()` | structured output |
 | `usingAbilities(...names)` | `using_abilities()` | the model may call these abilities ([below](#abilities-as-tools)) |
 | `usingMaxFunctionRounds(n)` | — | how many rounds of ability calls are answered (default 5) |
-| `forUser(user)`, `forAbility(name)` | — | who it's for (log, ability permissions) and which ability (log) |
+| `forUser(user)`, `forAbility(name)` | — | who it's for (log, ability permissions) and which ability or pipeline stage (log): `site-builder/brief`, `site-builder/page` |
 | `isSupportedForTextGeneration()` | `is_supported_for_text_generation()` | |
 | `generateText()` | `generate_text()` | the reply's text, **HTML stripped** |
 | `generateTextResult()` | `generate_text_result()` | `{ id, message, finishReason, tokenUsage: { promptTokens, completionTokens, totalTokens }, providerId, model }` |
 | `generateJson<T>()` | — | the reply parsed and validated against the schema, HTML stripped from every string |
+| `streamText()` | — | the reply as it's written ([below](#streaming)) |
 
-The model is **a setting**, not something callers choose. Generating methods throw an `AiError` with WordPress's codes and an HTTP status: `prompt_prevented` (503: AI off, or a `wp_ai_client_prevent_prompt` filter), `prompt_timeout` (504), `prompt_network_error` (503), `prompt_client_error` (4xx, e.g. a refused key), `prompt_upstream_server_error` (502), `prompt_refused` (the model declined), `prompt_invalid_output` (502: JSON that doesn't match the schema), `prompt_invalid_argument` (400) and Pressbase's `ai_daily_limit_reached` (429).
+### Streaming
+
+```ts
+const stream = kernel.ai
+  .prompt(question)
+  .usingModelTier('fast')
+  .forUser(user)
+  .forAbility('site-builder/edit')
+  .streamText();
+for await (const text of stream) send(text);   // plain-text pieces
+const { tokenUsage } = await stream.result;    // the final AiResult
+```
+
+`streamText()` returns an async iterable of plain-text pieces and a `result` promise. It goes through the same checks as `generateText()`: AI on, the prevent filter, the daily caps, the timeout, key redaction and one log row per provider request, written when the stream ends. HTML is stripped as the text arrives (a tag or entity split across pieces is held back until it's complete). The timeout covers the whole reply, so long replies need `usingTimeout()`. With `usingAbilities()`, each round's text is streamed and ability calls are answered between rounds. Breaking out of the loop aborts the request; it's logged with the code `prompt_cancelled`, and `result` rejects with it.
+
+The model is **a setting**, not something callers choose: the main model, or with `usingModelTier('fast')` the model for quick edits. Generation (building a site or a page) uses the main model; quick edits (rewrite, shorten, change tone) use the fast tier.
+
+Generating methods throw an `AiError` with WordPress's codes and an HTTP status: `prompt_prevented` (503: AI off, or a `wp_ai_client_prevent_prompt` filter), `prompt_timeout` (504), `prompt_network_error` (503), `prompt_client_error` (4xx, e.g. a refused key), `prompt_upstream_server_error` (502), `prompt_refused` (the model declined), `prompt_invalid_output` (502: JSON that doesn't match the schema), `prompt_invalid_argument` (400), and Pressbase's `ai_daily_limit_reached` (429) and `prompt_cancelled` (a stream the caller stopped reading).
 
 `supportsAi()` is false when `PRESSBASE_AI_SUPPORT=0`, when Settings → AI is off, or when the chosen provider has no key; then the `wp_supports_ai` filter decides.
 
@@ -74,15 +98,15 @@ The model is **a setting**, not something callers choose. Generating methods thr
 ### Caps, timeouts and the usage log
 
 - **Daily cap:** `pressbase_ai_daily_request_limit` (default 100) requests per UTC day for the whole site. A plugin can be held to less with `pressbase_ai_plugin_daily_request_limit`. Each provider request counts, including each round of ability calls and **Test connection**; failed requests count too. The count is read before sending, so a burst of simultaneous requests can pass the limit by a few.
-- **Timeout:** every request is aborted after its timeout (30 s by default) and fails with `prompt_timeout`. The SDK's own retries are off, so one call is one request.
-- **Log:** each request adds a row to the `ai_requests` table: when, the user, the plugin, the ability, the provider, the model, input and output tokens, the duration, and `ok` or the error code. **Never the prompt, the output or the key.** Rows older than 90 days are deleted with the daily job cleanup.
+- **Timeout:** every request is aborted after its timeout (30 s by default, `usingTimeout()` per prompt) and fails with `prompt_timeout`; a streamed reply must finish within it. The SDK's own retries are off, so one call is one request.
+- **Log:** each request adds a row to the `ai_requests` table: when, the user, the plugin, the ability, the provider, the model, input and output tokens, the duration, and `ok` or the error code (a stream the caller stopped reading is `prompt_cancelled`). The model is the one that answered, so quick edits on the fast tier show up separately. **Never the prompt, the output or the key.** Rows older than 90 days are deleted with the daily job cleanup.
 
 ### Keys and Settings → AI
 
-**Settings → AI** (`manage_options`) turns AI on, chooses the provider and model, saves the provider's API key, sets the daily limit and tests the connection. Its REST API is `/pressbase/v1/ai`:
+**Settings → AI** (`manage_options`) turns AI on, chooses the provider, the model and the model for quick edits, saves the provider's API key, sets the daily limit and tests the connection. Its REST API is `/pressbase/v1/ai`:
 
-- `GET /settings`: `enabled`, `provider`, `model` (empty: the provider's default), `daily_limit`, `requests_today`, `supports_ai`, and `providers` with each one's `models`, `default_model`, `env_var` and `key: { source: 'env' | 'database' | 'none', last4 }`.
-- `POST /settings`: any of `enabled`, `provider`, `model`, `daily_limit`, `api_key` (saved for `provider`; `""` deletes it).
+- `GET /settings`: `enabled`, `provider`, `model` (empty: the provider's default), `fast_model` (the model for quick edits, option `pressbase_ai_fast_model`; empty: the main model), `daily_limit`, `requests_today`, `supports_ai`, and `providers` with each one's `models`, `default_model`, `env_var` and `key: { source: 'env' | 'database' | 'none', last4 }`.
+- `POST /settings`: any of `enabled`, `provider`, `model`, `fast_model`, `daily_limit`, `api_key` (saved for `provider`; `""` deletes it).
 - `POST /test`: a tiny prompt through the configured provider: `{ ok, provider, model }` or the error.
 
 Keys are stored in the option WordPress uses, `connectors_ai_{provider}_api_key` (not autoloaded, never in `/wp/v2/settings`), and are **never returned** after saving: the screen shows "Saved, ends in …abcd". An environment variable wins over a saved key: `PRESSBASE_ANTHROPIC_API_KEY`. Keys are redacted (`[redacted]`) from every error message, along with anything shaped like a provider key.
@@ -100,14 +124,17 @@ interface AiProvider {
   models: { id: string; name: string }[];
   keyUrl?: string;
   generateText(request: AiTextRequest, context: AiProviderContext): Promise<AiResult>;
+  streamText?(request: AiTextRequest, context: AiProviderContext): AsyncIterable<AiStreamEvent>;
 }
 ```
 
-`generateText` receives the model, the system instruction, the messages (`{ role: 'user' | 'model', parts }`, with text, `function_call` and `function_response` parts), `maxTokens`, an optional `temperature`, an optional `outputSchema` and `functionDeclarations` (each with an object JSON Schema). The context has the `apiKey`, an `AbortSignal` and `timeoutMs`. It returns one `AiResult` and throws an `AiError` on failure (core redacts the key from its message). A provider may put its raw reply on `message.providerContent` to get it back unchanged in the next turn of a tool loop.
+`generateText` receives the model, the system instruction, the messages (`{ role: 'user' | 'model', parts }`, with text, `function_call` and `function_response` parts), `maxTokens`, an optional `temperature`, an optional `outputSchema` and `functionDeclarations` (each with an object JSON Schema). User messages may hold `image` parts (`{ type: 'image', mimeType, data }`, base64). The context has the `apiKey`, an `AbortSignal` and `timeoutMs`. It returns one `AiResult` and throws an `AiError` on failure (core redacts the key from its message). A provider may put its raw reply on `message.providerContent` to get it back unchanged in the next turn of a tool loop.
+
+`streamText` is optional: it yields `{ type: 'text', text }` events as the reply is written and ends with one `{ type: 'done', result }` carrying the same `AiResult` `generateText` would return. Without it, core calls `generateText` and the builder's `streamText()` gives the reply in one piece. Core aborts the signal on timeout and when the caller stops reading.
 
 Register one in core (`kernel.ai.registerProvider()`) or from a plugin (`api.ai.registerProvider()`, removed on deactivation). OpenAI, Google and others are each one such module.
 
-**Anthropic** (`ai/providers/anthropic.ts`) uses the official `@anthropic-ai/sdk` and the Messages API. The default model is `claude-opus-5-5`; Settings → AI also offers Claude Sonnet 5.5, Claude Haiku 5.5 and Claude Fable 5.1, or any model ID. Thinking is left at the model's default; structured output uses `output_config.format`; abilities become tools with `tool_choice: auto`; Claude's own content (thinking blocks included) is sent back unchanged in tool loops. On the models that support it, refusals fall back server-side (`fallbacks: "default"`).
+**Anthropic** (`ai/providers/anthropic.ts`) uses the official `@anthropic-ai/sdk` and the Messages API. The default model is `claude-opus-5-5`; Settings → AI also offers Claude Sonnet 5.5, Claude Haiku 5.5 and Claude Fable 5.1, or any model ID. Thinking is left at the model's default; structured output uses `output_config.format`; streaming uses the SDK's `messages.stream()` helper; images are base64 `image` blocks; abilities become tools with `tool_choice: auto`; Claude's own content (thinking blocks included) is sent back unchanged in tool loops. On the models that support it, refusals fall back server-side (`fallbacks: "default"`).
 
 ## The Abilities API
 

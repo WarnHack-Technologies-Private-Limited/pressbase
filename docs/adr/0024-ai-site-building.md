@@ -1,6 +1,6 @@
 # 0024: AI site building: pipeline, slots, operations, honest content
 
-- **Status:** Proposed. The slots part is accepted and built (v0.8, #38 and #39); the pipeline, operations and the enforcement of honest content are pending and will be added to this record before it is accepted.
+- **Status:** Proposed. Slots (v0.8, #38 and #39), the design generator (#54) and the quality checks (#55) are accepted and built; the pipeline, operations and the enforcement of honest content are pending and will be added to this record before it is accepted.
 - **Date:** 2026-11-03
 
 ## Context
@@ -28,6 +28,22 @@ WordPress has related pieces but not this one. Pattern overrides (6.5) let a syn
 - **Placeholders are plain text in square brackets** (`[Add a customer quote]`), valid in any block and visible on the page; `facts` slots declare theirs, and `findPlaceholders()` lists every placeholder, `#` link and missing image for the checklist.
 - **A pattern library ships with Pressbase** (`@pressbase/patterns`): section patterns made only of core blocks and the presets every block theme has, registered by core as `pressbase/<name>` under WordPress's category names where they exist, with rules (README) that a test enforces.
 
+### Design generator (accepted)
+
+- **The model chooses a direction; code chooses the colours.** The Design stage answers `DESIGN_CHOICE_SCHEMA`: a mood (seven), a hue (0–359), a contrast level, a light or dark scheme, a font pair, a corner style and a spacing density, all enums or bounded numbers. `@pressbase/design` turns it into a palette and presets. The model never writes a hex value, so it can't produce an unreadable site.
+- **Palettes are built in OKLCH and checked with WCAG's formula on the final hex.** `generatePalette()` starts each colour at a lightness and chroma set by the scheme and the mood, then darkens (on dark pages, lightens) each text colour in small steps until every pair the theme draws passes AA (4.5:1 text, 3:1 large text and UI) or, at `high` contrast, AAA for text. Black and white end the search and always pass, so generation can't fail. Property tests hold thousands of random choices to it.
+- **The palette uses the Pressbase theme's slugs** (`base`, `contrast`, `accent`, `accent-text`, `on-accent`…) and is saved as user global styles keyed by the `theme` origin, as a style variation is, so the theme and every pattern using its presets restyle without changes. The pairs checked are the ones the theme's own palettes are tested against.
+- **Fonts are curated and local**: the theme's bundled OFL fonts and system font stacks, nothing from Google or another font service. Pairs needing theme fonts are offered only where the theme declares them.
+- **Corners and density are small enums mapped to presets** (the theme's radius slugs; WordPress's spacing slugs 20–80), not free values.
+- **A package of its own**, `@pressbase/design`, not part of `@pressbase/theme-json`: theme-json is a port of WordPress's engine and stays one; the generator is Pressbase's product logic with no WordPress counterpart. Pure functions, so the admin's live previews of directions use the same code as core.
+
+### Quality checks (accepted)
+
+- **One checker, three callers.** `checkPage(markup, styles)` runs after every generation (the pipeline's Check stage), on Studio's "Before you publish" checklist and in the evaluation suite. It's exposed as the `core/check-page` ability (so the pipeline, the CLI and outside agents call it with the same permission check) and as `POST /pressbase/v1/check-page`, because a read-only ability runs with GET and a page's markup doesn't belong in a URL.
+- **Findings, not fixes**, each with the block's index path from `parse_blocks()`, so Studio can select it. Errors fail a generated page; warnings (placeholders, vague links, raw colours) are for a person.
+- **Rules**: invalid or unknown blocks (delimiters, schema, `parent`/`ancestor`/`allowedBlocks`), contrast below AA following colours down the tree as CSS does, one `h1` and no skipped levels, alt text unless decorative, placeholders (the slots' rules), empty or vague link text, raw colours outside presets. Where the checker can't know (text over images or gradients) it says nothing rather than guess.
+- **Decorative images are marked** with `metadata.decorative` (or `role="presentation"` / `aria-hidden`), because WordPress always saves an empty `alt` and can't tell decorative from forgotten.
+
 ### Pending
 
 - **The pipeline**: brief, design, sitemap, page and check stages as structured calls, run as a job, with progress over Server-Sent Events.
@@ -43,10 +59,18 @@ WordPress has related pieces but not this one. Pattern overrides (6.5) let a syn
 - A group shrunk to one item stays a group only for lists, buttons, galleries, columns, grids, questions and declared groups; elsewhere it becomes plain slots until it has two items again.
 - Rich text is written as given in `html` format. Anything from a model or another untrusted source must use `text` format, and saved content is still sanitised by core for users without `unfiltered_html`.
 - The `slots` field and `Slots:` header are Pressbase extensions; WordPress ignores both.
+- Generated palettes pass AA by construction; a person can still choose any colour, and the quality checks catch what then fails.
+- Saturated light hues (yellow, lime) come out darker on light pages than a brand colour might be: white button text on them needs it.
+- Generated designs restyle the Pressbase theme fully. Other block themes get the presets whose slugs they share (spacing 20–80, often `base` and `contrast`); a slug mapping per theme is future work. The theme's tinted shadows aren't regenerated.
+- `metadata.decorative` and `POST /pressbase/v1/check-page` are Pressbase extensions.
 
 ## Alternatives considered
 
 - **Pattern overrides only** (WordPress's bindings): needs every pattern prepared by hand and covers no repeated groups or item counts.
 - **Templates with placeholders** (`{{title}}` in markup): invalid blocks until filled, and no theme pattern has them.
 - **The model writes block markup**, validated afterwards: more tokens, retries on invalid output, and quality depends on the model. Kept for v2's custom sections only.
+- **The model picks colours (hex) and code checks them afterwards**: retries when a pair fails, and a model's sense of contrast is unreliable. Generating from a hue costs nothing and can't fail.
+- **Palettes in HSL**: equal lightness in HSL isn't equal perceived lightness (yellow versus blue), so one recipe gives uneven palettes across hues.
+- **Web fonts from Google Fonts or a font CDN**: a request to a third party on every page view, against the privacy of visitors; local and system fonts cost nothing.
+- **Checks in the browser only (the editor's block validation)**: the pipeline runs on the server, and the checks must be the same for both.
 - **A slot schema per pattern, written by hand**: precise but would leave every installed theme's patterns out; declarations give the same precision where it's wanted.
