@@ -19,8 +19,8 @@ import {
   removePage,
   removeSection,
   roughWords,
-  STEPS,
   type SitemapPage,
+  STEPS,
   sitemapPayload,
   studioLink,
 } from './site-builder';
@@ -138,7 +138,11 @@ describe('the sitemap', () => {
     expect(addPage(pages, '  ', 'text')).toHaveLength(1);
     for (let i = 0; i < 10; i++) pages = addPage(pages, `Page ${i}`, 'text');
     expect(pages).toHaveLength(MAX_PAGES);
-    expect(pages[1]).toEqual({ title: 'Page 0', slug: '', sections: [{ category: 'text', intent: '' }] });
+    expect(pages[1]).toEqual({
+      title: 'Page 0',
+      slug: '',
+      sections: [{ category: 'text', intent: '' }],
+    });
     expect(removePage([page('Home')], 0)).toHaveLength(1);
     expect(removePage([page('Home'), page('About')], 0).map((p) => p.title)).toEqual(['About']);
   });
@@ -226,10 +230,13 @@ describe('a run’s progress', () => {
   });
 
   it('adds up what each step used, in words a person can picture', () => {
-    const usage = addUsage(addUsage(NO_USAGE, { tokens: { prompt: 10, completion: 5, total: 15 }, requests: 1 }), {
-      tokens: { prompt: 1000, completion: 400, total: 1400 },
-      requests: 2,
-    });
+    const usage = addUsage(
+      addUsage(NO_USAGE, { tokens: { prompt: 10, completion: 5, total: 15 }, requests: 1 }),
+      {
+        tokens: { prompt: 1000, completion: 400, total: 1400 },
+        requests: 2,
+      },
+    );
     expect(usage).toEqual({ tokens: { prompt: 1010, completion: 405, total: 1415 }, requests: 3 });
     expect(roughWords(14_000)).toBe(10_500);
   });
