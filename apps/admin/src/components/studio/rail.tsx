@@ -1,9 +1,6 @@
 'use client';
 
-import {
-  __experimentalLibrary as InserterLibrary,
-  __experimentalListView as ListView,
-} from '@wordpress/block-editor';
+import { __experimentalListView as ListView } from '@wordpress/block-editor';
 import {
   Blocks,
   FileText,
@@ -80,10 +77,9 @@ export interface PanelProps {
 }
 
 /**
- * The open rail panel, beside the canvas. Built panels (Pages, #29) get
- * their content from Studio; Elements and Layers show WordPress's block
- * library and list view until #35 and #50; the rest say which issue brings
- * them. Escape closes the panel and returns focus to its rail button.
+ * The open rail panel, beside the canvas. Built panels (Pages, Elements,
+ * Sections, History) get their content from Studio; Layers shows
+ * WordPress's list view until #50; the rest say which issue brings them. Escape closes the panel and returns focus to its rail button.
  */
 export function RailPanelView(props: PanelProps) {
   const { __ } = useI18n();
@@ -143,16 +139,6 @@ export function RailPanelView(props: PanelProps) {
       <div className={styles.panelBody}>
         {props.note}
         {panel.interim === 'built' && props.content}
-        {panel.interim === 'inserter' && (
-          <div className={`${lightScope} ${styles.wpPanel}`}>
-            <InserterLibrary
-              showInserterHelpPanel={false}
-              showMostUsedBlocks
-              shouldFocusBlock
-              onSelect={() => {}}
-            />
-          </div>
-        )}
         {panel.interim === 'list-view' && (
           <div className={`${lightScope} ${styles.wpPanel}`}>
             <ListView

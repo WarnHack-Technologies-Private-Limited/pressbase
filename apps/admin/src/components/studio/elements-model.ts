@@ -166,3 +166,26 @@ export function insertionPlace(
   if (!pageRoot || !select.canInsertBlockType(name, pageRoot)) return null;
   return { rootClientId: pageRoot, index: select.getBlockOrder(pageRoot).length, where: 'end' };
 }
+
+/* ------------------------------------------------------------- dragging */
+
+/** How close to the canvas's top or bottom edge (px) a drag starts it scrolling. */
+export const AUTO_SCROLL_EDGE = 60;
+const AUTO_SCROLL_MAX = 18;
+
+/**
+ * How many pixels a frame the canvas scrolls while something is dragged at
+ * `y` in a canvas `height` tall: nothing in the middle, up to 18 at the very
+ * edge, faster the closer the pointer gets. Negative scrolls up.
+ */
+export function autoScrollSpeed(y: number, height: number): number {
+  if (height <= AUTO_SCROLL_EDGE * 2) return 0;
+  if (y < AUTO_SCROLL_EDGE) {
+    return -Math.ceil(AUTO_SCROLL_MAX * ((AUTO_SCROLL_EDGE - Math.max(y, 0)) / AUTO_SCROLL_EDGE));
+  }
+  if (y > height - AUTO_SCROLL_EDGE) {
+    const into = Math.min(y, height) - (height - AUTO_SCROLL_EDGE);
+    return Math.ceil(AUTO_SCROLL_MAX * (into / AUTO_SCROLL_EDGE));
+  }
+  return 0;
+}

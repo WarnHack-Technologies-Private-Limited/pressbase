@@ -131,6 +131,8 @@ import {
   useSelectedPart,
 } from './regions';
 import { SectionToolbar } from './section-toolbar';
+import { CanvasDragAssist } from './canvas-drag';
+import { ElementsPanel } from './elements-panel';
 import { SectionsPanel } from './sections-panel';
 import { SwapLayoutProvider } from './swap-layout';
 import {
@@ -1089,6 +1091,14 @@ export default function Studio(props: StudioProps) {
                   if (library?.templates.some((t) => t.slug === 'front-page')) reloadCanvas();
                 }}
               />
+            ) : panel === 'elements' ? (
+              editorReady ? (
+                <ElementsPanel />
+              ) : (
+                <p className={styles.pagesEmpty} aria-busy="true">
+                  {__('Opening the page…', 'pressbase-admin')}
+                </p>
+              )
             ) : panel === 'sections' ? (
               editorReady ? (
                 <SectionsPanel
@@ -1841,6 +1851,7 @@ function StudioEditor(props: StudioEditorProps) {
                     <BlockList className="wp-site-blocks" />
                   </BlockCanvas>
                 </BlockContextProvider>
+                <CanvasDragAssist frameRef={frameRef} />
                 <SectionToolbar
                   frameRef={frameRef}
                   onAddSection={props.onAddSection}
