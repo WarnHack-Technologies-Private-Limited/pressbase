@@ -76,7 +76,7 @@ The kit lives in `apps/admin/src/components/ui/`. Use these before writing new m
 - **Focus starts on Cancel**, so a stray Enter never destroys anything.
 - The title asks the question. The body says what will happen, in one sentence.
 
-`Dialog` (same file) is for a task rather than a question, such as uploading a file: a title, any content, and a footer of actions. Escape closes it (unless `busy`); focus starts on `initialFocus` and returns where it was when it closes. It's wider than `ConfirmDialog`, and its footer buttons stack full width on phones.
+`Dialog` (same file) is for a task rather than a question, such as uploading a file: a title, any content, and a footer of actions. Escape closes it (unless `busy`); focus starts on `initialFocus` and returns where it was when it closes. It's wider than `ConfirmDialog` (`size="large"` for previews), and its footer buttons stack full width on phones.
 
 ## Menu: `ui/menu.tsx`
 
@@ -176,3 +176,6 @@ The full-screen site editor. Architecture: [Studio](../architecture/studio.md).
 - **Say “every page” before the first keystroke.** Hovering a header or footer outlines it with its label (*Header · all pages*); selecting it, or anything in it, keeps a solid outline, shows a note over the canvas (*You’re editing the Header. It’s on every page…*) and one above the block's settings. Clicking the label selects the part as a whole; its settings offer *Reset to theme* once it differs from the theme's design.
 - **Nothing moves under the pointer.** Notes about the selection float over the canvas instead of pushing it down.
 - **Same light islands as the post editor.** Our chrome follows the admin theme; WordPress's controls (the inspector's tab panels, Elements, Layers, popovers) stay light, and the canvas is the site itself.
+- **Simple first, Advanced one click away.** A segmented control at the foot of the inspector (*Simple* · *Advanced*, toggle buttons with `aria-pressed`) and one line on what the mode shows. Simple offers the site's presets only; a tab that's empty in Simple but not in Advanced says so, with *Show Advanced settings*. The choice follows the person to other browsers.
+- **Command palette.** ⌘K / Ctrl+K, or *Find* in the top bar: a modal dialog with a WAI-ARIA combobox (the input keeps focus, `aria-activedescendant` names the active option) over a listbox grouped by kind (Actions, Pages, Add a section, Panels, View and settings). ↑/↓ and Page Up/Down move between commands that can run now, Enter runs, Escape closes and focus goes back. Commands that can't run now are listed, greyed, with the reason (*Nothing to publish yet*). The active option has a bar as well as a tint. The number of matches is announced politely.
+- **History in plain words.** Each step reads as a sentence (*Changed heading text*, *Moved section up*, *Added section “Pricing”*); the current one is marked *Now*, and steps undone stay listed, muted, until a new edit replaces them. Published versions below have *Preview* (a large dialog) and *Restore*, which goes into the draft, never straight to the live site.

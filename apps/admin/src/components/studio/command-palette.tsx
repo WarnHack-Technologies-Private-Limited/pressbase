@@ -51,7 +51,7 @@ export function paletteShortcutLabel(): string {
  * Opens the palette on ⌘K / Ctrl+K anywhere in Studio's own document. Key
  * presses inside the canvas iframe don't reach this window; the editor
  * passes those on (StudioEditor, `isPaletteShortcut`). A shortcut something
- * else used first (Ctrl+K adds a link while typing in text) is left alone,
+ * else used first (Ctrl+K links the selected text while typing) is left alone,
  * as in WordPress.
  */
 export function usePaletteShortcut(open: () => void): void {
@@ -97,7 +97,14 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     [open, commands, query, groupLabels],
   );
   const flat = useMemo(() => sections.flatMap((s) => s.commands), [sections]);
-  const activeIndex = Math.min(active, Math.max(flat.length - 1, 0));
+  // The arrow keys move between commands that can run now; ones that can't are listed, greyed.
+  const enabled = useMemo(
+    () => flat.flatMap((command, i) => (command.disabled ? [] : [i])),
+    [flat],
+  );
+  const activeIndex = enabled.includes(active)
+    ? active
+    : (enabled.find((i) => i >= active) ?? enabled[0] ?? -1);
   const optionId = (index: number) => `${baseId}-option-${index}`;
 
   useEffect(() => {
@@ -128,21 +135,21 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   };
 
   const onKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
-    if (!flat.length) return;
-    const last = flat.length - 1;
+    if (!enabled.length) return;
+    const last = enabled.length - 1;
     const step = { ArrowDown: 1, ArrowUp: -1, PageDown: 5, PageUp: -5 }[event.key];
     if (step !== undefined) {
       event.preventDefault();
-      const next = activeIndex + step;
-      setActive(
+      const next = enabled.indexOf(activeIndex) + step;
+      const at =
         Math.abs(step) === 1
           ? next > last
             ? 0
             : next < 0
               ? last
               : next
-          : Math.max(0, Math.min(last, next)),
-      );
+          : Math.max(0, Math.min(last, next));
+      setActive(enabled[at] ?? 0);
     } else if (event.key === 'Enter') {
       event.preventDefault();
       run(flat[activeIndex]);
@@ -175,7 +182,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
               aria-expanded={flat.length > 0}
               aria-controls={listId}
               aria-autocomplete="list"
-              aria-activedescendant={flat.length ? optionId(activeIndex) : undefined}
+              aria-activedescendant={activeIndex >= 0 ? optionId(activeIndex) : undefined}
               aria-label={__('Search commands', 'pressbase-admin')}
               placeholder={__('Go to a page, add a section, open a panel…', 'pressbase-admin')}
               autoComplete="off"
@@ -220,7 +227,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                         aria-selected={at === activeIndex}
                         aria-disabled={command.disabled || undefined}
                         className={styles.paletteOption}
-                        onMouseMove={() => at !== activeIndex && setActive(at)}
+                        onMouseMove={() => !command.disabled && at !== activeIndex && setActive(at)}
                         onMouseDown={(event) => {
                           // Focus stays in the search field, as the combobox pattern wants.
                           event.preventDefault();
