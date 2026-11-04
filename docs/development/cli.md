@@ -172,6 +172,8 @@ Everything goes through the plugin manager, so migrations, `activate`/`deactivat
 | `ability category list` | |
 | `ai test` | sends a tiny prompt to the provider set in Settings → AI; it counts against the daily limit |
 
+The site-building abilities (`core/create-page`, `core/update-page-sections`…) write into the `--user`'s changeset, so they need `--user`; see [site abilities](../architecture/site-abilities.md).
+
 See [AI client and Abilities API](../architecture/ai.md).
 
 ### search-replace
