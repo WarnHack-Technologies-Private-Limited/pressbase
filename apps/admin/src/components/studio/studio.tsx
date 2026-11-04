@@ -67,6 +67,7 @@ import { Button } from '../ui/button';
 import { ConfirmDialog } from '../ui/dialog';
 import { useToast } from '../ui/toast';
 import { Breadcrumb } from './breadcrumb';
+import { CanvasDragAssist } from './canvas-drag';
 import {
   type CanvasBlock,
   composeCanvas,
@@ -98,6 +99,7 @@ import {
   useStudioCommands,
 } from './command-palette';
 import { EditorCommands } from './editor-commands';
+import { ElementsPanel } from './elements-panel';
 import { useEntityEdits } from './entity-edits';
 import { type CanvasValue, HistoryPanel } from './history-panel';
 import { Inspector, type PageSummary } from './inspector';
@@ -131,10 +133,7 @@ import {
   useSelectedPart,
 } from './regions';
 import { SectionToolbar } from './section-toolbar';
-import { CanvasDragAssist } from './canvas-drag';
-import { ElementsPanel } from './elements-panel';
 import { SectionsPanel } from './sections-panel';
-import { SwapLayoutProvider } from './swap-layout';
 import {
   type CanvasTarget,
   initialTarget,
@@ -148,6 +147,7 @@ import {
   templateCandidates,
 } from './site-model';
 import styles from './studio.module.css';
+import { SwapLayoutProvider } from './swap-layout';
 import { TopBar } from './top-bar';
 import { useDraft } from './use-draft';
 import { type StudioHistory, useStudioHistory } from './use-history';
@@ -1802,65 +1802,67 @@ function StudioEditor(props: StudioEditorProps) {
         }}
       >
         <SwapLayoutProvider value={swapEvents}>
-        <StudioRegionsProvider
-          value={{
-            parts: props.parts,
-            partLabel: (slug) =>
-              `${props.parts.get(slug)?.title ?? slug} · ${__('all pages', 'pressbase-admin')}`,
-          }}
-        >
-          <StudioFrame
-            chrome={props.chrome}
-            editor={editor}
-            notice={<PartNotice parts={props.parts} locked={props.partsLocked} />}
-            footer={<Breadcrumb site={props.site} page={props.summary.title} parts={props.parts} />}
-            inspector={
-              showInspector && (
-                <Inspector
-                  page={props.summary}
-                  parts={props.parts}
-                  tab={props.tab}
-                  onTab={props.onTab}
-                  canReset={canReset}
-                  onReset={(slug) => {
-                    const region = regions.current.get(partKey(slug));
-                    if (region?.theme !== undefined) replaceRegion(region.key, region.theme);
-                  }}
-                  onClose={props.narrow ? props.onCloseInspector : undefined}
-                  partsLocked={props.partsLocked}
-                  mode={props.mode}
-                  onMode={props.onMode}
-                />
-              )
-            }
+          <StudioRegionsProvider
+            value={{
+              parts: props.parts,
+              partLabel: (slug) =>
+                `${props.parts.get(slug)?.title ?? slug} · ${__('all pages', 'pressbase-admin')}`,
+            }}
           >
-            <div className={styles.canvasArea} data-device={props.device}>
-              <div
-                ref={frameRef}
-                className={styles.canvasFrame}
-                style={width ? { maxWidth: `${width}px` } : undefined}
-              >
-                <BlockContextProvider
-                  value={
-                    typeof doc.page?.id === 'number'
-                      ? { postId: doc.page.id, postType: 'page' }
-                      : {}
-                  }
+            <StudioFrame
+              chrome={props.chrome}
+              editor={editor}
+              notice={<PartNotice parts={props.parts} locked={props.partsLocked} />}
+              footer={
+                <Breadcrumb site={props.site} page={props.summary.title} parts={props.parts} />
+              }
+              inspector={
+                showInspector && (
+                  <Inspector
+                    page={props.summary}
+                    parts={props.parts}
+                    tab={props.tab}
+                    onTab={props.onTab}
+                    canReset={canReset}
+                    onReset={(slug) => {
+                      const region = regions.current.get(partKey(slug));
+                      if (region?.theme !== undefined) replaceRegion(region.key, region.theme);
+                    }}
+                    onClose={props.narrow ? props.onCloseInspector : undefined}
+                    partsLocked={props.partsLocked}
+                    mode={props.mode}
+                    onMode={props.onMode}
+                  />
+                )
+              }
+            >
+              <div className={styles.canvasArea} data-device={props.device}>
+                <div
+                  ref={frameRef}
+                  className={styles.canvasFrame}
+                  style={width ? { maxWidth: `${width}px` } : undefined}
                 >
-                  <BlockCanvas height="100%" styles={settings.styles as never}>
-                    <BlockList className="wp-site-blocks" />
-                  </BlockCanvas>
-                </BlockContextProvider>
-                <CanvasDragAssist frameRef={frameRef} />
-                <SectionToolbar
-                  frameRef={frameRef}
-                  onAddSection={props.onAddSection}
-                  onAskAi={props.onAskAi}
-                />
+                  <BlockContextProvider
+                    value={
+                      typeof doc.page?.id === 'number'
+                        ? { postId: doc.page.id, postType: 'page' }
+                        : {}
+                    }
+                  >
+                    <BlockCanvas height="100%" styles={settings.styles as never}>
+                      <BlockList className="wp-site-blocks" />
+                    </BlockCanvas>
+                  </BlockContextProvider>
+                  <CanvasDragAssist frameRef={frameRef} />
+                  <SectionToolbar
+                    frameRef={frameRef}
+                    onAddSection={props.onAddSection}
+                    onAskAi={props.onAskAi}
+                  />
+                </div>
               </div>
-            </div>
-          </StudioFrame>
-        </StudioRegionsProvider>
+            </StudioFrame>
+          </StudioRegionsProvider>
         </SwapLayoutProvider>
       </div>
       <div className={lightScope}>

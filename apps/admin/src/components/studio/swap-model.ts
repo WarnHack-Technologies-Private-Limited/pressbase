@@ -143,7 +143,10 @@ export function sectionName(markup: string): string {
  * that came with its pattern (its title, as WordPress's inserter names a
  * section, or the pattern's own block name).
  */
-export function personalName(markup: string, pattern: Pick<LayoutPattern, 'title' | 'content'>): string {
+export function personalName(
+  markup: string,
+  pattern: Pick<LayoutPattern, 'title' | 'content'>,
+): string {
   const name = sectionName(markup);
   return name && name !== pattern.title && name !== rootName(patternBlocks(pattern)) ? name : '';
 }

@@ -2,20 +2,26 @@
 
 import { store as blockEditorStore } from '@wordpress/block-editor';
 import { useSelect } from '@wordpress/data';
-import { ArrowLeftRight, LayoutPanelTop, Redo2, Undo2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { ArrowLeftRight, Blocks, LayoutPanelTop, Redo2, Undo2 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from '@/lib/i18n/context';
 import { useStudioCommands } from './command-palette';
+import { type ElementItem, groupElements } from './elements-model';
+import { useInsertElement } from './elements-panel';
 import type { Section } from './sections-model';
 import { contentRootId, loadSectionLibrary, sectionOf, useAddSection } from './sections-panel';
 import { useSwapLayout } from './swap-layout';
+
+const NO_ITEMS: ElementItem[] = [];
 
 /**
  * The palette's commands that need the canvas (#33), registered from inside
  * the block editor: undo and redo, and *Add section: …* for every section
  * in the library (listed once the person types; added after the selected
  * section, or last, as a click in the Sections panel does), and Swap
- * layout for the selected section (#45): next, previous, or a layout by name.
+ * layout for the selected section (#45): next, previous, or a layout by name;
+ * and *Add block: …* for every block in the Elements panel (#35), put where
+ * a click on its tile puts it.
  */
 export function EditorCommands({
   canUndo,
@@ -49,6 +55,24 @@ export function EditorCommands({
   const swapRef = useRef(swap);
   swapRef.current = swap;
   const layouts = swap.layouts;
+  const insertElement = useInsertElement();
+  const insertRef = useRef(insertElement);
+  insertRef.current = insertElement;
+  const elementItems = useSelect((select) => {
+    const store = select(blockEditorStore) as unknown as Parameters<typeof contentRootId>[0] & {
+      getInserterItems: (root?: string | null) => ElementItem[];
+    };
+    const root = contentRootId(store);
+    return root ? store.getInserterItems(root) : NO_ITEMS;
+  }, []);
+  // The inserter's list is rebuilt on every edit; the commands change only with the blocks in it.
+  const itemsRef = useRef(elementItems);
+  itemsRef.current = elementItems;
+  const itemsKey = elementItems.map((item) => `${item.id}${item.isDisabled ? '!' : ''}`).join(',');
+  const elements = useMemo(
+    () => groupElements(itemsRef.current).flatMap((group) => group.items),
+    [itemsKey],
+  );
 
   useEffect(() => {
     let live = true;
@@ -114,6 +138,18 @@ export function EditorCommands({
               run: () => swapRef.current.swap(layout.name),
             }))
         : []),
+      ...elements.map((item) => ({
+        id: `pressbase/add-block/${item.id}`,
+        label: sprintf(__('Add block: %s', 'pressbase-admin'), item.title),
+        group: 'blocks',
+        keywords: [item.description ?? '', ...(item.keywords ?? [])],
+        icon: <Blocks size={16} />,
+        disabled: Boolean(item.isDisabled),
+        searchOnly: true,
+        run: () => {
+          insertRef.current?.(item);
+        },
+      })),
       ...(canAdd
         ? sections.map((section) => ({
             id: `pressbase/add-section/${section.name}`,
@@ -132,7 +168,7 @@ export function EditorCommands({
           }))
         : []),
     ],
-    [canUndo, canRedo, canAdd, sections, layouts, selectedSection, __, sprintf],
+    [canUndo, canRedo, canAdd, sections, layouts, selectedSection, elements, __, sprintf],
   );
   return null;
 }

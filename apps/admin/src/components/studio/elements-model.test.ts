@@ -78,7 +78,10 @@ describe('groupElements', () => {
   });
 
   it('uses translated group names, for labels and search', () => {
-    const groups = groupElements(ITEMS, { search: 'erweiterungen', labels: { plugins: 'Erweiterungen' } });
+    const groups = groupElements(ITEMS, {
+      search: 'erweiterungen',
+      labels: { plugins: 'Erweiterungen' },
+    });
     expect(groups).toHaveLength(1);
     expect(groups[0]?.label).toBe('Erweiterungen');
   });

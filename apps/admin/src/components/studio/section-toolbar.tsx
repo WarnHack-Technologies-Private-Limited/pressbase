@@ -53,8 +53,7 @@ const HIDE_DELAY = 400;
 function neighbour(element: Element, side: 'previous' | 'next'): Element | null {
   let current: Element | null = element;
   while (current && current.tagName !== 'BODY') {
-    let sibling =
-      side === 'previous' ? current.previousElementSibling : current.nextElementSibling;
+    let sibling = side === 'previous' ? current.previousElementSibling : current.nextElementSibling;
     // Skip what takes no room (hidden blocks, the block editor's own markers).
     while (sibling && sibling.getBoundingClientRect().height === 0) {
       sibling = side === 'previous' ? sibling.previousElementSibling : sibling.nextElementSibling;
@@ -64,7 +63,6 @@ function neighbour(element: Element, side: 'previous' | 'next'): Element | null 
   }
   return null;
 }
-
 
 /**
  * Over the canvas (#44): the outline of the section under the pointer (or
@@ -248,8 +246,7 @@ export function SectionToolbar({
 
   if (!active || !box || !root || index < 0) return null;
 
-  const label =
-    metadataName || swap.label || info?.title || __('Section', 'pressbase-admin');
+  const label = metadataName || swap.label || info?.title || __('Section', 'pressbase-admin');
   const { view } = box;
   const viewBottom = view.top + view.height;
   // The toolbar sits inside the section's top right corner, kept in view while the section is.

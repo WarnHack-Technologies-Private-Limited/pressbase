@@ -79,7 +79,9 @@ describe('shapeOf', () => {
   it('counts runs of alike blocks once, and ignores text and attributes', () => {
     const three = sectionSlotsShape(CARDS(3).content);
     expect(three).toBe(sectionSlotsShape(CARDS(4).content));
-    expect(three).toBe('core/group(core/heading2,core/columns(core/column(core/heading3,core/paragraph)))');
+    expect(three).toBe(
+      'core/group(core/heading2,core/columns(core/column(core/heading3,core/paragraph)))',
+    );
     expect(sectionSlotsShape(HERO.content)).not.toBe(sectionSlotsShape(CENTRED.content));
   });
 });
@@ -90,7 +92,10 @@ function sectionSlotsShape(markup: string) {
 
 describe('sectionLayouts', () => {
   it('finds a section’s pattern by name, and the others of its category in library order', () => {
-    const markup = group([heading('Fresh bread')], '{"metadata":{"patternName":"pressbase/hero-centered"}}');
+    const markup = group(
+      [heading('Fresh bread')],
+      '{"metadata":{"patternName":"pressbase/hero-centered"}}',
+    );
     const found = sectionLayouts(markup, LIBRARY);
     expect(found?.current.name).toBe('pressbase/hero-centered');
     // Single-block patterns of the category only: not "two", not "about".
@@ -118,10 +123,7 @@ describe('sectionLayouts', () => {
   });
 
   it('falls back to the shape when the named pattern is gone', () => {
-    const markup = group(
-      [heading('Just this')],
-      '{"metadata":{"patternName":"theme/removed"}}',
-    );
+    const markup = group([heading('Just this')], '{"metadata":{"patternName":"theme/removed"}}');
     expect(sectionLayouts(markup, LIBRARY)?.current.name).toBe('pressbase/simple');
   });
 });
@@ -148,7 +150,12 @@ describe('swapLayout', () => {
   it('there and back gives the same text', () => {
     const there = swapLayout(sectionSlots(section, HERO), CENTRED);
     const back = swapLayout(sectionSlots(there.markup, CENTRED), HERO);
-    for (const text of ['Fresh bread, every morning', 'baked in the night', 'See the menu', 'Find us']) {
+    for (const text of [
+      'Fresh bread, every morning',
+      'baked in the night',
+      'See the menu',
+      'Find us',
+    ]) {
       expect(back.markup).toContain(text);
     }
   });
@@ -184,7 +191,8 @@ describe('swapLayout', () => {
   });
 
   it('tells a name the person gave from one that came with the pattern', () => {
-    const named = (name: string) => group([heading('Fresh bread')], `{"metadata":{"name":"${name}"}}`);
+    const named = (name: string) =>
+      group([heading('Fresh bread')], `{"metadata":{"name":"${name}"}}`);
     const withOwnName = pattern('own', group([heading('Hi')], '{"metadata":{"name":"Hero"}}'));
     expect(personalName(named('Welcome'), withOwnName)).toBe('Welcome');
     expect(personalName(named('Hero'), withOwnName)).toBe('');

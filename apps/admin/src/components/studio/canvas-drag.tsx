@@ -23,22 +23,20 @@ export const DROP_TARGET_ATTRIBUTE = 'data-studio-drop-target';
  */
 export function CanvasDragAssist({ frameRef }: { frameRef: RefObject<HTMLDivElement | null> }) {
   const pageRoot = useSelect(
-    (select) => contentRootId(select(blockEditorStore) as unknown as Parameters<typeof contentRootId>[0]),
+    (select) =>
+      contentRootId(select(blockEditorStore) as unknown as Parameters<typeof contentRootId>[0]),
     [],
   );
   const [doc, setDoc] = useState<Document | null>(null);
   const [dragging, setDragging] = useState(false);
-  const target = useSelect(
-    (select) => {
-      const s = select(blockEditorStore) as unknown as Selectors;
-      if (!s.isBlockInsertionPointVisible()) return null;
-      const point = s.getBlockInsertionPoint();
-      return point.operation === 'insert' || point.operation === undefined
-        ? (point.rootClientId ?? null)
-        : null;
-    },
-    [],
-  );
+  const target = useSelect((select) => {
+    const s = select(blockEditorStore) as unknown as Selectors;
+    if (!s.isBlockInsertionPointVisible()) return null;
+    const point = s.getBlockInsertionPoint();
+    return point.operation === 'insert' || point.operation === undefined
+      ? (point.rootClientId ?? null)
+      : null;
+  }, []);
 
   // The canvas document, once the editor has put the iframe in the frame.
   useEffect(() => {

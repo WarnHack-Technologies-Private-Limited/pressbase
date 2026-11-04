@@ -50,7 +50,9 @@ const CATEGORY_GROUPS: Record<string, ElementGroupId> = {
  * `core/`) under Plugins, core blocks by their category. Saved patterns
  * (`core/block`) are in the Sections panel instead.
  */
-export function elementGroupOf(item: Pick<ElementItem, 'name' | 'category'>): ElementGroupId | null {
+export function elementGroupOf(
+  item: Pick<ElementItem, 'name' | 'category'>,
+): ElementGroupId | null {
   if (item.name === 'core/block' || item.category === 'reusable') return null;
   if (!item.name.startsWith('core/')) return 'plugins';
   return CATEGORY_GROUPS[item.category ?? ''] ?? 'site';
@@ -88,7 +90,10 @@ export interface ElementGroup {
  */
 export function groupElements(
   items: readonly ElementItem[],
-  { search = '', labels = {} }: { search?: string; labels?: Partial<Record<ElementGroupId, string>> } = {},
+  {
+    search = '',
+    labels = {},
+  }: { search?: string; labels?: Partial<Record<ElementGroupId, string>> } = {},
 ): ElementGroup[] {
   const groups = new Map<ElementGroupId, ElementItem[]>();
   const searching = search.trim() !== '';

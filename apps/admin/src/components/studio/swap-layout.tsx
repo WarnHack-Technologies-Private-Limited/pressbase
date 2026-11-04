@@ -1,9 +1,9 @@
 'use client';
 
+import type { UnusedValue } from '@pressbase/slots';
 import { store as blockEditorStore } from '@wordpress/block-editor';
 import { type Block as BlockInstance, parse, serialize } from '@wordpress/blocks';
 import { useDispatch, useRegistry, useSelect } from '@wordpress/data';
-import type { UnusedValue } from '@pressbase/slots';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   createContext,
@@ -19,10 +19,10 @@ import type { Section } from './sections-model';
 import { loadSectionLibrary, sectionLabel } from './sections-panel';
 import styles from './studio.module.css';
 import {
+  personalName,
   type SectionLayouts,
   type SwapMemory,
   sectionLayouts,
-  personalName,
   sectionName,
   swapLayout,
   swapSource,
@@ -60,7 +60,13 @@ export interface SwapEvents {
 
 const SwapContext = createContext<SwapEvents | null>(null);
 
-export function SwapLayoutProvider({ value, children }: { value: SwapEvents; children: ReactNode }) {
+export function SwapLayoutProvider({
+  value,
+  children,
+}: {
+  value: SwapEvents;
+  children: ReactNode;
+}) {
   return <SwapContext.Provider value={value}>{children}</SwapContext.Provider>;
 }
 
@@ -119,7 +125,8 @@ export function useSwapLayout(clientId: string | null): SwapState {
   };
   const library = useLibrary();
   const block = useSelect(
-    (select) => (clientId ? (select(blockEditorStore) as unknown as Selectors).getBlock(clientId) : null),
+    (select) =>
+      clientId ? (select(blockEditorStore) as unknown as Selectors).getBlock(clientId) : null,
     [clientId],
   );
   const markup = useMemo(() => (block ? serialize([block]) : ''), [block]);
@@ -127,7 +134,11 @@ export function useSwapLayout(clientId: string | null): SwapState {
     () => (library && markup ? sectionLayouts(markup, library) : null),
     [library, markup],
   );
-  useSyncExternalStore(subscribe, () => version, () => 0);
+  useSyncExternalStore(
+    subscribe,
+    () => version,
+    () => 0,
+  );
   const memory = clientId ? memories.get(clientId) : undefined;
   const nameInLayers = markup ? sectionName(markup) : '';
   const label =

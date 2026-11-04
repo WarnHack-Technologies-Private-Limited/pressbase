@@ -160,10 +160,16 @@ export function ElementsPanel({ onInserted }: { onInserted?: (title: string) => 
         </p>
       )}
       {groups.length === 0 && (
-        <p className={styles.pagesEmpty}>{__('No blocks match. Try another word.', 'pressbase-admin')}</p>
+        <p className={styles.pagesEmpty}>
+          {__('No blocks match. Try another word.', 'pressbase-admin')}
+        </p>
       )}
       {groups.map((group) => (
-        <section key={group.id} className={styles.sectionGroup} aria-labelledby={`${searchId}-${group.id}`}>
+        <section
+          key={group.id}
+          className={styles.sectionGroup}
+          aria-labelledby={`${searchId}-${group.id}`}
+        >
           <h3 id={`${searchId}-${group.id}`} className={styles.sectionGroupTitle}>
             {group.label}
           </h3>
