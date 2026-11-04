@@ -198,9 +198,9 @@ describe('naming a step', () => {
     const title = b('core/heading', { content: 'Menu' }, [], 'title');
     const intro = b('core/paragraph', { content: 'Croissants.' }, [], 'intro');
     const page = canvas([title, intro]);
-    expect(label(page, canvas([{ ...title, attributes: { content: 'Today’s menu' } }, intro]))).toBe(
-      'Changed heading text',
-    );
+    expect(
+      label(page, canvas([{ ...title, attributes: { content: 'Today’s menu' } }, intro])),
+    ).toBe('Changed heading text');
     expect(label(page, canvas([intro, title]), 'title')).toBe('Moved section down');
   });
 

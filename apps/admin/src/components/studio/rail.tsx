@@ -110,7 +110,9 @@ export function RailPanelView(props: PanelProps) {
     requestAnimationFrame(() => toggle?.focus());
   };
   const onKeyDown = (event: ReactKeyboardEvent) => {
-    if (event.key === 'Escape' && !event.defaultPrevented) {
+    // A dialog opened from the panel (History's previews) closes on its own.
+    const inDialog = (event.target as Element | null)?.closest?.('dialog');
+    if (event.key === 'Escape' && !event.defaultPrevented && !inDialog) {
       event.stopPropagation();
       close();
     }
