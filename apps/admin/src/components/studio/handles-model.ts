@@ -142,10 +142,12 @@ export function stepSpacing(
     if (step === 'min') return ZERO;
     if (step === 'max') return points[points.length - 1] as SpacingValue;
     // Half a pixel either way counts as being on a preset.
+    // Presets the same size here (a clamp() at its minimum on a phone): the first of them.
+    const below = [...points].reverse().find((p) => p.px < px - 0.5);
     const next =
       step === 1
         ? points.find((p) => p.px > px + 0.5)
-        : [...points].reverse().find((p) => p.px < px - 0.5);
+        : below && points.find((p) => p.px === below.px);
     return next ?? (step === 1 ? (points[points.length - 1] as SpacingValue) : ZERO);
   }
   if (step === 'min') return ZERO;

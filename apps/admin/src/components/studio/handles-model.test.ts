@@ -71,6 +71,14 @@ describe('arrow keys on a spacing handle', () => {
     expect(stepSpacing(20, 'min', 'simple', presets).value).toBe('0');
   });
 
+  it('takes the first of presets the same size here (a clamp() at its minimum on a phone)', () => {
+    const phone = [...presets, { slug: '55', name: 'Regular', px: 24 }];
+    expect(stepSpacing(40, -1, 'simple', phone).preset?.name).toBe('Medium');
+    expect(snapSpacing(25, 'simple', phone).preset?.name).toBe('Medium');
+    // Up from there: past both.
+    expect(stepSpacing(24, 1, 'simple', phone).preset?.name).toBe('Large');
+  });
+
   it('moves a pixel, or ten with Shift, in Advanced', () => {
     expect(stepSpacing(24, 1, 'advanced', presets).value).toBe('25px');
     expect(stepSpacing(24, -1, 'advanced', presets, true).value).toBe('14px');
