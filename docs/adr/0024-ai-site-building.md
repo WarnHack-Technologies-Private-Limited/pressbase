@@ -1,6 +1,6 @@
 # 0024: AI site building: pipeline, slots, operations, honest content
 
-- **Status:** Proposed. Slots (v0.8, #38 and #39), the design generator (#54), the quality checks (#55), the site-building abilities (#56) and the pipeline with its honest-content rules (#59) are accepted and built; the operations the admin applies and the publish confirmation are pending and will be added to this record before it is accepted.
+- **Status:** Proposed. Slots (v0.8, #38 and #39), the design generator (#54), the quality checks (#55), the site-building abilities (#56) the pipeline with its honest-content rules (#59), and the edit operations Studio applies with Keep and Undo (#57, #62) are accepted and built; the publish confirmation is pending and will be added to this record before it is accepted.
 - **Date:** 2026-11-03
 
 ## Context
@@ -70,9 +70,16 @@ WordPress has related pieces but not this one. Pattern overrides (6.5) let a syn
 - **Enforced in code after every answer**, not just asked for: fact slots (declared, and the items and citations of sections about facts: testimonials, team, pricing, statistics, contact, hours) keep only values found in the facts; any other slot keeps its copy unless it gives a number, an email or a web address the facts don't have; `tel:`, `mailto:` and outside links must be in the facts. Otherwise the slot gets its placeholder (or the link `#`), and the run lists what it replaced.
 - **The person's words are labelled data**: separate prompt parts in tags, JSON-encoded so they can't close the tag, with a system instruction never to follow instructions in them.
 
+### Operations (accepted)
+
+- **Ten operations, one shared package**: `insertSection`, `replaceSection`, `moveSection`, `removeSection`, `updateSlots`, `updateBlockAttributes` (presets only), `setGlobalStyles`, `updateTemplatePart`, `createPage`, `updateMenu`. Their types, JSON Schema and the checks that need only the set (shapes, presets only, safe links) are `@pressbase/site-edits`, used by core and the admin, so both refuse the same things with the same words. See [AI edits](../architecture/ai-edits.md).
+- **A model proposes; core checks; Studio applies.** In Studio's AI panel (#62) the model reads through the site-building abilities and hands over a set by calling `core/propose-site-edits`, which checks it against the site as the person's changeset has it and **writes nothing**; an error names the operation, and the model may try again within the request's rounds. Core resolves what only it can make: the styles a design direction gives (the changeset entry, returned with the set).
+- **Applied in the editor, as one step.** Studio plans the set against the canvas and the draft (pure, unit-tested per operation), refuses it whole if any operation doesn't fit, then puts the open page's and the header's and footer's new blocks on the canvas as **one undo step** named after the set, other and new pages and the styles into the draft, and the menu through core-data as the Navigation block edits it. Changed blocks are highlighted; **Keep** or **Undo** acts on the whole set. Nothing is written but the draft, saved as for any edit; nothing publishes.
+- **Rendered as core renders**: Studio fills patterns with the same slots functions (`text` format for anything from a model), so what the person sees is what core checked.
+- **A conversation per changeset**, kept in its meta (the last 40 messages, 12 sent as history, with what was kept or undone), streamed as Server-Sent Events from `POST /pressbase/v1/studio/ai/messages`. Requests that can't be done get a plain answer and no changes; the daily cap is said as such.
+
 ### Pending
 
-- **Operations in the admin**: the edit set the AI panel applies through the editor's stores, with Keep and Undo (#57). The abilities already take the page operations in core; `updateBlockAttributes` and `updateMenu` aren't abilities yet.
 - **The publish confirmation** for placeholders left (#61).
 - **Custom sections** (v2): model-written markup, parsed, checked and sanitised.
 
@@ -93,12 +100,16 @@ WordPress has related pieces but not this one. Pattern overrides (6.5) let a syn
 - Changesets now create menus and take slugs for post-ID options; anything reading those options from a changeset entry must expect a slug.
 
 - The abilities write whole entries: an AI edit and a person's edit to the same page in Studio meet in one changeset entry, and the last save wins, as for two people in Studio.
+- The AI panel's edits avoid that: Studio saves the canvas before asking and applies the set to the canvas itself, so the person's latest edits and the AI's meet in one place. Undo after later edits to the same region takes those edits too (one undo away).
+- Style changes from AI show on the canvas only once Studio's Styles panel draws the draft's styles (#46); until then, in Preview.
 - A section's pattern is known only when its block names it (`metadata.patternName`); sections pasted or built by hand are read through inferred slots.
 
 ## Alternatives considered
 
 - **Abilities that publish, or write the live site**: simpler for agents, but a model's mistake would reach visitors; a changeset makes every AI change reviewable and undoable as a whole.
 - **Raw `styles` and `settings` passed through**: the model would write hex values and CSS, which the design generator exists to avoid.
+- **The AI panel writing through the write abilities** (core applies, Studio reloads): simpler, but the change wouldn't be an undo step on the canvas, couldn't be highlighted, and would race the person's unsaved edits. Core checks; the editor applies.
+- **Core returning rendered markup with each operation**: Studio would apply exactly what core rendered, but the canvas may have moved on since (an edit not yet saved), and a set made elsewhere (a command, #63) would need a round trip. Studio renders with the same slots functions instead.
 
 - **Pattern overrides only** (WordPress's bindings): needs every pattern prepared by hand and covers no repeated groups or item counts.
 - **Templates with placeholders** (`{{title}}` in markup): invalid blocks until filled, and no theme pattern has them.

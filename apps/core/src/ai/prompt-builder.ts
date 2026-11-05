@@ -2,7 +2,11 @@ import { type JsonSchema, validateJsonSchema } from '../abilities/json-schema';
 import type { Ability } from '../abilities/registry';
 import type { CurrentUser } from '../auth/users';
 import type { AiClient } from './client';
-import { AbilityFunctionResolver, abilityFunctionDeclaration } from './function-resolver';
+import {
+  AbilityFunctionResolver,
+  abilityFunctionDeclaration,
+  functionNameToAbilityName,
+} from './function-resolver';
 import { createHtmlStripper, stripHtml, stripHtmlDeep } from './security';
 import {
   AI_IMAGE_MIME_TYPES,
@@ -25,6 +29,13 @@ const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 export interface AiTextStream extends AsyncIterable<string> {
   readonly result: Promise<AiResult>;
 }
+
+/** An ability a model called, its arguments, and what it was answered (the result, or `{ error, code }`). */
+export type AbilityCallObserver = (call: {
+  ability: string;
+  args: Record<string, unknown>;
+  response: unknown;
+}) => void;
 
 /**
  * The fluent prompt builder `kernel.ai.prompt()` returns: a port of
@@ -56,6 +67,7 @@ export class AiPromptBuilder {
   #outputSchema: JsonSchema | undefined;
   #abilities: Ability[] = [];
   #maxRounds = 5;
+  #onAbilityCall: AbilityCallObserver | null = null;
   #timeoutMs: number | undefined;
   #tier: AiModelTier = 'default';
   #user: CurrentUser | null = null;
@@ -202,6 +214,35 @@ export class AiPromptBuilder {
   }
 
   /**
+   * Hears each ability call the model makes, with its result (or the
+   * `{ error, code }` the model was sent), once it has run. Studio's AI
+   * panel uses it to collect the edits a model proposes.
+   */
+  onAbilityCall(observer: AbilityCallObserver): this {
+    this.#onAbilityCall = observer;
+    return this;
+  }
+
+  /** Runs a round's ability calls, telling the observer about each. */
+  async #answer(resolver: AbilityFunctionResolver, message: AiMessage): Promise<AiMessage> {
+    const answer = await resolver.executeAbilities(message);
+    const observer = this.#onAbilityCall;
+    if (observer) {
+      for (const part of answer.parts) {
+        if (part.type !== 'function_response') continue;
+        const call = message.parts.find((p) => p.type === 'function_call' && p.id === part.id);
+        if (call?.type !== 'function_call') continue;
+        observer({
+          ability: functionNameToAbilityName(call.name),
+          args: call.args ?? {},
+          response: part.response,
+        });
+      }
+    }
+    return answer;
+  }
+
+  /**
    * The person the prompt runs for: recorded in the usage log, and the user
    * abilities check permissions for. Without one, abilities that check a
    * capability refuse.
@@ -306,7 +347,7 @@ export class AiPromptBuilder {
       if (!resolver?.hasAbilityCalls(result.message) || round + 1 >= this.#maxRounds) {
         return { ...result, tokenUsage: usage };
       }
-      messages.push(result.message, await resolver.executeAbilities(result.message));
+      messages.push(result.message, await this.#answer(resolver, result.message));
     }
   }
 
@@ -356,7 +397,7 @@ export class AiPromptBuilder {
             settle?.resolve({ ...final, tokenUsage: usage });
             return;
           }
-          messages.push(final.message, await resolver.executeAbilities(final.message));
+          messages.push(final.message, await builder.#answer(resolver, final.message));
         }
       } catch (error) {
         settle?.reject(error);

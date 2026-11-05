@@ -67,6 +67,7 @@ describe('site-building abilities', () => {
       'core/update-page-sections',
       'core/update-global-styles',
       'core/update-template-part',
+      'core/propose-site-edits',
     ]) {
       expect(names).toContain(name);
     }

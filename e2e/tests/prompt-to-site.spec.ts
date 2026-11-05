@@ -52,11 +52,11 @@ test('builds a site from a description, then publishes it from Studio', async ({
   const panel = page.locator('#studio-panel');
   await expect(panel.getByRole('link', { name: 'Turn on AI in Settings → AI' })).toBeVisible();
 
-  // With AI on, it offers to build the site.
+  // With AI on, it offers to build a new site, below the conversation (#62).
   await setAi(page, true);
   await page.reload();
   await page.getByRole('button', { name: 'AI', exact: true }).click();
-  await panel.getByRole('link', { name: 'Build my site' }).click();
+  await panel.getByRole('link', { name: 'Build a new site' }).click();
   await expect(page).toHaveURL(/\/admin\/studio\/build$/);
 
   // 1. Describe: the description is needed.

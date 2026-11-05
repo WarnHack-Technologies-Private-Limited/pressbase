@@ -176,10 +176,7 @@ export const RAIL_PANELS: readonly RailPanel[] = [
     label: msgid('AI'),
     summary: msgid('Ask for changes in your own words'),
     issue: 62,
-    interim: 'none',
-    coming: msgid(
-      'Asking for changes in your own words arrives with #62, with keep or undo for each one.',
-    ),
+    interim: 'built',
   },
   {
     id: 'history',

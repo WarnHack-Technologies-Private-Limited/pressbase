@@ -8,6 +8,7 @@ import {
   RADII,
   toGlobalStyles,
 } from '@pressbase/design';
+import { presetProblem } from '@pressbase/site-edits';
 import { type GlobalStylesConfig, mergeGlobalStylesConfigs } from '@pressbase/theme-json';
 import { AbilityError } from '../abilities/registry';
 import type { ChangesetData } from '../changesets/service';
@@ -207,41 +208,25 @@ export const DESIGN_SYSTEM_SCHEMA = {
 
 /* ---------------------------------------------------------------- writing */
 
-/** Colours, CSS and URLs a model must not write: only preset references and keywords. */
-const RAW_VALUE =
-  /#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color|url|expression)\s*\(|[{};<>]/i;
-
 /**
  * Checks a styles change: no `css` (Additional CSS is never written by AI
  * in v1), and no raw colours, URLs or CSS in values: preset references
- * (`var:preset|color|accent`), sizes and keywords only.
+ * (`var:preset|color|accent`), sizes and keywords only. The check is
+ * @pressbase/site-edits' presetProblem(), which the admin shares.
  */
 export function assertPresetStyles(value: unknown, path = 'styles'): void {
-  if (Array.isArray(value)) {
-    for (const [i, item] of value.entries()) assertPresetStyles(item, `${path}[${i}]`);
-    return;
-  }
-  if (isObject(value)) {
-    for (const [key, inner] of Object.entries(value)) {
-      if (key === 'css') {
-        throw new AbilityError(
-          'ability_invalid_input',
-          `${path}[css]: custom CSS can’t be written here. Use presets.`,
-          400,
-        );
-      }
-      assertPresetStyles(inner, `${path}[${key}]`);
-    }
-    return;
-  }
-  if (typeof value === 'string' && RAW_VALUE.test(value)) {
+  const problem = presetProblem(value, path);
+  if (problem) {
     throw new AbilityError(
       'ability_invalid_input',
-      `${path}: “${value}” isn’t a preset. Use a preset reference such as var:preset|color|accent (see core/get-design-system).`,
+      `${inputPath(problem.path)}: ${problem.message.replace('such as var:preset|color|accent.', 'such as var:preset|color|accent (see core/get-design-system).')}`,
       400,
     );
   }
 }
+
+/** `input.styles.color` → `input[styles][color]`, as abilities name paths. */
+const inputPath = (path: string) => path.replace(/\.([^.[\]]+)/g, '[$1]');
 
 /** Merges a change into styles: objects merge, `null` removes a key, anything else replaces. */
 export function patchStyles(base: unknown, patch: Json): Json {

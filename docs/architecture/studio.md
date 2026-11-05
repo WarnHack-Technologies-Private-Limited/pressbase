@@ -2,7 +2,7 @@
 
 Studio is Pressbase's site editor: a full-screen screen at `/admin/studio` where a site owner edits their pages in the real theme, header and footer included. It does what WordPress's *Appearance → Editor* does, with the direct feel the [plan](../plans/visual-site-builder.md#the-screen) describes. The decision to build our own editor around `@wordpress/block-editor`, rather than use `@wordpress/edit-site`, is in [ADR 0021](../adr/0021-site-editor-and-templates-storage.md#studio-shell).
 
-This page covers the shell (#28), saving through the user's draft (#31), the header and footer in place (#30), the Pages panel (#29), the Elements panel (#35), the Sections panel and section toolbar (#44), Swap layout (#45), Simple and Advanced modes (#32), the command palette (#33), the History panel (#34), and where the rest of v0.8 plugs in.
+This page covers the shell (#28), saving through the user's draft (#31), the header and footer in place (#30), the Pages panel (#29), the Elements panel (#35), the Sections panel and section toolbar (#44), Swap layout (#45), Simple and Advanced modes (#32), the command palette (#33), the History panel (#34), the AI panel and AI edits (#62, #57, in [AI edits](ai-edits.md)), and where the rest of v0.8 plugs in.
 
 ![Studio, editing the home page](../assets/screenshots/studio-light.png)
 
@@ -21,7 +21,7 @@ This page covers the shell (#28), saving through the user's draft (#31), the hea
 
 ```
 ┌ TopBar ───────────────────────────────────────────────────────────────────────┐
-│ ← Dashboard  [Home ▾]  [▭ ▯ ▯]  ↶ ↷  ⌕ Find ⌘K  ✦ Ask AI (soon)  ✓ Draft saved  Preview  [Publish 2] │
+│ ← Dashboard  [Home ▾]  [▭ ▯ ▯]  ↶ ↷  ⌕ Find ⌘K  ✦ Ask AI  ✓ Draft saved  Preview  [Publish 2] │
 ├ Rail ┬ Panel ─────────┬ Canvas (iframe) ─────────────────────┬ Inspector ──────┤
 │Pages │ Pages          │  ┌ Header · all pages ────────────┐   │ Heading 3       │
 │Elem. │ Home     Home  │  └────────────────────────────────┘   │ Content Style   │
@@ -36,7 +36,7 @@ This page covers the shell (#28), saving through the user's draft (#31), the hea
 
 | Part | Component | What it does now | Built out by |
 | --- | --- | --- | --- |
-| Top bar | `top-bar.tsx`, `publish-panel.tsx` | Back to the dashboard; the page picker (a native `<select>` of the page tree, plus *Home (latest posts)* when there's no static front page); Desktop / Tablet / Mobile (canvas widths 100%, 768px, 390px); undo and redo; *Find* (the [command palette](#command-palette), #33); *Ask AI* (marked *Coming soon*, explains itself on click); whether the draft is saved; Preview; *Publish N* with the list of changes and *Discard all* | #63 (Ask AI), #49 (per-device styles) |
+| Top bar | `top-bar.tsx`, `publish-panel.tsx` | Back to the dashboard; the page picker (a native `<select>` of the page tree, plus *Home (latest posts)* when there's no static front page); Desktop / Tablet / Mobile (canvas widths 100%, 768px, 390px); undo and redo; *Find* (the [command palette](#command-palette), #33); *Ask AI* (opens the [AI panel](ai-edits.md#the-ai-panel), #62); whether the draft is saved; Preview; *Publish N* with the list of changes and *Discard all* | #63 (Ask AI), #49 (per-device styles) |
 | Left rail | `rail.tsx` | Eight panels; the open one sits beside the canvas (over it on narrow screens). Escape closes it and returns focus to its button | see below |
 | Canvas | `studio.tsx`, `regions.tsx` | The page in its template, in the active theme; the header and footer editable in place | #35–#37 |
 | Breadcrumb | `breadcrumb.tsx` | Site › Page › Section › Block for the selection; each step selects that level | — |
@@ -54,7 +54,7 @@ Listed in `RAIL_PANELS` (`layout-model.ts`). A built panel (`interim: 'built'`) 
 | Layers | WordPress's list view | #50: rename, hide per device, drag to nest |
 | Styles | Built (#46, #47): the site's design system, each block's styles, Additional CSS and the style book. See [The Styles panel](#the-styles-panel) | — |
 | Media | A note | #58 |
-| AI | A note, and *Build my site* ([the guided flow](site-builder.md#the-guided-flow), #60), or where to turn AI on | #62 |
+| AI | Built (#62): ask for changes in your own words; each set goes on the page highlighted, with Keep and Undo; *Build a new site* ([the guided flow](site-builder.md#the-guided-flow), #60). With AI off, where to turn it on. See [AI edits](ai-edits.md) | — |
 | History | Built (#34): this session's steps, then the published versions. See [History](#history) | — |
 
 ### Inspector tabs
@@ -219,7 +219,7 @@ Someone who can edit pages but not the site's design (`edit_pages` without `edit
 | ↑ / ↓ | Move the section up or down (`moveBlocksUp/Down`); disabled at the top or bottom |
 | ⧉ | Duplicate it |
 | ‹ 2/5 › | [Swap layout](#swap-layout): the previous or next layout of its kind (shown when it has others) |
-| ✦ | Ask AI: disabled until #63, and says so |
+| ✦ | Ask AI about the section: disabled until #63, and says so (the AI panel takes requests about any section now) |
 | ⋯ | Select section, Add a section above / below, Remove section |
 
 *＋ Add section* buttons sit above and below the section and open the Sections panel at that place. They never cover the page (`addButtonPlace()` in `sections-model.ts`): the pill sits in the gap beside the section (at most 20px from its edge) when it fits there; a narrower gap gets a round ＋; where sections touch, the round ＋ sits at the left end of the edge, outside the outline. Both are in the tab order, after the toolbar, with the full name (*Add a section below Breads*). Everything here is also in WordPress's block toolbar and Layers.
@@ -315,10 +315,11 @@ Principle 3 of the [plan](../plans/visual-site-builder.md#principles): beginners
 | Actions (#45) | *Swap layout: next* and *previous* for the selected section (disabled, saying why, when no section with other layouts is selected); *Swap layout to: {layout}* once you type |
 | Add a section | *Add section: {name}* for every section in the library, listed once you type; added after the selected section, or last, as one undo step |
 | Add a block (#35) | *Add block: {name}* for every block in the Elements panel, listed once you type; added where a click on its tile puts it |
+| AI (#62) | Ask AI for a change (opens the AI panel, in its box), Keep and Undo the changes from AI (when a set waits), Start a new conversation with AI |
 | Panels | *Open the {name} panel* for each rail panel |
 | View and settings | Switch to Simple or Advanced settings; switch to Desktop, Tablet or Mobile view |
 
-**The registry.** `commands-model.ts` holds `CommandRegistry` and Studio's instance, `studioCommands`. A command is `{ id, label, group, keywords?, hint?, icon?, disabled?, searchOnly?, run }`; `register()` takes one or a list and returns a function that removes them (registering an id again replaces it). In React, `useStudioCommands(build, deps)` (`command-palette.tsx`) registers while the component is mounted. Studio registers its own in `studio.tsx`; the ones that need the canvas (undo, redo, sections) come from `EditorCommands` (`editor-commands.tsx`) inside the block editor. Groups other than the six above are listed last, under *More*. AI commands (#62) and, later, plugins add theirs the same way.
+**The registry.** `commands-model.ts` holds `CommandRegistry` and Studio's instance, `studioCommands`. A command is `{ id, label, group, keywords?, hint?, icon?, disabled?, searchOnly?, run }`; `register()` takes one or a list and returns a function that removes them (registering an id again replaces it). In React, `useStudioCommands(build, deps)` (`command-palette.tsx`) registers while the component is mounted. Studio registers its own in `studio.tsx`; the ones that need the canvas (undo, redo, sections) come from `EditorCommands` (`editor-commands.tsx`) inside the block editor. Groups other than the seven above are listed last, under *More*. The AI commands (#62, `ai-panel.tsx`) are registered the same way, and later plugins' too.
 
 **Search** (`filterCommands()`): every word must appear in the label, keywords or group name, ignoring case and accents. Within a group, a label that starts with the search comes first, then one with it at the start of a word, then one with every word starting a word; the group with the best match comes first. With no search, search-only commands (sections) are left out and the groups keep their order. Each group lists at most 20.
 
@@ -373,12 +374,12 @@ Nothing here writes to the live site: restoring is a draft change like any other
 | Issue | Where |
 | --- | --- |
 | #49 per-device values and visibility | their entries in `CONTROLS` (`mode-model.ts`), read with `showsControl()` |
-| #62 AI commands; plugins | `studioCommands.register()` or `useStudioCommands()` (`commands-model.ts`, `command-palette.tsx`) |
-| #57 AI operations, Keep and Undo | `editor.labelNext()` names the step an operation makes in History |
+| Plugins' commands | `studioCommands.register()` or `useStudioCommands()` (`commands-model.ts`, `command-palette.tsx`); the AI commands (#62) are registered this way, in `ai-panel.tsx` |
+| #63 Ask AI on a selection | `useStudioAi().edits.apply()` applies any set of [operations](ai-edits.md#the-operations) with Keep and Undo; `editor.canvas` (`AiCanvas`) replaces regions as one named step |
 | #36 Context menu, #37 handles | the canvas in `StudioEditor` |
 | #50 Layers | its panel in `rail.tsx` |
 | #49 Responsive editing | `DEVICES` and the `device` state |
-| #62, #63 AI | the `ai` panel; `onAskAi` in the top bar |
+| #63 AI on a selection | `onAskAi` in the section toolbar (the top bar's opens the AI panel) |
 
 ## Tests
 
@@ -405,6 +406,7 @@ Nothing here writes to the live site: restoring is a draft change like any other
 - `components/studio/styles-model.test.ts` (#46, #47): the draft entry (only settings and styles, none when the styles are live, entries from elsewhere taken up), block supports read as WordPress reads them, resetting a block, presets by origin, corner scales (pills kept), button sizes and hover colours, Additional CSS in Advanced only and for `edit_css`, the style book's sections (every block with an example, common ones first, embeds, RSS and Button left out) and examples without their own styles or remote pictures.
 - `apps/core/src/studio-styles.test.ts` (#46): editor settings for unsaved styles (the new palette, nothing stored, starting from the saved styles, `edit_theme_options` only); Additional CSS for the site and each block kept with `edit_css` and dropped without it, through REST and a changeset; CSS that could close the style element refused for the site, a block and a block's style variation.
 - `e2e/tests/studio-styles.spec.ts`: the accent changed in Colours turns the header's button on the canvas and goes into the draft, then back to the theme's; a draft's styles made elsewhere (as the site builder makes them) on the canvas and in the panel; Advanced: the site's Additional CSS on the canvas, `</style>` refused with the draft keeping the last good CSS, a Quote's border; the style book's categories, a filter, an example opened with Enter and the book closed with Escape.
+- `components/studio/ai-edits-model.test.ts`, `ai-panel-model.test.ts` and `e2e/tests/studio-ai.spec.ts` (#57, #62): see [AI edits](ai-edits.md#tests).
 - `e2e/tests/studio-saving.spec.ts`: an edit saved to the draft, reopened, previewed and published; undoing one change from the list and Discard all; the footer edited on one page and shown on every page, then Reset to theme.
 
 ## Not yet

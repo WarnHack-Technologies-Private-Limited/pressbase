@@ -67,6 +67,8 @@ import { SiteBuilderNote } from '../site-builder/studio-note';
 import { Button } from '../ui/button';
 import { ConfirmDialog } from '../ui/dialog';
 import { useToast } from '../ui/toast';
+import { navigationRef, withInnerBlocks } from './ai-edits-model';
+import { AiPanel, AiReview } from './ai-panel';
 import { Breadcrumb } from './breadcrumb';
 import { CanvasDragAssist } from './canvas-drag';
 import {
@@ -152,9 +154,11 @@ import styles from './studio.module.css';
 import { StylesPanel } from './styles-panel';
 import { CanvasEventsProvider } from './swap-layout';
 import { TopBar } from './top-bar';
+import type { AiCanvas } from './use-ai-edits';
 import { useDraft } from './use-draft';
 import { type StudioHistory, useStudioHistory } from './use-history';
 import { useSiteStyles } from './use-site-styles';
+import { useStudioAi } from './use-studio-ai';
 
 registerStudioRegions();
 
@@ -840,6 +844,23 @@ export default function Studio(props: StudioProps) {
     );
   };
 
+  // Studio's AI panel and AI edits (#62, #57): the conversation, and a set waiting for Keep or Undo.
+  const ai = useStudioAi({
+    edits: {
+      draft,
+      pages: allPages,
+      siteUrl: props.site.url,
+      can: {
+        styles: props.user.canEditTheme,
+        parts: props.user.canEditTheme,
+        pages: props.user.canPublishPages,
+      },
+    },
+    changesetUuid: draft.changeset?.uuid ?? null,
+    page: doc?.page ? { id: doc.page.id, slug: doc.page.slug } : null,
+    saveNow,
+  });
+
   const askAi = () =>
     toast(
       __(
@@ -1015,7 +1036,7 @@ export default function Studio(props: StudioProps) {
         canRedo={editor?.canRedo ?? false}
         onUndo={() => editor?.undo()}
         onRedo={() => editor?.redo()}
-        onAskAi={askAi}
+        onAskAi={() => openPanel('ai')}
         changes={changes}
         draftStatus={draft.status}
         onRetrySave={() => {
@@ -1188,10 +1209,21 @@ export default function Studio(props: StudioProps) {
                   {__('Opening the page…', 'pressbase-admin')}
                 </p>
               )
+            ) : panel === 'ai' ? (
+              <AiPanel ai={ai} />
             ) : undefined
           }
         />
       ),
+    // AI edits (#57): the highlight, Keep and Undo over the canvas, and the AI commands.
+    overlay: (editor) => (
+      <AiReview
+        ai={ai}
+        canvas={editor?.canvas ?? null}
+        panelOpen={panel === 'ai'}
+        onOpenPanel={() => openPanel('ai')}
+      />
+    ),
     notice: (
       <>
         {props.requestedRun && opened && (
@@ -1418,12 +1450,16 @@ interface EditorState {
   labelNext: (label: string) => void;
   /** Puts a version of the page's content on the canvas as one named step; false if it can't. */
   restorePage: (content: string, label: string) => boolean;
+  /** AI edits (#57): the canvas's regions, and replacing some as one named step. */
+  canvas: AiCanvas;
 }
 
 interface Chrome {
   topBar: (editor: EditorState | null) => ReactNode;
   rail: ReactNode;
   panel: (editor: EditorState | null) => ReactNode;
+  /** Over the canvas: AI changes waiting for Keep or Undo (#57). */
+  overlay?: (editor: EditorState | null) => ReactNode;
   /** A note above the canvas (the draft changed on the live site meanwhile). */
   notice?: ReactNode;
 }
@@ -1454,6 +1490,7 @@ function StudioFrame({
       <div className={styles.workspace}>
         {chrome.rail}
         {chrome.panel(editor)}
+        {chrome.overlay?.(editor)}
         <main id="studio-canvas" className={styles.stage} tabIndex={-1}>
           {chrome.notice}
           {notice}
@@ -1764,6 +1801,54 @@ function StudioEditor(props: StudioEditorProps) {
       if (!doc.page) return false;
       history.labelNext(label);
       return replaceRegion(pageKey(doc.page.id), content);
+    },
+    canvas: {
+      key: doc.key,
+      regions: () => {
+        const tree = (store.current?.getBlocks() ?? blocksRef.current) as unknown as CanvasBlock[];
+        const { content, parts } = regionBlocks(tree);
+        const out = new Map<string, BlockInstance[]>();
+        for (const region of regions.current.values()) {
+          const blocks = region.kind === 'content' ? content : parts.get(region.slug ?? '')?.blocks;
+          if (blocks) out.set(region.key, blocks as unknown as BlockInstance[]);
+        }
+        return out;
+      },
+      replace: (next, label) => {
+        const tree = (store.current?.getBlocks() ?? blocksRef.current) as unknown as CanvasBlock[];
+        const { parts } = regionBlocks(tree);
+        const inner = new Map<string, BlockInstance[]>();
+        for (const [key, blocks] of next) {
+          const region = regions.current.get(key);
+          const clientId =
+            region?.kind === 'content'
+              ? findRegions(tree).find((r) => r.kind === 'content')?.clientId
+              : parts.get(region?.slug ?? '')?.clientId;
+          if (!region || !clientId) return null;
+          inner.set(
+            clientId,
+            region.kind === 'part' ? withTheme(blocks, doc.template.theme) : blocks,
+          );
+        }
+        for (const key of next.keys()) touched.current.add(key);
+        // One step, named after the set: History lists it, and undo takes it all back.
+        history.labelNext(label);
+        history.setValue({
+          blocks: withInnerBlocks(tree, inner) as unknown as BlockInstance[],
+        });
+        setVersion((v) => v + 1);
+        return history.index + 1;
+      },
+      step: () => history.index,
+      undo: history.undo,
+      menuId: () => {
+        const tree = (store.current?.getBlocks() ?? blocksRef.current) as unknown as CanvasBlock[];
+        for (const part of regionBlocks(tree).parts.values()) {
+          const ref = navigationRef(part.blocks);
+          if (ref) return ref;
+        }
+        return fallbackMenu.current;
+      },
     },
   };
   const canvasEvents = useMemo(

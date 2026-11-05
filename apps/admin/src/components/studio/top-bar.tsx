@@ -80,7 +80,7 @@ const valueTarget = (value: string): CanvasTarget =>
 
 /**
  * Studio's top bar: back to the admin, the page being edited, the preview
- * size, undo and redo, Ask AI (#63), whether the draft is saved, Preview,
+ * size, undo and redo, Ask AI (opens the AI panel, #62), whether the draft is saved, Preview,
  * and Publish N with the list of changes and Discard all (#31).
  */
 export function TopBar(props: TopBarProps) {
@@ -203,11 +203,9 @@ export function TopBar(props: TopBarProps) {
         variant="ghost"
         className={styles.askAi}
         icon={<Sparkles size={16} aria-hidden="true" />}
-        aria-disabled="true"
         onClick={props.onAskAi}
       >
         <span className={styles.collapsible}>{__('Ask AI', 'pressbase-admin')}</span>
-        <span className={styles.soon}>{__('Coming soon', 'pressbase-admin')}</span>
       </Button>
       <SaveStatus status={props.draftStatus} onRetry={props.onRetrySave} />
       <Button

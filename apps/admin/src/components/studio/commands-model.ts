@@ -16,6 +16,7 @@ export const COMMAND_GROUPS = [
   { id: 'pages', label: msgid('Pages') },
   { id: 'sections', label: msgid('Add a section') },
   { id: 'blocks', label: msgid('Add a block') },
+  { id: 'ai', label: msgid('AI') },
   { id: 'panels', label: msgid('Panels') },
   { id: 'view', label: msgid('View and settings') },
   { id: 'more', label: msgid('More') },
