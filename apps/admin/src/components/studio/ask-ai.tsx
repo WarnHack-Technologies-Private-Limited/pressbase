@@ -681,6 +681,7 @@ export function AskAiDialog({ ask }: { ask: AskAi }) {
               <Button
                 variant="ghost"
                 size="sm"
+                className={styles.start}
                 icon={<LayoutPanelTop size={16} aria-hidden="true" />}
                 disabled={Boolean(busy)}
                 onClick={() =>

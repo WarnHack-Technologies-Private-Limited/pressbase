@@ -95,6 +95,10 @@
   width: 100%;
 }
 
+.start {
+  align-self: flex-start;
+}
+
 .error {
   margin: 0;
   color: var(--color-danger);
