@@ -41,6 +41,22 @@ export function AiPanel({ ai }: { ai: StudioAi }) {
     ai.load();
   }, [ai.load]);
 
+  // Start in the composer, once it's there, unless the person has moved on from the panel's heading.
+  const ready = Boolean(status?.supports_ai && !status.limit_reached);
+  useEffect(() => {
+    if (!ready) return;
+    let frame = requestAnimationFrame(() => {
+      // After the panel's own first focus (its heading).
+      frame = requestAnimationFrame(() => {
+        const active = document.activeElement;
+        if (!active || active === document.body || active.matches('#studio-panel h2')) {
+          document.getElementById(AI_INPUT_ID)?.focus();
+        }
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [ready]);
+
   // Keep the newest message in view as the reply is written.
   const last = messages[messages.length - 1]?.id;
   useEffect(() => {
@@ -354,8 +370,9 @@ export function AiReview({
         keywords: [__('assistant', 'pressbase-admin'), __('help', 'pressbase-admin')],
         icon: <Sparkles size={16} />,
         run: () => {
+          // The panel starts in its composer; when it's open already, go there.
+          document.getElementById(AI_INPUT_ID)?.focus();
           onOpenPanel();
-          requestAnimationFrame(() => document.getElementById(AI_INPUT_ID)?.focus());
         },
       },
       {
