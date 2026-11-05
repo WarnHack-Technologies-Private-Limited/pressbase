@@ -51,9 +51,22 @@ export function historyRecord<T>(
     entries[state.index] = { ...current, value };
     return { entries, index: state.index };
   }
+  // A "change" that changes nothing (the editor marking the end of a run of
+  // typing, a selection settling) isn't a step: it would show in History as
+  // "Edited the page" and take an undo to get past.
+  const current = state.entries[state.index] as HistoryEntry<T>;
+  if (value === current.value || sameValue(value, current.value)) return state;
   const entries = [...state.entries.slice(0, state.index + 1), { value, label: options.label, at }];
   return { entries, index: entries.length - 1 };
 }
+
+const sameValue = (a: unknown, b: unknown) => {
+  try {
+    return JSON.stringify(a) === JSON.stringify(b);
+  } catch {
+    return false;
+  }
+};
 
 /** Moves to a point in the history (undo is `index - 1`, redo `index + 1`). */
 export function historyGo<T>(state: HistoryState<T>, index: number): HistoryState<T> {
