@@ -259,7 +259,7 @@ test('a prompt adds a section, and another makes a new page, each with Keep and 
   await expect(dialog).toBeHidden({ timeout: 60_000 });
   await expect(sections).toHaveCount(2);
   const bar = page.getByRole('region', { name: 'Changes from AI' });
-  await expect(bar).toContainText('Adds a section: Pricing, three tiers.');
+  await expect(bar).toContainText('Adds a section: Pricing, three plans.');
   // Prices nobody gave are gaps, marked on the canvas.
   await expect(sections.last()).toContainText('[Add');
   await bar.getByRole('button', { name: 'Keep' }).click();

@@ -429,7 +429,7 @@ describe('the library with its placeholders filled in (#42, #43)', () => {
     }
     expect(html.match(/<details class="wp-block-details/g)?.length).toBe(16);
     expect(html).toContain('<summary>How do I book?</summary>');
-    expect(html).toMatch(/<blockquote class="wp-block-quote[^"]*"><p>\[Add a customer’s words/);
+    expect(html).toMatch(/<blockquote class="wp-block-quote[^"]*">\s*<p>\[Add a customer’s words/);
     expect(html).toContain('<cite>[Customer name]</cite>');
     expect(html).toContain('<li>Monday to Friday: 8:00 – 18:00</li>');
     expect(html).toContain('href="/contact/"');
