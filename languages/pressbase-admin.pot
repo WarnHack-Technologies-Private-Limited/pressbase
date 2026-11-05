@@ -12,7 +12,7 @@ msgstr ""
 "X-Generator: pressbase i18n:extract\n"
 "X-Domain: pressbase-admin\n"
 
-#: apps/admin/src/app/admin/page.tsx:17 apps/admin/src/components/site-builder/prompt-to-site.tsx:609 apps/admin/src/components/studio/top-bar.tsx:98 apps/admin/src/lib/sections.ts:42
+#: apps/admin/src/app/admin/page.tsx:17 apps/admin/src/components/site-builder/prompt-to-site.tsx:615 apps/admin/src/components/studio/top-bar.tsx:98 apps/admin/src/lib/sections.ts:42
 msgid "Dashboard"
 msgstr ""
 
@@ -52,7 +52,7 @@ msgstr ""
 msgid "Drafts"
 msgstr ""
 
-#: apps/admin/src/app/admin/page.tsx:130 apps/admin/src/components/site-builder/prompt-to-site.tsx:1080 apps/admin/src/components/site-builder/prompt-to-site.tsx:1336 apps/admin/src/components/studio/commands-model.ts:16 apps/admin/src/components/studio/layout-model.ts:130 apps/admin/src/components/studio/pages-panel.tsx:266 apps/admin/src/lib/sections.ts:55 apps/admin/src/lib/site-builder.ts:40
+#: apps/admin/src/app/admin/page.tsx:130 apps/admin/src/components/site-builder/prompt-to-site.tsx:1086 apps/admin/src/components/site-builder/prompt-to-site.tsx:1342 apps/admin/src/components/studio/commands-model.ts:16 apps/admin/src/components/studio/layout-model.ts:130 apps/admin/src/components/studio/pages-panel.tsx:266 apps/admin/src/lib/sections.ts:55 apps/admin/src/lib/site-builder.ts:40
 msgid "Pages"
 msgstr ""
 
@@ -252,7 +252,7 @@ msgstr ""
 msgid "Ask an administrator to turn on AI in Settings → AI."
 msgstr ""
 
-#: apps/admin/src/app/admin/studio/build/page.tsx:70 apps/admin/src/components/site-builder/prompt-to-site.tsx:573
+#: apps/admin/src/app/admin/studio/build/page.tsx:70 apps/admin/src/components/site-builder/prompt-to-site.tsx:579
 msgid "Open Settings → AI"
 msgstr ""
 
@@ -277,7 +277,7 @@ msgstr ""
 msgid "Enter your username or email and your password."
 msgstr ""
 
-#: apps/admin/src/components/install/login-form.tsx:48 apps/admin/src/components/site-builder/prompt-to-site.tsx:303
+#: apps/admin/src/components/install/login-form.tsx:48 apps/admin/src/components/site-builder/prompt-to-site.tsx:307
 msgid "Something went wrong. Please try again."
 msgstr ""
 
@@ -767,478 +767,478 @@ msgstr ""
 msgid "See the progress"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/build-offer.tsx:113 apps/admin/src/components/site-builder/prompt-to-site.tsx:1135
+#: apps/admin/src/components/site-builder/build-offer.tsx:113 apps/admin/src/components/site-builder/prompt-to-site.tsx:1141
 msgid "Build my site"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:249
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:253
 msgid "That build can’t be found any more."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:324
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:328
 msgid "Writing a short description of your site…"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:342
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:346
 msgid "Tell us a little about the site first: a sentence or two is enough."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:356
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:360
 msgid "Reading your description…"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:385
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:389
 msgid "Finding three more looks…"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:386
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:390
 msgid "Choosing looks that suit your site…"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:417
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:421
 msgid "Planning your pages…"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:434
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:438
 msgid "Starting the build…"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:502
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:507
 msgid "Uploading your logo…"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:503
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:508
 msgid "Uploading your photos…"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:518
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:523
 msgid "The file couldn’t be uploaded."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:550 apps/admin/src/components/site-builder/prompt-to-site.tsx:1143 apps/admin/src/components/site-builder/prompt-to-site.tsx:1173
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:556 apps/admin/src/components/site-builder/prompt-to-site.tsx:1149 apps/admin/src/components/site-builder/prompt-to-site.tsx:1179
 #, js-format
 msgid "Step %1$d of %2$d"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:566 apps/admin/src/components/site-builder/prompt-to-site.tsx:795
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:572 apps/admin/src/components/site-builder/prompt-to-site.tsx:801
 msgid "Back"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:575
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:581
 msgid "Your answers so far are kept. Come back tomorrow to carry on."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:577
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:583
 msgid "Your answers so far are kept. Try again in a moment."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:591
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:597
 #, js-format
 msgid "%1$s AI request, about %2$s tokens (roughly %3$s words read and written)"
 msgid_plural "%1$s AI requests, about %2$s tokens (roughly %3$s words read and written)"
 msgstr[0] ""
 msgstr[1] ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:616
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:622
 msgid "Start over"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:623
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:629
 msgid "Steps"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:637
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:643
 msgid "Done:"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:639
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:645
 msgid "Current:"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:653
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:659
 msgid "What’s your site for?"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:654
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:660
 msgid "Describe it in your own words. Pressbase plans the pages, suggests a look and writes a first draft for you to check. Nothing goes live until you publish it."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:662
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:668
 msgid "Describe your site"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:672
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:678
 msgid "For example: A small bakery in Leeds selling sourdough, pastries and coffee. We want people to find us, see what we bake and visit."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:679
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:685
 msgid "What you do, who it’s for, and what visitors should be able to do. Pressbase only states facts you give it; anything else becomes a gap for you to fill."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:693
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:699
 msgid "Add your details (optional)"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:695
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:701
 msgid "These go on the site exactly as you write them. Leave out anything you’re not sure about."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:702
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:708
 msgid "Business or site name"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:709
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:715
 msgid "Town or area"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:716
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:722
 msgid "Phone"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:724
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:730
 msgid "Email"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:733
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:739
 msgid "Address"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:740
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:746
 msgid "Other facts to include"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:741
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:747
 msgid "One per line: opening hours, prices, a customer’s words (with their permission)."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:753
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:759
 msgid "Logo"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:756
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:762
 msgid "Shown in your site’s header."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:757
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:763
 msgid "Saved to your media library."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:765
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:771
 msgid "Photos"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:766
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:772
 msgid "Saved to your media library, ready to put on your pages in Studio."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:798 apps/admin/src/components/site-builder/prompt-to-site.tsx:847 apps/admin/src/components/site-builder/prompt-to-site.tsx:915 apps/admin/src/components/site-builder/prompt-to-site.tsx:1100
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:804 apps/admin/src/components/site-builder/prompt-to-site.tsx:853 apps/admin/src/components/site-builder/prompt-to-site.tsx:921 apps/admin/src/components/site-builder/prompt-to-site.tsx:1106
 msgid "Continue"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:811
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:817
 msgid "A few quick questions"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:812
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:818
 msgid "Answer any you like, or skip them. Your answers help Pressbase write about what you really do."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:844
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:850
 msgid "Skip questions"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:861
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:867
 msgid "Is this right?"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:862
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:868
 msgid "This is what Pressbase will build from. Change anything that’s off."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:871
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:877
 msgid "Name"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:878
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:884
 msgid "What kind of site"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:886
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:892
 msgid "Who it’s for"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:893
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:899
 msgid "How it should sound"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:900
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:906
 msgid "Facts the site can state"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:901
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:907
 msgid "One per line. Only these appear as facts; anything else (prices, reviews, opening hours) is left as a gap for you to fill."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:928
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:934
 msgid "Choose a look first. You can change it later."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:933
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:939
 msgid "Choose a look"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:934
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:940
 msgid "Pick the one that feels most like you, then adjust the colour and fonts if you like. You can change all of it later."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:941
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:947
 msgid "Looks"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:968
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:974
 msgid "Adjusted"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:981
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:987
 msgid "Show three more"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:986
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:992
 msgid "Adjust the look you picked"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:988
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:994
 msgid "Main colour"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:995
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1001
 #, js-format
 msgid "Hue %d°"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1008
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1014
 msgid "Colour feel"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1026
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1032
 msgid "Fonts"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1044
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1050
 msgid "Corners"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1062
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1068
 msgid "Spacing"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1091
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1097
 msgid "Light"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1092
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1098
 msgid "Dark"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1113
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1119
 msgid "Choose your pages"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1114
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1120
 msgid "Drag pages into the order of your menu; the first is your home page. Add or remove pages and the sections on each."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1146
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1152
 msgid "Building your site"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1149
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1155
 msgid "Pages appear here as they’re written. You can close this tab: the build carries on, and you’ll find it here again."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1165 apps/admin/src/components/site-builder/prompt-to-site.tsx:1247
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1171 apps/admin/src/components/site-builder/prompt-to-site.tsx:1253
 msgid "Stop building"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1177
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1183
 msgid "Your site is ready to review"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1179
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1185
 msgid "Your site is partly built"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1181
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1187
 msgid "You stopped the build"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1182
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1188
 msgid "The build didn’t finish"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1185
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1191
 msgid "It’s a draft: nobody sees it until you publish. Open it in Studio to check each page, fill in the gaps and publish when you’re happy."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1197
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1203
 msgid "The pages already written are in your draft. Build the rest tomorrow, or add them in Studio."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1201
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1207
 msgid "Whatever was built is in your draft. Go back to try again."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1219 apps/admin/src/components/studio/history-panel.tsx:266 apps/admin/src/components/studio/top-bar.tsx:222
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1225 apps/admin/src/components/studio/history-panel.tsx:266 apps/admin/src/components/studio/top-bar.tsx:222
 msgid "Preview"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1224
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1230
 msgid "Review in Studio"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1234
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1240
 msgid "Opening…"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1244
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1250
 msgid "Stop building and go back?"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1245
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1251
 msgid "Stop building?"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1252
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1258
 msgid "Pages already written stay in your draft. The rest aren’t built."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1298 apps/admin/src/components/site-builder/sitemap-editor.tsx:159
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1304 apps/admin/src/components/site-builder/sitemap-editor.tsx:164
 #, js-format
 msgid "Remove %s"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1311
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1317
 msgid "Choose photos"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1312
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1318
 msgid "Choose a logo"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1334
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1340
 msgid "Getting ready"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1335
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1341
 msgid "Header and footer"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1337
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1343
 msgid "Menu and home page"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1338
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1344
 msgid "Checking the pages"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1348
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1354
 msgid "Finding your build…"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1357
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1363
 #, js-format
 msgid "Finished: %1$d of %2$d pages built."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1359
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1365
 #, js-format
 msgid "Writing the %s page…"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1361
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1367
 msgid "Waiting to start…"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1362
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1368
 msgid "Working…"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1384
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1390
 #, js-format
 msgid "(%1$d of %2$d)"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1399
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1405
 #, js-format
 msgid "Preview of %s"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1416 apps/admin/src/components/studio/pages-panel.tsx:286 apps/admin/src/components/studio/pages-panel.tsx:352
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1422 apps/admin/src/components/studio/pages-panel.tsx:286 apps/admin/src/components/studio/pages-panel.tsx:352
 msgid "Home"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1423
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1429
 #, js-format
 msgid "Ready · %d to fill in"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1426
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1432
 msgid "Ready"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1428
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1434
 msgid "Writing…"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1430
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1436
 msgid "Couldn’t be built"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1432
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1438
 msgid "Not built"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1433
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1439
 msgid "Waiting"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1443 apps/admin/src/components/studio/history-panel.tsx:263
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1449 apps/admin/src/components/studio/history-panel.tsx:263
 #, js-format
 msgid "Preview %s"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1473
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1479
 #, js-format
 msgid "%s page built"
 msgid_plural "%s pages built"
 msgstr[0] ""
 msgstr[1] ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1477
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1483
 #, js-format
 msgid "(%d not built)"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1491
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1497
 #, js-format
 msgid "%s thing to fill in before you publish"
 msgid_plural "%s things to fill in before you publish"
 msgstr[0] ""
 msgstr[1] ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1501
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1507
 msgid "where Pressbase didn’t know a fact (a customer quote, opening hours, prices), it left a gap in square brackets instead of making one up."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1505
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1511
 msgid "Fill them in in Studio"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1508
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1514
 msgid "Nothing left to fill in."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1514
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:1520
 #, js-format
 msgid "Building it used %s."
 msgstr ""
@@ -1253,81 +1253,81 @@ msgstr ""
 msgid "%1$s moved to place %2$d of %3$d."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/sitemap-editor.tsx:78
+#: apps/admin/src/components/site-builder/sitemap-editor.tsx:79
 #, js-format
 msgid "%s added."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/sitemap-editor.tsx:111
+#: apps/admin/src/components/site-builder/sitemap-editor.tsx:112
 msgid "Drag to reorder"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/sitemap-editor.tsx:125
+#: apps/admin/src/components/site-builder/sitemap-editor.tsx:126
 #, js-format
 msgid "Page %d title"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/sitemap-editor.tsx:137 apps/admin/src/components/studio/inspector.tsx:212 apps/admin/src/components/studio/studio.tsx:933
+#: apps/admin/src/components/site-builder/sitemap-editor.tsx:142 apps/admin/src/components/studio/inspector.tsx:212 apps/admin/src/components/studio/studio.tsx:933
 msgid "Home page"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/sitemap-editor.tsx:143
+#: apps/admin/src/components/site-builder/sitemap-editor.tsx:148
 #, js-format
 msgid "Move %s up"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/sitemap-editor.tsx:151
+#: apps/admin/src/components/site-builder/sitemap-editor.tsx:156
 #, js-format
 msgid "Move %s down"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/sitemap-editor.tsx:163
+#: apps/admin/src/components/site-builder/sitemap-editor.tsx:168
 #, js-format
 msgid "%s removed."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/sitemap-editor.tsx:170
+#: apps/admin/src/components/site-builder/sitemap-editor.tsx:175
 #, js-format
 msgid "Sections of %s"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/sitemap-editor.tsx:179
+#: apps/admin/src/components/site-builder/sitemap-editor.tsx:184
 #, js-format
 msgid "Remove the %1$s section from %2$s"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/sitemap-editor.tsx:193
+#: apps/admin/src/components/site-builder/sitemap-editor.tsx:198
 #, js-format
 msgid "Add a section to %s"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/sitemap-editor.tsx:205
+#: apps/admin/src/components/site-builder/sitemap-editor.tsx:210
 #, js-format
 msgid "%1$s section added to %2$s."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/sitemap-editor.tsx:212
+#: apps/admin/src/components/site-builder/sitemap-editor.tsx:217
 msgid "+ Add section"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/sitemap-editor.tsx:227
+#: apps/admin/src/components/site-builder/sitemap-editor.tsx:232
 msgid "Add a page"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/sitemap-editor.tsx:234 apps/admin/src/components/studio/pages-panel.tsx:228 apps/admin/src/components/studio/pages-panel.tsx:408
+#: apps/admin/src/components/site-builder/sitemap-editor.tsx:239 apps/admin/src/components/studio/pages-panel.tsx:228 apps/admin/src/components/studio/pages-panel.tsx:408
 msgid "Page title"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/sitemap-editor.tsx:244 apps/admin/src/components/studio/pages-panel.tsx:243 apps/admin/src/components/studio/pages-panel.tsx:257
+#: apps/admin/src/components/site-builder/sitemap-editor.tsx:252 apps/admin/src/components/studio/pages-panel.tsx:243 apps/admin/src/components/studio/pages-panel.tsx:257
 msgid "Add page"
 msgstr ""
 
-#: apps/admin/src/components/site-builder/sitemap-editor.tsx:250
+#: apps/admin/src/components/site-builder/sitemap-editor.tsx:258
 #, js-format
 msgid "That’s the most for now: %d pages. You can add more in Studio afterwards."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/sitemap-editor.tsx:257
+#: apps/admin/src/components/site-builder/sitemap-editor.tsx:265
 #, js-format
 msgid "Up to %d pages. You can add more in Studio afterwards."
 msgstr ""
