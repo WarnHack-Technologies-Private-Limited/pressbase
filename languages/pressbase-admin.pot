@@ -1709,40 +1709,40 @@ msgstr ""
 msgid "Ask in the AI panel"
 msgstr ""
 
-#: apps/admin/src/components/studio/ask-ai.tsx:694 apps/admin/src/components/studio/section-toolbar.tsx:387
+#: apps/admin/src/components/studio/ask-ai.tsx:695 apps/admin/src/components/studio/section-toolbar.tsx:387
 msgid "Add a section below with AI…"
 msgstr ""
 
-#: apps/admin/src/components/studio/ask-ai.tsx:704
+#: apps/admin/src/components/studio/ask-ai.tsx:705
 msgid "What should the section be?"
 msgstr ""
 
-#: apps/admin/src/components/studio/ask-ai.tsx:705
+#: apps/admin/src/components/studio/ask-ai.tsx:706
 msgid "What’s the page for?"
 msgstr ""
 
-#: apps/admin/src/components/studio/ask-ai.tsx:711
+#: apps/admin/src/components/studio/ask-ai.tsx:712
 #, js-format
 msgid "For example: pricing with three tiers. It goes after “%s”."
 msgstr ""
 
-#: apps/admin/src/components/studio/ask-ai.tsx:717
+#: apps/admin/src/components/studio/ask-ai.tsx:718
 msgid "For example: pricing with three tiers. It goes at the end of the page."
 msgstr ""
 
-#: apps/admin/src/components/studio/ask-ai.tsx:721
+#: apps/admin/src/components/studio/ask-ai.tsx:722
 msgid "For example: catering, with our services, prices and a way to get in touch."
 msgstr ""
 
-#: apps/admin/src/components/studio/ask-ai.tsx:732
+#: apps/admin/src/components/studio/ask-ai.tsx:733
 msgid "AI uses the facts in your site’s brief. Anything it doesn’t know (prices, quotes, opening hours) is left in [square brackets] for you to fill in."
 msgstr ""
 
-#: apps/admin/src/components/studio/ask-ai.tsx:745
+#: apps/admin/src/components/studio/ask-ai.tsx:746
 msgid "Add the section"
 msgstr ""
 
-#: apps/admin/src/components/studio/ask-ai.tsx:746
+#: apps/admin/src/components/studio/ask-ai.tsx:747
 msgid "Create the page"
 msgstr ""
 
