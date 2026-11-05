@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { Studio } from '@/components/studio';
+import { RAIL_PANELS } from '@/components/studio/layout-model';
 import { parseMode, STUDIO_MODE_META } from '@/components/studio/mode-model';
 import type { StudioPage } from '@/components/studio/site-model';
 import { ButtonLink } from '@/components/ui/button';
@@ -9,7 +10,9 @@ import { coreGet, type Me, type SiteIndex } from '@/lib/core';
 
 export const metadata: Metadata = { title: 'Studio' };
 
-type Props = { searchParams: Promise<{ page?: string; changeset_uuid?: string; run?: string }> };
+type Props = {
+  searchParams: Promise<{ page?: string; changeset_uuid?: string; run?: string; panel?: string }>;
+};
 
 /** The pages Studio can open: every status an editor works with, as the page picker lists them. */
 const PAGES =
@@ -64,6 +67,7 @@ export default async function StudioScreen({ searchParams }: Props) {
       requestedPage={requested}
       requestedChangeset={query.changeset_uuid}
       requestedRun={Number(query.run) || undefined}
+      requestedPanel={RAIL_PANELS.find((p) => p.id === query.panel)?.id}
       canUnfilteredHtml={Boolean(caps.unfiltered_html)}
       user={{
         id: me.data.id,

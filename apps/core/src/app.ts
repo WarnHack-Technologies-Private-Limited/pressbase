@@ -38,6 +38,7 @@ import { settingsRoutes } from './routes/settings';
 import { siteBuilderRoutes } from './routes/site-builder';
 import { siteHealthRoutes, wpSiteHealthRoutes } from './routes/site-health';
 import { studioAiRoutes } from './routes/studio-ai';
+import { studioChecklistRoutes } from './routes/studio-checklist';
 import { templatesRoutes } from './routes/templates';
 import { termsRoutes } from './routes/terms';
 import { publicFileRoutes, themeRoutes } from './routes/themes';
@@ -208,6 +209,8 @@ export function createApp(kernel: Kernel) {
   installed.route('/pressbase/v1/site-builder', siteBuilderRoutes());
   // Studio's AI panel (v0.8, #62): requests in your own words, answered with edits. See docs/architecture/ai-edits.md.
   installed.route('/pressbase/v1/studio/ai', studioAiRoutes());
+  // Studio's "Before you publish" checklist (v0.8, #61). See docs/architecture/quality-checks.md.
+  installed.route('/pressbase/v1/studio/checklist', studioChecklistRoutes());
 
   // Plugins (v0.5): /wp/v2/plugins, then — last, as a catch-all — the post
   // types, taxonomies and REST namespaces of active plugins, looked up per

@@ -14,6 +14,7 @@ import {
 } from 'react';
 import { useI18n } from '@/lib/i18n/context';
 import { ActionMenu } from '../ui/menu';
+import { readSection, useAskAiOpener } from './ask-ai';
 import { addButtonPlace } from './sections-model';
 import { contentRootId, sectionOf } from './sections-panel';
 import styles from './studio.module.css';
@@ -67,7 +68,7 @@ function neighbour(element: Element, side: 'previous' | 'next'): Element | null 
 /**
  * Over the canvas (#44): the outline of the section under the pointer (or
  * holding the selection) and its floating toolbar: move up and down,
- * duplicate, Ask AI (coming with #63), and more. "＋ Add section" above and
+ * duplicate, Ask AI (#63: rewrite, shorten… or a new section below), and more. "＋ Add section" above and
  * below it (in the gap, never over the page: addButtonPlace()) opens the
  * Sections panel at that place. Swap layout
  * (#45): ‹ 2/5 › changes the section to the previous or next layout of its
@@ -80,15 +81,15 @@ function neighbour(element: Element, side: 'previous' | 'next'): Element | null 
 export function SectionToolbar({
   frameRef,
   onAddSection,
-  onAskAi,
 }: {
   frameRef: RefObject<HTMLDivElement | null>;
   /** Opens the Sections panel to add a section at this index among the page's sections. */
   onAddSection: (index: number) => void;
-  onAskAi: () => void;
 }) {
   const { __, sprintf } = useI18n();
   const registry = useRegistry();
+  // Ask AI (#63): about this section, or a new section below it.
+  const askAi = useAskAiOpener();
   const actions = useDispatch(blockEditorStore) as unknown as Actions;
   const [iframe, setIframe] = useState<HTMLIFrameElement | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
@@ -347,16 +348,24 @@ export function SectionToolbar({
               />
             </div>
           )}
-          <button
-            type="button"
-            className={styles.sectionToolbarButton}
-            aria-label={__('Ask AI about this section (coming soon)', 'pressbase-admin')}
-            title={__('Ask AI: coming soon', 'pressbase-admin')}
-            aria-disabled="true"
-            onClick={onAskAi}
-          >
-            <Sparkles size={16} aria-hidden="true" />
-          </button>
+          {askAi && (
+            <button
+              type="button"
+              className={styles.sectionToolbarButton}
+              aria-label={__('Ask AI about this section', 'pressbase-admin')}
+              title={__('Ask AI', 'pressbase-admin')}
+              data-studio-ask-ai-section
+              onClick={() => {
+                const section = readSection(
+                  registry.select(blockEditorStore) as unknown as Parameters<typeof readSection>[0],
+                  active,
+                );
+                if (section) askAi({ kind: 'section', section });
+              }}
+            >
+              <Sparkles size={16} aria-hidden="true" />
+            </button>
+          )}
           <ActionMenu
             label={__('More for this section', 'pressbase-admin')}
             actions={[
@@ -372,6 +381,15 @@ export function SectionToolbar({
                 label: __('Add a section below', 'pressbase-admin'),
                 onSelect: () => onAddSection(index + 1),
               },
+              ...(askAi
+                ? [
+                    {
+                      label: __('Add a section below with AI…', 'pressbase-admin'),
+                      onSelect: () =>
+                        askAi({ kind: 'add-section', index: index + 1, after: label }),
+                    },
+                  ]
+                : []),
               {
                 label: __('Remove section', 'pressbase-admin'),
                 tone: 'danger',

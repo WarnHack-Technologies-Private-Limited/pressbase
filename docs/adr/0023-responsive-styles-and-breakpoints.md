@@ -37,6 +37,15 @@ Port WordPress 7.1's code, with its names and shapes. Nothing is Pressbase-speci
 - Not ported yet: responsive **layout** (`style["@mobile"].layout`, flex orientation, grid columns, child layout and block gap per device, in `layout.php`), and hiding `blockVisibility: false` blocks from automatic excerpts (`excerpt_remove_blocks()`; Pressbase builds excerpts from the content's text). The style engine's `safe_style_css` property allow-list is not ported; values are checked as everywhere else in Pressbase.
 - Fixtures were written by reading the PHP; no PHP runtime was available to generate them. A mismatch found later is a bug to fix here, with a fixture.
 
+## In Studio (#49)
+
+Studio writes these shapes with WordPress 7.1's own editor code; see [studio.md](../architecture/studio.md#responsive-editing).
+
+- **Editing a size:** the device switch sets the block editor's style state viewport (`@tablet`, `@mobile`), so the inspector's style panels edit that state, and the canvas is sized inside the theme's `settings.viewport` ranges. Per-device values are in Simple and Advanced.
+- **Inheritance:** the ranges don't overlap, so the editor copies values down instead. A Tablet value is also written to `@mobile` unless Mobile has its own (one that differs from Tablet's old value), and resetting a Mobile value brings back Tablet's. A Mobile value equal to Tablet's is shown as inherited. The stored data is plain WordPress 7.1 and renders the same there.
+- **Not offered per device:** layout and position (not printed yet, above), and style variations, shadows and duotone. Site styles (`styles.blocks.{name}["@mobile"]`) aren't edited in Studio yet.
+- **Visibility:** *Show on* Desktop, Tablet and Mobile writes the viewport form of `blockVisibility`, never `false`, so a block hidden everywhere can still be selected and shown again.
+
 ## Alternatives considered
 
 - **Pressbase's own format** (`responsive: { mobile: {…} }`): simpler to read, but WordPress themes and content would need conversion both ways.

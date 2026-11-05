@@ -72,7 +72,14 @@ async function publishAll(page: Page, count: number) {
   const label = count === 1 ? '1 change' : `${count} changes`;
   await page.getByRole('button', { name: `Publish, ${label}` }).click();
   await page.getByRole('button', { name: `Publish ${label}` }).click();
-  await expect(page.getByText('Published. Your changes are live.')).toBeVisible();
+  // With things left on the checklist (#61), Publish asks first: say yes.
+  // Published: the button has nothing left to count.
+  const done = page.getByRole('button', { name: 'Publish', exact: true });
+  const ask = page.getByRole('dialog', { name: /^Publish with \d+ things? left to fill in\?$/ });
+  await expect(done.or(ask)).toBeVisible({ timeout: 30_000 });
+  if (await ask.isVisible()) await ask.getByRole('button', { name: 'Publish anyway' }).click();
+  await expect(done).toBeVisible();
+  await expect(page.getByText('Published. Your changes are live.').first()).toBeVisible();
 }
 
 test('edits are saved to a draft: previewed, then published, and kept when Studio reopens', async ({

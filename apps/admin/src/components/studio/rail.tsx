@@ -1,6 +1,5 @@
 'use client';
 
-import { __experimentalListView as ListView } from '@wordpress/block-editor';
 import {
   Blocks,
   FileText,
@@ -8,6 +7,7 @@ import {
   Image,
   Layers,
   LayoutPanelTop,
+  ListChecks,
   type LucideIcon,
   Palette,
   Sparkles,
@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { type KeyboardEvent as ReactKeyboardEvent, type ReactNode, useEffect, useRef } from 'react';
 import { useI18n } from '@/lib/i18n/context';
-import { lightScope } from '../block-editor';
 import { Button } from '../ui/button';
 import { RAIL_PANELS, type RailPanel, type RailPanelId } from './layout-model';
 import styles from './studio.module.css';
@@ -29,6 +28,7 @@ export const RAIL_ICONS: Record<RailPanelId, LucideIcon> = {
   media: Image,
   ai: Sparkles,
   history: History,
+  checklist: ListChecks,
 };
 
 /** The left rail: one button per panel. Pressing the open panel's button closes it. */
@@ -78,8 +78,9 @@ export interface PanelProps {
 
 /**
  * The open rail panel, beside the canvas. Built panels (Pages, Elements,
- * Sections, Styles, History) get their content from Studio; Layers shows
- * WordPress's list view until #50; the rest say which issue brings them. Escape closes the panel and returns focus to its rail button.
+ * Sections, Layers, Styles, AI, History) get their content from Studio; the
+ * rest say which issue brings them. Escape closes the panel and returns
+ * focus to its rail button.
  */
 export function RailPanelView(props: PanelProps) {
   const { __ } = useI18n();
@@ -139,15 +140,6 @@ export function RailPanelView(props: PanelProps) {
       <div className={styles.panelBody}>
         {props.note}
         {panel.interim === 'built' && props.content}
-        {panel.interim === 'list-view' && (
-          <div className={`${lightScope} ${styles.wpPanel}`}>
-            <ListView
-              isExpanded
-              showBlockMovers
-              description={__('Blocks on this page', 'pressbase-admin')}
-            />
-          </div>
-        )}
         {panel.coming && <Coming panel={panel} coming={panel.coming} />}
       </div>
     </aside>

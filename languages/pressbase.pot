@@ -93,98 +93,98 @@ msgstr ""
 msgid "No translation for this language."
 msgstr ""
 
-#: apps/core/src/quality/check-page.ts:325
+#: apps/core/src/quality/check-page.ts:333
 #, js-format
 msgid "A closing %s delimiter has no matching opening one."
 msgstr ""
 
-#: apps/core/src/quality/check-page.ts:337
+#: apps/core/src/quality/check-page.ts:345
 #, js-format
 msgid "The %s block is never closed."
 msgstr ""
 
-#: apps/core/src/quality/check-page.ts:351
+#: apps/core/src/quality/check-page.ts:359
 msgid "Some content is outside any block."
 msgstr ""
 
-#: apps/core/src/quality/check-page.ts:364
+#: apps/core/src/quality/check-page.ts:372
 #, js-format
 msgid "The block %s is not available on this site."
 msgstr ""
 
-#: apps/core/src/quality/check-page.ts:380
+#: apps/core/src/quality/check-page.ts:388
 #, js-format
 msgid "The %1$s block has an invalid attribute: %2$s"
 msgstr ""
 
-#: apps/core/src/quality/check-page.ts:396 apps/core/src/quality/check-page.ts:410
+#: apps/core/src/quality/check-page.ts:404 apps/core/src/quality/check-page.ts:418
 #, js-format
 msgid "The %1$s block must be inside %2$s."
 msgstr ""
 
-#: apps/core/src/quality/check-page.ts:423
+#: apps/core/src/quality/check-page.ts:431
 #, js-format
 msgid "The %1$s block can’t contain %2$s."
 msgstr ""
 
-#: apps/core/src/quality/check-page.ts:446
+#: apps/core/src/quality/check-page.ts:454
 msgid "The page title is already the main heading (h1); use h2 here."
 msgstr ""
 
-#: apps/core/src/quality/check-page.ts:447
+#: apps/core/src/quality/check-page.ts:455
 msgid "A page has one main heading (h1); this is another."
 msgstr ""
 
-#: apps/core/src/quality/check-page.ts:457
+#: apps/core/src/quality/check-page.ts:465
 #, js-format
 msgid "This heading skips from h%1$s to h%2$s."
 msgstr ""
 
-#: apps/core/src/quality/check-page.ts:471
+#: apps/core/src/quality/check-page.ts:479
 msgid "The page has no main heading (h1)."
 msgstr ""
 
-#: apps/core/src/quality/check-page.ts:489
+#: apps/core/src/quality/check-page.ts:497
 msgid "This image has no alternative text. Describe it, or mark it as decorative."
 msgstr ""
 
-#: apps/core/src/quality/check-page.ts:508
+#: apps/core/src/quality/check-page.ts:516
 msgid "Choose an image."
 msgstr ""
 
-#: apps/core/src/quality/check-page.ts:510
+#: apps/core/src/quality/check-page.ts:518
 msgid "This button doesn’t link anywhere yet."
 msgstr ""
 
-#: apps/core/src/quality/check-page.ts:511
+#: apps/core/src/quality/check-page.ts:519
 msgid "Replace this placeholder with real content."
 msgstr ""
 
-#: apps/core/src/quality/check-page.ts:536
+#: apps/core/src/quality/check-page.ts:544
 msgid "This link has no text, so screen readers can’t say where it goes."
 msgstr ""
 
-#: apps/core/src/quality/check-page.ts:547
+#: apps/core/src/quality/check-page.ts:555
 #, js-format
 msgid "“%s” doesn’t say where the link goes. Name the destination instead."
 msgstr ""
 
-#: apps/core/src/quality/check-page.ts:573
+#: apps/core/src/quality/check-page.ts:581
 #, js-format
 msgid "This colour (%1$s) is the “%2$s” preset; use the preset so it follows the site’s styles."
 msgstr ""
 
-#: apps/core/src/quality/check-page.ts:580
+#: apps/core/src/quality/check-page.ts:588
 #, js-format
 msgid "This colour (%s) isn’t one of the site’s colours."
 msgstr ""
 
-#: apps/core/src/quality/check-page.ts:718
+#: apps/core/src/quality/check-page.ts:726
 #, js-format
 msgid "Links don’t stand out enough from their background (%1$s:1, %2$s:1 is needed)."
 msgstr ""
 
-#: apps/core/src/quality/check-page.ts:722
+#: apps/core/src/quality/check-page.ts:730
 #, js-format
 msgid "Text doesn’t stand out enough from its background (%1$s:1, %2$s:1 is needed)."
 msgstr ""

@@ -31,6 +31,7 @@
     "@wordpress/keyboard-shortcuts": "6.0.0",
     "@wordpress/media-utils": "6.0.0",
     "@wordpress/notices": "6.0.0",
+    "@wordpress/private-apis": "3.0.0",
     "@wordpress/server-side-render": "7.0.0",
     "lucide-react": "1.62.0",
     "next": "16.4.3",

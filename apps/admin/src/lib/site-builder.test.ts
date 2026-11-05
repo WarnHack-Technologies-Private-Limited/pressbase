@@ -222,6 +222,9 @@ describe('a run’s progress', () => {
     });
     expect(run).toMatchObject({ status: 'completed', stage: null, requests: 3 });
     expect(studioLink(run)).toBe('/admin/studio?changeset_uuid=abc&run=7');
+    expect(studioLink(run, { checklist: true })).toBe(
+      '/admin/studio?changeset_uuid=abc&run=7&panel=checklist',
+    );
   });
 
   it('starts again from a snapshot', () => {

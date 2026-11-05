@@ -452,11 +452,18 @@ export function pagesDone(run: Pick<Run, 'pages'>): number {
 /** A rough number of words for a number of tokens (about ¾ of a word each in English). */
 export const roughWords = (tokens: number) => Math.round((tokens * 0.75) / 100) * 100;
 
-/** What Studio opens for the result: the draft, and the run for its summary. */
-export function studioLink(run: Pick<Run, 'id' | 'changeset_uuid'>): string {
+/**
+ * What Studio opens for the result: the draft, and the run for its summary;
+ * with `checklist`, the "Before you publish" checklist open (#61).
+ */
+export function studioLink(
+  run: Pick<Run, 'id' | 'changeset_uuid'>,
+  options: { checklist?: boolean } = {},
+): string {
   const params = new URLSearchParams();
   if (run.changeset_uuid) params.set('changeset_uuid', run.changeset_uuid);
   params.set('run', String(run.id));
+  if (options.checklist) params.set('panel', 'checklist');
   return `/admin/studio?${params}`;
 }
 

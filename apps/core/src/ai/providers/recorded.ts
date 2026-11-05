@@ -1,5 +1,6 @@
 import type { JsonSchema } from '../../abilities/json-schema';
 import type { AiProvider, AiResult, AiTextRequest } from '../types';
+import { recordedPagePlan, recordedRewrite, recordedSectionPlan } from './recorded-ask';
 import { isAssistantRequest, recordedAssistantStep } from './recorded-assistant';
 
 /**
@@ -121,6 +122,10 @@ export function fillSchema(s: Schema, key = '', n = { i: 0 }): unknown {
 /** Which request this is, from its schema's shape. */
 export function recordedStage(schema: Schema | undefined): string {
   const props = schema?.properties ?? {};
+  // Studio's Ask AI (#63, recorded-ask.ts).
+  if ('rewritten' in props) return 'rewrite';
+  if ('category' in props && 'intent' in props) return 'section-plan';
+  if ('title' in props && 'sections' in props) return 'page-plan';
   if ('questions' in props) return 'clarify';
   if ('designs' in props) return 'designs';
   if ('kind' in props && 'tone' in props) return 'brief';
@@ -138,6 +143,12 @@ export function recordedAnswer(request: AiTextRequest): unknown {
     .flatMap((m) => m.parts.flatMap((p) => (p.type === 'text' ? [p.text] : [])))
     .join('\n');
   switch (recordedStage(schema)) {
+    case 'rewrite':
+      return recordedRewrite(schema as Schema, prompt);
+    case 'section-plan':
+      return recordedSectionPlan(schema as Schema, prompt);
+    case 'page-plan':
+      return recordedPagePlan(schema as Schema, prompt);
     case 'clarify':
       return { questions: QUESTIONS.map((question) => ({ question })) };
     case 'brief':

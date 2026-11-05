@@ -106,7 +106,8 @@ export type RailPanelId =
   | 'styles'
   | 'media'
   | 'ai'
-  | 'history';
+  | 'history'
+  | 'checklist';
 
 export interface RailPanel {
   id: RailPanelId;
@@ -119,7 +120,7 @@ export interface RailPanel {
    * What the panel shows: Studio's own panel once built (`built`), or what
    * the shell offers until its issue lands.
    */
-  interim: 'built' | 'list-view' | 'none';
+  interim: 'built' | 'none';
   /** The note shown in the panel until the issue lands; none once it's built. */
   coming?: string;
 }
@@ -151,8 +152,7 @@ export const RAIL_PANELS: readonly RailPanel[] = [
     label: msgid('Layers'),
     summary: msgid('Everything on the page, as a list'),
     issue: 50,
-    interim: 'list-view',
-    coming: msgid('Renaming, hiding on a device and drag to nest arrive with #50.'),
+    interim: 'built',
   },
   {
     id: 'styles',
@@ -185,6 +185,13 @@ export const RAIL_PANELS: readonly RailPanel[] = [
     issue: 34,
     interim: 'built',
   },
+  {
+    id: 'checklist',
+    label: msgid('Checklist'),
+    summary: msgid('What to fill in before you publish'),
+    issue: 61,
+    interim: 'built',
+  },
 ];
 
 /* ------------------------------------------------------------- top bar */
@@ -192,10 +199,10 @@ export const RAIL_PANELS: readonly RailPanel[] = [
 export type Device = 'desktop' | 'tablet' | 'mobile';
 
 /**
- * Canvas widths for Desktop, Tablet and Mobile. Tablet and Mobile match the
- * breakpoints WordPress 7.1 uses for responsive styles (`settings.viewport`:
- * tablet 782px, mobile 480px), less a little so the media queries apply;
- * per-device styles are #49.
+ * Desktop, Tablet and Mobile, with the canvas widths for WordPress 7.1's
+ * default breakpoints (`settings.viewport`: tablet 782px, mobile 480px).
+ * Studio sizes the canvas from the theme's own breakpoints with
+ * `deviceFrames()` (responsive-model.ts, #49).
  */
 export const DEVICES: readonly { id: Device; label: string; width: number | null }[] = [
   { id: 'desktop', label: msgid('Desktop'), width: null },

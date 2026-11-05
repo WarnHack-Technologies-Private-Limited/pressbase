@@ -69,6 +69,7 @@ import { ConfirmDialog } from '../ui/dialog';
 import { useToast } from '../ui/toast';
 import { navigationRef, withInnerBlocks } from './ai-edits-model';
 import { AiPanel, AiReview } from './ai-panel';
+import { AskAiDialog, AskAiProvider, registerAskAiControls, useAskAi } from './ask-ai';
 import { Breadcrumb } from './breadcrumb';
 import { CanvasDragAssist } from './canvas-drag';
 import {
@@ -96,6 +97,15 @@ import {
   type StoredEntry,
 } from './changes-model';
 import {
+  ChecklistPanel,
+  ChecklistSelect,
+  PlaceholderMarks,
+  PublishCheckDialog,
+  PublishChecklistNote,
+  useChecklist,
+} from './checklist';
+import type { ChecklistItem } from './checklist-model';
+import {
   CommandPalette,
   isPaletteShortcut,
   usePaletteShortcut,
@@ -106,6 +116,7 @@ import { ElementsPanel } from './elements-panel';
 import { useEntityEdits } from './entity-edits';
 import { type CanvasValue, HistoryPanel } from './history-panel';
 import { Inspector, type PageSummary } from './inspector';
+import { LayersPanel } from './layers-panel';
 import {
   DEVICES,
   type Device,
@@ -135,6 +146,8 @@ import {
   StudioRegionsProvider,
   useSelectedPart,
 } from './regions';
+import { deviceTypeKey, StudioResponsive } from './responsive';
+import { deviceFrames } from './responsive-model';
 import { SectionToolbar } from './section-toolbar';
 import { SectionsPanel } from './sections-panel';
 import {
@@ -161,6 +174,7 @@ import { useSiteStyles } from './use-site-styles';
 import { useStudioAi } from './use-studio-ai';
 
 registerStudioRegions();
+registerAskAiControls();
 
 /* -------------------------------------------------------------------- data */
 
@@ -243,6 +257,8 @@ export interface StudioProps {
   requestedChangeset?: string;
   /** `?run=`: a site the guided flow just built (#60), for the note above the canvas. */
   requestedRun?: number;
+  /** `?panel=`: a rail panel to open with (the guided flow's Review links to the checklist, #61). */
+  requestedPanel?: RailPanelId;
   canUnfilteredHtml: boolean;
   /** Who's editing, and what they may change (#29). */
   user: StudioUser;
@@ -451,7 +467,7 @@ export default function Studio(props: StudioProps) {
   const [reloadKey, setReloadKey] = useState(0);
   const [doc, setDoc] = useState<CanvasDoc | null>(null);
   const [device, setDevice] = useState<Device>('desktop');
-  const [panel, setPanel] = useState<RailPanelId | null>(null);
+  const [panel, setPanel] = useState<RailPanelId | null>(props.requestedPanel ?? null);
   // Where the Sections panel adds the next section (＋ Add section on the canvas, #44).
   const [sectionsAt, setSectionsAt] = useState<number | null>(null);
   const [tab, setTab] = useState<InspectorTabId>('content');
@@ -861,13 +877,26 @@ export default function Studio(props: StudioProps) {
     saveNow,
   });
 
-  const askAi = () =>
-    toast(
-      __(
-        'Ask AI arrives with #63: select something on the page and ask for a change in your own words.',
-        'pressbase-admin',
-      ),
-    );
+  // Ask AI on a section or selected text, and prompts to a section or page (#63).
+  const ask = useAskAi({
+    ai,
+    page: doc?.page ? { id: doc.page.id, slug: doc.page.slug } : null,
+    pages: allPages,
+    saveNow,
+    onOpenPage: (id) => chooseTarget({ kind: 'page', id }),
+    onOpenHome: useCallback(() => setTarget(homeTarget()), []),
+    onOpenPanel: () => openPanel('ai'),
+    onDone: (message) => toast(message),
+  });
+  // "Before you publish" (#61): what's left in the draft; Publish asks first when something is.
+  const checklist = useChecklist({ saveNow, changesetUuid: draft.changeset?.uuid ?? null });
+  const goToItem = (item: ChecklistItem) => {
+    checklist.select(item);
+    if (item.page !== null && !sameTarget({ kind: 'page', id: item.page }, target)) {
+      chooseTarget({ kind: 'page', id: item.page });
+    }
+  };
+  const publishChecked = () => checklist.guard(publish);
   const editorReady = Boolean(doc && library && assets && plugins.ready && summary);
 
   /* ------------------------------------------------- command palette (#33) */
@@ -1044,11 +1073,14 @@ export default function Studio(props: StudioProps) {
         }}
         busy={busy}
         onPreview={preview}
-        onPublish={publish}
+        onPublish={publishChecked}
         onRevert={revert}
         onDiscardAll={() => setConfirmDiscard(true)}
         onOpenPalette={() => setPaletteOpen(true)}
         publishSignal={publishSignal}
+        publishNote={
+          <PublishChecklistNote checklist={checklist} onOpen={() => openPanel('checklist')} />
+        }
         inspectorOpen={!narrow || inspectorOpen}
         onToggleInspector={() => setInspectorOpen((open) => !open)}
         disabled={!editor}
@@ -1145,6 +1177,14 @@ export default function Studio(props: StudioProps) {
                   {__('Opening the page…', 'pressbase-admin')}
                 </p>
               )
+            ) : panel === 'layers' ? (
+              editorReady ? (
+                <LayersPanel />
+              ) : (
+                <p className={styles.pagesEmpty} aria-busy="true">
+                  {__('Opening the page…', 'pressbase-admin')}
+                </p>
+              )
             ) : panel === 'styles' ? (
               props.user.canEditTheme && (
                 <StylesPanel
@@ -1211,18 +1251,35 @@ export default function Studio(props: StudioProps) {
               )
             ) : panel === 'ai' ? (
               <AiPanel ai={ai} />
+            ) : panel === 'checklist' ? (
+              <ChecklistPanel checklist={checklist} onGo={goToItem} />
             ) : undefined
           }
         />
       ),
     // AI edits (#57): the highlight, Keep and Undo over the canvas, and the AI commands.
     overlay: (editor) => (
-      <AiReview
-        ai={ai}
-        canvas={editor?.canvas ?? null}
-        panelOpen={panel === 'ai'}
-        onOpenPanel={() => openPanel('ai')}
-      />
+      <>
+        <AiReview
+          ai={ai}
+          canvas={editor?.canvas ?? null}
+          panelOpen={panel === 'ai'}
+          onOpenPanel={() => openPanel('ai')}
+        />
+        {/* The checklist (#61): placeholders marked on the canvas, and the block an item opens. */}
+        {editor && (
+          <>
+            <PlaceholderMarks />
+            <ChecklistSelect
+              checklist={checklist}
+              canvas={editor.canvas}
+              onNotFound={() =>
+                toast(__('That block isn’t on the page any more. Check again.', 'pressbase-admin'))
+              }
+            />
+          </>
+        )}
+      </>
     ),
     notice: (
       <>
@@ -1230,6 +1287,7 @@ export default function Studio(props: StudioProps) {
           <SiteBuilderNote
             runId={props.requestedRun}
             isOpenable={(slug) => allPages.some((p) => p.slug === slug)}
+            onOpenChecklist={() => openPanel('checklist')}
             onOpenPage={(slug) => {
               const page = allPages.find((p) => p.slug === slug);
               if (page) chooseTarget({ kind: 'page', id: page.id });
@@ -1327,7 +1385,6 @@ export default function Studio(props: StudioProps) {
           setSectionsAt(index);
           setPanel('sections');
         }}
-        onAskAi={askAi}
         onOpenPalette={() => setPaletteOpen(true)}
         onSectionAdded={(title, phase) => {
           if (phase === 'after') toast(sprintf(__('Section added: %s.', 'pressbase-admin'), title));
@@ -1348,7 +1405,9 @@ export default function Studio(props: StudioProps) {
   return (
     <ShortcutProvider className={styles.root}>
       <EditorUiStylesheets />
-      {content}
+      <AskAiProvider value={ask.open}>{content}</AskAiProvider>
+      <AskAiDialog ask={ask} />
+      <PublishCheckDialog checklist={checklist} onGo={goToItem} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       <ConfirmDialog
         open={pendingTarget !== null}
@@ -1548,7 +1607,6 @@ interface StudioEditorProps {
   partsLocked: boolean;
   /** ＋ Add section on the canvas: opens the Sections panel at that place (#44). */
   onAddSection: (index: number) => void;
-  onAskAi: () => void;
   /** ⌘K / Ctrl+K pressed in the canvas (#33). */
   onOpenPalette: () => void;
   /** A section added from the palette: before it goes in, and after. */
@@ -1778,6 +1836,8 @@ function StudioEditor(props: StudioEditorProps) {
       styles: themeStyles,
       // Sections from patterns stay fully editable: Studio is for building pages.
       disableContentOnlyForUnsyncedPatterns: true,
+      // The device shown (#49): blocks hidden on it leave the canvas.
+      [deviceTypeKey]: props.device,
     };
     // Simple offers the theme's presets only (#32, mode-model.ts).
     return modeEditorSettings(base, props.mode);
@@ -1788,6 +1848,7 @@ function StudioEditor(props: StudioEditorProps) {
     props.library.theme,
     doc.page?.id,
     props.mode,
+    props.device,
   ]);
 
   const editor: EditorState = {
@@ -1858,7 +1919,11 @@ function StudioEditor(props: StudioEditorProps) {
     }),
     [history.labelNext, history.undo],
   );
-  const width = DEVICES.find((d) => d.id === props.device)?.width ?? null;
+  // The canvas width for the device, inside the theme's breakpoints (#49).
+  const width = deviceFrames(
+    (settings as { __experimentalFeatures?: { viewport?: unknown } }).__experimentalFeatures
+      ?.viewport,
+  )[props.device].width;
   const frameRef = useRef<HTMLDivElement>(null);
   const showInspector = !props.narrow || props.inspectorOpen;
 
@@ -1891,6 +1956,7 @@ function StudioEditor(props: StudioEditorProps) {
       <MediaCategories enabled={props.features.media} />
       <EditingModes blocks={doc.blocks} partsEditable={!props.partsLocked} />
       <StoreBridgeSetter bridge={store} />
+      <StudioResponsive device={props.device} />
       <EditorCommands
         canUndo={history.hasUndo}
         canRedo={history.hasRedo}
@@ -1971,11 +2037,7 @@ function StudioEditor(props: StudioEditorProps) {
                     </BlockCanvas>
                   </BlockContextProvider>
                   <CanvasDragAssist frameRef={frameRef} />
-                  <SectionToolbar
-                    frameRef={frameRef}
-                    onAddSection={props.onAddSection}
-                    onAskAi={props.onAskAi}
-                  />
+                  <SectionToolbar frameRef={frameRef} onAddSection={props.onAddSection} />
                 </div>
               </div>
             </StudioFrame>

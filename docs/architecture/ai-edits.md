@@ -96,7 +96,30 @@ Nothing in this reaches the live site: canvas edits and entries go into the pers
 
 ### Commands
 
-In the command palette, under *AI*: *Ask AI for a change*, *Keep the changes from AI*, *Undo the changes from AI* (both say what the set does, and can't be chosen when there's none), and *Start a new conversation with AI*.
+In the command palette, under *AI*: *Ask AI for a change*, *Keep the changes from AI*, *Undo the changes from AI* (both say what the set does, and can't be chosen when there's none), *Start a new conversation with AI*, and [Ask AI](#ask-ai)'s *Add a section with AI…* and *New page with AI…*.
+
+## Ask AI
+
+*Ask AI* (#63) is for one thing at a time, without a conversation: the text of a section or a selection, a new section, a new page. Each answer arrives as [operations](#the-operations) through the same applier, so it's on the page at once, highlighted, one undo step, with **Keep** and **Undo** over the canvas (and in the palette).
+
+![Ask AI about a section: Rewrite, Shorten, Expand, Fix spelling, a tone, a language, or another change for the AI panel](../assets/screenshots/studio-ask-ai.png)
+
+| Where | What |
+| --- | --- |
+| ✦ in the section toolbar | *Ask AI about “Hero”*: every text in the section |
+| ✦ *Ask AI about this text* in a text block's toolbar (paragraph, heading, list item, button, details) | the selected words, or the block's text when nothing is selected |
+| The section toolbar's ⋯ → *Add a section below with AI…*, the dialog's *Add a section below with AI…*, the palette's *Add a section with AI…* | a prompt to a section, after that section (the palette's: at the end) |
+| The palette's *New page with AI…* | a prompt to a page |
+
+**Quick changes** (`POST /pressbase/v1/studio/ai/rewrite`, `{ action, tone?, language?, texts: [{ id, text }] }` → `{ texts, kept }`): *Rewrite*, *Shorten*, *Expand*, *Change tone* (friendlier, more formal, more confident, simpler, more playful), *Translate* (a language by name) and *Fix spelling*. One structured call with the **quick-edits model** (`usingModelTier('fast')`, Settings → AI's "model for quick edits", else the main one), attributed to `studio/quick-edit`. Studio sends the section's texts as its slots read them (`sectionTexts()` in `ask-ai-model.ts`: headings, paragraphs, list items and button labels; placeholders are left out, for the person to fill), and turns the answer into one `updateSlots` operation (`slotsUpdate()`): only the texts that changed, a group's other items `null` so they keep their text and formatting. A selection sends the selected words; the new words go in their place in the block's text (`spliceSelection()`). Text the model changes is written as plain text, so formatting inside a changed text (bold, links) goes.
+
+**Honest content:** the instruction forbids new facts, and core checks: a new text with numbers, email or web addresses the brief and the page's own text don't have keeps its old version (`kept`), and Studio says why when nothing could change.
+
+**A section from a prompt** (`POST /pressbase/v1/studio/ai/section`, `{ prompt, page: { id } | { slug }, index?, changeset_uuid? }`): the kind of section comes from the person's words when they name one kind (`namedCategory()`: "opening hours"), else from the patterns whose title or keywords they name (`searchPatterns()`: "pricing with three tiers" finds *Pricing, three tiers*), else from one quick call choosing a kind. Then one call chooses among up to four of its patterns and fills the slots, as the site builder's Page stage does; [honest content](site-builder.md) puts placeholders where facts would go (prices, quotes, hours: strictly so in sections whose kind or pattern is about facts). `core/propose-site-edits` checks the `insertSection` as the person. Answer: `{ operations, summary, unused, pattern: { name, title } }`.
+
+**A page from a prompt** (`POST /pressbase/v1/studio/ai/page`, `{ prompt, changeset_uuid? }`): one call plans the title and two to six kinds of section, one fills them; `createPage`, checked by the ability (it needs `publish_pages`). Studio applies it without tying it to the open canvas, opens the new page, and Keep and Undo wait over it; Undo takes the page out of the draft and goes back to the home page.
+
+All three need AI on (`503 prompt_prevented`) and count against the daily cap (`429 ai_daily_limit_reached`); a bad request is `400 rest_invalid_param`, a page that isn't there `404`. Nothing is written: the draft changes only when Studio applies the set, and only *Publish* makes it live. Code: `site-building/quick-edits.ts`, `routes/studio-ai-quick.ts`; in Studio `ask-ai.tsx` (`useAskAi()`, `AskAiDialog`, the toolbar control) and `ask-ai-model.ts`.
 
 ## Security
 
@@ -111,11 +134,14 @@ In the command palette, under *AI*: *Ask AI for a change*, *Keep the changes fro
 - `apps/admin/src/components/studio/ai-edits-model.test.ts`: each operation, the plan, refusals; `ai-panel-model.test.ts`: reading the events, the messages.
 - `e2e/tests/studio-ai.spec.ts`, with the recorded provider: a set of three operations applied as one step, highlighted, and undone; "make the buttons rounder" and "add an FAQ" kept into the draft; a request that can't be done; the command palette; the daily cap.
 
+For Ask AI (#63): `apps/core/src/studio-ask-ai.test.ts` (each action, the quick-edits model and its attribution, a rewrite that adds facts kept as it was, sections found by kind, by pattern and by asking, prices left as placeholders, a new page, permissions, AI off); `components/studio/ask-ai-model.test.ts` (which texts, a selection, the `updateSlots` that changes only them); `e2e/tests/studio-ask-ai.spec.ts` (Shorten undone and Translate kept on a section, Fix spelling on selected words, a pricing section and a new page from prompts, kept and undone). The recorded provider answers these from `recorded-ask.ts`: a shortened first sentence, a sentence more, a tone's closing line, a few French phrases, a short list of misspellings, and the kinds of section a prompt names.
+
 The [recorded provider](ai.md#testing-without-a-provider) plays a few conversations through the real tool loop (`recorded-assistant.ts`): "…rounder… buttons" (fully rounded buttons, a style change), "…FAQ…" (a questions section at the end of the open page), "…tidy…" (several page operations at once), and anything else (it can't do that).
 
 ## Not yet
 
-- *Ask AI* on a selection and in the section toolbar, prompt to section and prompt to page (#63).
+- *Ask AI* in a right-click menu (#36 adds the menu), on the header and footer's text, and on several blocks selected together.
+- Rewriting keeps the meaning but not inline formatting inside a changed text.
 - The canvas showing a style change before Studio's Styles panel (#46) lands: until then it's in the draft and in Preview.
 - Undo after later edits to the same region puts the region back as it was before the set, so those edits go too (they're one undo away).
 - Highlighting a removed section (there's nothing left to outline) or a changed menu.
