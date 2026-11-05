@@ -172,11 +172,13 @@ export function PromptToSite(props: PromptToSiteProps) {
   const [confirmStop, setConfirmStop] = useState<'stop' | 'back' | null>(null);
   const [fontPairs, setFontPairs] = useState(DESIGN_FONT_PAIRS);
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const firstRender = useRef(true);
+  /** Set when the person (not the restore on opening) changes the step. */
+  const moved = useRef(false);
   const stateRef = useRef(state);
   stateRef.current = state;
 
   const update = useCallback((change: Partial<Saved>) => {
+    if (change.step && change.step !== stateRef.current.step) moved.current = true;
     setState((s) => ({ ...s, ...change }));
   }, []);
 
@@ -201,12 +203,11 @@ export function PromptToSite(props: PromptToSiteProps) {
     if (restored) save(state);
   }, [state, restored]);
 
-  // Each step moves focus to its heading, so a screen reader announces it.
+  // Each step the person moves to puts focus on its heading, so a screen reader
+  // announces it. Opening the flow where it was left doesn't.
   useEffect(() => {
-    if (firstRender.current) {
-      firstRender.current = false;
-      return;
-    }
+    if (!moved.current) return;
+    moved.current = false;
     headingRef.current?.focus();
     setProblem(null);
   }, [state.step]);
@@ -493,6 +494,7 @@ export function PromptToSite(props: PromptToSiteProps) {
   const startOver = () => {
     save(null);
     setRun(null);
+    moved.current = stateRef.current.step !== INITIAL.step;
     setState(INITIAL);
     setProblem(null);
     window.history.replaceState(window.history.state, '', window.location.pathname);
