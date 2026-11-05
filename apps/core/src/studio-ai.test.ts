@@ -411,6 +411,15 @@ describe('/pressbase/v1/studio/ai', () => {
       expect.objectContaining({ type: 'insertSection', page: page.id }),
     ]);
 
+    const tidy = await ask(ctx, { message: 'Tidy up this page', page: { id: page.id } });
+    const tidied = tidy.events.at(-1)?.data as { message: ThreadMessage };
+    expect(tidied.message.operations?.map((o) => o.type)).toEqual([
+      'updateBlockAttributes',
+      'insertSection',
+      'moveSection',
+    ]);
+    expect(tidied.message.operations?.[2]).toMatchObject({ index: 1, to: 1, page: page.id });
+
     const cannot = await ask(ctx, { message: 'Publish everything' });
     const said = cannot.events.at(-1)?.data as { message: ThreadMessage };
     expect(said.message.operations).toBeUndefined();

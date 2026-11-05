@@ -11,6 +11,9 @@ import type { AiMessage, AiMessagePart, AiTextRequest } from '../types';
  *   buttons (setGlobalStyles with a preset reference).
  * - "…FAQ…" or "…questions…": finds a questions section in the patterns,
  *   proposes adding it at the end of the open page with a heading.
+ * - "…tidy…": a set of several page operations (Studio's applier e2e,
+ *   #57): reads the open page, then puts a call to action first, gives the
+ *   section that was first a soft accent background and moves it to the end.
  * - anything else: proposes nothing and says what it can't do.
  */
 
@@ -110,6 +113,52 @@ export function recordedAssistantStep(request: AiTextRequest): AssistantAnswer {
               pattern: pattern.name,
               ...(heading ? { slots: { [heading.id]: 'Questions people ask' } } : {}),
             },
+          ],
+        },
+      },
+    };
+  }
+
+  if (/\btidy\b/.test(asked) && pageRef !== undefined) {
+    if (!last) {
+      return {
+        call: {
+          name: 'wpab__core__get-page-structure',
+          args: typeof pageRef === 'number' ? { id: pageRef } : { slug: pageRef },
+        },
+      };
+    }
+    if (last.name === 'wpab__core__get-page-structure') {
+      return { call: { name: 'wpab__core__list-patterns', args: { category: 'call-to-action' } } };
+    }
+    const listed = last.response as {
+      patterns?: { name: string; slots: { id: string; kind: string }[] }[];
+    };
+    const pattern = listed.patterns?.[0];
+    const structure = responses.find((r) => r.name === 'wpab__core__get-page-structure')
+      ?.response as { sections?: unknown[] } | undefined;
+    const count = structure?.sections?.length ?? 0;
+    if (!pattern || count === 0) return { text: 'This page has nothing to tidy yet.' };
+    const heading = pattern.slots.find((s) => s.kind === 'heading');
+    return {
+      call: {
+        name: PROPOSE,
+        args: {
+          summary: 'Puts a call to action first and moves the old first section to the end.',
+          page: pageRef,
+          operations: [
+            {
+              type: 'updateBlockAttributes',
+              index: 0,
+              attributes: { backgroundColor: 'accent-soft' },
+            },
+            {
+              type: 'insertSection',
+              pattern: pattern.name,
+              index: 0,
+              ...(heading ? { slots: { [heading.id]: 'Come and say hello' } } : {}),
+            },
+            { type: 'moveSection', index: 1, to: count },
           ],
         },
       },
