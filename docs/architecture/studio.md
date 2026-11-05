@@ -2,7 +2,7 @@
 
 Studio is Pressbase's site editor: a full-screen screen at `/admin/studio` where a site owner edits their pages in the real theme, header and footer included. It does what WordPress's *Appearance → Editor* does, with the direct feel the [plan](../plans/visual-site-builder.md#the-screen) describes. The decision to build our own editor around `@wordpress/block-editor`, rather than use `@wordpress/edit-site`, is in [ADR 0021](../adr/0021-site-editor-and-templates-storage.md#studio-shell).
 
-This page covers the shell (#28), saving through the user's draft (#31), the header and footer in place (#30), the Pages panel (#29), the Elements panel (#35), the Sections panel and section toolbar (#44), Swap layout (#45), Simple and Advanced modes (#32), the command palette (#33), the History panel (#34), the AI panel and AI edits (#62, #57, in [AI edits](ai-edits.md)), and where the rest of v0.8 plugs in.
+This page covers the shell (#28), saving through the user's draft (#31), the header and footer in place (#30), the Pages panel (#29), the Elements panel (#35), the Sections panel and section toolbar (#44), Swap layout (#45), Simple and Advanced modes (#32), the command palette (#33), the History panel (#34), the AI panel and AI edits (#62, #57, in [AI edits](ai-edits.md)), [responsive editing](#responsive-editing) (#49), [Layers](#layers) (#50), and where the rest of v0.8 plugs in.
 
 ![Studio, editing the home page](../assets/screenshots/studio-light.png)
 
@@ -36,11 +36,11 @@ This page covers the shell (#28), saving through the user's draft (#31), the hea
 
 | Part | Component | What it does now | Built out by |
 | --- | --- | --- | --- |
-| Top bar | `top-bar.tsx`, `publish-panel.tsx` | Back to the dashboard; the page picker (a native `<select>` of the page tree, plus *Home (latest posts)* when there's no static front page); Desktop / Tablet / Mobile (canvas widths 100%, 768px, 390px); undo and redo; *Find* (the [command palette](#command-palette), #33); *Ask AI* (opens the [AI panel](ai-edits.md#the-ai-panel), #62); whether the draft is saved; Preview; *Publish N* with the list of changes and *Discard all* | #63 (Ask AI), #49 (per-device styles) |
+| Top bar | `top-bar.tsx`, `publish-panel.tsx` | Back to the dashboard; the page picker (a native `<select>` of the page tree, plus *Home (latest posts)* when there's no static front page); Desktop / Tablet / Mobile (the canvas sized inside the theme's breakpoints, [Responsive editing](#responsive-editing)); undo and redo; *Find* (the [command palette](#command-palette), #33); *Ask AI* (opens the [AI panel](ai-edits.md#the-ai-panel), #62); whether the draft is saved; Preview; *Publish N* with the list of changes and *Discard all* | #63 (Ask AI) |
 | Left rail | `rail.tsx` | Eight panels; the open one sits beside the canvas (over it on narrow screens). Escape closes it and returns focus to its button | see below |
 | Canvas | `studio.tsx`, `regions.tsx` | The page in its template, in the active theme; the header and footer editable in place | #35–#37 |
 | Breadcrumb | `breadcrumb.tsx` | Site › Page › Section › Block for the selection; each step selects that level | — |
-| Inspector | `inspector.tsx` | Nothing selected: the page (status, its template to choose, how to edit). A template part: that it's on every page, and *Reset to theme* once it differs from the theme's. A block: its card and the Content / Style / Layout tabs, under a note when it sits in a part; a section also gets [Swap layout](#swap-layout) (#45). At its foot, [Simple and Advanced](#simple-and-advanced) (#32) | #46, #49 (controls the mode map lists) |
+| Inspector | `inspector.tsx` | Nothing selected: the page (status, its template to choose, how to edit). A template part: that it's on every page, and *Reset to theme* once it differs from the theme's. A block: its card, *Show on* (and on Tablet or Mobile what it changes there, [Responsive editing](#responsive-editing)), and the Content / Style / Layout tabs, under a note when it sits in a part; a section also gets [Swap layout](#swap-layout) (#45). At its foot, [Simple and Advanced](#simple-and-advanced) (#32) | — |
 
 ### Left rail panels
 
@@ -51,7 +51,7 @@ Listed in `RAIL_PANELS` (`layout-model.ts`). A built panel (`interim: 'built'`) 
 | Pages | Built (#29): the page tree; add, rename, reorder and nest pages, choose the home page. See [The Pages panel](#the-pages-panel) | — |
 | Elements | Built (#35): blocks as large tiles, grouped, searchable, click or drag to add. See [The Elements panel](#the-elements-panel) | — |
 | Sections | Built (#44): the section library, searchable, click or drag to add. See [The Sections panel](#the-sections-panel) | — |
-| Layers | WordPress's list view | #50: rename, hide per device, drag to nest |
+| Layers | Built (#50): everything on the page as a tree; drag, or Alt and the arrow keys, to move and nest; rename; hide per device. See [Layers](#layers) | — |
 | Styles | Built (#46, #47): the site's design system, each block's styles, Additional CSS and the style book. See [The Styles panel](#the-styles-panel) | — |
 | Media | A note | #58 |
 | AI | Built (#62): ask for changes in your own words; each set goes on the page highlighted, with Keep and Undo; *Build a new site* ([the guided flow](site-builder.md#the-guided-flow), #60). With AI off, where to turn it on. See [AI edits](ai-edits.md) | — |
@@ -120,7 +120,45 @@ The block list has the `wp-site-blocks` class, so the theme's root layout rules 
 
 ### Devices
 
-Desktop, Tablet and Mobile set the canvas frame's width (`DEVICES` in `layout-model.ts`: 100%, 768px, 390px, under WordPress 7.1's `tablet` and `mobile` breakpoints). The iframe is that wide, so the theme's media queries apply. Per-device styles are #49.
+Desktop, Tablet and Mobile set the canvas frame's width from the theme's breakpoints (`deviceFrames()` in `responsive-model.ts`, see [Responsive editing](#responsive-editing)). The iframe is that wide, so the theme's media queries apply.
+
+## Responsive editing
+
+![Editing for Mobile: the heading's font size changed for phones only, with a dot and a reset, and Show on Desktop, Tablet and Mobile](../assets/screenshots/studio-responsive.png)
+
+#49 brings Elementor's responsive mode, on WordPress 7.1's data ([ADR 0023](../adr/0023-responsive-styles-and-breakpoints.md)): a block's `style["@tablet"]` and `style["@mobile"]` beside its base style, `metadata.blockVisibility`, and the theme's `settings.viewport` breakpoints (480px and 782px unless the theme says otherwise). Core already renders all three; Studio edits them. `responsive-model.ts` holds the data and pure functions (tested), `responsive.tsx` the wiring and the inspector's parts.
+
+**The canvas.** `deviceFrames()` reads `__experimentalFeatures.viewport` (sanitised as `sanitize_viewport_settings()` does) and sizes the canvas inside each range: 768px for Tablet and 390px for Mobile when they fit, else the breakpoint itself. A size the theme has no breakpoint for isn't offered. Each device button's tooltip gives its range (*Mobile: 480px and narrower*). The block editor is told the device too (`deviceTypeKey`), so a block hidden on it leaves the canvas unless it's selected.
+
+**Values per device.** On Tablet or Mobile, `StudioResponsive` sets the block editor's style state viewport (`setStyleStateViewport('@mobile')` and `setResponsiveEditing(true)`, private APIs opened in `block-editor/private-apis.ts`). WordPress 7.1's style panels (typography with colour, background, dimensions, border, elements) then read and write `style["@mobile"]`, and the canvas prints those values in their media queries. This works in Simple and in Advanced: the device switch is in the top bar for everyone, and a change made while looking at a phone shouldn't change the computer's. On those sizes the Style and Layout tabs keep only those panels (`deviceTabs()`). Style variations, shadows and duotone have one value for every size, and the public site doesn't print per-device layout and position yet. Content edits are the same on every size.
+
+**Values inherit downward** (Desktop → Tablet → Mobile). Desktop's values are the base style and reach every size through CSS. WordPress's ranges don't overlap, though: `@tablet` is `(480px < width <= 782px)`, so in CSS a tablet value never reaches a phone. Studio copies values instead, in an `editor.BlockEdit` filter around `setAttributes` (`inheritDown()`), so the stored result renders the same in WordPress:
+
+| Edit | What's stored |
+| --- | --- |
+| A value set on Tablet | in `@tablet`, and in `@mobile` where Mobile had nothing or had Tablet's old value |
+| A value removed on Tablet | from `@tablet`, and from `@mobile` where Mobile had copied it |
+| A value reset on Mobile | Tablet's value again when Tablet has one; otherwise nothing, so Desktop's shows |
+| A value set on Desktop | the base style, as before |
+
+A Mobile value equal to Tablet's counts as inherited, not as a change of Mobile's own.
+
+**What changed, with a reset.** On Tablet or Mobile, the inspector shows *Editing for Mobile* with the range, then *Changed for mobile*. Each value the block has for that size is listed with a dot, its name in plain words (`propertyLabel()`: *Font size*, *Padding (top)*), its value (a preset's name) and a reset (*Reset Font size for mobile*, `resetDeviceValue()`). *Reset all for mobile* appears when there are several. Values Mobile takes from Tablet are listed as *From Tablet: …*, without a dot. WordPress's own panels show the same values, with their own reset.
+
+**Show on.** Under the block's card, on every device, *Show on* offers Desktop, Tablet and Mobile as checkboxes (in Simple too). Unticking one writes `metadata.blockVisibility: { viewport: { mobile: false } }` (`withBlockVisibility()`); ticking all three removes it. When the block is hidden on the size shown, a note says it shows here while it's selected; when it's hidden on every size, the note says visitors won't see it. It isn't offered for blocks with `supports.visibility: false`, locked blocks, the template's regions, or themes with `blockVisibility.allowEditing: false`. Layers offers the same checkboxes, and its rows show WordPress's hidden icon.
+
+**Site styles** (the Styles panel) have one value for every size. On Tablet or Mobile the panel says so and points to the block's settings.
+
+## Layers
+
+![Layers: the page as a tree, a heading renamed Hero title, and the selected paragraph hidden on mobile](../assets/screenshots/studio-layers.png)
+
+#50 is Elementor's Navigator (`layers-panel.tsx`, with the keyboard moves in `layers-model.ts`). It's the block editor's list view, which already does most of the work:
+
+- **Selection follows the canvas** both ways. Choosing a row selects the block; selecting on the canvas marks its row, expands its parents and scrolls to it.
+- **Drag to reorder and nest**, with WordPress's drop line. The up and down arrows on a row move it without dragging. The ⋯ menu has WordPress's own actions (duplicate, group, rename, hide, delete).
+- **The keyboard:** the arrow keys move through the tree (WordPress's tree grid). Alt and the arrow keys move the focused row's block, as in the Pages panel: up and down among its siblings, right into the block above it (at its end), left out of its parent (just after it). The block editor's rules decide what's allowed (`canMoveBlock()` and `canInsertBlockType()`: locking, allowed blocks and editing modes, so a block can't leave the page for the template). A polite live region says what happened (*Heading moved into Group.*, *Heading can't move there.*), and focus stays on the moved row.
+- **Under the tree**, for the selected block: *Name in Layers* (`metadata.name`, as WordPress's Rename; a blank name, or the block type's title, removes it) and *Show on* ([Responsive editing](#responsive-editing)). The template's regions (header, footer, page content) can't be renamed or hidden here: their attributes belong to the template, which Studio doesn't save.
 
 ## Saving: the draft, Publish, Preview, Discard
 
@@ -294,7 +332,7 @@ Principle 3 of the [plan](../plans/visual-site-builder.md#principles): beginners
 | Part of the map | Simple | Advanced adds |
 | --- | --- | --- |
 | `GROUP_MODES`: the inspector groups (`modeTabs()`, `tabGroups()`) | `default`, `content`, `list`, `styles` (style variations), `typography`, `color`, `layout`, `dimensions` | `bindings`, `advanced` (anchor, CSS classes), `background`, `elements`, `border`, `effects` (shadows), `filter` (duotone), `position` |
-| `CONTROLS`: kinds of control, and features still to come (`showsControl()`) | presets, alignment, visibility (#49), [Swap layout](#swap-layout) (#45) | any colour or size, units, line height and letter spacing, values per device (#49), borders, shadows, hover and focus styles, Additional CSS ([The Styles panel](#the-styles-panel)) |
+| `CONTROLS`: kinds of control, and features still to come (`showsControl()`) | presets, alignment, hiding on a device and values per device ([Responsive editing](#responsive-editing)), [Swap layout](#swap-layout) (#45) | any colour or size, units, line height and letter spacing, borders, shadows, hover and focus styles, Additional CSS ([The Styles panel](#the-styles-panel)) |
 | `modeEditorSettings()`: the editor settings | the theme's presets only: `color.custom`, `color.customGradient`, `color.customDuotone`, `typography.customFontSize`, `spacing.customSpacingSize`, `typography.lineHeight`, `letterSpacing`, `textDecoration` and `writingMode` off; spacing units `px` only. Set in `__experimentalFeatures` (and any block's own settings there) and in the top-level switches core moves them to (`disableCustomColors`…), which the block editor reads when the features don't say | the theme's settings, unchanged |
 
 - **Nothing hidden without a word:** when a tab has nothing in Simple but has settings in Advanced (a heading's anchor, say), it says *More settings for this block are in Advanced*, with a button to switch.
@@ -360,7 +398,7 @@ Nothing here writes to the live site: restoring is a draft change like any other
 - The first Tab stop is *Skip to the page*, then the top bar, the rail, the canvas, the breadcrumb and the inspector, in that order.
 - ⌘K / Ctrl+K opens the [command palette](#command-palette) from anywhere, the canvas included.
 - In the canvas, WordPress's keyboard model applies: Tab enters at the first selectable block (the header), the arrow keys move between blocks, Enter starts editing, Escape returns to selecting. Ctrl/⌘+Z and Ctrl/⌘+Shift+Z (or Ctrl+Y) undo and redo from anywhere.
-- The device switch is a fieldset of toggle buttons (`aria-pressed`); the rail buttons have `aria-expanded`; the inspector tabs are a WAI-ARIA tablist (arrow keys, Home, End); the breadcrumb is a `nav` with `aria-current="location"` on the last step, and each step says its level to screen readers ("Section: Hero").
+- The device switch is a fieldset of toggle buttons (`aria-pressed`), each with its range in its tooltip; *Show on* is a fieldset of checkboxes; the per-device resets name what they reset (*Reset Font size for mobile*); Layers moves blocks with Alt and the arrow keys and says what happened; the rail buttons have `aria-expanded`; the inspector tabs are a WAI-ARIA tablist (arrow keys, Home, End); the breadcrumb is a `nav` with `aria-current="location"` on the last step, and each step says its level to screen readers ("Section: Hero").
 - Landmarks: the top bar (`header`, with a visually hidden `h1`), `nav` *Studio panels*, the open panel (`aside`, labelled by its heading), `main` (the canvas and breadcrumb), `aside` *Settings*.
 - Under 900px the inspector becomes a drawer opened by *Settings* in the top bar (Escape closes it), panels slide over the canvas, and the device switch and Ask AI are hidden. Under 600px the rail shows icons only and the canvas uses the whole width.
 - Animations stop under `prefers-reduced-motion`.
@@ -373,12 +411,10 @@ Nothing here writes to the live site: restoring is a draft change like any other
 
 | Issue | Where |
 | --- | --- |
-| #49 per-device values and visibility | their entries in `CONTROLS` (`mode-model.ts`), read with `showsControl()` |
 | Plugins' commands | `studioCommands.register()` or `useStudioCommands()` (`commands-model.ts`, `command-palette.tsx`); the AI commands (#62) are registered this way, in `ai-panel.tsx` |
 | #63 Ask AI on a selection | `useStudioAi().edits.apply()` applies any set of [operations](ai-edits.md#the-operations) with Keep and Undo; `editor.canvas` (`AiCanvas`) replaces regions as one named step |
 | #36 Context menu, #37 handles | the canvas in `StudioEditor` |
-| #50 Layers | its panel in `rail.tsx` |
-| #49 Responsive editing | `DEVICES` and the `device` state |
+| Per-device site styles and layout | `deviceTabs()` and `DEVICE_GROUPS` (`responsive-model.ts`) say which inspector groups edit one size; the Styles panel would write `styles.blocks.{name}["@mobile"]` |
 | #63 AI on a selection | `onAskAi` in the section toolbar (the top bar's opens the AI panel) |
 
 ## Tests
@@ -395,7 +431,10 @@ Nothing here writes to the live site: restoring is a draft change like any other
 - `apps/core/src/changesets.test.ts` (#29): pages created by slug, nested under a new page, with a template; a preview at the new address; refusals.
 - `e2e/tests/studio-panels.spec.ts`: add a page, nest it (drag and keyboard), set the home page, publish; Edit with Studio from Pages and the editor; an editor with the header, footer and styles locked; a pricing section added between two others, moved with the toolbar and undone, then published.
 - `components/studio/layout-model.test.ts`: the tabs cover every inspector group; the rail's panels each name their issue; device widths.
-- `components/studio/mode-model.test.ts` (#32): every group in a mode, what Simple and Advanced show, controls still to come name their issue, the editor settings Simple turns off (blocks' own settings included).
+- `components/studio/responsive-model.test.ts` (#49): breakpoints sanitised as WordPress does, canvas widths inside the theme's ranges (a size without a breakpoint left out), the inspector's groups per device, values inheriting downward (copied, kept, updated, removed, reset to Tablet's), a device's values and resets, labels, `blockVisibility` read and written.
+- `components/studio/layers-model.test.ts` (#50): Alt and the arrow keys as moves, where each move goes (or nowhere), the template's regions left alone.
+- `e2e/tests/studio-responsive.spec.ts` (#49, #50): a heading made smaller on Mobile (the dot, the reset, the draft's `@mobile`) and a paragraph hidden on desktop, published and checked at a phone's and a computer's width; a Tablet value carried down to Mobile and shown there as inherited; Layers following the selection both ways, moving a block with Alt and the arrow keys (announced, focus kept), renaming it and hiding it on mobile.
+- `components/studio/mode-model.test.ts` (#32): every group in a mode, what Simple and Advanced show, no controls left to come, the editor settings Simple turns off (blocks' own settings included).
 - `apps/core/src/people.test.ts`: `pressbase_studio_mode` per person, validated.
 - `components/studio/commands-model.test.ts` (#33): registering, replacing and removing commands, listeners, search by words, keywords and group, accents, ranking, search-only commands, limits, unknown groups.
 - `components/studio/history-model.test.ts` (#34): the stack (steps, staged changes, undo, redo, jumping, a new step dropping undone ones) and every step's words: text, style, alignment, settings, images, links, descriptions, moves up, down and into a block, added, duplicated and removed sections and blocks, a block turned into another, a change in the Header, several blocks, lower case in English only.
@@ -419,10 +458,14 @@ Nothing here writes to the live site: restoring is a draft change like any other
 - *Create new menu* in the Navigation block saves that menu straight away, as in WordPress; only pointing the header at it waits for Publish.
 - Telling apart "someone else published" from "you saved it in another screen": both show the note on reopening.
 - History starts again when another page opens (each page has its own canvas and undo history), and doesn't list edits outside the block tree (site title, menus).
-- The Styles panel has no per-device values (#49: `styles.blocks.{name}` will take `@tablet` and `@mobile` beside the desktop values, [ADR 0023](../adr/0023-responsive-styles-and-breakpoints.md)), no gradients or duotone, and no element styles besides buttons and links (captions, cites, headings by level). Fonts are the theme's and its variations' (no font library yet).
+- The Styles panel has no per-device values (`styles.blocks.{name}` could take `@tablet` and `@mobile` beside the desktop values, [ADR 0023](../adr/0023-responsive-styles-and-breakpoints.md)), no gradients or duotone, and no element styles besides buttons and links (captions, cites, headings by level). Fonts are the theme's and its variations' (no font library yet).
 - The style book draws theme blocks (post title, comments…) without a post, as WordPress's does, so some show placeholders.
 - Simple narrows the inspector, not the block toolbar.
 - Plugins can't reach `studioCommands` yet: it needs a place in the plugin SDK's admin API.
 - Swap layout swaps only sections of one block, and between patterns of one block, as WordPress's *Change design* does. Its memory of what a smaller layout left out lasts while the page is open.
 - A section built some other way that happens to have a pattern's shape is offered that pattern's layouts; a section whose shape no pattern has gets no arrows.
+- Per-device layout and position (`style["@mobile"].layout`): the public site doesn't print them yet (ADR 0023), so the inspector doesn't offer them on Tablet and Mobile. Per-device block gap sits in the Dimensions panel but, like layout, isn't printed yet.
+- WordPress's own reset on a Mobile value that came from Tablet does nothing visible (it goes back to Tablet's value, which it already had); Studio's list shows such values as *From Tablet*, without a reset.
+- A block hidden on a size is still in the page's HTML there (WordPress's `display: none` classes); only `blockVisibility: false` leaves it out.
+- The private block-editor APIs Studio opens for responsive editing can change with a WordPress release: the packages are pinned, and the e2e tests cover them.
 - The Elements panel has no "most used" row yet, and its tiles can't be dragged by keyboard (Enter on a tile after selecting the place does the same).
