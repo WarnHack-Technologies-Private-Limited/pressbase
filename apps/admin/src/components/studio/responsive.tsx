@@ -371,7 +371,6 @@ export function VisibilityChoice({ clientId, compact }: { clientId: string; comp
       <legend className={styles.listTitle}>{__('Show on', 'pressbase-admin')}</legend>
       <div className={styles.visibilityOptions}>
         {devices.map((d) => {
-          const Icon = DEVICE_ICONS[d.id];
           return (
             <label key={d.id} className={styles.visibilityOption}>
               <input
@@ -384,7 +383,6 @@ export function VisibilityChoice({ clientId, compact }: { clientId: string; comp
                   })
                 }
               />
-              <Icon size={14} aria-hidden="true" />
               <span>{__(d.label, 'pressbase-admin')}</span>
             </label>
           );
