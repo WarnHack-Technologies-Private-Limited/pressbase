@@ -227,7 +227,10 @@ export function studioAiRoutes() {
             proposal: (proposal) => {
               reply.operations = proposal.operations;
               reply.summary = proposal.summary;
+              if (proposal.styles) reply.styles = proposal.styles;
+              else delete reply.styles;
               reply.outcome = 'proposed';
+              void send('proposal', { message_id: reply.id, summary: proposal.summary });
             },
           },
         );

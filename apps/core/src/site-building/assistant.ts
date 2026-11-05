@@ -49,6 +49,8 @@ export interface ThreadMessage {
   /** The changes proposed with the reply, checked against the site. */
   operations?: EditOperation[];
   summary?: string;
+  /** The draft entry the set's style changes make (`wp_global_styles:{theme}`), resolved by core. */
+  styles?: { key: string; value: Record<string, unknown> };
   outcome?: Outcome;
   error?: { code: string; message: string };
 }
@@ -122,7 +124,12 @@ export function requestText(message: string, context: { page: OpenPage | null; p
 export interface AssistantEvents {
   text: (text: string) => void;
   /** A proposal core/propose-site-edits accepted (the last one counts). */
-  proposal: (proposal: { operations: EditOperation[]; summary: string; unused: string[] }) => void;
+  proposal: (proposal: {
+    operations: EditOperation[];
+    summary: string;
+    unused: string[];
+    styles?: { key: string; value: Record<string, unknown> };
+  }) => void;
 }
 
 /**
@@ -160,6 +167,7 @@ export async function runAssistant(
         operations?: EditOperation[];
         summary?: string;
         unused?: string[];
+        styles?: { key: string; value: Record<string, unknown> };
         error?: unknown;
       };
       if (!response || response.error !== undefined || !Array.isArray(response.operations)) return;
@@ -167,6 +175,7 @@ export async function runAssistant(
         operations: response.operations,
         summary: response.summary ?? '',
         unused: response.unused ?? [],
+        ...(response.styles ? { styles: response.styles } : {}),
       });
     })
     .streamText();

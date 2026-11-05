@@ -22,7 +22,14 @@ import {
   sectionPattern,
   validateSlotValues,
 } from './sections';
-import { applyDesign, assertPresetStyles, currentUserStyles, designSystem } from './styles';
+import {
+  applyDesign,
+  assertPresetStyles,
+  currentUserStyles,
+  designSystem,
+  globalStylesKey,
+  patchStyles,
+} from './styles';
 
 /**
  * `core/propose-site-edits` (v0.8, #62): how a model in Studio's AI panel
@@ -126,6 +133,13 @@ export function registerSiteEditsAbility(kernel: Kernel): void {
           items: { type: 'string' },
           description: 'Content a replaced section has no place for in its new pattern.',
         },
+        styles: {
+          type: 'object',
+          description:
+            'When the set changes the site styles: the changeset entry they would make (`key`, `wp_global_styles:{theme}`, and its `value`), for Studio to put in the draft when it applies the set.',
+          properties: { key: { type: 'string' }, value: { type: 'object' } },
+          required: ['key', 'value'],
+        },
       },
       required: ['operations', 'summary', 'unused'],
     },
@@ -140,6 +154,8 @@ export function registerSiteEditsAbility(kernel: Kernel): void {
       const theme = await kernel.themes.active();
       const stylesheet = theme.info.stylesheet;
       const system = designSystem(theme, false);
+      /** The user global styles as the set leaves them, once it changes them. */
+      let styles: Awaited<ReturnType<typeof currentUserStyles>>['config'] | undefined;
 
       /** Pages as the set leaves them so far, by the ref the result names them with. */
       const pages = new Map<PageRef, ParsedBlock[]>();
@@ -185,16 +201,22 @@ export function registerSiteEditsAbility(kernel: Kernel): void {
           switch (operation.type) {
             case 'setGlobalStyles': {
               if (operation.styles) assertPresetStyles(operation.styles, `${path}[styles]`);
+              styles ??= (await currentUserStyles(kernel, stylesheet, data)).config;
               if (operation.design) {
-                const { config } = await currentUserStyles(kernel, stylesheet, data);
                 try {
-                  applyDesign(theme, config, operation.design);
+                  styles = applyDesign(theme, styles, operation.design);
                 } catch (error) {
                   if (error instanceof AbilityError) {
                     throw invalid(error.message.replace('input[design]', `${path}[design]`));
                   }
                   throw error;
                 }
+              }
+              if (operation.styles) {
+                styles = {
+                  ...styles,
+                  styles: patchStyles(styles.styles, operation.styles) as never,
+                };
               }
               break;
             }
@@ -260,7 +282,20 @@ export function registerSiteEditsAbility(kernel: Kernel): void {
           throw error;
         }
       }
-      return { operations: out, summary: input.summary, unused };
+      return {
+        operations: out,
+        summary: input.summary,
+        unused,
+        // As core/update-global-styles would write it; Studio puts it in the draft.
+        ...(styles
+          ? {
+              styles: {
+                key: globalStylesKey(stylesheet),
+                value: { styles: styles.styles ?? {}, settings: styles.settings ?? {} },
+              },
+            }
+          : {}),
+      };
     },
     meta: {
       annotations: { readonly: true, destructive: false, idempotent: true },

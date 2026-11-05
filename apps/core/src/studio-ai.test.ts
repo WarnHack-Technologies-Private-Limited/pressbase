@@ -146,6 +146,12 @@ describe('core/propose-site-edits', () => {
     expect(body.summary).toBe('Adds questions and a page for them.');
     expect(body.operations.slice(0, 3).map((o) => o.page)).toEqual([page.id, page.id, page.id]);
     expect(body.operations[4]).toMatchObject({ type: 'createPage', slug: 'questions' });
+    // The styles the set leaves, as the draft entry Studio writes when it applies the set.
+    const { styles } = res.body as { styles: { key: string; value: Json } };
+    expect(styles.key).toBe('wp_global_styles:pressbase');
+    expect(styles.value).toMatchObject({
+      styles: { elements: { button: { border: { radius: 'var:preset|border-radius|full' } } } },
+    });
     // Nothing was written: no changeset, no new page.
     expect(await changesetEntries(ctx)).toEqual({});
     expect((await ctx.request('GET', '/wp/v2/pages?slug=questions')).body).toEqual([]);
@@ -397,6 +403,7 @@ describe('/pressbase/v1/studio/ai', () => {
       },
     ]);
     expect(styled.message.text).toMatch(/fully rounded/);
+    expect(styled.message.styles?.key).toBe('wp_global_styles:pressbase');
 
     const faq = await ask(ctx, { message: 'Add an FAQ', page: { id: page.id } });
     const added = faq.events.at(-1)?.data as { message: ThreadMessage };
