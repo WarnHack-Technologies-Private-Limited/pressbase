@@ -2566,88 +2566,88 @@ msgstr ""
 msgid "bottom right"
 msgstr ""
 
-#: apps/admin/src/components/studio/responsive.tsx:233
+#: apps/admin/src/components/studio/responsive.tsx:235
 #, js-format
 msgid "Editing for %s"
 msgstr ""
 
-#: apps/admin/src/components/studio/responsive.tsx:238
+#: apps/admin/src/components/studio/responsive.tsx:240
 msgid "Style changes apply to tablets and carry down to phones. Desktop’s values show until you change them."
 msgstr ""
 
-#: apps/admin/src/components/studio/responsive.tsx:242
+#: apps/admin/src/components/studio/responsive.tsx:244
 msgid "Style changes apply to phones only. Values from Tablet and Desktop show until you change them."
 msgstr ""
 
-#: apps/admin/src/components/studio/responsive.tsx:266
+#: apps/admin/src/components/studio/responsive.tsx:268
 msgid "Reset"
 msgstr ""
 
-#: apps/admin/src/components/studio/responsive.tsx:278
+#: apps/admin/src/components/studio/responsive.tsx:280
 #, js-format
 msgid "From Tablet: %s"
 msgstr ""
 
-#: apps/admin/src/components/studio/responsive.tsx:295
+#: apps/admin/src/components/studio/responsive.tsx:297
 msgid "Changed for tablet"
 msgstr ""
 
-#: apps/admin/src/components/studio/responsive.tsx:296
+#: apps/admin/src/components/studio/responsive.tsx:298
 msgid "Changed for mobile"
 msgstr ""
 
 #. translators: %s: a setting ("Font size").
-#: apps/admin/src/components/studio/responsive.tsx:300
+#: apps/admin/src/components/studio/responsive.tsx:302
 #, js-format
 msgid "Reset %s for tablet"
 msgstr ""
 
 #. translators: %s: a setting ("Font size").
-#: apps/admin/src/components/studio/responsive.tsx:301
+#: apps/admin/src/components/studio/responsive.tsx:303
 #, js-format
 msgid "Reset %s for mobile"
 msgstr ""
 
-#: apps/admin/src/components/studio/responsive.tsx:304
+#: apps/admin/src/components/studio/responsive.tsx:306
 msgid "Reset all for tablet"
 msgstr ""
 
-#: apps/admin/src/components/studio/responsive.tsx:305
+#: apps/admin/src/components/studio/responsive.tsx:307
 msgid "Reset all for mobile"
 msgstr ""
 
-#: apps/admin/src/components/studio/responsive.tsx:308
+#: apps/admin/src/components/studio/responsive.tsx:310
 msgid "Hidden on desktop. It shows here while it’s selected."
 msgstr ""
 
-#: apps/admin/src/components/studio/responsive.tsx:309
+#: apps/admin/src/components/studio/responsive.tsx:311
 msgid "Hidden on tablet. It shows here while it’s selected."
 msgstr ""
 
-#: apps/admin/src/components/studio/responsive.tsx:310
+#: apps/admin/src/components/studio/responsive.tsx:312
 msgid "Hidden on mobile. It shows here while it’s selected."
-msgstr ""
-
-#: apps/admin/src/components/studio/responsive.tsx:330
-#, js-format
-msgid "Wider than %1$s, up to %2$s"
 msgstr ""
 
 #: apps/admin/src/components/studio/responsive.tsx:332
 #, js-format
+msgid "Wider than %1$s, up to %2$s"
+msgstr ""
+
+#: apps/admin/src/components/studio/responsive.tsx:334
+#, js-format
 msgid "%s and narrower"
 msgstr ""
 
-#: apps/admin/src/components/studio/responsive.tsx:333
+#: apps/admin/src/components/studio/responsive.tsx:335
 #, js-format
 msgid "Wider than %s"
 msgstr ""
 
-#: apps/admin/src/components/studio/responsive.tsx:357
+#: apps/admin/src/components/studio/responsive.tsx:359
 msgid "Hidden on every size: visitors won’t see this block."
 msgstr ""
 
-#: apps/admin/src/components/studio/responsive.tsx:369
+#: apps/admin/src/components/studio/responsive.tsx:371
 msgid "Show on"
 msgstr ""
 
@@ -2984,12 +2984,12 @@ msgstr ""
 msgid "all pages"
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:2058
+#: apps/admin/src/components/studio/studio.tsx:2057
 #, js-format
 msgid "The %s is on every page, so only people who can change the site’s design can edit it."
 msgstr ""
 
-#: apps/admin/src/components/studio/studio.tsx:2062
+#: apps/admin/src/components/studio/studio.tsx:2061
 #, js-format
 msgid "You’re editing the %s. It’s on every page, so your changes show everywhere once you publish."
 msgstr ""
