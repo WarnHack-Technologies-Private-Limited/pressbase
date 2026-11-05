@@ -100,7 +100,7 @@ test('a placeholder is marked, listed on the checklist, and stops a one-click pu
   // Marked on the canvas (editor only).
   const gap = canvas.getByText('[Add a customer quote]');
   await expect(gap).toBeVisible();
-  await expect.poll(() => gap.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe('dashed');
+  await expect(gap).toHaveCSS('outline-style', 'dashed');
 
   // An edit, so there's something to publish.
   await canvas.getByText('Welcome in').click();
@@ -147,9 +147,7 @@ test('a placeholder is marked, listed on the checklist, and stops a one-click pu
   const pageLink = ((await after.json()) as { link: string }).link;
   await page.goto(pageLink);
   await expect(page.getByText('[Add a customer quote]')).toBeVisible();
-  expect(
-    await page.getByText('[Add a customer quote]').evaluate((el) => getComputedStyle(el).outlineStyle),
-  ).not.toBe('dashed');
+  await expect(page.getByText('[Add a customer quote]')).not.toHaveCSS('outline-style', 'dashed');
 });
 
 test('Ask AI on a section: shorten (undone), then translate (kept)', async ({ page }) => {

@@ -150,7 +150,9 @@ test('builds a site from a description, then publishes it from Studio', async ({
   // Publish: with gaps left, Studio asks first; then the site goes live.
   await page.getByRole('button', { name: /^Publish, \d+ changes?$/ }).click();
   await page.getByRole('button', { name: /^Publish \d+ changes?$/ }).click();
-  const confirm = page.getByRole('dialog', { name: /^Publish with \d+ things? left to fill in\?$/ });
+  const confirm = page.getByRole('dialog', {
+    name: /^Publish with \d+ things? left to fill in\?$/,
+  });
   await expect(confirm).toBeVisible({ timeout: 30_000 });
   await confirm.getByRole('button', { name: 'Publish anyway' }).click();
   await expect(page.getByText('Published. Your changes are live.')).toBeVisible();
