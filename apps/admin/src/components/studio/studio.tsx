@@ -1032,7 +1032,7 @@ export default function Studio(props: StudioProps) {
         canRedo={editor?.canRedo ?? false}
         onUndo={() => editor?.undo()}
         onRedo={() => editor?.redo()}
-        onAskAi={askAi}
+        onAskAi={() => openPanel('ai')}
         changes={changes}
         draftStatus={draft.status}
         onRetrySave={() => {

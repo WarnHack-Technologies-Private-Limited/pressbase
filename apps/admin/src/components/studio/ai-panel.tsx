@@ -276,7 +276,9 @@ function Message({ message, ai }: { message: AiMessage; ai: StudioAi }) {
           className={styles.proposal}
           data-state={pending ? 'pending' : problem ? 'failed' : outcome}
         >
-          {message.summary && <p className={styles.summary}>{message.summary}</p>}
+          {message.summary && !message.text.includes(message.summary) && (
+            <p className={styles.summary}>{message.summary}</p>
+          )}
           {problem ? (
             <p className={styles.problem}>
               {__('These changes couldn’t be made:', 'pressbase-admin')} {problem}
@@ -452,7 +454,7 @@ function AiHighlight({ ids }: { ids: readonly string[] }) {
       const selectors = list.map((id) => `[data-block="${CSS.escape(id)}"]`).join(',\n');
       style.textContent = `${selectors} {
   outline: 2px dashed var(--wp-admin-theme-color, #3b4cca) !important;
-  outline-offset: 3px;
+  outline-offset: -2px;
 }`;
       if (!scrolled) {
         const first = doc.querySelector(`[data-block="${CSS.escape(list[0] as string)}"]`);
