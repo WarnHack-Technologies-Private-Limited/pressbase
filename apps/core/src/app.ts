@@ -36,6 +36,7 @@ import { qualityRoutes } from './routes/quality';
 import { searchRoutes } from './routes/search';
 import { settingsRoutes } from './routes/settings';
 import { siteBuilderRoutes } from './routes/site-builder';
+import { studioAiRoutes } from './routes/studio-ai';
 import { siteHealthRoutes, wpSiteHealthRoutes } from './routes/site-health';
 import { templatesRoutes } from './routes/templates';
 import { termsRoutes } from './routes/terms';
@@ -205,6 +206,8 @@ export function createApp(kernel: Kernel) {
   installed.route('/pressbase/v1/check-page', qualityRoutes());
   // The site builder (v0.8, #59): runs and their progress over SSE. See docs/architecture/site-builder.md.
   installed.route('/pressbase/v1/site-builder', siteBuilderRoutes());
+  // Studio's AI panel (v0.8, #62): requests in your own words, answered with edits. See docs/architecture/ai-edits.md.
+  installed.route('/pressbase/v1/studio/ai', studioAiRoutes());
 
   // Plugins (v0.5): /wp/v2/plugins, then — last, as a catch-all — the post
   // types, taxonomies and REST namespaces of active plugins, looked up per

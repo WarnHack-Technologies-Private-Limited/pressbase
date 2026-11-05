@@ -96,7 +96,7 @@ interface PageView {
   fromChangeset: boolean;
 }
 
-async function pageBySlug(kernel: Kernel, slug: string): Promise<Post | undefined> {
+export async function pageBySlug(kernel: Kernel, slug: string): Promise<Post | undefined> {
   const [post] = await kernel.db
     .select()
     .from(schema.posts)
@@ -120,7 +120,7 @@ async function existingPage(kernel: Kernel, id: number): Promise<Post | undefine
 const invalidPage = () => new AbilityError('rest_post_invalid_id', 'Invalid page ID.', 404);
 
 /** A page as the changeset leaves it: its entry over the saved page, or a page the changeset creates. */
-async function pageView(
+export async function pageView(
   kernel: Kernel,
   data: ChangesetData,
   ref: { id?: number; slug?: string },
@@ -147,7 +147,7 @@ async function pageView(
 }
 
 /** edit_post on an existing page; edit_pages for a page a changeset creates (or a missing one, which 404s later). */
-async function canEditPage(
+export async function canEditPage(
   kernel: Kernel,
   context: AbilityContext,
   ref: { id?: number; slug?: string } | null,
@@ -186,11 +186,13 @@ export function applyOperations(
   sections: ParsedBlock[],
   operations: Operation[],
   patterns: Patterns,
+  /** Where the first operation sits in the input, for error paths. */
+  first = 0,
 ): { sections: ParsedBlock[]; unused: string[] } {
   const out = [...sections];
   const unused: string[] = [];
   operations.forEach((operation, i) => {
-    const path = `input[operations][${i}]`;
+    const path = `input[operations][${first + i}]`;
     const check = (index: number, max: number, name = 'index') => {
       if (index > max) {
         throw new AbilityError(
@@ -219,7 +221,7 @@ export function applyOperations(
           });
           const transfer = transferSlots(sectionSlots(current, patterns), next);
           carried = transfer.values;
-          unused.push(...transfer.unused.map((u) => `${i}.${u.path}`));
+          unused.push(...transfer.unused.map((u) => `${first + i}.${u.path}`));
         }
         out.splice(
           operation.index,
@@ -818,7 +820,7 @@ export function registerSiteAbilities(kernel: Kernel): void {
 
 /* --------------------------------------------------------- template parts */
 
-async function templatePartView(kernel: Kernel, data: ChangesetData, slug: string) {
+export async function templatePartView(kernel: Kernel, data: ChangesetData, slug: string) {
   const stylesheet = await kernel.themes.activeStylesheet();
   const template = await getBlockTemplate(
     kernel,
