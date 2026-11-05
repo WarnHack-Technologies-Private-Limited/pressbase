@@ -277,6 +277,9 @@ importers:
       "@wordpress/notices":
         specifier: 6.0.0
         version: 6.0.0(@date-fns/tz@1.5.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.31)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))
+      "@wordpress/private-apis":
+        specifier: 3.0.0
+        version: 3.0.0
       "@wordpress/server-side-render":
         specifier: 7.0.0
         version: 7.0.0(@date-fns/tz@1.5.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.31)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))
