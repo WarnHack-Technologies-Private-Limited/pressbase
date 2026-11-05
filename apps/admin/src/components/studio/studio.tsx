@@ -1059,158 +1059,156 @@ export default function Studio(props: StudioProps) {
         }}
       />
     ),
-    panel: (editor) => (
-      <>
-        <AiReview
-          ai={ai}
-          canvas={editor?.canvas ?? null}
-          panelOpen={panel === 'ai'}
-          onOpenPanel={() => openPanel('ai')}
-        />
-        {panel && (
-          <RailPanelView
-            id={panel}
-            onClose={() => {
-              setPanel(null);
-              setSectionsAt(null);
-            }}
-            note={
-              panel === 'styles' && !props.user.canEditTheme ? (
-                <p className={styles.panelNote}>
-                  <Lock size={16} aria-hidden="true" />
-                  <span>
-                    {__(
-                      'Only people who can change the site’s design can change its styles. You can edit your pages.',
-                      'pressbase-admin',
-                    )}
-                  </span>
+    panel: (editor) =>
+      panel && (
+        <RailPanelView
+          id={panel}
+          onClose={() => {
+            setPanel(null);
+            setSectionsAt(null);
+          }}
+          note={
+            panel === 'styles' && !props.user.canEditTheme ? (
+              <p className={styles.panelNote}>
+                <Lock size={16} aria-hidden="true" />
+                <span>
+                  {__(
+                    'Only people who can change the site’s design can change its styles. You can edit your pages.',
+                    'pressbase-admin',
+                  )}
+                </span>
+              </p>
+            ) : undefined
+          }
+          content={
+            panel === 'pages' ? (
+              <PagesPanel
+                pages={pages}
+                target={target}
+                postsOnFront={postsOnFront}
+                frontPageId={frontPageId}
+                onTarget={(next) => {
+                  chooseTarget(next);
+                  if (narrow) setPanel(null);
+                }}
+                can={{
+                  add: props.user.canPublishPages,
+                  arrange: props.user.canEditOthersPages,
+                  home: props.user.canManageOptions,
+                }}
+                onAdd={(title) => {
+                  const entry = newPageEntry(title, allPages);
+                  draft.wantFields(new Map([[entry.key, entry.value as Record<string, unknown>]]));
+                  chooseTarget({ kind: 'page', id: entry.slug });
+                }}
+                onRename={(ref, title) =>
+                  draft.wantFields(fieldChange(ref, 'title', title, livePages))
+                }
+                onMove={(ref, to) => {
+                  const arranged = movePage(allPages, ref, to);
+                  if (!arranged) return false;
+                  if (arranged.size) draft.wantFields(arrangementChanges(arranged, livePages));
+                  return true;
+                }}
+                onHome={(id) => {
+                  draft.want(homePageEntries(id, liveReading));
+                  // A theme with a front-page template shows the home page in it.
+                  if (library?.templates.some((t) => t.slug === 'front-page')) reloadCanvas();
+                }}
+              />
+            ) : panel === 'elements' ? (
+              editorReady ? (
+                <ElementsPanel />
+              ) : (
+                <p className={styles.pagesEmpty} aria-busy="true">
+                  {__('Opening the page…', 'pressbase-admin')}
                 </p>
-              ) : undefined
-            }
-            content={
-              panel === 'pages' ? (
-                <PagesPanel
-                  pages={pages}
-                  target={target}
-                  postsOnFront={postsOnFront}
-                  frontPageId={frontPageId}
-                  onTarget={(next) => {
-                    chooseTarget(next);
-                    if (narrow) setPanel(null);
-                  }}
-                  can={{
-                    add: props.user.canPublishPages,
-                    arrange: props.user.canEditOthersPages,
-                    home: props.user.canManageOptions,
-                  }}
-                  onAdd={(title) => {
-                    const entry = newPageEntry(title, allPages);
-                    draft.wantFields(
-                      new Map([[entry.key, entry.value as Record<string, unknown>]]),
-                    );
-                    chooseTarget({ kind: 'page', id: entry.slug });
-                  }}
-                  onRename={(ref, title) =>
-                    draft.wantFields(fieldChange(ref, 'title', title, livePages))
+              )
+            ) : panel === 'sections' ? (
+              editorReady ? (
+                <SectionsPanel
+                  insertAt={sectionsAt}
+                  onClearInsertAt={() => setSectionsAt(null)}
+                  onInserting={(title) =>
+                    editor?.labelNext(sprintf(__('Added section “%s”', 'pressbase-admin'), title))
                   }
-                  onMove={(ref, to) => {
-                    const arranged = movePage(allPages, ref, to);
-                    if (!arranged) return false;
-                    if (arranged.size) draft.wantFields(arrangementChanges(arranged, livePages));
-                    return true;
-                  }}
-                  onHome={(id) => {
-                    draft.want(homePageEntries(id, liveReading));
-                    // A theme with a front-page template shows the home page in it.
-                    if (library?.templates.some((t) => t.slug === 'front-page')) reloadCanvas();
-                  }}
+                  onInserted={(title) =>
+                    toast(sprintf(__('Section added: %s.', 'pressbase-admin'), title))
+                  }
                 />
-              ) : panel === 'elements' ? (
-                editorReady ? (
-                  <ElementsPanel />
-                ) : (
-                  <p className={styles.pagesEmpty} aria-busy="true">
-                    {__('Opening the page…', 'pressbase-admin')}
-                  </p>
-                )
-              ) : panel === 'sections' ? (
-                editorReady ? (
-                  <SectionsPanel
-                    insertAt={sectionsAt}
-                    onClearInsertAt={() => setSectionsAt(null)}
-                    onInserting={(title) =>
-                      editor?.labelNext(sprintf(__('Added section “%s”', 'pressbase-admin'), title))
-                    }
-                    onInserted={(title) =>
-                      toast(sprintf(__('Section added: %s.', 'pressbase-admin'), title))
-                    }
-                  />
-                ) : (
-                  <p className={styles.pagesEmpty} aria-busy="true">
-                    {__('Opening the page…', 'pressbase-admin')}
-                  </p>
-                )
-              ) : panel === 'history' ? (
-                editor && doc ? (
-                  <HistoryPanel
-                    entries={editor.history.entries}
-                    index={editor.history.index}
-                    onGo={editor.history.go}
-                    partTitle={(slug) => parts.get(slug)?.title ?? slug}
-                    page={
-                      doc.page && typeof doc.page.id === 'number' && !isNewPage(doc.page.id)
-                        ? {
-                            id: doc.page.id,
-                            title: pageTitle(drafted ?? doc.page),
-                            live: doc.regions.get(pageKey(doc.page.id))?.live ?? '',
-                          }
-                        : undefined
-                    }
-                    onRestorePage={(content, when) => {
-                      const label = sprintf(
-                        __('Restored the version from %s', 'pressbase-admin'),
-                        when,
-                      );
-                      if (editor.restorePage(content, label)) {
-                        toast(
-                          sprintf(
-                            __(
-                              'The version from %s is on the page and in your draft. Publish to make it live.',
-                              'pressbase-admin',
-                            ),
-                            when,
-                          ),
-                        );
-                      }
-                    }}
-                    canEditStyles={props.user.canEditTheme}
-                    onRestoreStyles={(stylesheet, config, when) => {
-                      draft.want(new Map([[`wp_global_styles:${stylesheet}`, config]]));
+              ) : (
+                <p className={styles.pagesEmpty} aria-busy="true">
+                  {__('Opening the page…', 'pressbase-admin')}
+                </p>
+              )
+            ) : panel === 'history' ? (
+              editor && doc ? (
+                <HistoryPanel
+                  entries={editor.history.entries}
+                  index={editor.history.index}
+                  onGo={editor.history.go}
+                  partTitle={(slug) => parts.get(slug)?.title ?? slug}
+                  page={
+                    doc.page && typeof doc.page.id === 'number' && !isNewPage(doc.page.id)
+                      ? {
+                          id: doc.page.id,
+                          title: pageTitle(drafted ?? doc.page),
+                          live: doc.regions.get(pageKey(doc.page.id))?.live ?? '',
+                        }
+                      : undefined
+                  }
+                  onRestorePage={(content, when) => {
+                    const label = sprintf(
+                      __('Restored the version from %s', 'pressbase-admin'),
+                      when,
+                    );
+                    if (editor.restorePage(content, label)) {
                       toast(
                         sprintf(
                           __(
-                            'The site’s styles from %s are in your draft. Preview to see them; they go live when you publish.',
+                            'The version from %s is on the page and in your draft. Publish to make it live.',
                             'pressbase-admin',
                           ),
                           when,
                         ),
                       );
-                    }}
-                    siteUrl={props.site.url}
-                    userId={props.user.id}
-                  />
-                ) : (
-                  <p className={styles.pagesEmpty} aria-busy="true">
-                    {__('Opening the page…', 'pressbase-admin')}
-                  </p>
-                )
-              ) : panel === 'ai' ? (
-                <AiPanel ai={ai} />
-              ) : undefined
-            }
-          />
-        )}
-      </>
+                    }
+                  }}
+                  canEditStyles={props.user.canEditTheme}
+                  onRestoreStyles={(stylesheet, config, when) => {
+                    draft.want(new Map([[`wp_global_styles:${stylesheet}`, config]]));
+                    toast(
+                      sprintf(
+                        __(
+                          'The site’s styles from %s are in your draft. Preview to see them; they go live when you publish.',
+                          'pressbase-admin',
+                        ),
+                        when,
+                      ),
+                    );
+                  }}
+                  siteUrl={props.site.url}
+                  userId={props.user.id}
+                />
+              ) : (
+                <p className={styles.pagesEmpty} aria-busy="true">
+                  {__('Opening the page…', 'pressbase-admin')}
+                </p>
+              )
+            ) : panel === 'ai' ? (
+              <AiPanel ai={ai} />
+            ) : undefined
+          }
+        />
+      ),
+    // AI edits (#57): the highlight, Keep and Undo over the canvas, and the AI commands.
+    overlay: (editor) => (
+      <AiReview
+        ai={ai}
+        canvas={editor?.canvas ?? null}
+        panelOpen={panel === 'ai'}
+        onOpenPanel={() => openPanel('ai')}
+      />
     ),
     notice: (
       <>
@@ -1446,6 +1444,8 @@ interface Chrome {
   topBar: (editor: EditorState | null) => ReactNode;
   rail: ReactNode;
   panel: (editor: EditorState | null) => ReactNode;
+  /** Over the canvas: AI changes waiting for Keep or Undo (#57). */
+  overlay?: (editor: EditorState | null) => ReactNode;
   /** A note above the canvas (the draft changed on the live site meanwhile). */
   notice?: ReactNode;
 }
@@ -1476,6 +1476,7 @@ function StudioFrame({
       <div className={styles.workspace}>
         {chrome.rail}
         {chrome.panel(editor)}
+        {chrome.overlay?.(editor)}
         <main id="studio-canvas" className={styles.stage} tabIndex={-1}>
           {chrome.notice}
           {notice}
