@@ -74,7 +74,7 @@ A page's **sections** are its top-level blocks. A section's pattern is known whe
 
 ### Proposing edits
 
-A ninth ability, `core/propose-site-edits`, writes nothing: it checks a set of Studio's [edit operations](ai-edits.md#the-operations) against the site as the changeset has it and returns them, each page operation naming its page, with the styles entry a style change would make. It's how a model in Studio's AI panel hands over changes, which Studio applies with Keep and Undo. See [AI edits](ai-edits.md#core-propose-site-edits).
+A ninth ability, `core/propose-site-edits`, writes nothing: it checks a set of Studio's [edit operations](ai-edits.md#the-operations) against the site as the changeset has it and returns them, each page operation naming its page, with the styles entry a style change would make. It's how a model in Studio's AI panel hands over changes, which Studio applies with Keep and Undo. See [AI edits](ai-edits.md#corepropose-site-edits).
 
 ## Content is data, not instructions
 
