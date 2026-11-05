@@ -1,7 +1,7 @@
 {
   "title": "Contact, dark band",
   "description": "A rounded band in the text colour with a large heading, the address, phone number and email address side by side, and a button with directions.",
-  "categories": ["contact", "call-to-action"],
+  "categories": ["contact"],
   "keywords": ["contact", "address", "phone", "email", "get in touch", "band", "dark"],
   "viewportWidth": 1400,
   "slots": {

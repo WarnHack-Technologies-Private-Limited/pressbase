@@ -185,6 +185,10 @@ function checkBlock(block: ParsedBlock, problems: string[]): void {
     }
   }
   if (attrs.isStackedOnMobile === false) problems.push(`${name}: must stack on mobile`);
+  // A menu's ID belongs to one site; without it, the block shows the site's menu.
+  if (name === 'core/navigation' && attrs.ref !== undefined) {
+    problems.push(`${name}: "ref" names one site's menu; leave it out`);
+  }
   if (typeof attrs.className === 'string') {
     for (const token of attrs.className.split(/\s+/).filter(Boolean)) {
       if (!CORE_BLOCK_STYLES.has(token)) {
@@ -243,6 +247,16 @@ export function checkPattern(pattern: LibraryPattern): string[] {
     problems.push(
       `the first category, "${pattern.categories[0]}", must be one of the library's: ${LIBRARY_CATEGORIES.map((c) => c.name).join(', ')}`,
     );
+  }
+  // Headers and footers are for their template part, as WordPress's Block Types header says.
+  const part = section?.section === 'header' || section?.section === 'footer' ? section.name : '';
+  const partTypes = (pattern.blockTypes ?? []).filter((t) => t.startsWith('core/template-part'));
+  if (part && !partTypes.includes(`core/template-part/${part}`)) {
+    problems.push(
+      `a ${part} is for its template part: add "blockTypes": ["core/template-part/${part}"]`,
+    );
+  } else if (!part && partTypes.length) {
+    problems.push('only headers and footers are for a template part');
   }
   if (pattern.viewportWidth < 320 || pattern.viewportWidth > 1600) {
     problems.push('viewportWidth must be between 320 and 1600');

@@ -8,7 +8,10 @@ import {
   fillSlots,
   findPlaceholders,
   type GroupSlot,
+  isPlaceholder,
   type Slot,
+  type SlotValue,
+  type SlotValues,
   slotValues,
   transferSlots,
 } from '@pressbase/slots';
@@ -210,8 +213,11 @@ const imagesIn = (slots: Slot[]): Extract<Slot, { kind: 'image' }>[] =>
     s.kind === 'image' ? [s] : s.kind === 'group' ? s.items.flatMap(imagesIn) : [],
   );
 
-describe('the library’s sections (#40, #41)', () => {
-  const sections = ['banner', 'about', 'call-to-action', 'features', 'services', 'gallery'];
+describe('the library’s sections (#40–#43)', () => {
+  // Every section a page is built from; headers and footers are template parts (below).
+  const sections = LIBRARY_CATEGORIES.map((c) => c.name).filter(
+    (name) => name !== 'header' && name !== 'footer',
+  );
   const byCategory = (category: string) =>
     libraryPatterns().filter((p) => p.categories[0] === category);
 
@@ -326,5 +332,145 @@ describe('the library’s sections (#40, #41)', () => {
     expect(html).toContain(
       '.wp-block-gallery.wp-block-gallery-1{--wp--style--unstable-gallery-gap:var( --wp--style--gallery-gap-default, var( --gallery-block--gutter-size, var( --wp--style--block-gap, 0.5em ) ) );}',
     );
+  });
+});
+
+/**
+ * A pattern's slots with every placeholder filled in, as the site's owner
+ * does before publishing: text in brackets, `#` links and images not chosen.
+ */
+function filledIn(slots: Slot[]): SlotValues {
+  const fill = (slot: Slot): SlotValue => {
+    switch (slot.kind) {
+      case 'group':
+        return slot.items.map((item) =>
+          slot.flat && item[0] ? fill(item[0]) : (filledIn(item) as SlotValue),
+        );
+      case 'image':
+        return { url: '/wp-content/uploads/photo.jpg', alt: slot.value.alt };
+      case 'button':
+        return {
+          text: isPlaceholder(slot.value.text) ? 'Book a table' : slot.value.text,
+          url: slot.value.url === '' || slot.value.url === '#' ? '/contact/' : slot.value.url,
+        };
+      default:
+        return isPlaceholder(slot.value) ? 'Filled in by the owner' : slot.value;
+    }
+  };
+  return Object.fromEntries(slots.map((slot) => [slot.id, fill(slot)]));
+}
+
+describe('the library with its placeholders filled in (#42, #43)', () => {
+  it('passes every quality check, the "Before you publish" checklist’s included', async () => {
+    const ctx = await setup();
+    await ctx.install();
+    await ctx.kernel.themes.activate('pressbase');
+    const active = await ctx.kernel.themes.active();
+    const midnight = active.variations.find((v) => v.title === 'Midnight');
+    const dark = await ctx.kernel.themes.withUserStyles(
+      applyStyleVariation({ version: 3 }, midnight as StyleVariation),
+    );
+    const problems: string[] = [];
+    for (const [scheme, theme] of [
+      ['default', active],
+      ['Midnight', dark],
+    ] as const) {
+      const styles = pageStylesFromThemeJson(theme.themeJson.tree.getRawData());
+      for (const pattern of libraryPatterns()) {
+        const blocks = parseBlocks(pattern.content);
+        const options = { declarations: pattern.slots };
+        const markup = serializeBlocks(
+          fillSlots(blocks, filledIn(extractSlots(blocks, options)), options),
+        );
+        for (const f of checkPage(markup, styles, {
+          blockTypes: ctx.kernel.blocks.registry,
+          titleIsH1: pattern.categories[0] !== 'banner',
+        })) {
+          problems.push(`${scheme} ${pattern.name}: ${f.rule} ${f.message}`);
+        }
+      }
+    }
+    expect(problems).toEqual([]);
+  });
+
+  it('render on a page: questions open, hours and plans are lists, quotes are quotes', async () => {
+    const ctx = await setup();
+    await ctx.install();
+    await ctx.kernel.themes.activate('pressbase');
+    const batch = libraryPatterns().filter((p) =>
+      [
+        'pricing',
+        'testimonials',
+        'team',
+        'faq',
+        'contact',
+        'opening-hours',
+        'header',
+        'footer',
+      ].includes(p.categories[0] as string),
+    );
+    expect(batch.length).toBe(23);
+    const created = await ctx.request('POST', '/wp/v2/pages', {
+      title: 'Sections',
+      slug: 'sections',
+      status: 'publish',
+      content: batch.map((p) => p.content).join('\n\n'),
+    });
+    expect(created.status).toBe(201);
+    const res = await ctx.app.request(
+      `/wp-json/pressbase/v1/render?url=${encodeURIComponent('/sections/')}`,
+    );
+    const { html } = (await res.json()) as { html: string };
+    for (const pattern of batch) {
+      const title = extractSlots(parseBlocks(pattern.content), {
+        declarations: pattern.slots,
+      }).find((s) => s.id === 'title');
+      if (title?.kind === 'heading') expect(html, pattern.name).toContain(title.value);
+    }
+    expect(html.match(/<details class="wp-block-details/g)?.length).toBe(16);
+    expect(html).toContain('<summary>How do I book?</summary>');
+    expect(html).toMatch(/<blockquote class="wp-block-quote[^"]*"><p>\[Add a customer’s words/);
+    expect(html).toContain('<cite>[Customer name]</cite>');
+    expect(html).toContain('<li>Monday to Friday: 8:00 – 18:00</li>');
+    expect(html).toContain('href="/contact/"');
+    expect(html).toContain('href="https://www.openstreetmap.org/"');
+    // Portraits and the contact image aren't chosen yet: left out, as render_block_core_image() does.
+    expect(html).not.toContain('Portrait of a member of the team');
+    // The menus: six, the footer's named.
+    expect(html.match(/<nav\b/g)?.length).toBeGreaterThanOrEqual(6);
+    expect(html).toContain('aria-label="Footer"');
+  });
+
+  it('rebuild the site’s header and footer (core/update-template-part)', async () => {
+    const ctx = await setup();
+    await ctx.install();
+    await ctx.kernel.themes.activate('pressbase');
+    for (const pattern of libraryPatterns()) {
+      const area = pattern.categories[0];
+      if (area !== 'header' && area !== 'footer') continue;
+      expect(pattern.blockTypes).toEqual([`core/template-part/${area}`]);
+      const res = await ctx.request(
+        'POST',
+        '/wp-abilities/v1/abilities/core/update-template-part/run',
+        { input: { slug: area, pattern: pattern.name } },
+      );
+      expect(res.status, pattern.name).toBe(200);
+      expect(res.body.area).toBe(area);
+      // Contact details nobody gave yet are on the "Before you publish" list.
+      if (pattern.name === 'pressbase/footer-hours') {
+        expect(res.body.placeholders).toEqual(['0.address', '0.phone', '0.email']);
+      }
+      const changesets = await ctx.request('GET', '/pressbase/v1/changesets');
+      const content = changesets.body[0]?.entries[`wp_template_part:${area}`]?.value.content;
+      expect(content, pattern.name).toContain(`"patternName":"${pattern.name}"`);
+    }
+    // Served for the editor's "Replace" of a template part, as WordPress's Block Types header.
+    const served = (await ctx.request('GET', '/wp/v2/block-patterns/patterns')).body as {
+      name: string;
+      block_types?: string[];
+    }[];
+    expect(served.find((p) => p.name === 'pressbase/header-centered')?.block_types).toEqual([
+      'core/template-part/header',
+    ]);
   });
 });

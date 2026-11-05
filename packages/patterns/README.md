@@ -27,6 +27,7 @@ In `src/patterns/`:
 - `title`: sentence case, says what the section is and, after a comma, how it looks (`Hero, centred`).
 - `categories`: the **first** is the section's category, one of the table below; add WordPress categories after it if they fit (`featured`, `contact`).
 - `viewportWidth`: the width the inserter previews it at (1000–1400 for most sections).
+- `blockTypes`: headers and footers only, `["core/template-part/header"]` or `["core/template-part/footer"]`, as WordPress's `Block Types` header. The editor then offers the pattern when replacing that template part, and Studio's Sections panel and the site builder leave it out of a page's sections.
 - `slots`: optional declarations that refine the slots found in the markup. See [Slots](#slots).
 
 The name comes from the file name. Name files `<category>-<what is different>` (`hero-centered`, `hero-split-image`, `pricing-three-plans`) and never reuse a name the Pressbase theme uses (`themes/pressbase/patterns/`): a test fails on a clash.
@@ -69,7 +70,9 @@ Every pattern follows these. `checkPattern()` checks the ones code can check, an
 7. **Honest sample text.** Plain, believable business copy that is obviously replaceable. Facts the site owner must supply (prices, hours, names, quotes, addresses, phone numbers) are declared with `"facts": true` and a `placeholder`; testimonials and team members use placeholders such as `[Customer name]`, never invented people.
 8. **Repeated items are alike.** Cards, columns, rows and list items have the same blocks in the same order, so a group can grow and shrink. Highlight one item with a core block style or a preset, not an extra block.
 9. **Name the blocks that hold content** (List View → Rename) when the name helps: `Day`, `Time`, `Note`. The name becomes the slot's ID and label. Name the repeated container after its items (`Features`, `Services`, `Gallery`) and the section's outer group differently (`Features section`): a group whose name matches a declared group's ID is treated as that group.
-10. **Layouts of one section share their slots.** Swap layout carries content from one pattern of a category to the next by role, so use the same shape where you can: an `eyebrow` label, a `title`, a `body`, `actions` buttons, an `image` (named `Image`), and repeated `items` with a title and body each.
+10. **Real links.** Buttons and links go somewhere real: a page most sites have (`/contact/`, `/privacy-policy/`) or, for directions, a map (declared `facts`, so the site builder links the real address). Never `#`, which the "Before you publish" checklist lists as unfinished.
+11. **Headers and footers use the site's own blocks.** Site Title, Site Tagline, Site Logo and a Navigation block without a `ref`, which shows the site's menu; a footer's menu has an `ariaLabel` (`Footer`), so the page's two menus are told apart. They declare `blockTypes` (above) and are exempt from rule 3.
+12. **Layouts of one section share their slots.** Swap layout carries content from one pattern of a category to the next by role, so use the same shape where you can: an `eyebrow` label, a `title`, a `body`, `actions` buttons, an `image` (named `Image`), and repeated `items` with a title and body each.
 
 ## Slots
 
@@ -112,7 +115,31 @@ Each pattern is registered as `pressbase/<name>`. Contact sheets show every layo
 | Gallery | `gallery-grid` | Centred heading above a Gallery block of six square images | eyebrow, title, body, gallery (3–12) |
 | | `gallery-mosaic` | One large image beside a Gallery block of four | eyebrow, title, body, actions, featured-image, gallery (2–4) |
 | | `gallery-captioned` | Three tall images, each with a project name and a line about it (facts) | eyebrow, title, body, projects (2–3) |
-| Opening hours | `opening-hours` | Heading, note and button beside days and times (facts) | title, body, note, actions, hours (1–7) |
+| Pricing | `pricing-three-plans` | Centred heading above three plan cards, the middle one on a soft background; each with a price (fact), what's included and a button | eyebrow, title, body, plans (2–4: title, body, price, list, actions), note |
+| | `pricing-plan-rows` | Plans in rows separated by lines: name, who it is for, price, button | eyebrow, title, body, plans (1–6: title, body, price, actions) |
+| | `pricing-price-list` | Heading and button beside a list of services with their prices | eyebrow, title, body, actions, prices (1–12: title, price, body) |
+| Testimonials | `testimonials-cards` | Centred heading above three quotes in cards (Quote blocks) | eyebrow, title, body, testimonials (1–6: body, citation) |
+| | `testimonials-large-quote` | One quote in large type on a soft background | title, testimonials (1) |
+| | `testimonials-split` | Heading and button beside two quotes | eyebrow, title, body, actions, testimonials (1–4) |
+| Team | `team-grid` | Four portraits with name, role and a line each, four to a row | eyebrow, title, body, people (1–8: image, title, role, body) |
+| | `team-list` | Heading and button beside people in rows, no photos needed | eyebrow, title, body, actions, people (1–8: title, role, body) |
+| Questions and answers (`faq`) | `faq-centered` | Centred heading above a column of questions (Details blocks) and a button | eyebrow, title, body, questions (1–12: summary, body), actions |
+| | `faq-split` | Heading and button beside the questions | eyebrow, title, body, actions, questions (1–12) |
+| | `faq-two-columns` | Heading above questions in two columns | eyebrow, title, body, questions (1–12) |
+| Contact | `contact-cards` | Centred heading above cards for address, phone and email (facts), and a directions button | eyebrow, title, body, details (1–4: title, body), actions |
+| | `contact-split-image` | A tall image of the place beside the heading, details and directions button | image, eyebrow, title, body, details (1–4), actions |
+| | `contact-band` | A rounded band in the text colour: large heading, details side by side, button | title, body, details (1–4), actions |
+| Opening hours | `opening-hours` | Heading, note and button beside days and times (facts) | title, body, note, actions, hours (1–7: day, time) |
+| | `opening-hours-card` | A centred card: heading, a list of days and times, note and button | title, body, hours (1–7, list), note, actions |
+| | `opening-hours-band` | Heading, note and button beside a card listing days and times, on a soft background | title, body, note, actions, hours (1–7, list) |
+| Header | `header-simple` | Logo and site title, the menu on the right | none |
+| | `header-with-button` | Logo and site title; the menu and one button on the right | actions |
+| | `header-centered` | Site title and tagline centred, the menu below | none |
+| Footer | `footer-centered` | Site title, tagline and menu centred, a privacy link | privacy |
+| | `footer-columns` | Site title and tagline, the menu, contact details (facts) in columns; a privacy link | menu-label, contact-label, address, phone, email, privacy |
+| | `footer-hours` | Address and directions, opening hours (a list), phone and email; then title, menu and privacy link | address, actions, hours, phone, email, privacy and labels |
+
+Facts are never invented: prices, quotes, names, roles and contact details ship as bracketed placeholders (`[Add a price]`, `[Customer name]`), which the "Before you publish" checklist lists. `opening-hours` keeps the day and the time as two slots in rows; `opening-hours-card` and `-band` use a List block, one line per day (`Monday to Friday: 8:00 – 18:00`), so screen readers announce a list. Swap layout from the rows to a list moves each day and reports the times it had no place for; the other way, the times become placeholders.
 
 | Section | Default | Midnight |
 | --- | --- | --- |
@@ -122,6 +149,16 @@ Each pattern is registered as `pressbase/<name>`. Contact sheets show every layo
 | Features | [features-light.png](../../docs/assets/patterns/features-light.png) | [features-dark.png](../../docs/assets/patterns/features-dark.png) |
 | Services | [services-light.png](../../docs/assets/patterns/services-light.png) | [services-dark.png](../../docs/assets/patterns/services-dark.png) |
 | Gallery | [gallery-light.png](../../docs/assets/patterns/gallery-light.png) | [gallery-dark.png](../../docs/assets/patterns/gallery-dark.png) |
+| Pricing | [pricing-light.png](../../docs/assets/patterns/pricing-light.png) | [pricing-dark.png](../../docs/assets/patterns/pricing-dark.png) |
+| Testimonials | [testimonials-light.png](../../docs/assets/patterns/testimonials-light.png) | [testimonials-dark.png](../../docs/assets/patterns/testimonials-dark.png) |
+| Team | [team-light.png](../../docs/assets/patterns/team-light.png) | [team-dark.png](../../docs/assets/patterns/team-dark.png) |
+| Questions and answers | [faq-light.png](../../docs/assets/patterns/faq-light.png) | [faq-dark.png](../../docs/assets/patterns/faq-dark.png) |
+| Contact | [contact-light.png](../../docs/assets/patterns/contact-light.png) | [contact-dark.png](../../docs/assets/patterns/contact-dark.png) |
+| Opening hours | [opening-hours-light.png](../../docs/assets/patterns/opening-hours-light.png) | [opening-hours-dark.png](../../docs/assets/patterns/opening-hours-dark.png) |
+| Header | [header-light.png](../../docs/assets/patterns/header-light.png) | [header-dark.png](../../docs/assets/patterns/header-dark.png) |
+| Footer | [footer-light.png](../../docs/assets/patterns/footer-light.png) | [footer-dark.png](../../docs/assets/patterns/footer-dark.png) |
+
+All of #42 and #43 on one page: [pattern-library-sections.png](../../docs/assets/screenshots/pattern-library-sections.png).
 
 ## Adding a pattern
 
