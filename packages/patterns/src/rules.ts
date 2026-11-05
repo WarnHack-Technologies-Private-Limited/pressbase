@@ -249,7 +249,12 @@ export function checkPattern(pattern: LibraryPattern): string[] {
   }
   if (pattern.keywords.length === 0) problems.push('add a few keywords for search');
 
-  const inferred = extractSlots(blocks);
+  // Declarations apply, so a group declared with minItems or maxItems is one
+  // even with a single item; `ignore` doesn't, so an ignored slot still counts.
+  const kept = Object.fromEntries(
+    Object.entries(pattern.slots ?? {}).map(([id, { ignore: _ignore, ...rest }]) => [id, rest]),
+  );
+  const inferred = extractSlots(blocks, { declarations: kept });
   const unknown = unknownDeclarations(inferred, pattern.slots ?? {});
   if (unknown.length) problems.push(`declared slots that don't exist: ${unknown.join(', ')}`);
   const slots = extractSlots(blocks, { declarations: pattern.slots });
