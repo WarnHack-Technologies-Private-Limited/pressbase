@@ -18,6 +18,7 @@
     "@pressbase/blocks": "workspace:*",
     "@pressbase/db": "workspace:*",
     "@pressbase/design": "workspace:*",
+    "@pressbase/site-edits": "workspace:*",
     "@pressbase/hooks": "workspace:*",
     "@pressbase/patterns": "workspace:*",
     "@pressbase/slots": "workspace:*",

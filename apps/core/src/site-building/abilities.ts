@@ -8,6 +8,12 @@ import {
   slotsJsonSchema,
   transferSlots,
 } from '@pressbase/slots';
+import {
+  PATTERN_INPUT,
+  SECTION_OPERATION_SCHEMA,
+  type SectionOperation,
+  SLOTS_INPUT,
+} from '@pressbase/site-edits';
 import { and, desc, eq, notInArray } from 'drizzle-orm';
 import { type AbilityContext, AbilityError } from '../abilities/registry';
 import type { ChangesetData } from '../changesets/service';
@@ -165,18 +171,6 @@ const PAGE_REF_PROPERTIES = {
   },
 } as const;
 
-const SLOTS_INPUT = {
-  type: 'object',
-  description:
-    'Slot values by slot ID, in plain text (see the pattern’s slots in core/list-patterns). Slots left out keep the pattern’s text. Use a placeholder in square brackets, such as [Add your opening hours], for any fact you weren’t given.',
-} as const;
-
-const PATTERN_INPUT = {
-  type: 'string',
-  maxLength: 200,
-  description: 'A pattern’s name, from core/list-patterns.',
-} as const;
-
 const SECTION_INPUT = {
   type: 'object',
   properties: { pattern: PATTERN_INPUT, slots: SLOTS_INPUT },
@@ -184,60 +178,11 @@ const SECTION_INPUT = {
   additionalProperties: false,
 } as const;
 
-const op = (type: string, properties: Record<string, unknown>, required: string[]) => ({
-  type: 'object',
-  properties: { type: { type: 'string', enum: [type] }, ...properties },
-  required: ['type', ...required],
-  additionalProperties: false,
-});
-const INDEX = { type: 'integer', minimum: 0, description: 'A section’s position, from 0.' };
-
-const OPERATION_SCHEMA = {
-  oneOf: [
-    op(
-      'insertSection',
-      {
-        pattern: PATTERN_INPUT,
-        slots: SLOTS_INPUT,
-        index: { ...INDEX, description: 'Where to insert it; at the end by default.' },
-      },
-      ['pattern'],
-    ),
-    op(
-      'replaceSection',
-      {
-        index: INDEX,
-        pattern: PATTERN_INPUT,
-        slots: SLOTS_INPUT,
-        keep_content: {
-          type: 'boolean',
-          description:
-            'Move the section’s text, links and images into the new pattern (Swap layout). True by default.',
-        },
-      },
-      ['index', 'pattern'],
-    ),
-    op('moveSection', { index: INDEX, to: INDEX }, ['index', 'to']),
-    op('removeSection', { index: INDEX }, ['index']),
-    op('updateSlots', { index: INDEX, slots: SLOTS_INPUT }, ['index', 'slots']),
-  ],
-};
-
-type Operation =
-  | { type: 'insertSection'; pattern: string; slots?: SlotValues; index?: number }
-  | {
-      type: 'replaceSection';
-      index: number;
-      pattern: string;
-      slots?: SlotValues;
-      keep_content?: boolean;
-    }
-  | { type: 'moveSection'; index: number; to: number }
-  | { type: 'removeSection'; index: number }
-  | { type: 'updateSlots'; index: number; slots: SlotValues };
+/** `core/update-page-sections` names its page once; its operations' `page` isn't used. */
+type Operation = SectionOperation;
 
 /** Applies operations in order; each index is read after the operations before it. */
-function applyOperations(
+export function applyOperations(
   sections: ParsedBlock[],
   operations: Operation[],
   patterns: Patterns,
@@ -667,7 +612,7 @@ export function registerSiteAbilities(kernel: Kernel): void {
       type: 'object',
       properties: {
         ...PAGE_REF_PROPERTIES,
-        operations: { type: 'array', minItems: 1, maxItems: 30, items: OPERATION_SCHEMA },
+        operations: { type: 'array', minItems: 1, maxItems: 30, items: SECTION_OPERATION_SCHEMA },
         changeset_uuid: CHANGESET_UUID_INPUT,
       },
       required: ['operations'],
