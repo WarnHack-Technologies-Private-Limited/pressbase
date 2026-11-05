@@ -76,7 +76,8 @@ function rewriteOne(text: string, task: string): string {
     case 'expand':
       return `${withStop(text)} Come in and see for yourself.`;
     case 'tone': {
-      const line = TONE_LINES.find(([pattern]) => pattern.test(task))?.[1] ?? 'We’d love to see you.';
+      const line =
+        TONE_LINES.find(([pattern]) => pattern.test(task))?.[1] ?? 'We’d love to see you.';
       return `${withStop(text)} ${line}`;
     }
     case 'translate': {
@@ -90,7 +91,9 @@ function rewriteOne(text: string, task: string): string {
       return text.replace(/\p{L}+/gu, (word) => {
         const fixed = MISSPELLINGS[word.toLowerCase()];
         if (!fixed) return word;
-        return word[0] === word[0]?.toUpperCase() ? fixed[0]?.toUpperCase() + fixed.slice(1) : fixed;
+        return word[0] === word[0]?.toUpperCase()
+          ? fixed[0]?.toUpperCase() + fixed.slice(1)
+          : fixed;
       });
     default: {
       const first = text.charAt(0).toLowerCase() + text.slice(1);

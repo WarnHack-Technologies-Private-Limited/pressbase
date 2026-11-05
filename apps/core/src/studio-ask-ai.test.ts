@@ -120,7 +120,9 @@ describe('POST /pressbase/v1/studio/ai/rewrite', () => {
   });
 
   it('keeps a text whose new version brings in facts nobody gave', async () => {
-    const ctx = await site(answering({ rewritten: { t1: 'Over 1200 loaves sold daily.', t2: 'Warm bread.' } }));
+    const ctx = await site(
+      answering({ rewritten: { t1: 'Over 1200 loaves sold daily.', t2: 'Warm bread.' } }),
+    );
     const res = await ctx.request('POST', '/pressbase/v1/studio/ai/rewrite', {
       action: 'expand',
       texts: [
@@ -235,7 +237,9 @@ describe('POST /pressbase/v1/studio/ai/section and /page', () => {
     expect(res.body.summary).toMatch(/^Adds a new page, “Catering”/);
     // Pages need publish_pages.
     const author = await ctx.loginAs('au', 'author');
-    const refused = await author.request('POST', '/pressbase/v1/studio/ai/page', { prompt: 'Menu' });
+    const refused = await author.request('POST', '/pressbase/v1/studio/ai/page', {
+      prompt: 'Menu',
+    });
     expect(refused.status).toBe(403);
   });
 
@@ -268,7 +272,11 @@ describe('GET /pressbase/v1/studio/checklist', () => {
     const saved = await ctx.request('POST', '/pressbase/v1/changesets', {
       entries: {
         [`page:${home.id}`]: { content },
-        'page:catering': { title: 'Catering', status: 'publish', content: paragraph('[Add your prices]') },
+        'page:catering': {
+          title: 'Catering',
+          status: 'publish',
+          content: paragraph('[Add your prices]'),
+        },
       },
     });
     expect(saved.status).toBe(201);
@@ -285,7 +293,11 @@ describe('GET /pressbase/v1/studio/checklist', () => {
         block: { path: [0], name: 'core/paragraph' },
       }),
       expect.objectContaining({ kind: 'image', block: { path: [1], name: 'core/image' } }),
-      expect.objectContaining({ kind: 'check', rule: 'image_alt', block: { path: [2], name: 'core/image' } }),
+      expect.objectContaining({
+        kind: 'check',
+        rule: 'image_alt',
+        block: { path: [2], name: 'core/image' },
+      }),
       expect.objectContaining({
         key: 'page:catering',
         kind: 'placeholder',

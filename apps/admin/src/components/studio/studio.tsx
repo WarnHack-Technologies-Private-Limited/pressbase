@@ -71,15 +71,6 @@ import { navigationRef, withInnerBlocks } from './ai-edits-model';
 import { AiPanel, AiReview } from './ai-panel';
 import { AskAiDialog, AskAiProvider, registerAskAiControls, useAskAi } from './ask-ai';
 import { Breadcrumb } from './breadcrumb';
-import {
-  ChecklistPanel,
-  ChecklistSelect,
-  PlaceholderMarks,
-  PublishCheckDialog,
-  PublishChecklistNote,
-  useChecklist,
-} from './checklist';
-import type { ChecklistItem } from './checklist-model';
 import { CanvasDragAssist } from './canvas-drag';
 import {
   type CanvasBlock,
@@ -105,6 +96,15 @@ import {
   regionChanged,
   type StoredEntry,
 } from './changes-model';
+import {
+  ChecklistPanel,
+  ChecklistSelect,
+  PlaceholderMarks,
+  PublishCheckDialog,
+  PublishChecklistNote,
+  useChecklist,
+} from './checklist';
+import type { ChecklistItem } from './checklist-model';
 import {
   CommandPalette,
   isPaletteShortcut,
@@ -1263,9 +1263,7 @@ export default function Studio(props: StudioProps) {
               checklist={checklist}
               canvas={editor.canvas}
               onNotFound={() =>
-                toast(
-                  __('That block isn’t on the page any more. Check again.', 'pressbase-admin'),
-                )
+                toast(__('That block isn’t on the page any more. Check again.', 'pressbase-admin'))
               }
             />
           </>

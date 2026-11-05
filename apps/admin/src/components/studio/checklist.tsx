@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n/context';
 import { Button, Spinner } from '../ui/button';
 import { ConfirmDialog } from '../ui/dialog';
+import type { Changeset } from './changes-model';
 import styles from './checklist.module.css';
 import {
   blockAtPath,
@@ -23,7 +24,6 @@ import {
   namedItems,
   totalLeft,
 } from './checklist-model';
-import type { Changeset } from './changes-model';
 import type { AiCanvas } from './use-ai-edits';
 
 /**
@@ -75,7 +75,12 @@ export function useChecklist({
       const uuid = changeset?.uuid ?? null;
       const next = uuid
         ? await api<Checklist>(`/pressbase/v1/studio/checklist?changeset_uuid=${uuid}`)
-        : { changeset_uuid: null, items: [], counts: { placeholder: 0, image: 0, check: 0 }, checked: [] };
+        : {
+            changeset_uuid: null,
+            items: [],
+            counts: { placeholder: 0, image: 0, check: 0 },
+            checked: [],
+          };
       if (n === request.current) {
         setData(next);
         setError(null);
@@ -151,7 +156,10 @@ export function ChecklistPanel({
 
   const headings: Record<ChecklistKind, (n: number) => string> = {
     placeholder: (n) =>
-      sprintf(_n('%d placeholder to fill in', '%d placeholders to fill in', n, 'pressbase-admin'), n),
+      sprintf(
+        _n('%d placeholder to fill in', '%d placeholders to fill in', n, 'pressbase-admin'),
+        n,
+      ),
     image: (n) => sprintf(_n('%d image to choose', '%d images to choose', n, 'pressbase-admin'), n),
     check: (n) => sprintf(_n('%d check failed', '%d checks failed', n, 'pressbase-admin'), n),
   };
@@ -347,7 +355,8 @@ export function PublishChecklistNote({
 
 const PLACEHOLDER_STYLE = 'pressbase-placeholders';
 const canvasDocument = () =>
-  document.querySelector<HTMLIFrameElement>('iframe[name="editor-canvas"]')?.contentDocument ?? null;
+  document.querySelector<HTMLIFrameElement>('iframe[name="editor-canvas"]')?.contentDocument ??
+  null;
 
 /**
  * Marks blocks holding a placeholder (`[Add a customer quote]`) on the
@@ -427,11 +436,14 @@ export function ChecklistSelect({
       onNotFound();
       return;
     }
-    (registry.dispatch(blockEditorStore) as unknown as { selectBlock: (id: string) => void })
-      .selectBlock(found.clientId);
+    (
+      registry.dispatch(blockEditorStore) as unknown as { selectBlock: (id: string) => void }
+    ).selectBlock(found.clientId);
     let tries = 0;
     const scroll = () => {
-      const element = canvasDocument()?.querySelector(`[data-block="${CSS.escape(found.clientId)}"]`);
+      const element = canvasDocument()?.querySelector(
+        `[data-block="${CSS.escape(found.clientId)}"]`,
+      );
       if (element) element.scrollIntoView({ block: 'center', behavior: 'smooth' });
       else if (tries++ < 10) setTimeout(scroll, 200);
     };

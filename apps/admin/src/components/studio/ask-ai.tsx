@@ -24,6 +24,7 @@ import { useI18n } from '@/lib/i18n/context';
 import { Button } from '../ui/button';
 import { Dialog } from '../ui/dialog';
 import { TextAreaField } from '../ui/field';
+import { problemText } from './ai-panel-model';
 import styles from './ask-ai.module.css';
 import {
   LANGUAGES,
@@ -36,7 +37,6 @@ import {
   TONES,
   type Tone,
 } from './ask-ai-model';
-import { problemText } from './ai-panel-model';
 import { useStudioCommands } from './command-palette';
 import { contentRootId, sectionLabel, sectionOf } from './sections-panel';
 import type { PageRef, StudioPage } from './site-model';
@@ -104,8 +104,7 @@ export function readSection(select: Select, clientId: string): AskSection | null
   if (!root || !block) return null;
   const index = select.getBlockOrder(root).indexOf(clientId);
   if (index < 0) return null;
-  const pattern = (block.attributes.metadata as { patternName?: unknown } | undefined)
-    ?.patternName;
+  const pattern = (block.attributes.metadata as { patternName?: unknown } | undefined)?.patternName;
   return {
     index,
     markup: serialize([block]),
@@ -230,7 +229,8 @@ export interface AskAi {
   ai: StudioAi;
 }
 
-const errorText = (e: unknown) => (e instanceof ApiError || e instanceof Error ? e.message : String(e));
+const errorText = (e: unknown) =>
+  e instanceof ApiError || e instanceof Error ? e.message : String(e);
 
 export function useAskAi({
   ai,
@@ -319,14 +319,26 @@ export function useAskAi({
       let selection: ReturnType<typeof selectionText> = null;
       if (target.kind === 'section') texts = sectionTexts(section.markup, declarations);
       else {
-        selection = selectionText(section.markup, declarations, target.path, target.text, target.range);
+        selection = selectionText(
+          section.markup,
+          declarations,
+          target.path,
+          target.text,
+          target.range,
+        );
         texts = selection ? [selection] : [];
       }
       if (!texts.length) {
         setError(
           target.kind === 'text'
-            ? __('There’s no text here for AI to change. Fill in the gap in [square brackets] yourself.', 'pressbase-admin')
-            : __('This section has no text for AI to change yet: its text is still placeholders for you to fill in.', 'pressbase-admin'),
+            ? __(
+                'There’s no text here for AI to change. Fill in the gap in [square brackets] yourself.',
+                'pressbase-admin',
+              )
+            : __(
+                'This section has no text for AI to change yet: its text is still placeholders for you to fill in.',
+                'pressbase-admin',
+              ),
         );
         return;
       }
@@ -352,7 +364,10 @@ export function useAskAi({
       if (!changes.length) {
         setError(
           answer.kept.length
-            ? __('AI’s new wording added details nobody gave (numbers, names or addresses), so the text stays as it was.', 'pressbase-admin')
+            ? __(
+                'AI’s new wording added details nobody gave (numbers, names or addresses), so the text stays as it was.',
+                'pressbase-admin',
+              )
             : __('AI didn’t change anything: the text already reads that way.', 'pressbase-admin'),
         );
         return;
@@ -542,7 +557,10 @@ export function AskAiDialog({ ask }: { ask: AskAi }) {
       <div className={styles.body} data-studio-ask-ai={kind}>
         {off && (
           <p className={styles.note} role="status">
-            {__('AI isn’t on for this site yet. Someone who manages the site can turn it on in Settings → AI.', 'pressbase-admin')}
+            {__(
+              'AI isn’t on for this site yet. Someone who manages the site can turn it on in Settings → AI.',
+              'pressbase-admin',
+            )}
           </p>
         )}
         {(kind === 'section' || kind === 'text') && (
@@ -550,12 +568,16 @@ export function AskAiDialog({ ask }: { ask: AskAi }) {
             {quote && <blockquote className={styles.quote}>{quote}</blockquote>}
             <p className={styles.note}>
               {kind === 'section'
-                ? __('Changes every text in the section. Gaps in [square brackets] stay for you to fill in.', 'pressbase-admin')
+                ? __(
+                    'Changes every text in the section. Gaps in [square brackets] stay for you to fill in.',
+                    'pressbase-admin',
+                  )
                 : target?.kind === 'text' && target.range
                   ? __('Changes the selected words.', 'pressbase-admin')
                   : __('Changes this block’s text.', 'pressbase-admin')}
             </p>
-            <div className={styles.actions} role="group" aria-label={__('Quick changes', 'pressbase-admin')}>
+            <fieldset className={styles.actions}>
+              <legend className="visually-hidden">{__('Quick changes', 'pressbase-admin')}</legend>
               {(
                 [
                   ['rewrite', __('Rewrite', 'pressbase-admin')],
@@ -576,7 +598,7 @@ export function AskAiDialog({ ask }: { ask: AskAi }) {
                   {label}
                 </Button>
               ))}
-            </div>
+            </fieldset>
             <div className={styles.row}>
               <label className={styles.inline}>
                 <span>{__('Tone', 'pressbase-admin')}</span>
@@ -637,13 +659,21 @@ export function AskAiDialog({ ask }: { ask: AskAi }) {
             >
               <TextAreaField
                 label={__('Or describe another change', 'pressbase-admin')}
-                hint={__('It goes to the AI panel, which can also change layouts and colours.', 'pressbase-admin')}
+                hint={__(
+                  'It goes to the AI panel, which can also change layouts and colours.',
+                  'pressbase-admin',
+                )}
                 optional
                 rows={2}
                 value={other}
                 onChange={(e) => setOther(e.target.value)}
               />
-              <Button type="submit" variant="ghost" size="sm" disabled={!other.trim() || Boolean(busy) || off}>
+              <Button
+                type="submit"
+                variant="ghost"
+                size="sm"
+                disabled={!other.trim() || Boolean(busy) || off}
+              >
                 {__('Ask in the AI panel', 'pressbase-admin')}
               </Button>
             </form>
@@ -677,9 +707,21 @@ export function AskAiDialog({ ask }: { ask: AskAi }) {
               hint={
                 kind === 'add-section'
                   ? target?.kind === 'add-section' && target.after
-                    ? sprintf(__('For example: pricing with three tiers. It goes after “%s”.', 'pressbase-admin'), target.after)
-                    : __('For example: pricing with three tiers. It goes at the end of the page.', 'pressbase-admin')
-                  : __('For example: catering, with our services, prices and a way to get in touch.', 'pressbase-admin')
+                    ? sprintf(
+                        __(
+                          'For example: pricing with three tiers. It goes after “%s”.',
+                          'pressbase-admin',
+                        ),
+                        target.after,
+                      )
+                    : __(
+                        'For example: pricing with three tiers. It goes at the end of the page.',
+                        'pressbase-admin',
+                      )
+                  : __(
+                      'For example: catering, with our services, prices and a way to get in touch.',
+                      'pressbase-admin',
+                    )
               }
               rows={3}
               maxLength={500}
@@ -687,7 +729,10 @@ export function AskAiDialog({ ask }: { ask: AskAi }) {
               onChange={(e) => setPrompt(e.target.value)}
             />
             <p className={styles.note}>
-              {__('AI uses the facts in your site’s brief. Anything it doesn’t know (prices, quotes, opening hours) is left in [square brackets] for you to fill in.', 'pressbase-admin')}
+              {__(
+                'AI uses the facts in your site’s brief. Anything it doesn’t know (prices, quotes, opening hours) is left in [square brackets] for you to fill in.',
+                'pressbase-admin',
+              )}
             </p>
             <Button
               type="submit"

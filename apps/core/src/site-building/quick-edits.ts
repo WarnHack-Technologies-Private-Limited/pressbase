@@ -3,11 +3,16 @@ import { extractSlots, type Slot, type SlotValues } from '@pressbase/slots';
 import type { JsonSchema } from '../abilities/json-schema';
 import { AiError } from '../ai/types';
 import type { CurrentUser } from '../auth/users';
-import type { Kernel } from '../kernel';
-import { type Grounding, groundingFrom, unsupportedDetails } from '../site-builder/honest';
-import { enforceHonestContent, FACT_CATEGORIES } from '../site-builder/honest';
-import { labelled, pageSchema, SYSTEM, sectionCategories } from '../site-builder/pipeline';
 import type { BlockPattern } from '../blocks/patterns';
+import type { Kernel } from '../kernel';
+import {
+  enforceHonestContent,
+  FACT_CATEGORIES,
+  type Grounding,
+  groundingFrom,
+  unsupportedDetails,
+} from '../site-builder/honest';
+import { labelled, pageSchema, SYSTEM, sectionCategories } from '../site-builder/pipeline';
 import { getSiteBrief, type SiteBrief } from './brief';
 import { PROPOSE_SITE_EDITS } from './edits';
 import { type Patterns, patternBlocks, patternIndex } from './sections';
@@ -242,7 +247,26 @@ function candidates(patterns: Patterns, names: string[]): Candidate[] {
 const words = (text: string) => text.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
 const stem = (word: string) => word.replace(/(ies|es|s)$/u, '');
 /** Words too common to tell sections apart. */
-const COMMON = new Set(['a', 'an', 'the', 'and', 'or', 'with', 'for', 'of', 'to', 'our', 'my', 'section', 'page', 'add', 'some', 'about', 'in', 'on']);
+const COMMON = new Set([
+  'a',
+  'an',
+  'the',
+  'and',
+  'or',
+  'with',
+  'for',
+  'of',
+  'to',
+  'our',
+  'my',
+  'section',
+  'page',
+  'add',
+  'some',
+  'about',
+  'in',
+  'on',
+]);
 
 /**
  * Patterns whose title or keywords the person's words name ("pricing with
@@ -254,7 +278,11 @@ export function searchPatterns(
   patterns: Patterns,
   sections: ReadonlySet<string>,
 ): string[] {
-  const said = new Set(words(prompt).filter((w) => !COMMON.has(w) && w.length > 2).map(stem));
+  const said = new Set(
+    words(prompt)
+      .filter((w) => !COMMON.has(w) && w.length > 2)
+      .map(stem),
+  );
   if (!said.size) return [];
   const order = (name: string) => (patterns.get(name)?.source === 'core' ? 0 : 1);
   return [...sections]
@@ -325,11 +353,18 @@ async function fillSections(
   const sections = plans
     .map((s) => ({
       ...s,
-      candidates: candidates(context.patterns, s.patterns ?? context.categories.get(s.category) ?? []),
+      candidates: candidates(
+        context.patterns,
+        s.patterns ?? context.categories.get(s.category) ?? [],
+      ),
     }))
     .filter((s) => s.candidates.length);
   if (!sections.length) {
-    throw new AiError('studio_ai_no_section', 'There’s no section of that kind to build with.', 422);
+    throw new AiError(
+      'studio_ai_no_section',
+      'There’s no section of that kind to build with.',
+      422,
+    );
   }
   const answer = await ask<Record<string, { pattern: string; slots: SlotValues }>>(kernel, user, {
     task: [
@@ -340,7 +375,10 @@ async function fillSections(
     data: [
       labelled('site_brief', context.brief),
       labelled('site_owner_request', context.prompt),
-      labelled('sections', sections.map(({ category, intent }) => ({ category, intent }))),
+      labelled(
+        'sections',
+        sections.map(({ category, intent }) => ({ category, intent })),
+      ),
     ],
     schema: pageSchema(sections),
     ability: context.ability,
@@ -351,7 +389,8 @@ async function fillSections(
   return sections.map((section, i) => {
     const value = answer[`section_${i + 1}`] as { pattern: string; slots: SlotValues };
     const candidate =
-      section.candidates.find((c) => c.name === value.pattern) ?? (section.candidates[0] as Candidate);
+      section.candidates.find((c) => c.name === value.pattern) ??
+      (section.candidates[0] as Candidate);
     const honest = enforceHonestContent(
       candidate.slots,
       value.slots ?? {},
@@ -372,7 +411,12 @@ export interface Proposal {
 async function propose(
   kernel: Kernel,
   user: CurrentUser,
-  input: { operations: unknown[]; summary: string; page?: number | string; changeset_uuid?: string },
+  input: {
+    operations: unknown[];
+    summary: string;
+    page?: number | string;
+    changeset_uuid?: string;
+  },
 ): Promise<Proposal> {
   const ability = kernel.abilities.get(PROPOSE_SITE_EDITS);
   if (!ability) throw new Error(`${PROPOSE_SITE_EDITS} isn’t registered.`);
@@ -443,7 +487,14 @@ export async function proposeSection(
   const [section] = await fillSections(
     kernel,
     user,
-    { brief, prompt: input.prompt, page: input.pageTitle, ability: SECTION_ABILITY, patterns, categories },
+    {
+      brief,
+      prompt: input.prompt,
+      page: input.pageTitle,
+      ability: SECTION_ABILITY,
+      patterns,
+      categories,
+    },
     [plan],
   );
   const title = patterns.get(section?.pattern ?? '')?.title ?? labels.get(plan.category) ?? '';

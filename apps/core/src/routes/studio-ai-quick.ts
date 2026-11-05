@@ -99,7 +99,9 @@ export function quickEditRoutes(app: Hono<AppEnv>): void {
   const start = async <T>(c: Context<AppEnv>, schema: z.ZodType<T>) => {
     const user = c.get('user');
     if (!user) {
-      return { response: restError(c, 401, 'rest_not_logged_in', 'You are not currently logged in.') };
+      return {
+        response: restError(c, 401, 'rest_not_logged_in', 'You are not currently logged in.'),
+      };
     }
     const parsed = schema.safeParse((await readJson(c)) ?? {});
     if (!parsed.success) return { response: invalidParams(c, parsed.error) };

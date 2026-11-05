@@ -45,6 +45,7 @@ describe('left rail', () => {
       'Media',
       'AI',
       'History',
+      'Checklist',
     ]);
     for (const panel of RAIL_PANELS) {
       if (panel.interim === 'built') expect(panel.coming).toBeUndefined();
@@ -58,6 +59,7 @@ describe('left rail', () => {
       'styles',
       'ai',
       'history',
+      'checklist',
     ]);
   });
 });
