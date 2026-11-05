@@ -30,13 +30,18 @@ const AI_ON = {
   daily_limit: 200,
 };
 
+/** Pages this file creates, removed when it's done. */
+const created: number[] = [];
+
 async function createPage(page: Page, title: string, content: string) {
   const res = await page.request.post('/wp-json/wp/v2/pages', {
     headers: writeHeaders,
     data: { title, status: 'publish', content },
   });
   expect(res.status()).toBe(201);
-  return (await res.json()).id as number;
+  const id = (await res.json()).id as number;
+  created.push(id);
+  return id;
 }
 
 async function discardDrafts(page: Page) {
@@ -78,6 +83,10 @@ test.afterAll(async ({ browser }) => {
   await logInAsAdmin(page);
   await setAi(page, { enabled: false });
   await discardDrafts(page);
+  // The pages go too: each is a link in the header's menu, which later tests click around.
+  for (const id of created) {
+    await page.request.delete(`/wp-json/wp/v2/pages/${id}?force=true`, { headers: writeHeaders });
+  }
   await page.close();
 });
 
