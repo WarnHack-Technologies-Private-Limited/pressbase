@@ -25,15 +25,7 @@ import { createHigherOrderComponent } from '@wordpress/compose';
 import { useDispatch, useRegistry, useSelect } from '@wordpress/data';
 import { addFilter } from '@wordpress/hooks';
 import { Monitor, RotateCcw, Smartphone, Tablet } from 'lucide-react';
-import {
-  type ComponentType,
-  createContext,
-  type ReactNode,
-  useContext,
-  useEffect,
-  useId,
-  useMemo,
-} from 'react';
+import { type ComponentType, useEffect, useId, useMemo } from 'react';
 import { useI18n } from '@/lib/i18n/context';
 import { msgid } from '../../lib/i18n/locale';
 import { unlock } from '../block-editor/private-apis';
@@ -63,10 +55,20 @@ export const deviceTypeKey = unlock<{ deviceTypeKey: symbol }>(
   blockEditorPrivateApis,
 ).deviceTypeKey;
 
-const StudioDevice = createContext<Device>('desktop');
-
-/** The device the canvas shows, for Studio's components inside the editor. */
-export const useStudioDevice = () => useContext(StudioDevice);
+/**
+ * The device whose styles the editor edits: the block editor's style state
+ * viewport, which `StudioResponsive` sets. Desktop outside Studio.
+ */
+export function useStudioDevice(): Device {
+  return useSelect((select) => {
+    const viewport = unlock<{ getStyleStateViewport: () => string }>(
+      select(blockEditorStore),
+    ).getStyleStateViewport();
+    if (viewport === '@tablet') return 'tablet';
+    if (viewport === '@mobile') return 'mobile';
+    return 'desktop';
+  }, []);
+}
 
 type BlockEditorSelect = {
   getSelectedBlockClientId: () => string | null;
@@ -94,9 +96,9 @@ export function useDeviceFrames(): Record<Device, DeviceFrame> {
 
 /**
  * Inside the editor: tells the block editor which device's styles the
- * inspector edits, and gives Studio's components the device.
+ * inspector edits (Studio's components read it back with useStudioDevice()).
  */
-export function StudioResponsive({ device, children }: { device: Device; children: ReactNode }) {
+export function StudioResponsive({ device }: { device: Device }) {
   const dispatch = unlock<{
     setStyleStateViewport: (viewport: string) => void;
     setResponsiveEditing: (enabled: boolean) => void;
@@ -105,7 +107,7 @@ export function StudioResponsive({ device, children }: { device: Device; childre
     dispatch.setStyleStateViewport(deviceState(device) ?? 'default');
     dispatch.setResponsiveEditing(device !== 'desktop');
   }, [device, dispatch]);
-  return <StudioDevice.Provider value={device}>{children}</StudioDevice.Provider>;
+  return null;
 }
 
 /* ------------------------------------------------------- the edit filter */
@@ -125,7 +127,7 @@ type EditProps = {
  */
 const withInheritance = createHigherOrderComponent(
   (BlockEdit: ComponentType<EditProps>) => (props: EditProps) => {
-    const device = useContext(StudioDevice);
+    const device = useStudioDevice();
     const registry = useRegistry();
     const { setAttributes, clientId } = props;
     const wrapped = useMemo(() => {
@@ -151,7 +153,7 @@ const withInheritance = createHigherOrderComponent(
 );
 
 let registered = false;
-/** Adds the filter once; it only acts on Tablet and Mobile, inside <StudioResponsive>. */
+/** Adds the filter once; it only acts while Studio shows Tablet or Mobile. */
 export function registerStudioResponsive(): void {
   if (registered) return;
   registered = true;

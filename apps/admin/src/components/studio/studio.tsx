@@ -1909,99 +1909,98 @@ function StudioEditor(props: StudioEditorProps) {
       <MediaCategories enabled={props.features.media} />
       <EditingModes blocks={doc.blocks} partsEditable={!props.partsLocked} />
       <StoreBridgeSetter bridge={store} />
-      <StudioResponsive device={props.device}>
-        <EditorCommands
-          canUndo={history.hasUndo}
-          canRedo={history.hasRedo}
-          undo={history.undo}
-          redo={history.redo}
-          onSectionAdded={(title, phase) => {
-            if (phase === 'before') {
-              history.labelNext(sprintf(__('Added section “%s”', 'pressbase-admin'), title));
-            }
-            props.onSectionAdded(title, phase);
-          }}
-        />
-        {/* React events bubble out of the canvas iframe's portal, so this sees typing there too. */}
-        {/* biome-ignore lint/a11y/noStaticElementInteractions: listens for keys pressed in the canvas. */}
-        <div
-          className={styles.contents}
-          onKeyDownCapture={settle}
-          onPointerDownCapture={settle}
-          onKeyDown={(event) => {
-            // ⌘K / Ctrl+K in the canvas: Studio's own window doesn't hear key presses in the iframe.
-            const target = event.target as Node;
-            if (target.ownerDocument === document || event.nativeEvent.defaultPrevented) return;
-            if (!isPaletteShortcut(event)) return;
-            event.preventDefault();
-            props.onOpenPalette();
-          }}
-        >
-          <CanvasEventsProvider value={canvasEvents}>
-            <StudioRegionsProvider
-              value={{
-                parts: props.parts,
-                partLabel: (slug) =>
-                  `${props.parts.get(slug)?.title ?? slug} · ${__('all pages', 'pressbase-admin')}`,
-              }}
+      <StudioResponsive device={props.device} />
+      <EditorCommands
+        canUndo={history.hasUndo}
+        canRedo={history.hasRedo}
+        undo={history.undo}
+        redo={history.redo}
+        onSectionAdded={(title, phase) => {
+          if (phase === 'before') {
+            history.labelNext(sprintf(__('Added section “%s”', 'pressbase-admin'), title));
+          }
+          props.onSectionAdded(title, phase);
+        }}
+      />
+      {/* React events bubble out of the canvas iframe's portal, so this sees typing there too. */}
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: listens for keys pressed in the canvas. */}
+      <div
+        className={styles.contents}
+        onKeyDownCapture={settle}
+        onPointerDownCapture={settle}
+        onKeyDown={(event) => {
+          // ⌘K / Ctrl+K in the canvas: Studio's own window doesn't hear key presses in the iframe.
+          const target = event.target as Node;
+          if (target.ownerDocument === document || event.nativeEvent.defaultPrevented) return;
+          if (!isPaletteShortcut(event)) return;
+          event.preventDefault();
+          props.onOpenPalette();
+        }}
+      >
+        <CanvasEventsProvider value={canvasEvents}>
+          <StudioRegionsProvider
+            value={{
+              parts: props.parts,
+              partLabel: (slug) =>
+                `${props.parts.get(slug)?.title ?? slug} · ${__('all pages', 'pressbase-admin')}`,
+            }}
+          >
+            <StudioFrame
+              chrome={props.chrome}
+              editor={editor}
+              notice={<PartNotice parts={props.parts} locked={props.partsLocked} />}
+              footer={
+                <Breadcrumb site={props.site} page={props.summary.title} parts={props.parts} />
+              }
+              inspector={
+                showInspector && (
+                  <Inspector
+                    page={props.summary}
+                    parts={props.parts}
+                    tab={props.tab}
+                    onTab={props.onTab}
+                    canReset={canReset}
+                    onReset={(slug) => {
+                      const region = regions.current.get(partKey(slug));
+                      if (region?.theme !== undefined) replaceRegion(region.key, region.theme);
+                    }}
+                    onClose={props.narrow ? props.onCloseInspector : undefined}
+                    partsLocked={props.partsLocked}
+                    mode={props.mode}
+                    onMode={props.onMode}
+                  />
+                )
+              }
             >
-              <StudioFrame
-                chrome={props.chrome}
-                editor={editor}
-                notice={<PartNotice parts={props.parts} locked={props.partsLocked} />}
-                footer={
-                  <Breadcrumb site={props.site} page={props.summary.title} parts={props.parts} />
-                }
-                inspector={
-                  showInspector && (
-                    <Inspector
-                      page={props.summary}
-                      parts={props.parts}
-                      tab={props.tab}
-                      onTab={props.onTab}
-                      canReset={canReset}
-                      onReset={(slug) => {
-                        const region = regions.current.get(partKey(slug));
-                        if (region?.theme !== undefined) replaceRegion(region.key, region.theme);
-                      }}
-                      onClose={props.narrow ? props.onCloseInspector : undefined}
-                      partsLocked={props.partsLocked}
-                      mode={props.mode}
-                      onMode={props.onMode}
-                    />
-                  )
-                }
-              >
-                <div className={styles.canvasArea} data-device={props.device}>
-                  <div
-                    ref={frameRef}
-                    className={styles.canvasFrame}
-                    style={width ? { maxWidth: `${width}px` } : undefined}
+              <div className={styles.canvasArea} data-device={props.device}>
+                <div
+                  ref={frameRef}
+                  className={styles.canvasFrame}
+                  style={width ? { maxWidth: `${width}px` } : undefined}
+                >
+                  <BlockContextProvider
+                    value={
+                      typeof doc.page?.id === 'number'
+                        ? { postId: doc.page.id, postType: 'page' }
+                        : {}
+                    }
                   >
-                    <BlockContextProvider
-                      value={
-                        typeof doc.page?.id === 'number'
-                          ? { postId: doc.page.id, postType: 'page' }
-                          : {}
-                      }
-                    >
-                      <BlockCanvas height="100%" styles={settings.styles as never}>
-                        <BlockList className="wp-site-blocks" />
-                      </BlockCanvas>
-                    </BlockContextProvider>
-                    <CanvasDragAssist frameRef={frameRef} />
-                    <SectionToolbar
-                      frameRef={frameRef}
-                      onAddSection={props.onAddSection}
-                      onAskAi={props.onAskAi}
-                    />
-                  </div>
+                    <BlockCanvas height="100%" styles={settings.styles as never}>
+                      <BlockList className="wp-site-blocks" />
+                    </BlockCanvas>
+                  </BlockContextProvider>
+                  <CanvasDragAssist frameRef={frameRef} />
+                  <SectionToolbar
+                    frameRef={frameRef}
+                    onAddSection={props.onAddSection}
+                    onAskAi={props.onAskAi}
+                  />
                 </div>
-              </StudioFrame>
-            </StudioRegionsProvider>
-          </CanvasEventsProvider>
-        </div>
-      </StudioResponsive>
+              </div>
+            </StudioFrame>
+          </StudioRegionsProvider>
+        </CanvasEventsProvider>
+      </div>
       <div className={lightScope}>
         <Popover.Slot />
       </div>
