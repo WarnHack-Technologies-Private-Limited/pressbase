@@ -1,0 +1,39 @@
+{
+  "title": "Contact, dark band",
+  "description": "A rounded band in the text colour with a large heading, the address, phone number and email address side by side, and a button with directions.",
+  "categories": ["contact", "call-to-action"],
+  "keywords": ["contact", "address", "phone", "email", "get in touch", "band", "dark"],
+  "viewportWidth": 1400,
+  "slots": {
+    "title": {
+      "label": "Heading",
+      "maxLength": 40
+    },
+    "body": {
+      "label": "Introduction"
+    },
+    "details": {
+      "label": "Contact details",
+      "description": "One per way to reach you: address, phone number, email address.",
+      "minItems": 1,
+      "maxItems": 4,
+      "facts": true
+    },
+    "details.title": {
+      "label": "Kind of detail",
+      "maxLength": 30
+    },
+    "details.body": {
+      "label": "Detail",
+      "maxLength": 120,
+      "facts": true,
+      "placeholder": "[Add your contact details]"
+    },
+    "actions": {
+      "label": "Button",
+      "description": "A link to the address on a map (OpenStreetMap, Google Maps…), or to the contact page.",
+      "maxItems": 1,
+      "facts": true
+    }
+  }
+}

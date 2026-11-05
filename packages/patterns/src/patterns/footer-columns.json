@@ -1,0 +1,33 @@
+{
+  "title": "Footer, columns",
+  "description": "The site title and tagline, the menu and the contact details in three columns, with a link to the privacy policy below. Stacks on small screens.",
+  "categories": ["footer"],
+  "blockTypes": ["core/template-part/footer"],
+  "keywords": ["footer", "navigation", "menu", "contact", "address", "columns"],
+  "viewportWidth": 1400,
+  "slots": {
+    "address": {
+      "label": "Address",
+      "maxLength": 120,
+      "facts": true,
+      "placeholder": "[Add your address]"
+    },
+    "phone": {
+      "label": "Phone number",
+      "maxLength": 40,
+      "facts": true,
+      "placeholder": "[Add your phone number]"
+    },
+    "email": {
+      "label": "Email address",
+      "maxLength": 60,
+      "facts": true,
+      "placeholder": "[Add your email address]"
+    },
+    "privacy": {
+      "label": "Privacy link",
+      "description": "A link to the privacy policy page.",
+      "maxLength": 40
+    }
+  }
+}

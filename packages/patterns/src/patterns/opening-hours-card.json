@@ -1,0 +1,36 @@
+{
+  "title": "Opening hours, card",
+  "description": "A centred card with a heading, a list of days and times, a note and a button with directions.",
+  "categories": ["opening-hours", "contact"],
+  "keywords": ["opening hours", "hours", "open", "times", "schedule", "visit", "card"],
+  "viewportWidth": 1000,
+  "slots": {
+    "title": {
+      "label": "Heading",
+      "maxLength": 30
+    },
+    "body": {
+      "label": "Introduction",
+      "description": "An invitation to visit or call, in one sentence."
+    },
+    "note": {
+      "description": "Exceptions such as holiday closures.",
+      "facts": true,
+      "placeholder": "[Add holiday closures, or remove this line]"
+    },
+    "actions": {
+      "label": "Button",
+      "description": "A link to the address on a map (OpenStreetMap, Google Maps…), or to the contact page.",
+      "maxItems": 1,
+      "facts": true
+    },
+    "hours": {
+      "label": "Opening hours",
+      "description": "One line per day, or per run of days with the same hours, in week order: the days, then the times, such as “Monday to Friday: 8:00 – 18:00”.",
+      "minItems": 1,
+      "maxItems": 7,
+      "facts": true,
+      "placeholder": "[Add your opening hours]"
+    }
+  }
+}

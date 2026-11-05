@@ -1,0 +1,47 @@
+{
+  "title": "Footer, address and opening hours",
+  "description": "Where to find you, when you are open and how to get in touch in three columns on a card-coloured background, then the site title, menu and privacy link. Stacks on small screens.",
+  "categories": ["footer"],
+  "blockTypes": ["core/template-part/footer"],
+  "keywords": ["footer", "address", "opening hours", "contact", "directions", "local business"],
+  "viewportWidth": 1400,
+  "slots": {
+    "address": {
+      "label": "Address",
+      "maxLength": 120,
+      "facts": true,
+      "placeholder": "[Add your address]"
+    },
+    "phone": {
+      "label": "Phone number",
+      "maxLength": 40,
+      "facts": true,
+      "placeholder": "[Add your phone number]"
+    },
+    "email": {
+      "label": "Email address",
+      "maxLength": 60,
+      "facts": true,
+      "placeholder": "[Add your email address]"
+    },
+    "actions": {
+      "label": "Button",
+      "description": "A link to the address on a map (OpenStreetMap, Google Maps…), or to the contact page.",
+      "maxItems": 1,
+      "facts": true
+    },
+    "hours": {
+      "label": "Opening hours",
+      "description": "One line per day, or per run of days with the same hours, in week order: the days, then the times, such as “Monday to Friday: 8:00 – 18:00”.",
+      "minItems": 1,
+      "maxItems": 7,
+      "facts": true,
+      "placeholder": "[Add your opening hours]"
+    },
+    "privacy": {
+      "label": "Privacy link",
+      "description": "A link to the privacy policy page.",
+      "maxLength": 40
+    }
+  }
+}
