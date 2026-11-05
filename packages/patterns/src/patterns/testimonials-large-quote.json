@@ -1,0 +1,34 @@
+{
+  "title": "Testimonials, one large quote",
+  "description": "One customer quote in large type, centred on a soft background, with a small heading above it.",
+  "categories": ["testimonials"],
+  "keywords": ["testimonial", "review", "quote", "customer", "feedback", "large"],
+  "viewportWidth": 1200,
+  "slots": {
+    "title": {
+      "label": "Heading",
+      "maxLength": 40
+    },
+    "testimonials": {
+      "label": "Testimonials",
+      "description": "Quotes from real customers, in their own words, with their permission.",
+      "minItems": 1,
+      "maxItems": 1,
+      "facts": true,
+      "placeholder": "[Add a customer quote]"
+    },
+    "testimonials.body": {
+      "label": "Quote",
+      "maxLength": 240,
+      "facts": true,
+      "placeholder": "[Add a customer quote]"
+    },
+    "testimonials.citation": {
+      "label": "Name",
+      "description": "Who said it: a name, and where they are from or what they bought.",
+      "maxLength": 60,
+      "facts": true,
+      "placeholder": "[Customer name]"
+    }
+  }
+}

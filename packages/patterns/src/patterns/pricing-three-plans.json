@@ -1,0 +1,59 @@
+{
+  "title": "Pricing, three plans",
+  "description": "A centred heading above three plan cards, each with a price, what’s included and a button; the middle one on a soft background. Cards wrap on small screens.",
+  "categories": ["pricing"],
+  "keywords": ["pricing", "prices", "plans", "packages", "tiers", "cost", "cards"],
+  "viewportWidth": 1400,
+  "slots": {
+    "eyebrow": {
+      "label": "Label",
+      "description": "A few words above the heading: what the section is about.",
+      "maxLength": 40
+    },
+    "title": {
+      "label": "Heading",
+      "maxLength": 60
+    },
+    "body": {
+      "label": "Introduction"
+    },
+    "plans": {
+      "label": "Plans",
+      "description": "One card per plan or package, the simplest first.",
+      "minItems": 2,
+      "maxItems": 4
+    },
+    "plans.title": {
+      "label": "Plan",
+      "maxLength": 30
+    },
+    "plans.body": {
+      "label": "Who it is for",
+      "maxLength": 90
+    },
+    "plans.price": {
+      "label": "Price",
+      "role": "price",
+      "description": "The price with its unit or period, such as “€40 a month”.",
+      "maxLength": 30,
+      "facts": true,
+      "placeholder": "[Add a price]"
+    },
+    "plans.list": {
+      "label": "What’s included",
+      "minItems": 1,
+      "maxItems": 6,
+      "facts": true,
+      "placeholder": "[Add what’s included]"
+    },
+    "plans.actions": {
+      "label": "Button",
+      "description": "Usually a link to the contact or booking page.",
+      "maxItems": 1
+    },
+    "note": {
+      "label": "Note",
+      "maxLength": 120
+    }
+  }
+}

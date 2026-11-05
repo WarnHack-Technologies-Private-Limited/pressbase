@@ -1,0 +1,46 @@
+{
+  "title": "Testimonials, beside the heading",
+  "description": "A heading, an introduction and a button beside two customer quotes, one above the other. Stacks on small screens.",
+  "categories": ["testimonials"],
+  "keywords": ["testimonials", "reviews", "quotes", "customers", "feedback", "columns"],
+  "viewportWidth": 1400,
+  "slots": {
+    "eyebrow": {
+      "label": "Label",
+      "description": "A few words above the heading: what the section is about.",
+      "maxLength": 40
+    },
+    "title": {
+      "label": "Heading",
+      "maxLength": 60
+    },
+    "body": {
+      "label": "Introduction"
+    },
+    "actions": {
+      "label": "Button",
+      "maxItems": 1
+    },
+    "testimonials": {
+      "label": "Testimonials",
+      "description": "Quotes from real customers, in their own words, with their permission.",
+      "minItems": 1,
+      "maxItems": 4,
+      "facts": true,
+      "placeholder": "[Add a customer quote]"
+    },
+    "testimonials.body": {
+      "label": "Quote",
+      "maxLength": 240,
+      "facts": true,
+      "placeholder": "[Add a customer quote]"
+    },
+    "testimonials.citation": {
+      "label": "Name",
+      "description": "Who said it: a name, and where they are from or what they bought.",
+      "maxLength": 60,
+      "facts": true,
+      "placeholder": "[Customer name]"
+    }
+  }
+}

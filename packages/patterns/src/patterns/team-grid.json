@@ -1,0 +1,51 @@
+{
+  "title": "Team, portraits in a grid",
+  "description": "A centred heading above four people, each with a portrait, a name, a role and a line about them. Wraps on small screens.",
+  "categories": ["team"],
+  "keywords": ["team", "people", "staff", "about us", "portraits", "who we are"],
+  "viewportWidth": 1400,
+  "slots": {
+    "eyebrow": {
+      "label": "Label",
+      "description": "A few words above the heading: what the section is about.",
+      "maxLength": 40
+    },
+    "title": {
+      "label": "Heading",
+      "maxLength": 60
+    },
+    "body": {
+      "label": "Introduction"
+    },
+    "people": {
+      "label": "People",
+      "description": "One per person, as they want to be introduced.",
+      "minItems": 1,
+      "maxItems": 8,
+      "facts": true
+    },
+    "people.image": {
+      "label": "Portrait",
+      "subject": "a friendly portrait of the person at work"
+    },
+    "people.title": {
+      "label": "Name",
+      "maxLength": 40,
+      "facts": true,
+      "placeholder": "[Team member name]"
+    },
+    "people.role": {
+      "label": "Role",
+      "role": "job-title",
+      "maxLength": 40,
+      "facts": true,
+      "placeholder": "[Role]"
+    },
+    "people.body": {
+      "label": "About them",
+      "maxLength": 140,
+      "facts": true,
+      "placeholder": "[Add a sentence about them]"
+    }
+  }
+}
