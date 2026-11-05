@@ -133,11 +133,9 @@ describe('Additional CSS: validate_custom_css() and edit_css', () => {
       blocks: BUTTON_CSS,
     };
 
-    const settings = await designer.request(
-      'POST',
-      '/pressbase/v1/global-styles/editor-settings',
-      { styles },
-    );
+    const settings = await designer.request('POST', '/pressbase/v1/global-styles/editor-settings', {
+      styles,
+    });
     expect(settings.status).toBe(200);
     expect(allCss(settings.body.styles)).not.toContain('.note');
     expect(allCss(settings.body.styles)).not.toContain('letter-spacing:.1em');

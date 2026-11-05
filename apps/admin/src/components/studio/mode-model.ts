@@ -110,8 +110,8 @@ export const CONTROLS: readonly ModeControl[] = [
   { id: 'per-device', label: msgid('Values per device'), mode: 'advanced', issue: 49 },
   { id: 'borders', label: msgid('Borders'), mode: 'advanced' },
   { id: 'shadows', label: msgid('Shadows'), mode: 'advanced' },
-  { id: 'states', label: msgid('Hover and focus styles'), mode: 'advanced', issue: 46 },
-  { id: 'additional-css', label: msgid('Additional CSS'), mode: 'advanced', issue: 46 },
+  { id: 'states', label: msgid('Hover and focus styles'), mode: 'advanced' },
+  { id: 'additional-css', label: msgid('Additional CSS'), mode: 'advanced' },
 ];
 
 /** Whether a mode shows a control (unknown controls: Advanced only). */
