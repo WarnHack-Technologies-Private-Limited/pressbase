@@ -1,5 +1,6 @@
 import type { JsonSchema } from '../../abilities/json-schema';
 import type { AiProvider, AiResult, AiTextRequest } from '../types';
+import { isAssistantRequest, recordedAssistantStep } from './recorded-assistant';
 
 /**
  * The recorded provider: answers recorded for one site (a neighbourhood
@@ -16,7 +17,9 @@ import type { AiProvider, AiResult, AiTextRequest } from '../types';
  * the schema: the sitemap keeps the sections this site's patterns have, and
  * a page fills every slot it's given with plain copy and no facts, so the
  * honest-content rules leave placeholders where facts would go.
- * Anything else gets the first value its schema allows.
+ * Anything else gets the first value its schema allows. Studio's AI panel
+ * gets a few recorded conversations through the tool loop
+ * (recorded-assistant.ts).
  * See docs/architecture/ai.md#testing-without-a-provider.
  */
 
@@ -209,16 +212,30 @@ export function createRecordedProvider(): AiProvider {
           });
         });
       }
-      const value = request.outputSchema ? recordedAnswer(request) : 'Recorded answer.';
-      const text = typeof value === 'string' ? value : JSON.stringify(value);
+      // Studio's AI panel: a tool loop, played a step at a time.
+      const step = isAssistantRequest(request) ? recordedAssistantStep(request) : null;
+      const value =
+        step && 'text' in step
+          ? step.text
+          : request.outputSchema
+            ? recordedAnswer(request)
+            : 'Recorded answer.';
+      const text =
+        step && 'call' in step ? '' : typeof value === 'string' ? value : JSON.stringify(value);
       const promptTokens = Math.ceil(
         JSON.stringify(request.messages).length / 4 + (request.systemInstruction?.length ?? 0) / 4,
       );
       const completionTokens = Math.ceil(text.length / 4);
       return {
         id: `recorded_${n}`,
-        message: { role: 'model', parts: [{ type: 'text', text }] },
-        finishReason: 'stop',
+        message:
+          step && 'call' in step
+            ? {
+                role: 'model',
+                parts: [{ type: 'function_call', id: `recorded_call_${n}`, ...step.call }],
+              }
+            : { role: 'model', parts: [{ type: 'text', text }] },
+        finishReason: step && 'call' in step ? 'tool_calls' : 'stop',
         tokenUsage: {
           promptTokens,
           completionTokens,

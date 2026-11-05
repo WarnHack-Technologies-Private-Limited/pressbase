@@ -16,7 +16,7 @@ import { PROPOSE_SITE_EDITS } from './edits';
  * here writes to the site. See docs/architecture/ai-edits.md.
  */
 
-/** Post meta on the changeset holding its conversation (JSON). */
+/** Post meta on the changeset holding its conversation (a list of messages). */
 export const AI_THREAD_META = '_pressbase_ai_thread';
 /** Messages kept per conversation; older ones drop off. */
 export const MAX_THREAD_MESSAGES = 40;
@@ -62,18 +62,12 @@ export interface OpenPage {
 export async function readThread(kernel: Kernel, changeset: Post | undefined) {
   if (!changeset) return [] as ThreadMessage[];
   const raw = await kernel.meta.get('post', changeset.id, AI_THREAD_META, true);
-  if (typeof raw !== 'string' || !raw) return [];
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? (parsed as ThreadMessage[]) : [];
-  } catch {
-    return [];
-  }
+  return Array.isArray(raw) ? (raw as ThreadMessage[]) : [];
 }
 
 export async function saveThread(kernel: Kernel, changeset: Post, messages: ThreadMessage[]) {
   const kept = messages.slice(-MAX_THREAD_MESSAGES);
-  await kernel.meta.update('post', changeset.id, AI_THREAD_META, JSON.stringify(kept));
+  await kernel.meta.update('post', changeset.id, AI_THREAD_META, kept);
   return kept;
 }
 

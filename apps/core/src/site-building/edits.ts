@@ -12,13 +12,7 @@ import { extractSlots } from '@pressbase/slots';
 import { type AbilityContext, AbilityError } from '../abilities/registry';
 import { sanitizeSlug } from '../content/sanitize';
 import type { Kernel } from '../kernel';
-import {
-  applyOperations,
-  canEditPage,
-  pageBySlug,
-  pageView,
-  templatePartView,
-} from './abilities';
+import { applyOperations, canEditPage, pageBySlug, pageView, templatePartView } from './abilities';
 import { CHANGESET_UUID_INPUT, changesetFor, entriesOf } from './changeset';
 import {
   findPattern,
@@ -114,7 +108,8 @@ export function registerSiteEditsAbility(kernel: Kernel): void {
         },
         page: {
           type: ['integer', 'string'],
-          description: 'The page that page operations without their own `page` change: the open one.',
+          description:
+            'The page that page operations without their own `page` change: the open one.',
         },
         changeset_uuid: CHANGESET_UUID_INPUT,
       },
@@ -169,93 +164,101 @@ export function registerSiteEditsAbility(kernel: Kernel): void {
 
       for (const [i, operation] of input.operations.entries()) {
         const path = `input[operations][${i}]`;
-        if (isPageOperation(operation)) {
-          const ref = operation.page ?? input.page;
-          if (ref === undefined) {
-            throw invalid(`${path}[page]: name the page, or give \`page\` for the open one.`);
-          }
-          const key = await pageOf(ref, path);
-          const sections = pages.get(key) ?? [];
-          if (operation.type === 'updateBlockAttributes') {
-            checkAttributes(operation, sections, system, path);
-          } else {
-            const result = applyOperations(sections, [operation], patterns, i);
-            pages.set(key, result.sections);
-            unused.push(...result.unused);
-          }
-          out.push({ ...operation, page: key } as PageOperation);
-          continue;
-        }
-        switch (operation.type) {
-          case 'setGlobalStyles': {
-            if (operation.styles) assertPresetStyles(operation.styles, `${path}[styles]`);
-            if (operation.design) {
-              const { config } = await currentUserStyles(kernel, stylesheet, data);
-              try {
-                applyDesign(theme, config, operation.design);
-              } catch (error) {
-                if (error instanceof AbilityError) {
-                  throw invalid(error.message.replace('input[design]', `${path}[design]`));
-                }
-                throw error;
-              }
+        try {
+          if (isPageOperation(operation)) {
+            const ref = operation.page ?? input.page;
+            if (ref === undefined) {
+              throw invalid(`${path}[page]: name the page, or give \`page\` for the open one.`);
             }
-            break;
-          }
-          case 'updateTemplatePart': {
-            const part = await templatePartView(kernel, data, operation.slug).catch(() => {
-              throw invalid(`${path}[slug]: there’s no template part “${operation.slug}”.`);
-            });
-            if (operation.pattern !== undefined) {
-              const pattern = findPattern(patterns, operation.pattern, `${path}[pattern]`);
-              renderPattern(pattern, patterns, operation.slots, path);
+            const key = await pageOf(ref, path);
+            const sections = pages.get(key) ?? [];
+            if (operation.type === 'updateBlockAttributes') {
+              checkAttributes(operation, sections, system, path);
             } else {
-              const blocks = pageSections(part.content, patterns);
-              const declarations =
-                blocks.length === 1
-                  ? sectionPattern(blocks[0] as ParsedBlock, patterns)?.slots
-                  : undefined;
-              validateSlotValues(
-                extractSlots(blocks, { declarations }),
-                operation.slots,
-                `${path}[slots]`,
-              );
+              const result = applyOperations(sections, [operation], patterns, i);
+              pages.set(key, result.sections);
+              unused.push(...result.unused);
             }
-            break;
-          }
-          case 'createPage': {
-            const sections = operation.sections.flatMap((section, s) =>
-              renderPattern(
-                findPattern(patterns, section.pattern, `${path}[sections][${s}][pattern]`),
-                patterns,
-                section.slots,
-                `${path}[sections][${s}]`,
-              ),
-            );
-            const base = sanitizeSlug(operation.slug ?? operation.title) || 'page';
-            let slug = base;
-            for (
-              let n = 2;
-              created.has(slug) || data[`page:${slug}`] || (await pageBySlug(kernel, slug));
-              n++
-            ) {
-              slug = `${base}-${n}`;
-            }
-            created.add(slug);
-            pages.set(slug, sections);
-            out.push({ ...operation, slug });
+            out.push({ ...operation, page: key } as PageOperation);
             continue;
           }
-          case 'updateMenu':
-            for (const [n, item] of operation.items.entries()) {
-              if (item.page === undefined || created.has(item.page)) continue;
-              if (!data[`page:${item.page}`] && !(await pageBySlug(kernel, item.page))) {
-                throw invalid(`${path}[items][${n}][page]: there’s no page “${item.page}”.`);
+          switch (operation.type) {
+            case 'setGlobalStyles': {
+              if (operation.styles) assertPresetStyles(operation.styles, `${path}[styles]`);
+              if (operation.design) {
+                const { config } = await currentUserStyles(kernel, stylesheet, data);
+                try {
+                  applyDesign(theme, config, operation.design);
+                } catch (error) {
+                  if (error instanceof AbilityError) {
+                    throw invalid(error.message.replace('input[design]', `${path}[design]`));
+                  }
+                  throw error;
+                }
               }
+              break;
             }
-            break;
+            case 'updateTemplatePart': {
+              const part = await templatePartView(kernel, data, operation.slug).catch(() => {
+                throw invalid(`${path}[slug]: there’s no template part “${operation.slug}”.`);
+              });
+              if (operation.pattern !== undefined) {
+                const pattern = findPattern(patterns, operation.pattern, `${path}[pattern]`);
+                renderPattern(pattern, patterns, operation.slots, path);
+              } else {
+                const blocks = pageSections(part.content, patterns);
+                const declarations =
+                  blocks.length === 1
+                    ? sectionPattern(blocks[0] as ParsedBlock, patterns)?.slots
+                    : undefined;
+                validateSlotValues(
+                  extractSlots(blocks, { declarations }),
+                  operation.slots,
+                  `${path}[slots]`,
+                );
+              }
+              break;
+            }
+            case 'createPage': {
+              const sections = operation.sections.flatMap((section, s) =>
+                renderPattern(
+                  findPattern(patterns, section.pattern, `${path}[sections][${s}][pattern]`),
+                  patterns,
+                  section.slots,
+                  `${path}[sections][${s}]`,
+                ),
+              );
+              const base = sanitizeSlug(operation.slug ?? operation.title) || 'page';
+              let slug = base;
+              for (
+                let n = 2;
+                created.has(slug) || data[`page:${slug}`] || (await pageBySlug(kernel, slug));
+                n++
+              ) {
+                slug = `${base}-${n}`;
+              }
+              created.add(slug);
+              pages.set(slug, sections);
+              out.push({ ...operation, slug });
+              continue;
+            }
+            case 'updateMenu':
+              for (const [n, item] of operation.items.entries()) {
+                if (item.page === undefined || created.has(item.page)) continue;
+                if (!data[`page:${item.page}`] && !(await pageBySlug(kernel, item.page))) {
+                  throw invalid(`${path}[items][${n}][page]: there’s no page “${item.page}”.`);
+                }
+              }
+              break;
+          }
+          out.push(operation);
+        } catch (error) {
+          // Every message names the operation, so the model knows which to fix.
+          if (error instanceof AbilityError && !error.message.startsWith('input[')) {
+            throw invalid(`${path}: ${error.message}`);
+          }
+          throw error;
         }
-        out.push(operation);
       }
       return { operations: out, summary: input.summary, unused };
     },
@@ -279,7 +282,9 @@ function checkAttributes(
     );
   }
   if (!blockAt(section, operation.block ?? [])) {
-    throw invalid(`${path}[block]: the section has no block at ${JSON.stringify(operation.block)}.`);
+    throw invalid(
+      `${path}[block]: the section has no block at ${JSON.stringify(operation.block)}.`,
+    );
   }
   for (const [key, list] of Object.entries(ATTRIBUTE_PRESETS)) {
     const value = operation.attributes[key as keyof typeof operation.attributes];

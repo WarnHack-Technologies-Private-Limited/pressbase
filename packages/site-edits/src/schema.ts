@@ -99,7 +99,10 @@ export const PRESET_ATTRIBUTES_SCHEMA: Schema = {
     borderColor: SLUG_ATTRIBUTE,
     fontSize: SLUG_ATTRIBUTE,
     fontFamily: SLUG_ATTRIBUTE,
-    align: { type: ['string', 'null'], enum: ['wide', 'full', 'left', 'center', 'right', '', null] },
+    align: {
+      type: ['string', 'null'],
+      enum: ['wide', 'full', 'left', 'center', 'right', '', null],
+    },
     textAlign: { type: ['string', 'null'], enum: ['left', 'center', 'right', '', null] },
     style: { type: ['object', 'null'] },
   },
@@ -147,7 +150,10 @@ export const EDIT_OPERATION_SCHEMA: Schema = {
           pattern: '^[a-z0-9_-]{1,190}$',
           description: 'The part’s slug: header or footer.',
         },
-        pattern: { ...PATTERN_INPUT, description: 'A header or footer pattern to rebuild it from.' },
+        pattern: {
+          ...PATTERN_INPUT,
+          description: 'A header or footer pattern to rebuild it from.',
+        },
         slots: SLOTS_INPUT,
       },
       ['slug'],

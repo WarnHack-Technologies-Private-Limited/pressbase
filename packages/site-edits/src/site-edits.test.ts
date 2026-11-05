@@ -95,7 +95,8 @@ describe('checkOperations()', () => {
       checkOperations(attributes({ style: { color: { background: 'rgb(0, 0, 0)' } } })).problems[0],
     ).toEqual({
       path: 'operations[0].attributes.style.color.background',
-      message: '“rgb(0, 0, 0)” isn’t a preset. Use a preset reference such as var:preset|color|accent.',
+      message:
+        '“rgb(0, 0, 0)” isn’t a preset. Use a preset reference such as var:preset|color|accent.',
     });
     expect(checkOperations(attributes({ className: 'x' })).problems[0]?.message).toMatch(
       /can’t be changed here/,
@@ -129,8 +130,9 @@ describe('checkOperations()', () => {
       1,
     );
     expect(
-      checkOperations([{ type: 'updateMenu', items: [{ label: 'Bad', url: 'javascript:alert(1)' }] }])
-        .problems[0]?.path,
+      checkOperations([
+        { type: 'updateMenu', items: [{ label: 'Bad', url: 'javascript:alert(1)' }] },
+      ]).problems[0]?.path,
     ).toBe('operations[0].items[0].url');
     expect(
       checkOperations([{ type: 'updateMenu', items: [{ label: 'Both', url: '/', page: 'home' }] }])
@@ -141,9 +143,9 @@ describe('checkOperations()', () => {
 
 describe('presetProblem() and isSafeLink()', () => {
   it('takes references, sizes and keywords', () => {
-    expect(presetProblem({ spacing: { blockGap: '1.5rem' }, typography: { fontWeight: '700' } })).toBe(
-      null,
-    );
+    expect(
+      presetProblem({ spacing: { blockGap: '1.5rem' }, typography: { fontWeight: '700' } }),
+    ).toBe(null);
     expect(presetProblem(['var:preset|color|base', 'solid'])).toBe(null);
     expect(presetProblem({ a: 'hsl(1 2% 3%)' })?.path).toBe('styles.a');
   });

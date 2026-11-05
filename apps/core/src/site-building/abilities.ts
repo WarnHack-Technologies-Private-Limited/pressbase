@@ -2,18 +2,18 @@ import type { ParsedBlock } from '@pressbase/blocks';
 import { schema } from '@pressbase/db';
 import { DESIGN_CHOICE_SCHEMA, type DesignChoice } from '@pressbase/design';
 import {
+  PATTERN_INPUT,
+  SECTION_OPERATION_SCHEMA,
+  type SectionOperation,
+  SLOTS_INPUT,
+} from '@pressbase/site-edits';
+import {
   extractSlots,
   fillSlots,
   type SlotValues,
   slotsJsonSchema,
   transferSlots,
 } from '@pressbase/slots';
-import {
-  PATTERN_INPUT,
-  SECTION_OPERATION_SCHEMA,
-  type SectionOperation,
-  SLOTS_INPUT,
-} from '@pressbase/site-edits';
 import { and, desc, eq, notInArray } from 'drizzle-orm';
 import { type AbilityContext, AbilityError } from '../abilities/registry';
 import type { ChangesetData } from '../changesets/service';

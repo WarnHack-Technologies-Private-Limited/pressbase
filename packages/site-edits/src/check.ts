@@ -147,7 +147,8 @@ class Checker {
 
   presets(value: unknown, at: string): void {
     const problem = presetProblem(value, at);
-    if (problem) this.problems.push({ path: `${this.path}.${problem.path}`, message: problem.message });
+    if (problem)
+      this.problems.push({ path: `${this.path}.${problem.path}`, message: problem.message });
   }
 }
 

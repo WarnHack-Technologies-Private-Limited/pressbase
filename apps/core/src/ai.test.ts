@@ -287,7 +287,7 @@ describe('/wp-abilities/v1', () => {
     const ctx = await withAbilities();
     const res = await ctx.request('GET', '/wp-abilities/v1/abilities');
     expect(res.status).toBe(200);
-    expect(res.headers.get('x-wp-total')).toBe('11');
+    expect(res.headers.get('x-wp-total')).toBe('12');
     const names = res.body.map((a: { name: string }) => a.name);
     // Core's (the site-building ones are docs/architecture/site-abilities.md), then the test's.
     expect(names).toEqual([
@@ -298,6 +298,7 @@ describe('/wp-abilities/v1', () => {
       'core/get-site-brief',
       'core/get-site-info',
       'core/list-patterns',
+      'core/propose-site-edits',
       'core/update-global-styles',
       'core/update-page-sections',
       'core/update-template-part',

@@ -8,8 +8,8 @@ import {
   RADII,
   toGlobalStyles,
 } from '@pressbase/design';
-import { type GlobalStylesConfig, mergeGlobalStylesConfigs } from '@pressbase/theme-json';
 import { presetProblem } from '@pressbase/site-edits';
+import { type GlobalStylesConfig, mergeGlobalStylesConfigs } from '@pressbase/theme-json';
 import { AbilityError } from '../abilities/registry';
 import type { ChangesetData } from '../changesets/service';
 import type { Kernel } from '../kernel';
@@ -226,8 +226,7 @@ export function assertPresetStyles(value: unknown, path = 'styles'): void {
 }
 
 /** `input.styles.color` → `input[styles][color]`, as abilities name paths. */
-const inputPath = (path: string) =>
-  path.replace(/\.([^.[\]]+)/g, '[$1]');
+const inputPath = (path: string) => path.replace(/\.([^.[\]]+)/g, '[$1]');
 
 /** Merges a change into styles: objects merge, `null` removes a key, anything else replaces. */
 export function patchStyles(base: unknown, patch: Json): Json {

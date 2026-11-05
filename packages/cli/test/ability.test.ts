@@ -18,6 +18,8 @@ describe('pressbase ability', () => {
       'core/get-site-brief',
       'core/get-site-info',
       'core/list-patterns',
+      // Studio's AI panel hands over its edits (v0.8, docs/architecture/ai-edits.md).
+      'core/propose-site-edits',
       'core/update-global-styles',
       'core/update-page-sections',
       'core/update-template-part',

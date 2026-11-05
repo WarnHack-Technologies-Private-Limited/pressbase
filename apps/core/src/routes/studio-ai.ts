@@ -135,11 +135,21 @@ export function studioAiRoutes() {
     const parsed = outcomeSchema.safeParse((await readJson(c)) ?? {});
     if (!parsed.success) return invalidParams(c, parsed.error);
     try {
-      const changeset = await changesetFor(kernel, c.get('user'), parsed.data.changeset_uuid, false);
+      const changeset = await changesetFor(
+        kernel,
+        c.get('user'),
+        parsed.data.changeset_uuid,
+        false,
+      );
       const thread = await readThread(kernel, changeset);
       const message = thread.find((m) => m.id === c.req.param('id') && m.operations);
       if (!changeset || !message) {
-        return restError(c, 404, 'studio_ai_message_not_found', 'There’s no proposal with that ID.');
+        return restError(
+          c,
+          404,
+          'studio_ai_message_not_found',
+          'There’s no proposal with that ID.',
+        );
       }
       message.outcome = parsed.data.outcome;
       await saveThread(kernel, changeset, thread);
