@@ -355,20 +355,24 @@ export const STYLES_SCREENS: readonly {
 export interface StyleBookCategory {
   slug: string;
   title: string;
-  /** Blocks shown in this category, in order, when registered. */
+  /** The block categories (`category` in block.json) whose blocks it holds. */
+  categories: readonly string[];
+  /** Blocks shown first, in this order, from any category. */
   blocks: readonly string[];
 }
 
 /**
- * The style book's categories (WordPress's STYLE_BOOK_CATEGORIES in
- * @wordpress/editor, in plain words), led by the blocks the Pressbase
- * patterns use most: headings, text, buttons, images, lists, separators,
- * quotes, questions and answers (Details), columns and groups.
+ * The style book's categories: WordPress's STYLE_BOOK_CATEGORIES
+ * (@wordpress/editor) in plain words, each led by the blocks the Pressbase
+ * patterns use most (headings, text, buttons, images, lists, separators,
+ * quotes, questions and answers, columns and groups). Embeds are left out:
+ * their examples load other sites.
  */
 export const STYLE_BOOK_CATEGORIES: readonly StyleBookCategory[] = [
   {
     slug: 'text',
     title: msgid('Text'),
+    categories: ['text'],
     blocks: [
       'core/heading',
       'core/paragraph',
@@ -380,22 +384,31 @@ export const STYLE_BOOK_CATEGORIES: readonly StyleBookCategory[] = [
       'core/code',
     ],
   },
-  { slug: 'buttons', title: msgid('Buttons and forms'), blocks: ['core/buttons', 'core/search'] },
+  {
+    slug: 'buttons',
+    title: msgid('Buttons and forms'),
+    categories: [],
+    blocks: ['core/buttons', 'core/search'],
+  },
   {
     slug: 'media',
     title: msgid('Images and media'),
+    categories: ['media'],
     blocks: ['core/image', 'core/gallery', 'core/cover', 'core/media-text'],
   },
   {
     slug: 'layout',
     title: msgid('Layout'),
+    categories: ['design'],
     blocks: ['core/separator', 'core/columns', 'core/group', 'core/social-links'],
   },
   {
     slug: 'site',
     title: msgid('Site'),
+    categories: ['theme'],
     blocks: ['core/site-title', 'core/site-tagline'],
   },
+  { slug: 'widgets', title: msgid('Widgets'), categories: ['widgets'], blocks: [] },
 ];
 
 /** The block whose styles an example opens: the Buttons example styles each Button. */
@@ -403,15 +416,46 @@ export function styleTarget(name: string): string {
   return name === 'core/buttons' ? 'core/button' : name;
 }
 
-/** The style book's sections: each category's blocks that are registered, empty ones left out. */
+/** What the style book needs to know about a registered block type. */
+export interface StyleBookType {
+  name: string;
+  title: string;
+  category?: string;
+  /** It has an `example`. */
+  example: boolean;
+  /** `supports.inserter` isn't false. */
+  inserter: boolean;
+}
+
+/**
+ * The style book's sections: every block type WordPress's style book shows
+ * (getExamples(): one with an example, offered in the inserter; Headings
+ * are made for it), by category, the leading blocks first and the rest by
+ * title. Empty sections are left out.
+ */
 export function styleBookSections(
-  registered: ReadonlySet<string>,
+  types: readonly StyleBookType[],
 ): { slug: string; title: string; blocks: string[] }[] {
-  return STYLE_BOOK_CATEGORIES.map((category) => ({
-    slug: category.slug,
-    title: category.title,
-    blocks: category.blocks.filter((name) => registered.has(name)),
-  })).filter((section) => section.blocks.length > 0);
+  const shown = types.filter(
+    (t) => t.inserter && (t.example || t.name === 'core/heading') && t.category !== 'embed',
+  );
+  const names = new Set(shown.map((t) => t.name));
+  const placed = new Set<string>();
+  const sections = STYLE_BOOK_CATEGORIES.map((category) => {
+    const blocks = category.blocks.filter((name) => names.has(name) && !placed.has(name));
+    for (const name of blocks) placed.add(name);
+    return { category, blocks };
+  });
+  for (const section of sections) {
+    const rest = shown
+      .filter((t) => !placed.has(t.name) && section.category.categories.includes(t.category ?? ''))
+      .sort((a, b) => a.title.localeCompare(b.title));
+    for (const t of rest) placed.add(t.name);
+    section.blocks.push(...rest.map((t) => t.name));
+  }
+  return sections
+    .filter((section) => section.blocks.length > 0)
+    .map(({ category, blocks }) => ({ slug: category.slug, title: category.title, blocks }));
 }
 
 /** A neutral picture for media examples, so the style book never loads images from elsewhere. */

@@ -514,7 +514,10 @@
   position: absolute;
   inset: 0;
   z-index: 1;
-  display: block;
+  /* The label sits at the top left, above the example (a button centres its content). */
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
   padding: var(--space-2) var(--space-3);
   border: 0;
   border-radius: var(--radius-md);

@@ -82,8 +82,14 @@ export function StyleBook({
   }, [host]);
 
   const sections = useMemo(() => {
-    const registered = new Set((getBlockTypes() as Json[]).map((t) => t.name as string));
-    return styleBookSections(registered).map((section) => ({
+    const types = (getBlockTypes() as Json[]).map((t) => ({
+      name: t.name as string,
+      title: (t.title as string | undefined) ?? (t.name as string),
+      category: t.category as string | undefined,
+      example: Boolean(t.example),
+      inserter: t.supports?.inserter !== false,
+    }));
+    return styleBookSections(types).map((section) => ({
       ...section,
       title: __(section.title, 'pressbase-admin'),
     }));

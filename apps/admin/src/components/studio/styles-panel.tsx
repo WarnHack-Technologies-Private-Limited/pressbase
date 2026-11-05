@@ -33,6 +33,7 @@ import { type StudioMode, showsControl } from './mode-model';
 import studioStyles from './studio.module.css';
 import { StyleBook } from './style-book';
 import {
+  BLOCK_ELEMENTS,
   BUTTON_PATH,
   BUTTON_SIZES,
   blockPath,
@@ -658,7 +659,11 @@ function BlockScreen({ site, mode, onMode, name }: ScreenProps & { name: string 
   const sizes = fontSizes(base, config);
   const spacing = spacingSizes(base, config);
   const path = ['blocks', name];
-  const value = (...p: string[]) => styleValue(site, [...path, ...p]);
+  const element = BLOCK_ELEMENTS[name];
+  // The block's own value, else the element it's styled through (a Button's is the button element's).
+  const value = (...p: string[]) =>
+    styleValue(site, [...path, ...p]) ??
+    (element ? styleValue(site, [...element, ...p]) : undefined);
   const userValue = (...p: string[]) => getPath(config, ['styles', ...path, ...p]);
   const set = (p: string[], next: Json) =>
     site.change(setPath(config, blockPath(name, ...p), next));
@@ -757,7 +762,7 @@ function BlockScreen({ site, mode, onMode, name }: ScreenProps & { name: string 
               onChange={(slug) => site.change(setPadding(config, ['styles', ...path], slug))}
             />
           )}
-          {supports.radius && <RadiusChoice site={site} path={path} />}
+          {supports.radius && <RadiusChoice site={site} path={path} fallback={element} />}
         </Section>
       )}
       <AdvancedStyles
@@ -1141,10 +1146,21 @@ function PresetChoice({
   );
 }
 
-function RadiusChoice({ site, path }: { site: SiteStyles; path: string[] }) {
+function RadiusChoice({
+  site,
+  path,
+  fallback,
+}: {
+  site: SiteStyles;
+  path: string[];
+  /** Where the value comes from when this path has none (BLOCK_ELEMENTS). */
+  fallback?: readonly string[];
+}) {
   const { __ } = useI18n();
   const radii = radiusSizes(site.base, site.config);
-  const value = styleValue(site, [...path, 'border', 'radius']);
+  const value =
+    styleValue(site, [...path, 'border', 'radius']) ??
+    (fallback ? styleValue(site, [...fallback, 'border', 'radius']) : undefined);
   const user = getPath(site.config, ['styles', ...path, 'border', 'radius']);
   if (!radii.length) return null;
   return (
