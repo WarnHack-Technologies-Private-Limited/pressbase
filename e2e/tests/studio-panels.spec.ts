@@ -51,11 +51,13 @@ async function publishAll(page: Page) {
 
 /** With things left on the checklist (#61), Publish asks first: say yes. */
 async function confirmPublish(page: Page) {
-  const done = page.getByText('Published. Your changes are live.');
+  // Published: the button has nothing left to count.
+  const done = page.getByRole('button', { name: 'Publish', exact: true });
   const ask = page.getByRole('dialog', { name: /^Publish with \d+ things? left to fill in\?$/ });
   await expect(done.or(ask)).toBeVisible({ timeout: 30_000 });
   if (await ask.isVisible()) await ask.getByRole('button', { name: 'Publish anyway' }).click();
   await expect(done).toBeVisible();
+  await expect(page.getByText('Published. Your changes are live.').first()).toBeVisible();
 }
 
 /** The reading settings, to put back after a test changes the home page. */
