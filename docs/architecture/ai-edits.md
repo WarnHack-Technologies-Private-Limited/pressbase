@@ -108,6 +108,7 @@ In the command palette, under *AI*: *Ask AI for a change*, *Keep the changes fro
 | --- | --- |
 | ✦ in the section toolbar | *Ask AI about “Hero”*: every text in the section |
 | ✦ *Ask AI about this text* in a text block's toolbar (paragraph, heading, list item, button, details) | the selected words, or the block's text when nothing is selected |
+| The canvas's [right-click menu](studio.md#the-right-click-menu) (#36): *Ask AI about this text…* on a text block, *Ask AI about “Hero”…* on any other block in a section | as the text block's ✦ (`textTarget()` in `ask-ai.tsx`), or as the section toolbar's ✦ |
 | The section toolbar's ⋯ → *Add a section below with AI…*, the dialog's *Add a section below with AI…*, the palette's *Add a section with AI…* | a prompt to a section, after that section (the palette's: at the end) |
 | The palette's *New page with AI…* | a prompt to a page |
 
