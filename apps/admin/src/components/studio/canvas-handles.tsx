@@ -103,11 +103,21 @@ interface Measured {
 /** The theme's spacing presets (custom, then theme, then WordPress's), by slug. */
 function presetList(settings: Record<string, unknown>): { slug: string; name: string }[] {
   const features = settings.__experimentalFeatures as
-    | { spacing?: { spacingSizes?: Record<string, { slug: string; name: string }[]> } }
+    | {
+        spacing?: {
+          spacingSizes?: Record<string, { slug: string; name: string }[]>;
+          defaultSpacingSizes?: boolean;
+        };
+      }
     | undefined;
   const sizes = features?.spacing?.spacingSizes ?? {};
   const out = new Map<string, { slug: string; name: string }>();
-  for (const origin of ['default', 'theme', 'custom']) {
+  // WordPress's own sizes only when the theme keeps them (`defaultSpacingSizes`).
+  const origins =
+    features?.spacing?.defaultSpacingSizes === false
+      ? ['theme', 'custom']
+      : ['default', 'theme', 'custom'];
+  for (const origin of origins) {
     for (const size of sizes[origin] ?? []) out.set(size.slug, size);
   }
   return [...out.values()];
