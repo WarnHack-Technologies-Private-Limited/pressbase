@@ -235,9 +235,7 @@ test('the Sections panel adds a pricing section between two others; the section 
       'aria-disabled',
       'true',
     );
-    await expect(
-      toolbar.getByRole('button', { name: 'Ask AI about this section (coming soon)' }),
-    ).toHaveAttribute('aria-disabled', 'true');
+    await expect(toolbar.getByRole('button', { name: 'Ask AI about this section' })).toBeVisible();
     await page.getByRole('button', { name: 'Add a section below Breads' }).click();
 
     // The panel opens at that place, with the search field ready.
