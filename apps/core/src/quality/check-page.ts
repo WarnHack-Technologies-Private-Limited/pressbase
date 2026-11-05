@@ -6,7 +6,7 @@ import {
   validateValueFromSchema,
 } from '@pressbase/blocks';
 import { CONTRAST_MINIMUMS, contrastRatio, parseHex } from '@pressbase/design';
-import { extractSlots, findPlaceholders, richTextToPlain } from '@pressbase/slots';
+import { extractSlots, findPlaceholders, richTextToPlain, type Slot } from '@pressbase/slots';
 
 /**
  * Quality checks for a page: what runs after every AI generation and on
@@ -287,6 +287,14 @@ function styleVariation(block: ParsedBlock): string | undefined {
   return /(?:^|\s)is-style-([a-z0-9-]+)/.exec(className)?.[1];
 }
 
+/** What a placeholder finding shows a person: the bracketed text, or the button's label. */
+function placeholderText(slot: Slot): string {
+  if (slot.kind === 'button') return richTextToPlain(slot.value.text).trim();
+  if (slot.kind === 'image') return slot.value.alt.trim();
+  if (slot.kind === 'group') return '';
+  return richTextToPlain(slot.value).trim();
+}
+
 /**
  * Checks a page's block markup and returns what's wrong, each finding with
  * a reference to its block. Rules: invalid or unknown blocks, colour pairs
@@ -510,7 +518,7 @@ export function checkPage(
               ? t.__('This button doesn’t link anywhere yet.', 'pressbase')
               : t.__('Replace this placeholder with real content.', 'pressbase'),
         block: block ? ref(block, found.slot.path) : null,
-        data: { reason: found.reason, slot: found.path },
+        data: { reason: found.reason, slot: found.path, text: placeholderText(found.slot) },
       });
     }
   }
