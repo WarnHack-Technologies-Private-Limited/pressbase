@@ -44,17 +44,12 @@ async function setMode(page: Page, mode: 'simple' | 'advanced') {
   });
 }
 
-const accent = (canvas: FrameLocator) =>
-  canvas
-    .locator('.editor-styles-wrapper')
-    .first()
-    .evaluate((el) => getComputedStyle(el).getPropertyValue('--wp--preset--color--accent').trim());
-
-const buttonBackground = (canvas: FrameLocator) =>
-  canvas
-    .locator('header .wp-block-button__link')
-    .first()
-    .evaluate((el) => getComputedStyle(el).backgroundColor);
+/** A colour variable on the canvas (computed values may keep a leading space). */
+const ACCENT = '--wp--preset--color--accent';
+const value = (css: string) => new RegExp(`^\\s*${css}\\s*$`, 'i');
+const canvasRoot = (canvas: FrameLocator) => canvas.locator('.editor-styles-wrapper').first();
+const headerButton = (canvas: FrameLocator) =>
+  canvas.locator('header .wp-block-button__link').first();
 
 /** The theme's palette with one colour changed, as the Colours screen stores it. */
 async function paletteWith(page: Page, slug: string, color: string) {
@@ -83,8 +78,8 @@ test('changing the primary colour changes every use on the canvas, and goes into
   page,
 }) => {
   const canvas = await openStudio(page);
-  expect(await accent(canvas)).toBe('#3b4cca');
-  expect(await buttonBackground(canvas)).toBe('rgb(59, 76, 202)');
+  await expect(canvasRoot(canvas)).toHaveCSS(ACCENT, value('#3b4cca'));
+  await expect(headerButton(canvas)).toHaveCSS('background-color', 'rgb(59, 76, 202)');
 
   await page.getByRole('button', { name: 'Styles', exact: true }).click();
   await page.getByRole('button', { name: /^Colours/ }).click();
@@ -92,8 +87,8 @@ test('changing the primary colour changes every use on the canvas, and goes into
   await page.getByLabel('Indigo colour', { exact: true }).fill('#b4232a');
 
   // The variable, and so every block that uses the colour: the header's button too.
-  await expect.poll(() => accent(canvas)).toBe('#b4232a');
-  await expect.poll(() => buttonBackground(canvas)).toBe('rgb(180, 35, 42)');
+  await expect(canvasRoot(canvas)).toHaveCSS(ACCENT, value('#b4232a'));
+  await expect(headerButton(canvas)).toHaveCSS('background-color', 'rgb(180, 35, 42)');
   await expect
     .poll(async () => JSON.stringify((await draftEntries(page))[STYLES_KEY]?.value ?? null))
     .toContain('#b4232a');
@@ -103,7 +98,7 @@ test('changing the primary colour changes every use on the canvas, and goes into
   await page.getByRole('button', { name: 'Back to Styles' }).click();
   await expect(page.getByRole('button', { name: /^Colours/ })).toBeFocused();
   await page.getByRole('button', { name: 'Use the theme’s styles' }).click();
-  await expect.poll(() => accent(canvas)).toBe('#3b4cca');
+  await expect(canvasRoot(canvas)).toHaveCSS(ACCENT, value('#3b4cca'));
   await expect.poll(async () => (await draftEntries(page))[STYLES_KEY]?.value ?? null).toBeNull();
 });
 
@@ -118,8 +113,8 @@ test('a draft’s styles made elsewhere, such as by the site builder, show on th
   expect(res.status()).toBe(201);
 
   const canvas = await openStudio(page);
-  await expect.poll(() => accent(canvas)).toBe('#0f7b5a');
-  await expect.poll(() => buttonBackground(canvas)).toBe('rgb(15, 123, 90)');
+  await expect(canvasRoot(canvas)).toHaveCSS(ACCENT, value('#0f7b5a'));
+  await expect(headerButton(canvas)).toHaveCSS('background-color', 'rgb(15, 123, 90)');
   // The panel starts from the draft's styles too.
   await page.getByRole('button', { name: 'Styles', exact: true }).click();
   await page.getByRole('button', { name: /^Colours/ }).click();
@@ -141,14 +136,10 @@ test('Advanced adds borders and Additional CSS, which is checked before it reach
   await panel.getByRole('button', { name: /^Additional CSS/ }).click();
   const css = panel.getByLabel('Additional CSS for the whole site');
   await css.fill('.wp-block-site-title { text-transform: uppercase; }');
-  await expect
-    .poll(() =>
-      canvas
-        .locator('.wp-block-site-title')
-        .first()
-        .evaluate((el) => getComputedStyle(el).textTransform),
-    )
-    .toBe('uppercase');
+  await expect(canvas.locator('.wp-block-site-title').first()).toHaveCSS(
+    'text-transform',
+    'uppercase',
+  );
   await expect
     .poll(async () => (await draftEntries(page))[STYLES_KEY]?.value?.styles)
     .toMatchObject({ css: '.wp-block-site-title { text-transform: uppercase; }' });
