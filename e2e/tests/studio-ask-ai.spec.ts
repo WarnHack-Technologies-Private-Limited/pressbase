@@ -188,7 +188,7 @@ test('Ask AI on a section: shorten (undone), then translate (kept)', async ({ pa
   await toolbar.getByRole('button', { name: 'Ask AI about this section' }).click();
   await dialog.getByLabel('Language').fill('French');
   await dialog.getByRole('button', { name: 'Translate' }).click();
-  await expect(hero.getByRole('heading')).toHaveText('Du pain frais, cuit chaque matin', {
+  await expect(hero.locator('h2')).toHaveText('Du pain frais, cuit chaque matin', {
     timeout: 30_000,
   });
   await bar.getByRole('button', { name: 'Keep' }).click();
