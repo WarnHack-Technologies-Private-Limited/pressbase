@@ -112,6 +112,15 @@ The stream starts with a `snapshot` event (the run, without an ID), then sends t
 | 6. **Build** | Stages and page cards; each page appears, as a scaled preview of the draft, when it's written. *Stop building* | `POST /runs` with `brief`, `design` and `sitemap`, then the run's events (`EventSource`, with a JSON poll every 5 s as a fallback) |
 | 7. **Review** | Pages built, *N things to fill in before you publish*, what the AI used, *Preview*, *Review in Studio* | — |
 
+| Step | Screenshot |
+| --- | --- |
+| Describe, Questions, Details | [describe](../assets/screenshots/prompt-to-site-describe.png), [clarify](../assets/screenshots/prompt-to-site-clarify.png), [brief](../assets/screenshots/prompt-to-site-brief.png) |
+| Look (light and [dark](../assets/screenshots/prompt-to-site-dark.png)), Pages | [design](../assets/screenshots/prompt-to-site-design.png), [sitemap](../assets/screenshots/prompt-to-site-sitemap.png) |
+| Build, Review, Studio | [generate](../assets/screenshots/prompt-to-site-generate.png), [review](../assets/screenshots/prompt-to-site-review.png), [studio](../assets/screenshots/prompt-to-site-studio.png) |
+| Where it's offered | [dashboard](../assets/screenshots/prompt-to-site-dashboard.png) |
+
+![Building: three pages written and shown as they'll look, the fourth being written](../assets/screenshots/prompt-to-site-generate.png)
+
 - **Back always works.** Each step keeps what was typed; going back and forward asks the model again only when what it was asked from changed (the description, the answers, the brief). Back while building asks first, then stops the run; Back from Review goes to Pages, and building again writes into the same draft.
 - **Closing the tab loses nothing.** What the person typed is kept in this browser (`localStorage`, `pressbase-site-builder`) until the build starts; from then the run is in core: the address has `?run=`, and opening the flow with a run in progress (`GET /status`'s `active_run`) follows it again, replaying its events.
 - **The logo** goes into the same draft as the site, as `option:site_logo`, for people with `manage_options` (the run is started with that `changeset_uuid`); otherwise, like the photos, it's saved to the media library. Image slots don't use uploads yet (see [Not yet](#not-yet)).
