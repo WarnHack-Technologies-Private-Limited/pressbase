@@ -75,6 +75,8 @@ describe('pressbase ability run: site building', () => {
     );
     expect(patterns.patterns.map((p: { name: string }) => p.name)).toEqual([
       'pressbase/opening-hours',
+      'pressbase/opening-hours-band',
+      'pressbase/opening-hours-card',
     ]);
     const design = JSON.parse(await s.ok(['ability', 'run', 'core/get-design-system']));
     expect(design.palette.length).toBeGreaterThan(0);

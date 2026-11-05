@@ -1,0 +1,8 @@
+{
+  "title": "Header, title and menu",
+  "description": "The site logo and title on the left, the menu on the right. The menu folds into a button on small screens.",
+  "categories": ["header"],
+  "blockTypes": ["core/template-part/header"],
+  "keywords": ["header", "navigation", "menu", "site title", "logo", "simple"],
+  "viewportWidth": 1400
+}

@@ -1,0 +1,48 @@
+{
+  "title": "Pricing, price list",
+  "description": "A heading, an introduction and a button beside a list of services, each with its price and a line about it. Stacks on small screens.",
+  "categories": ["pricing"],
+  "keywords": ["pricing", "price list", "prices", "menu", "services", "rates", "cost"],
+  "viewportWidth": 1400,
+  "slots": {
+    "eyebrow": {
+      "label": "Label",
+      "description": "A few words above the heading: what the section is about.",
+      "maxLength": 40
+    },
+    "title": {
+      "label": "Heading",
+      "maxLength": 60
+    },
+    "body": {
+      "label": "Introduction"
+    },
+    "actions": {
+      "label": "Button",
+      "description": "Usually a link to the booking or contact page.",
+      "maxItems": 1
+    },
+    "prices": {
+      "label": "Prices",
+      "description": "One row per service or product, with its price.",
+      "minItems": 1,
+      "maxItems": 12
+    },
+    "prices.title": {
+      "label": "Service",
+      "maxLength": 40
+    },
+    "prices.price": {
+      "label": "Price",
+      "role": "price",
+      "description": "The price with its unit or period, such as “€40 a month”.",
+      "maxLength": 30,
+      "facts": true,
+      "placeholder": "[Add a price]"
+    },
+    "prices.body": {
+      "label": "Description",
+      "maxLength": 100
+    }
+  }
+}

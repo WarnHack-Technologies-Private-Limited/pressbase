@@ -1,0 +1,44 @@
+{
+  "title": "Contact, details in cards",
+  "description": "A centred heading above three cards (address, phone number, email address) and a button with directions. Cards wrap on small screens.",
+  "categories": ["contact"],
+  "keywords": ["contact", "address", "phone", "email", "get in touch", "find us", "cards"],
+  "viewportWidth": 1400,
+  "slots": {
+    "eyebrow": {
+      "label": "Label",
+      "description": "A few words above the heading: what the section is about.",
+      "maxLength": 40
+    },
+    "title": {
+      "label": "Heading",
+      "maxLength": 60
+    },
+    "body": {
+      "label": "Introduction"
+    },
+    "details": {
+      "label": "Contact details",
+      "description": "One per way to reach you: address, phone number, email address.",
+      "minItems": 1,
+      "maxItems": 4,
+      "facts": true
+    },
+    "details.title": {
+      "label": "Kind of detail",
+      "maxLength": 30
+    },
+    "details.body": {
+      "label": "Detail",
+      "maxLength": 120,
+      "facts": true,
+      "placeholder": "[Add your contact details]"
+    },
+    "actions": {
+      "label": "Button",
+      "description": "A link to the address on a map (OpenStreetMap, Google Maps…), or to the contact page.",
+      "maxItems": 1,
+      "facts": true
+    }
+  }
+}

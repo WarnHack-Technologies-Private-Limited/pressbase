@@ -1,0 +1,15 @@
+{
+  "title": "Footer, centred",
+  "description": "The site title, tagline and menu centred, with a link to the privacy policy.",
+  "categories": ["footer"],
+  "blockTypes": ["core/template-part/footer"],
+  "keywords": ["footer", "navigation", "menu", "site title", "centred", "simple"],
+  "viewportWidth": 1400,
+  "slots": {
+    "privacy": {
+      "label": "Privacy link",
+      "description": "A link to the privacy policy page.",
+      "maxLength": 40
+    }
+  }
+}

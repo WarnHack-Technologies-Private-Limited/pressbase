@@ -182,7 +182,11 @@ describe('core/list-patterns', () => {
       category: 'opening-hours',
       slots_schema: true,
     });
-    expect(hours.body.patterns.map((p: { name: string }) => p.name)).toEqual([HOURS]);
+    expect(hours.body.patterns.map((p: { name: string }) => p.name)).toEqual([
+      HOURS,
+      'pressbase/opening-hours-band',
+      'pressbase/opening-hours-card',
+    ]);
     const [pattern] = hours.body.patterns;
     expect(pattern.slots.find((s: { id: string }) => s.id === 'hours')).toMatchObject({
       facts: true,

@@ -1,0 +1,48 @@
+{
+  "title": "Contact, beside an image",
+  "description": "A tall image of the place beside a heading, the address, phone number and email address, and a button with directions. Stacks on small screens.",
+  "categories": ["contact"],
+  "keywords": ["contact", "address", "phone", "email", "visit", "find us", "image"],
+  "viewportWidth": 1400,
+  "slots": {
+    "image": {
+      "label": "Image",
+      "subject": "the outside of the business: its entrance or shopfront"
+    },
+    "eyebrow": {
+      "label": "Label",
+      "description": "A few words above the heading: what the section is about.",
+      "maxLength": 40
+    },
+    "title": {
+      "label": "Heading",
+      "maxLength": 60
+    },
+    "body": {
+      "label": "Introduction"
+    },
+    "details": {
+      "label": "Contact details",
+      "description": "One per way to reach you: address, phone number, email address.",
+      "minItems": 1,
+      "maxItems": 4,
+      "facts": true
+    },
+    "details.title": {
+      "label": "Kind of detail",
+      "maxLength": 30
+    },
+    "details.body": {
+      "label": "Detail",
+      "maxLength": 120,
+      "facts": true,
+      "placeholder": "[Add your contact details]"
+    },
+    "actions": {
+      "label": "Button",
+      "description": "A link to the address on a map (OpenStreetMap, Google Maps…), or to the contact page.",
+      "maxItems": 1,
+      "facts": true
+    }
+  }
+}

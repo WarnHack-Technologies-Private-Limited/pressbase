@@ -10,7 +10,7 @@ import { parseSlotDeclarations, type SlotDeclarations } from '@pressbase/slots';
  * - `<name>.html`: block markup, exactly as the block editor's Code editor
  *   shows it;
  * - `<name>.json`: its metadata (title, description, categories, keywords,
- *   viewportWidth, slots).
+ *   viewportWidth, blockTypes for headers and footers, slots).
  *
  * Core registers them as `pressbase/<name>` beside the theme's patterns
  * (register_block_pattern() in class-wp-block-patterns-registry.php). The
@@ -27,6 +27,13 @@ export interface LibraryPattern {
   categories: string[];
   keywords: string[];
   viewportWidth: number;
+  /**
+   * Blocks the pattern is for, as WordPress's `Block Types` header: a header
+   * or footer is for `core/template-part/header` or `/footer`, so the editor
+   * offers it when replacing that template part and Studio's Sections panel
+   * leaves it out of a page's sections.
+   */
+  blockTypes?: string[];
   /** Declared slots, overriding the inferred ones. */
   slots?: SlotDeclarations;
   content: string;
@@ -177,12 +184,16 @@ export function readPattern(dir: string, file: string): LibraryPattern {
   if (meta.description !== undefined && typeof meta.description !== 'string') {
     throw fail('"description" must be a string');
   }
+  if (meta.blockTypes !== undefined && !isStringList(meta.blockTypes)) {
+    throw fail('"blockTypes" must be a list of block names');
+  }
   const known = new Set([
     'title',
     'description',
     'categories',
     'keywords',
     'viewportWidth',
+    'blockTypes',
     'slots',
   ]);
   for (const key of Object.keys(meta)) if (!known.has(key)) throw fail(`"${key}" is not known`);
@@ -195,6 +206,7 @@ export function readPattern(dir: string, file: string): LibraryPattern {
     content,
   };
   if (meta.description) pattern.description = meta.description;
+  if (isStringList(meta.blockTypes) && meta.blockTypes.length) pattern.blockTypes = meta.blockTypes;
   if (meta.slots !== undefined) {
     try {
       pattern.slots = parseSlotDeclarations(meta.slots);
