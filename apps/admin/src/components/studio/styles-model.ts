@@ -110,6 +110,16 @@ export const hasStyleControls = (supports: BlockStyleSupports) =>
 /** Where a block's global styles live. */
 export const blockPath = (name: string, ...path: string[]) => ['styles', 'blocks', name, ...path];
 
+/**
+ * Where a block's look comes from when its own styles don't say: the
+ * elements WordPress styles it through (a Button is the `button` element, a
+ * Heading the `heading` element), so the panel shows what the page shows.
+ */
+export const BLOCK_ELEMENTS: Readonly<Record<string, readonly string[]>> = {
+  'core/button': ['elements', 'button'],
+  'core/heading': ['elements', 'heading'],
+};
+
 /** Whether the user's styles change this block at all. */
 export function hasBlockStyles(config: GlobalStylesConfig, name: string): boolean {
   const node = getPath(config, ['styles', 'blocks', name]);
@@ -368,8 +378,6 @@ export const STYLE_BOOK_CATEGORIES: readonly StyleBookCategory[] = [
       'core/details',
       'core/table',
       'core/code',
-      'core/preformatted',
-      'core/verse',
     ],
   },
   { slug: 'buttons', title: msgid('Buttons and forms'), blocks: ['core/buttons', 'core/search'] },
