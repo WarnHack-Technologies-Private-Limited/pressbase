@@ -50,9 +50,9 @@ describe('problemText()', () => {
     expect(problemText({ code: 'no_section', index: 4, count: 3 }, __, sprintf)).toBe(
       'The page has no section 5 (it has 3).',
     );
-    expect(problemText({ code: 'invalid', message: 'There are no changes to make.' }, __, sprintf)).toBe(
-      'There are no changes to make.',
-    );
+    expect(
+      problemText({ code: 'invalid', message: 'There are no changes to make.' }, __, sprintf),
+    ).toBe('There are no changes to make.');
     expect(problemText({ code: 'no_part', slug: 'footer' }, __, sprintf)).toMatch(/footer isn’t/);
   });
 });

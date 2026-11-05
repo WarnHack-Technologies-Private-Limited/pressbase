@@ -109,15 +109,15 @@ export function problemText(problem: ApplyProblem, __: Translate, sprintf: Forma
         problem.pattern,
       );
     case 'no_slot':
-      return sprintf(
-        __('The section has no place for “%s”.', 'pressbase-admin'),
-        problem.slot,
-      );
+      return sprintf(__('The section has no place for “%s”.', 'pressbase-admin'), problem.slot);
     case 'no_page':
       return sprintf(__('There’s no page “%s”.', 'pressbase-admin'), problem.page);
     case 'no_part':
       return sprintf(
-        __('The %s isn’t on this page. Open a page that shows it and ask again.', 'pressbase-admin'),
+        __(
+          'The %s isn’t on this page. Open a page that shows it and ask again.',
+          'pressbase-admin',
+        ),
         problem.slug,
       );
     case 'no_menu':
