@@ -149,10 +149,12 @@ import {
   templateCandidates,
 } from './site-model';
 import styles from './studio.module.css';
+import { StylesPanel } from './styles-panel';
 import { CanvasEventsProvider } from './swap-layout';
 import { TopBar } from './top-bar';
 import { useDraft } from './use-draft';
 import { type StudioHistory, useStudioHistory } from './use-history';
+import { useSiteStyles } from './use-site-styles';
 
 registerStudioRegions();
 
@@ -463,6 +465,8 @@ export default function Studio(props: StudioProps) {
   const draft = useDraft({ onError: (message) => toast(message, { tone: 'danger' }) });
   const draftRef = useRef(draft);
   draftRef.current = draft;
+  // The site's styles as the draft leaves them, on the canvas and in the Styles panel (#46).
+  const siteStyles = useSiteStyles({ draft, enabled: props.user.canEditTheme });
   // The canvas holds edits not handed to the draft yet (the editor reports them after a pause).
   const editing = useRef(false);
 
@@ -1120,6 +1124,16 @@ export default function Studio(props: StudioProps) {
                   {__('Opening the page…', 'pressbase-admin')}
                 </p>
               )
+            ) : panel === 'styles' ? (
+              props.user.canEditTheme && (
+                <StylesPanel
+                  site={siteStyles}
+                  mode={mode}
+                  onMode={setMode}
+                  canEditCss={props.canUnfilteredHtml}
+                  canPreview={Boolean(editor)}
+                />
+              )
             ) : panel === 'history' ? (
               editor && doc ? (
                 <HistoryPanel
@@ -1246,7 +1260,7 @@ export default function Studio(props: StudioProps) {
       <StudioEditor
         key={doc.key}
         doc={doc}
-        library={library}
+        library={siteStyles.withStyles(library)}
         assets={assets}
         features={features}
         canUnfilteredHtml={props.canUnfilteredHtml}

@@ -1,5 +1,6 @@
 import { schema } from '@pressbase/db';
 import {
+  type CustomCssResult,
   encodeGlobalStylesJson,
   type GlobalStylesConfig,
   isObject,
@@ -164,6 +165,12 @@ export function prepareGlobalStyles(
     const result = validateCustomCss(css);
     if (!result.ok) return result;
   }
+  // Pressbase checks each block's Additional CSS the same way (WordPress checks only
+  // styles.css on save, and drops the rest when it prints them).
+  if (isObject(request.styles)) {
+    const result = validateBlocksCss(request.styles.blocks);
+    if (!result.ok) return result;
+  }
   const config: GlobalStylesConfig = {};
   const styles = request.styles ?? existing.styles;
   const settings = request.settings ?? existing.settings;
@@ -181,6 +188,28 @@ export function prepareGlobalStyles(
   }) as GlobalStylesConfig;
   sanitized.isGlobalStylesUserThemeJSON = true;
   return { ok: true, config: sanitized };
+}
+
+/**
+ * validate_custom_css() for every block's `css` (and its style variations'
+ * and breakpoints'), so Additional CSS for one block can't close the style
+ * element either.
+ */
+export function validateBlocksCss(blocks: unknown): CustomCssResult {
+  if (!isObject(blocks)) return { ok: true };
+  const walk = (node: unknown): CustomCssResult => {
+    if (!isObject(node)) return { ok: true };
+    for (const [key, value] of Object.entries(node)) {
+      const result = key === 'css' ? validateCustomCss(value) : walk(value);
+      if (!result.ok) return result;
+    }
+    return { ok: true };
+  };
+  for (const block of Object.values(blocks)) {
+    const result = walk(block);
+    if (!result.ok) return result;
+  }
+  return { ok: true };
 }
 
 /** Stores a prepared config in the post (a revision is kept, as for any post). */

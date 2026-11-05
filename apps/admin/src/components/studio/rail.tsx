@@ -79,7 +79,7 @@ export interface PanelProps {
 
 /**
  * The open rail panel, beside the canvas. Built panels (Pages, Elements,
- * Sections, History) get their content from Studio; Layers shows
+ * Sections, Styles, History) get their content from Studio; Layers shows
  * WordPress's list view until #50; the rest say which issue brings them. Escape closes the panel and returns focus to its rail button.
  */
 export function RailPanelView(props: PanelProps) {
@@ -166,11 +166,6 @@ function Coming({ panel, coming }: { panel: RailPanel; coming: string }) {
       <p>{__(coming, 'pressbase-admin')}</p>
       {/* Until #62: the guided flow, to build the site from a description (#60). */}
       {panel.id === 'ai' && <BuildOffer variant="panel" />}
-      {panel.id === 'styles' && (
-        <a href="/admin/appearance/styles" className={styles.comingLink}>
-          {__('Open Appearance → Styles', 'pressbase-admin')}
-        </a>
-      )}
     </div>
   );
 }

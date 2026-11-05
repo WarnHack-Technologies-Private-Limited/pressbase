@@ -67,6 +67,29 @@ const pick = (config: GlobalStylesConfig): GlobalStylesConfig => ({
   styles: config.styles ?? {},
 });
 
+/** A theme's style variations by kind: full looks, palettes and font pairings. */
+export function groupVariations(variations: StyleVariation[]) {
+  const full: StyleVariation[] = [];
+  const color: StyleVariation[] = [];
+  const typography: StyleVariation[] = [];
+  for (const v of variations) {
+    const kind = variationKind(v);
+    (kind === 'full' ? full : kind === 'color' ? color : typography).push(v);
+  }
+  return { full, color, typography };
+}
+
+/** Fonts used by the cards: the theme's and every variation's, from the theme folder. */
+export function variationFontFaces(
+  stylesheet: string,
+  base: GlobalStylesConfig,
+  variations: StyleVariation[],
+): string {
+  const themeUrl = `/wp-content/themes/${encodeURIComponent(stylesheet)}`;
+  const families = [base, ...variations].flatMap((config) => fontFamilies(config, {}));
+  return fontFaceCss(families, themeUrl);
+}
+
 export interface StylesEditorProps {
   themeName: string;
   stylesheet: string;
@@ -106,23 +129,11 @@ export function StylesEditor({
     return () => window.removeEventListener('beforeunload', warn);
   }, [dirty]);
 
-  const groups = useMemo(() => {
-    const full: StyleVariation[] = [];
-    const color: StyleVariation[] = [];
-    const typography: StyleVariation[] = [];
-    for (const v of variations) {
-      const kind = variationKind(v);
-      (kind === 'full' ? full : kind === 'color' ? color : typography).push(v);
-    }
-    return { full, color, typography };
-  }, [variations]);
-
-  // Fonts used by the cards: the theme's and every variation's, from the theme folder.
-  const themeUrl = `/wp-content/themes/${encodeURIComponent(stylesheet)}`;
-  const faces = useMemo(() => {
-    const families = [base, ...variations].flatMap((config) => fontFamilies(config, {}));
-    return fontFaceCss(families, themeUrl);
-  }, [base, variations, themeUrl]);
+  const groups = useMemo(() => groupVariations(variations), [variations]);
+  const faces = useMemo(
+    () => variationFontFaces(stylesheet, base, variations),
+    [base, variations, stylesheet],
+  );
 
   async function save() {
     setBusy(true);
@@ -280,7 +291,8 @@ export function StylesEditor({
   );
 }
 
-type TabProps = {
+/** What each part of the Styles screen edits; Studio's Styles panel reuses the parts (#46). */
+export type TabProps = {
   base: GlobalStylesConfig;
   draft: GlobalStylesConfig;
   setDraft: (next: GlobalStylesConfig) => void;
@@ -349,7 +361,7 @@ function VariationCard({
   );
 }
 
-function StylesTab({
+export function StylesTab({
   themeName,
   base,
   draft,
@@ -394,7 +406,12 @@ function StylesTab({
 
 /* ---------------------------------------------------------------- Colours */
 
-function ColorsTab({ base, draft, setDraft, palettes }: TabProps & { palettes: StyleVariation[] }) {
+export function ColorsTab({
+  base,
+  draft,
+  setDraft,
+  palettes,
+}: TabProps & { palettes: StyleVariation[] }) {
   const colors = palette(base, draft);
   const value = (role: ColorRole) => styleValue(base, draft, ROLE_PATHS[role]);
   const bg = resolveColor(value('background'), colors);
@@ -494,7 +511,7 @@ function PaletteCard({
 
 const isHex6 = (value: string | undefined) => /^#[0-9a-f]{6}$/i.test(value ?? '');
 
-function RolePicker({
+export function RolePicker({
   role,
   label,
   hint,
@@ -561,7 +578,7 @@ function RolePicker({
   );
 }
 
-function ContrastCheck({
+export function ContrastCheck({
   label,
   a,
   b,
@@ -623,7 +640,7 @@ function PaletteRow({
 
 /* ------------------------------------------------------------ Typography */
 
-function TypographyTab({
+export function TypographyTab({
   base,
   draft,
   setDraft,
@@ -798,7 +815,7 @@ function PairingCard({
 
 /* ---------------------------------------------------------------- Layout */
 
-function LayoutTab({ base, draft, setDraft }: TabProps) {
+export function LayoutTab({ base, draft, setDraft }: TabProps) {
   const field = (
     key: 'contentSize' | 'wideSize',
     label: string,
@@ -856,7 +873,7 @@ function LayoutTab({ base, draft, setDraft }: TabProps) {
   );
 }
 
-function RangeField({
+export function RangeField({
   label,
   min,
   max,
@@ -1030,7 +1047,7 @@ function HistoryTab({
 
 /* --------------------------------------------------------------- shared */
 
-function Section({
+export function Section({
   title,
   description,
   children,
