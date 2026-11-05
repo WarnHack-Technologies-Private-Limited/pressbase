@@ -341,7 +341,9 @@ export function CanvasContextMenu({
     const onContextMenu = (event: MouseEvent) => {
       // Shift+right-click keeps the browser's own menu (spelling, copying text…).
       if (event.shiftKey && event.button === 2) return;
-      if (Date.now() - openedByKey.current < 600) {
+      // The keyboard's contextmenu event (button 0), just after Shift+F10 opened the menu.
+      const fromKeyboard = event.button !== 2;
+      if (fromKeyboard && Date.now() - openedByKey.current < 600) {
         event.preventDefault();
         return;
       }
@@ -356,13 +358,13 @@ export function CanvasContextMenu({
       ) {
         return;
       }
-      const fromKeyboard = event.button !== 2 && event.clientX === 0 && event.clientY === 0;
-      const clientId = fromKeyboard
-        ? (select().getSelectedBlockClientId() ?? targetOf(target))
-        : targetOf(target);
+      // From the keyboard, the target is the focused block; else the selected one.
+      const clientId =
+        targetOf(target) ?? (fromKeyboard ? select().getSelectedBlockClientId() : null);
       if (!clientId) return;
       event.preventDefault();
-      openFor(clientId, fromKeyboard ? null : fromCanvas(iframe, event.clientX, event.clientY));
+      const pointed = event.clientX !== 0 || event.clientY !== 0;
+      openFor(clientId, pointed ? fromCanvas(iframe, event.clientX, event.clientY) : null);
     };
     const onKeyDown = (event: KeyboardEvent) => {
       const key = (event.key === 'F10' && event.shiftKey) || event.key === 'ContextMenu';
