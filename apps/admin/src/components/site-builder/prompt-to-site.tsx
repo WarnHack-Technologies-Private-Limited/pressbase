@@ -1226,7 +1226,11 @@ export function PromptToSite(props: PromptToSiteProps) {
                   </ButtonLink>
                 )}
                 {pagesDone(run) > 0 && (
-                  <ButtonLink href={studioLink(run)} variant="primary" onClick={() => save(null)}>
+                  <ButtonLink
+                    href={studioLink(run, { checklist: placeholderCount(run) > 0 })}
+                    variant="primary"
+                    onClick={() => save(null)}
+                  >
                     {__('Review in Studio', 'pressbase-admin')}
                   </ButtonLink>
                 )}
@@ -1508,7 +1512,9 @@ function ReviewSummary({
                 'where Pressbase didn’t know a fact (a customer quote, opening hours, prices), it left a gap in square brackets instead of making one up.',
                 'pressbase-admin',
               )}{' '}
-              <Link href={studioLink(run)}>{__('Fill them in in Studio', 'pressbase-admin')}</Link>
+              <Link href={studioLink(run, { checklist: true })}>
+                {__('See them on the checklist in Studio', 'pressbase-admin')}
+              </Link>
             </>
           ) : (
             __('Nothing left to fill in.', 'pressbase-admin')

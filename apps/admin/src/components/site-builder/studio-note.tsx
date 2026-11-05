@@ -12,15 +12,19 @@ import styles from './site-builder.module.css';
 /**
  * Above Studio's canvas after a build (`?run=`, #60): the site is a draft,
  * and what's left to fill in before publishing, page by page; each page
- * opens on the canvas. The full "Before you publish" checklist is #61.
+ * opens on the canvas, and the "Before you publish" checklist (#61) lists
+ * every gap, image and failed check, each a click from its block.
  */
 export function SiteBuilderNote({
   runId,
   onOpenPage,
   isOpenable,
+  onOpenChecklist,
 }: {
   runId: number;
   onOpenPage: (slug: string) => void;
+  /** Opens the "Before you publish" checklist (#61). */
+  onOpenChecklist: () => void;
   /** Whether Studio has this page (the draft may have changed since). */
   isOpenable: (slug: string) => boolean;
 }) {
@@ -86,7 +90,10 @@ export function SiteBuilderNote({
           {__(
             'Gaps are in [square brackets]. The new colours and fonts show in Preview.',
             'pressbase-admin',
-          )}
+          )}{' '}
+          <button type="button" className={styles.noteLink} onClick={onOpenChecklist}>
+            {__('See everything to fill in on the checklist', 'pressbase-admin')}
+          </button>
         </p>
       </div>
       <Button

@@ -61,6 +61,8 @@ export interface TopBarProps {
   onOpenPalette: () => void;
   /** Changes when the palette asks for the Publish list. */
   publishSignal: number;
+  /** In the Publish list: what's left on the checklist (#61). */
+  publishNote?: ReactNode;
   /** Narrow screens: the inspector is a drawer this button opens. */
   inspectorOpen: boolean;
   onToggleInspector: () => void;
@@ -227,6 +229,7 @@ export function TopBar(props: TopBarProps) {
         onRevert={props.onRevert}
         onDiscardAll={props.onDiscardAll}
         openSignal={props.publishSignal}
+        note={props.publishNote}
       />
       <Button
         size="sm"

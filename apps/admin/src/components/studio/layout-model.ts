@@ -106,7 +106,8 @@ export type RailPanelId =
   | 'styles'
   | 'media'
   | 'ai'
-  | 'history';
+  | 'history'
+  | 'checklist';
 
 export interface RailPanel {
   id: RailPanelId;
@@ -183,6 +184,13 @@ export const RAIL_PANELS: readonly RailPanel[] = [
     label: msgid('History'),
     summary: msgid('Go back to an earlier point, or restore a published version'),
     issue: 34,
+    interim: 'built',
+  },
+  {
+    id: 'checklist',
+    label: msgid('Checklist'),
+    summary: msgid('What to fill in before you publish'),
+    issue: 61,
     interim: 'built',
   },
 ];
