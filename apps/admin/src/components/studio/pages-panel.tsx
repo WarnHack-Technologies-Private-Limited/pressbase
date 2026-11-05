@@ -42,7 +42,7 @@ export interface PagesPanelProps {
   target: CanvasTarget;
   /** The draft's home page: the latest posts, or a page. */
   postsOnFront: boolean;
-  frontPageId: number;
+  frontPageId: PageRef;
   onTarget: (target: CanvasTarget) => void;
   /** What this person may do: add pages, arrange them, choose the home page. */
   can: { add: boolean; arrange: boolean; home: boolean };

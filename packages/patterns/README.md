@@ -57,16 +57,19 @@ Every pattern follows these. `checkPattern()` checks the ones code can check, an
 1. **Theme presets only.** No raw colours (`#fff`, `rgb()`), sizes (`24px`, `2rem`, `50%`) or fonts, in attributes or inline styles. Use the presets every block theme has, so the section looks at home in any theme:
    - font sizes `small`, `medium`, `large`, `x-large`, `xx-large`;
    - spacing `var:preset|spacing|20` to `80`;
-   - colours: none, ideally; `base` and `contrast` at most. The theme's styles colour the section.
-   - No `fontFamily`, no custom `contentSize` or `wideSize` (use `align: wide` or `full`). A column's width as a percentage is allowed.
+   - colours: `base` and `contrast`, and otherwise let the theme's styles colour the section.
+   - No `fontFamily`, no custom `contentSize` or `wideSize` (use `align: wide` or `full`). A column's width as a percentage is allowed, and so is a grid's `minimumColumnWidth` in `rem` (it's what makes the grid wrap on small screens).
+
+   The Pressbase theme's own presets are allowed too (`PRESSBASE_PRESETS`), because every site Pressbase builds has them: generated designs (`@pressbase/design`) restyle the same slugs. Colours `surface`, `muted`, `border`, `accent`, `accent-text`, `accent-soft`, `on-accent` and `violet`; font sizes `xxx-large` and `display`; radius `var:preset|border-radius|sm` to `xl` and `full`. A theme without one ignores it, so the section must still read without it: a card on `surface` becomes a card on the page colour, a `display` headline the theme's own `h1`. Use them as the Pressbase theme does: `muted` for secondary text, `accent-text` for small labels, `surface` for cards, `accent-soft` and `contrast` (with `base` text) for whole sections.
 2. **Core blocks only.** No plugin blocks, and not `core/html`, `core/freeform`, `core/shortcode`, `core/embed`, `core/pattern` or `core/template-part`. Class names only for core block styles (`is-style-outline`, `is-style-rounded`…), never a theme's.
 3. **One heading level at the start.** A section opens with one heading: `h1` for a hero, `h2` for everything else. Headings inside it are lower levels and never skip one (h2 → h3, not h2 → h4). Headers and footers are exempt.
-4. **Real alt-text slots.** Every image has alt text that says what it shows, and a declared `subject` when the alt text doesn't make a good image search. AI fills alt text; it never picks the image itself.
+4. **Real alt-text slots.** Every image has alt text that says what it shows, and a declared `subject` when the alt text doesn't make a good image search. AI fills alt text; it never picks the image itself. The library ships no image files: an image is an Image block with no `url` (`<img alt="…"/>`), which the editor shows as a placeholder to fill, the "Before you publish" checklist lists as "Choose an image", and the public site leaves out until one is chosen (as WordPress's `render_block_core_image()` does). Give it an `aspectRatio` and `scale: cover`, so any picture fits the layout.
 5. **Looks right on mobile.** Columns stack (`isStackedOnMobile` is never `false`), nothing has a fixed width, and text fits at 360 px wide. Check in the editor's mobile preview.
 6. **No JavaScript.** No scripts, event handlers or `javascript:` links. Interactivity comes from core blocks (`core/details`).
 7. **Honest sample text.** Plain, believable business copy that is obviously replaceable. Facts the site owner must supply (prices, hours, names, quotes, addresses, phone numbers) are declared with `"facts": true` and a `placeholder`; testimonials and team members use placeholders such as `[Customer name]`, never invented people.
 8. **Repeated items are alike.** Cards, columns, rows and list items have the same blocks in the same order, so a group can grow and shrink. Highlight one item with a core block style or a preset, not an extra block.
-9. **Name the blocks that hold content** (List View → Rename) when the name helps: `Day`, `Time`, `Note`. The name becomes the slot's ID and label.
+9. **Name the blocks that hold content** (List View → Rename) when the name helps: `Day`, `Time`, `Note`. The name becomes the slot's ID and label. Name the repeated container after its items (`Features`, `Services`, `Gallery`) and the section's outer group differently (`Features section`): a group whose name matches a declared group's ID is treated as that group.
+10. **Layouts of one section share their slots.** Swap layout carries content from one pattern of a category to the next by role, so use the same shape where you can: an `eyebrow` label, a `title`, a `body`, `actions` buttons, an `image` (named `Image`), and repeated `items` with a title and body each.
 
 ## Slots
 
@@ -83,6 +86,42 @@ The markup's editable content becomes typed slots automatically (see `@pressbase
 | `ignore` | all | Not a slot: keep the pattern's content. |
 
 To see a pattern's slots, run its test, or call `extractSlots(parseBlocks(content), { declarations })`.
+
+## Catalogue
+
+Each pattern is registered as `pressbase/<name>`. Contact sheets show every layout of a section in the Pressbase theme's default style and its dark Midnight style, desktop beside mobile; images not chosen yet are drawn as grey placeholders there.
+
+| Section | Pattern | Layout | Slots |
+| --- | --- | --- | --- |
+| Hero (`banner`) | `hero-centered` | Label, headline, introduction and two buttons, centred | eyebrow, title, body, actions |
+| | `hero-split-image` | Text and buttons beside a tall image | + image |
+| | `hero-bold-band` | A display-size headline on a band in the text colour, with the introduction and buttons beside it | eyebrow, title, body, actions |
+| | `hero-image-below` | Centred text and buttons above a wide image | + image |
+| About | `about-split-image` | A tall image beside a heading, two paragraphs and a button | image, eyebrow, title, body, more, actions |
+| | `about-values` | Heading and button beside a column of cards, one per value | eyebrow, title, body, actions, values (2–5) |
+| | `about-statement` | A large statement on a soft background, three short columns and a button | eyebrow, title, story (2–3), actions |
+| Call to action | `cta-split-band` | A rounded band in the text colour: heading and sentence, buttons on the right | title, body, actions |
+| | `cta-soft-centered` | Centred heading, sentence and buttons on a soft background | eyebrow, title, body, actions |
+| | `cta-image-card` | A rounded card: image beside heading, sentence and buttons | image, title, body, actions |
+| Features | `features-cards` | Centred heading above a grid of cards, three to a row | eyebrow, title, body, features (2–9) |
+| | `features-split-list` | Heading and button beside features separated by lines | eyebrow, title, body, actions, features (2–6) |
+| | `features-image-grid` | A tall image beside a heading and features in two columns | image, eyebrow, title, body, features (2–6) |
+| Services | `services-cards` | Heading beside an introduction, then three services with images | eyebrow, title, body, actions, services (2–3: image, title, body) |
+| | `services-list` | Rows of services, each with a name, a description and a button | eyebrow, title, body, services (1–8) |
+| | `services-two-by-two` | Cards two to a row on a soft background, each with a list of what's included | eyebrow, title, body, services (2–6, with list) |
+| Gallery | `gallery-grid` | Centred heading above a Gallery block of six square images | eyebrow, title, body, gallery (3–12) |
+| | `gallery-mosaic` | One large image beside a Gallery block of four | eyebrow, title, body, actions, featured-image, gallery (2–4) |
+| | `gallery-captioned` | Three tall images, each with a project name and a line about it (facts) | eyebrow, title, body, projects (2–3) |
+| Opening hours | `opening-hours` | Heading, note and button beside days and times (facts) | title, body, note, actions, hours (1–7) |
+
+| Section | Default | Midnight |
+| --- | --- | --- |
+| Hero | [hero-light.png](../../docs/assets/patterns/hero-light.png) | [hero-dark.png](../../docs/assets/patterns/hero-dark.png) |
+| About | [about-light.png](../../docs/assets/patterns/about-light.png) | [about-dark.png](../../docs/assets/patterns/about-dark.png) |
+| Call to action | [call-to-action-light.png](../../docs/assets/patterns/call-to-action-light.png) | [call-to-action-dark.png](../../docs/assets/patterns/call-to-action-dark.png) |
+| Features | [features-light.png](../../docs/assets/patterns/features-light.png) | [features-dark.png](../../docs/assets/patterns/features-dark.png) |
+| Services | [services-light.png](../../docs/assets/patterns/services-light.png) | [services-dark.png](../../docs/assets/patterns/services-dark.png) |
+| Gallery | [gallery-light.png](../../docs/assets/patterns/gallery-light.png) | [gallery-dark.png](../../docs/assets/patterns/gallery-dark.png) |
 
 ## Adding a pattern
 

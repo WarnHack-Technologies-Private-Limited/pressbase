@@ -13,6 +13,7 @@
 
 import { pageKey, parseKey } from './changes-model';
 import {
+  frontPage,
   isNewPage,
   type PageRef,
   pageTree,
@@ -88,7 +89,10 @@ export function draftReading(reading: ReadingSettings, entries: Entries): Readin
   const front = entries['option:page_on_front']?.value;
   return {
     show_on_front: typeof show === 'string' ? show : reading.show_on_front,
-    page_on_front: front !== undefined ? Number(front) || 0 : Number(reading.page_on_front) || 0,
+    // A page the draft adds is named by slug (the site builder's home page, #60).
+    page_on_front: frontPage({
+      page_on_front: front !== undefined ? (front as PageRef) : reading.page_on_front,
+    }),
   };
 }
 

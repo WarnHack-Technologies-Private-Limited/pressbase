@@ -13,4 +13,4 @@ export {
   readPattern,
   readPatterns,
 } from './library';
-export { checkPattern, PORTABLE_PRESETS } from './rules';
+export { checkPattern, PORTABLE_PRESETS, PRESSBASE_PRESETS } from './rules';

@@ -1,0 +1,37 @@
+{
+  "title": "About, large statement",
+  "description": "A large statement on a soft background, then three short columns about the business and a button.",
+  "categories": ["about"],
+  "keywords": ["about", "story", "mission", "statement", "history", "columns"],
+  "viewportWidth": 1400,
+  "slots": {
+    "eyebrow": {
+      "label": "Label",
+      "description": "A few words above the heading: what the section is about.",
+      "maxLength": 40
+    },
+    "title": {
+      "label": "Statement",
+      "description": "What the business believes, in one sentence.",
+      "maxLength": 100
+    },
+    "story": {
+      "label": "Story",
+      "description": "Short parts of the story: how it began, how it works, where it is going.",
+      "minItems": 2,
+      "maxItems": 3
+    },
+    "story.title": {
+      "label": "Heading",
+      "maxLength": 30
+    },
+    "story.body": {
+      "label": "Text",
+      "maxLength": 170
+    },
+    "actions": {
+      "label": "Button",
+      "maxItems": 1
+    }
+  }
+}

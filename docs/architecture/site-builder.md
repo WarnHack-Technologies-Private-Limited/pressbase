@@ -1,8 +1,8 @@
 # The site builder
 
-"Build my site from a prompt": a person describes their site, and Pressbase writes a brief, a design, a sitemap and every page into a [changeset](changesets.md) they review in Studio and publish themselves. It follows the [plan](../plans/visual-site-builder.md#building-with-ai) and [ADR 0024](../adr/0024-ai-site-building.md#pipeline-accepted). The guided flow in the admin (#60) is built on the API below.
+"Build my site from a prompt": a person describes their site, and Pressbase writes a brief, a design, a sitemap and every page into a [changeset](changesets.md) they review in Studio and publish themselves. It follows the [plan](../plans/visual-site-builder.md#building-with-ai) and [ADR 0024](../adr/0024-ai-site-building.md#pipeline-accepted). The [guided flow](#the-guided-flow) in the admin (#60) is built on the API below.
 
-Code: `apps/core/src/site-builder/` (`pipeline.ts` the stages, `honest.ts` the honest-content rules, `runs.ts` the run record, `index.ts` the job), `apps/core/src/routes/site-builder.ts`. Tests: `apps/core/src/site-builder.test.ts`.
+Code: `apps/core/src/site-builder/` (`pipeline.ts` the stages, `steps.ts` the guided flow's steps before a run, `honest.ts` the honest-content rules, `runs.ts` the run record, `index.ts` the job), `apps/core/src/routes/site-builder.ts`. Tests: `apps/core/src/site-builder.test.ts`, `site-builder-steps.test.ts`; `e2e/tests/prompt-to-site.spec.ts`.
 
 ## The pipeline
 
@@ -74,6 +74,7 @@ All under `/wp-json/pressbase/v1/site-builder`, for users with `edit_theme_optio
 | `GET /runs` | Your runs, newest first |
 | `GET /runs/{id}` | The run (yours, or anyone's for `manage_options`). With `Accept: text/event-stream`, its progress as Server-Sent Events |
 | `DELETE /runs/{id}` | Stops it: a queued run is cancelled at once; a running one before its next request (`202`) |
+| `GET /status`, `POST /clarify`, `/brief`, `/designs`, `/sitemap` | The guided flow's [steps before a run](#steps-before-a-run) |
 
 ### Progress events
 
@@ -95,8 +96,66 @@ The stream starts with a `snapshot` event (the run, without an ID), then sends t
 | `checks` | `{ slug, errors, warnings, passed, findings }` |
 | `done` | `{ status, tokens, requests, changeset_uuid, preview_link, error }` |
 
+## The guided flow
+
+*Build my site* in the admin (#60): seven steps at `/admin/studio/build`, full-screen like Studio, for people with `edit_theme_options`. Code: `apps/admin/src/components/site-builder/` (`prompt-to-site.tsx` the steps, `design-preview.tsx`, `sitemap-editor.tsx`, `build-offer.tsx` the offers, `studio-note.tsx`), the arithmetic in `apps/admin/src/lib/site-builder.ts` (tested in `site-builder.test.ts`); core's side in `apps/core/src/site-builder/steps.ts`.
+
+![Choose a look: three live previews of the site's hero, three more, and the adjustments](../assets/screenshots/prompt-to-site-design.png)
+
+| Step | The person | Core |
+| --- | --- | --- |
+| 1. **Describe** | One text box (*What's your site for?*), and under *Add your details*: name, town, phone, email, address, other facts (one per line), a logo and photos | — (uploads go to `/wp/v2/media`) |
+| 2. **Questions** | At most three questions, each optional; *Skip questions* | `POST /clarify`; none asked when the description is enough, and the step is skipped |
+| 3. **Details** | The brief as a card: name, kind, audience, tone, the facts the site may state | `POST /brief` (the answers count as the person's words) |
+| 4. **Look** | Three live mini previews, *Show three more*, then colour (a hue slider), colour feel, fonts, corners, spacing, light or dark pages | `POST /designs`; previews drawn in the browser with `@pressbase/design` (`createDesign()`), the same palette core writes |
+| 5. **Pages** | Pages in menu order (drag, or the arrow buttons), add (up to 8) and remove pages, add and remove sections | `POST /sitemap`, with the kinds of section the site's patterns can build |
+| 6. **Build** | Stages and page cards; each page appears, as a scaled preview of the draft, when it's written. *Stop building* | `POST /runs` with `brief`, `design` and `sitemap`, then the run's events (`EventSource`, with a JSON poll every 5 s as a fallback) |
+| 7. **Review** | Pages built, *N things to fill in before you publish*, what the AI used, *Preview*, *Review in Studio* | — |
+
+| Step | Screenshot |
+| --- | --- |
+| Describe, Questions, Details | [describe](../assets/screenshots/prompt-to-site-describe.png), [clarify](../assets/screenshots/prompt-to-site-clarify.png), [brief](../assets/screenshots/prompt-to-site-brief.png) |
+| Look (light and [dark](../assets/screenshots/prompt-to-site-dark.png)), Pages | [design](../assets/screenshots/prompt-to-site-design.png), [sitemap](../assets/screenshots/prompt-to-site-sitemap.png) |
+| Build, Review, Studio | [generate](../assets/screenshots/prompt-to-site-generate.png), [review](../assets/screenshots/prompt-to-site-review.png), [studio](../assets/screenshots/prompt-to-site-studio.png) |
+| Where it's offered | [dashboard](../assets/screenshots/prompt-to-site-dashboard.png) |
+
+![Building: three pages written and shown as they'll look, the fourth being written](../assets/screenshots/prompt-to-site-generate.png)
+
+- **Back always works.** Each step keeps what was typed; going back and forward asks the model again only when what it was asked from changed (the description, the answers, the brief). Back while building asks first, then stops the run; Back from Review goes to Pages, and building again writes into the same draft.
+- **Closing the tab loses nothing.** What the person typed is kept in this browser (`localStorage`, `pressbase-site-builder`) until the build starts; from then the run is in core: the address has `?run=`, and opening the flow with a run in progress (`GET /status`'s `active_run`) follows it again, replaying its events.
+- **The logo** goes into the same draft as the site, as `option:site_logo`, for people with `manage_options` (the run is started with that `changeset_uuid`); otherwise, like the photos, it's saved to the media library. Image slots don't use uploads yet (see [Not yet](#not-yet)).
+- **Review → Studio** opens `/admin/studio?changeset_uuid=…&run=…`: the draft's home page (`page_on_front` names a new page by slug; `draftReading()` follows it), with a note above the canvas: *N things to fill in before you publish*, page by page, each opening its page. The full checklist is #61; the canvas shows the new styles once #46 lands (Preview shows them now).
+- **AI use**, in words: *10 AI requests, about 7,100 tokens (roughly 5,300 words read and written)*: the flow's steps (each answer's `usage`) plus the run's `tokens` and `requests` from `done`.
+- **Where it's offered** (`BuildOffer`): after the installer when AI is set up (an environment key and Settings → AI), on the dashboard of an empty site (the installer's sample page and post only) or while a run is in progress, and in Studio's AI panel until #62. With AI off it says so, with a link to Settings → AI for people with `manage_options`.
+
+### Steps before a run
+
+Each is one structured request (`site-builder/clarify`, `…/brief`, `…/designs`, `…/sitemap` in the usage log), with the pipeline's system instruction, the person's words labelled as data, the answer checked against its schema and **retried once**; a second bad answer is `502 prompt_invalid_output`. Each counts against the daily cap and answers with its `usage: { tokens, requests }`. All need `edit_theme_options`; AI off is `503 prompt_prevented`, the cap `429 ai_daily_limit_reached`.
+
+| Route | Body | Answer |
+| --- | --- | --- |
+| `GET /status` | — | `{ supports_ai, can_manage_ai, max_pages, max_questions, active_run }`: whether to offer the flow, and a run to resume |
+| `POST /clarify` | the form (as `POST /runs`) | `{ questions: [{ question }] }`: at most 3, distinct, maybe none |
+| `POST /brief` | the form, `answers?: [{ question, answer }]` | `{ brief }`: as the Brief stage writes it (the form's facts first; the model's kept only where the description or an answer says them); empty answers are left out |
+| `POST /designs` | `{ brief, shown?: DesignChoice[] }` | `{ designs: [{ label, choice }] }`: three directions, font pairs limited to the theme's; asked again (once) when two are the same; `shown` asks for new ones |
+| `POST /sitemap` | `{ brief }` | `{ sitemap, sections: [{ category, label }] }`: pages as the Sitemap stage plans them (normalised), and every kind of section the patterns can build |
+
+A run started with all three (`brief`, `design`, `sitemap`) asks only for the header and footer (`site-builder/parts`) and the pages. So a four-page site from the flow is about ten requests: one each for the four steps, one for the header and footer, one per page.
+
+### Usability test plan
+
+The issue asks for notes from two people who haven't built a site before. Until those sessions happen, this is the plan for them.
+
+- **Who:** at least two people who run something small (a shop, a club, a practice) and have never built a website; not developers. One on a laptop, one on a phone-sized window if possible.
+- **Setup:** a fresh install with AI on (a real provider, with a capped daily limit), the facilitator's screen recorded with consent. No demonstration beforehand.
+- **Task:** "Make a website for your [business], so people can find you and see what you do. Stop when you'd be happy to show it to a friend." Think aloud; the facilitator only answers "what would you do?".
+- **Watch for:** where they hesitate or re-read (the description box, the questions, the facts card, choosing a look, sections in Pages); whether they understand the draft (nothing is live until Publish) and the gaps in square brackets; whether Back and *Stop building* do what they expect; whether they find the gaps from the note in Studio; words they don't know (any "block", "template", "changeset" that slips through is a bug).
+- **Measure:** time to a published site; steps where they went back; questions skipped; gaps filled before publishing; how they rate "this looks like my business" (1 to 5).
+- **After:** two questions: "What surprised you?" and "What would you change first?". Notes go in a comment on #60, with issues filed for anything blocking.
+
 ## Not yet
 
-- The Clarify step's questions and three design directions to choose from (#60 may need small endpoints for those); images (uploads and Openverse) for image slots, which keep the pattern's for now.
+- Images (uploads and Openverse) for image slots, which keep the pattern's for now; the flow's photos are saved to the media library only.
+- Usability notes from people building their first site (the [plan](#usability-test-plan) above).
 - Retrying a failed page alone, and a run resuming after its process dies.
 - Matching facts by meaning rather than by words: a fact the model rephrases becomes a placeholder.

@@ -1,0 +1,43 @@
+{
+  "title": "Gallery, images with captions",
+  "description": "A heading and introduction above three tall images, each with a title and a line about it.",
+  "categories": ["gallery"],
+  "keywords": ["gallery", "portfolio", "projects", "case studies", "work", "captions"],
+  "viewportWidth": 1400,
+  "slots": {
+    "eyebrow": {
+      "label": "Label",
+      "description": "A few words above the heading: what the section is about.",
+      "maxLength": 40
+    },
+    "title": {
+      "label": "Heading",
+      "maxLength": 60
+    },
+    "body": {
+      "label": "Introduction"
+    },
+    "projects": {
+      "label": "Projects",
+      "minItems": 2,
+      "maxItems": 3
+    },
+    "projects.image": {
+      "label": "Image",
+      "subject": "the business’s own work, place or products"
+    },
+    "projects.title": {
+      "label": "Project",
+      "description": "What the project was, in a few words.",
+      "maxLength": 40,
+      "facts": true,
+      "placeholder": "[Project name]"
+    },
+    "projects.body": {
+      "label": "About it",
+      "maxLength": 100,
+      "facts": true,
+      "placeholder": "[What was done, and for whom]"
+    }
+  }
+}

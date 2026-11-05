@@ -226,6 +226,9 @@ importers:
       "@pressbase/blocks":
         specifier: workspace:*
         version: link:../../packages/blocks
+      "@pressbase/design":
+        specifier: workspace:*
+        version: link:../../packages/design
       "@pressbase/slots":
         specifier: workspace:*
         version: link:../../packages/slots

@@ -1,0 +1,28 @@
+{
+  "title": "Call to action, centred",
+  "description": "A label, a large heading, a sentence and two buttons, centred on a soft background.",
+  "categories": ["call-to-action"],
+  "keywords": ["call to action", "cta", "quote", "contact", "centred", "enquiry"],
+  "viewportWidth": 1200,
+  "slots": {
+    "eyebrow": {
+      "label": "Label",
+      "description": "A few words above the heading: what the section is about.",
+      "maxLength": 40
+    },
+    "title": {
+      "label": "Heading",
+      "description": "An invitation to act, in a few words.",
+      "maxLength": 50
+    },
+    "body": {
+      "label": "Text",
+      "description": "What happens when they do, in one sentence."
+    },
+    "actions": {
+      "label": "Buttons",
+      "description": "The main action first (call, book, order, ask for a quote), then a secondary one.",
+      "maxItems": 2
+    }
+  }
+}

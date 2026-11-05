@@ -5,6 +5,11 @@ import type { CurrentUser } from '../auth/users';
 import type { Kernel } from '../kernel';
 import { AiPromptBuilder } from './prompt-builder';
 import { createAnthropicProvider } from './providers/anthropic';
+import {
+  createRecordedProvider,
+  RECORDED_PROVIDER_ID,
+  TEST_PROVIDER_ENV,
+} from './providers/recorded';
 import { keyHint, redactSecrets } from './security';
 import {
   AiError,
@@ -117,6 +122,10 @@ export class AiClient {
 
   constructor(readonly kernel: Kernel) {
     this.registerProvider(createAnthropicProvider());
+    // Recorded answers for e2e tests and screenshots: only when asked for (providers/recorded.ts).
+    if (process.env[TEST_PROVIDER_ENV] === RECORDED_PROVIDER_ID) {
+      this.registerProvider(createRecordedProvider());
+    }
   }
 
   get abilities(): AbilitiesRegistry {

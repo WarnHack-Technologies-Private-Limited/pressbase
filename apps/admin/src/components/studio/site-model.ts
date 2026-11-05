@@ -38,7 +38,15 @@ export interface StudioPage {
 /** The /wp/v2/settings fields about the front page. */
 export interface ReadingSettings {
   show_on_front: 'posts' | 'page' | string;
-  page_on_front: number;
+  /** A page's ID; in a draft, also the slug of a page the draft adds (the site builder sets one, #60). */
+  page_on_front: PageRef;
+}
+
+/** The home page: an ID, a new page's slug, or 0 for none. */
+export function frontPage(reading: Pick<ReadingSettings, 'page_on_front'>): PageRef {
+  const value = reading.page_on_front;
+  if (typeof value === 'string' && value && !/^\d+$/.test(value)) return value;
+  return Number(value) || 0;
 }
 
 /** What the canvas shows: a page, or the latest posts (a blog home page). */
@@ -60,7 +68,7 @@ export function initialTarget(
   if (requested && pages.some((page) => page.id === requested)) {
     return { kind: 'page', id: requested };
   }
-  const front = Number(reading.page_on_front) || 0;
+  const front = frontPage(reading);
   if (reading.show_on_front === 'page' && front && pages.some((page) => page.id === front)) {
     return { kind: 'page', id: front };
   }
@@ -70,7 +78,7 @@ export function initialTarget(
 /** True when the target is what visitors see at the site's address. */
 export function isHome(target: CanvasTarget, reading: ReadingSettings): boolean {
   if (target.kind === 'posts') return reading.show_on_front !== 'page' || !reading.page_on_front;
-  return reading.show_on_front === 'page' && Number(reading.page_on_front) === target.id;
+  return reading.show_on_front === 'page' && frontPage(reading) === target.id;
 }
 
 /** Slugs with characters a file name can't hold are also tried URL-encoded, as WordPress does. */

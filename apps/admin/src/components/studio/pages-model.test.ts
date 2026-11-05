@@ -16,7 +16,7 @@ import {
   refOfKey,
   slugify,
 } from './pages-model';
-import { pageTree, type StudioPage } from './site-model';
+import { initialTarget, isHome, pageTree, type StudioPage } from './site-model';
 
 const page = (
   id: number | string,
@@ -78,6 +78,19 @@ describe('the draft’s pages', () => {
         'option:page_on_front': { value: 4 },
       }),
     ).toEqual({ show_on_front: 'page', page_on_front: 4 });
+    // The site builder makes a page the draft adds the home page, by slug (#60).
+    const reading = draftReading(live, {
+      'option:show_on_front': { value: 'page' },
+      'option:page_on_front': { value: 'home' },
+      'page:home': { value: { title: 'Home', content: '<!-- wp:paragraph /-->' } },
+    });
+    expect(reading).toEqual({ show_on_front: 'page', page_on_front: 'home' });
+    expect(initialTarget(undefined, reading, [{ id: 3 }, { id: 'home' }])).toEqual({
+      kind: 'page',
+      id: 'home',
+    });
+    expect(isHome({ kind: 'page', id: 'home' }, reading)).toBe(true);
+    expect(draftReading(live, { 'option:page_on_front': { value: '12' } }).page_on_front).toBe(12);
   });
 
   it('tells page keys apart: IDs, new pages by slug, other entries', () => {

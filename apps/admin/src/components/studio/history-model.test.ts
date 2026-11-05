@@ -28,6 +28,22 @@ describe('the history stack', () => {
     expect(historyGo(h, -1).index).toBe(0);
   });
 
+  it('makes no step for a change that changes nothing', () => {
+    const blocks = [{ clientId: 'p', name: 'core/paragraph', attributes: { content: 'Hi' } }];
+    let h = historyInit<unknown>([], 0);
+    h = historyRecord(h, blocks, { at: 1 });
+    // The editor's end-of-typing marker: an equal value, not the same object.
+    h = historyRecord(h, structuredClone(blocks), { at: 2 });
+    expect(h.entries).toHaveLength(2);
+    expect(h.index).toBe(1);
+    // After an undo, an equal value keeps the steps that redo brings back.
+    h = historyRecord(h, [{ ...blocks[0], attributes: { content: 'Hi there' } }], { at: 3 });
+    h = historyGo(h, 1);
+    h = historyRecord(h, structuredClone(blocks), { at: 4 });
+    expect(h.entries).toHaveLength(3);
+    expect(h.index).toBe(1);
+  });
+
   it('drops the steps undone when a new one is made', () => {
     let h = historyInit('a', 0);
     h = historyRecord(h, 'b');

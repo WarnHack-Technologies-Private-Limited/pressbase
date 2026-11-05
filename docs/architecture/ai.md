@@ -137,6 +137,12 @@ Register one in core (`kernel.ai.registerProvider()`) or from a plugin (`api.ai.
 
 **Anthropic** (`ai/providers/anthropic.ts`) uses the official `@anthropic-ai/sdk` and the Messages API. The default model is `claude-opus-5-5`; Settings → AI also offers Claude Sonnet 5.5, Claude Haiku 5.5 and Claude Fable 5.1, or any model ID. Thinking is left at the model's default; structured output uses `output_config.format`; streaming uses the SDK's `messages.stream()` helper; images are base64 `image` blocks; abilities become tools with `tool_choice: auto`; Claude's own content (thinking blocks included) is sent back unchanged in tool loops. On the models that support it, refusals fall back server-side (`fallbacks: "default"`).
 
+### Testing without a provider
+
+Tests never reach a real provider. Core's API tests register a fake one (`kernel.ai.registerProvider()`) that answers from the request's schema (`site-builder.test.ts`, `site-builder-steps.test.ts`).
+
+For end-to-end tests, screenshots and demos there's the **recorded provider** (`ai/providers/recorded.ts`): answers recorded for one site, a neighbourhood bakery, fitted to each request's schema. It never touches the network and is **off unless core starts with `PRESSBASE_AI_TEST_PROVIDER=recorded`**; then Settings → AI lists *Recorded answers (for testing)*, which still needs AI turned on and a key saved (any text). It tells the site builder's requests apart by their schema: clarifying questions, the brief (no facts of its own, so the honest-content rules apply), design directions (the next three after those shown), the sitemap (with the sections the site's patterns have), and pages and parts (plain copy, no numbers or names). Anything else gets the first value its schema allows. `PRESSBASE_AI_TEST_DELAY_MS` adds a pause before each answer, to watch progress. The e2e suite sets the first ([testing](../development/testing.md#end-to-end-tests)).
+
 ## The Abilities API
 
 ```ts
