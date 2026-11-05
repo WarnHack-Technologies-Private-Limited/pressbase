@@ -132,8 +132,6 @@ export function Inspector(props: InspectorProps) {
         {isSection && showsControl(props.mode, 'swap-layout') && (
           <SwapLayoutBox clientId={clientId} />
         )}
-        {/* Responsive editing (#49): what this block changes on the device shown, and where it shows. */}
-        <ResponsiveSettings clientId={clientId} />
         <BlockSettings
           clientId={clientId}
           tab={props.tab}
@@ -436,6 +434,8 @@ function BlockSettings({
           {info?.description && <p className={styles.muted}>{info.description}</p>}
         </div>
       </div>
+      {/* Responsive editing (#49): what this block changes on the device shown, and where it shows. */}
+      <ResponsiveSettings clientId={clientId} />
       <div className={styles.tabs} role="tablist" aria-label={__('Settings', 'pressbase-admin')}>
         {INSPECTOR_TABS.map((t, index) => (
           <button

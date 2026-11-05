@@ -396,3 +396,22 @@ export function VisibilityChoice({ clientId, compact }: { clientId: string; comp
     </fieldset>
   );
 }
+
+/**
+ * Atop the Styles panel on Tablet and Mobile: the site's styles are the
+ * same on every size (per-device site styles aren't in Studio yet), and
+ * where to change one size.
+ */
+export function SiteStylesDeviceNote() {
+  const { __ } = useI18n();
+  const device = useStudioDevice();
+  if (device === 'desktop') return null;
+  return (
+    <p className={styles.siteNote}>
+      {__(
+        'Site styles apply to every screen size. To change one size, select a block on the page and change it in Settings.',
+        'pressbase-admin',
+      )}
+    </p>
+  );
+}

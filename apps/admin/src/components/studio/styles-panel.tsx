@@ -30,6 +30,7 @@ import {
 import editorStyles from '../appearance/styles-editor.module.css';
 import { Button } from '../ui/button';
 import { type StudioMode, showsControl } from './mode-model';
+import { SiteStylesDeviceNote } from './responsive';
 import studioStyles from './studio.module.css';
 import { StyleBook } from './style-book';
 import {
@@ -133,6 +134,7 @@ export function StylesPanel({
 
   return (
     <div className={panelStyles.panel} ref={bodyRef}>
+      <SiteStylesDeviceNote />
       {screen.id === 'home' ? (
         <div className={panelStyles.home}>
           <p className={panelStyles.intro}>
