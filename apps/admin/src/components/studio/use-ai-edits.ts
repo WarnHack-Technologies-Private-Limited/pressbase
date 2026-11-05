@@ -78,7 +78,7 @@ const codec: BlockCodec<BlockInstance> = {
 
 let patternsRequest: Promise<Map<string, EditPattern>> | null = null;
 /** The site's patterns, once per visit (they don't change while Studio is open). */
-function loadPatterns(): Promise<Map<string, EditPattern>> {
+export function loadPatterns(): Promise<Map<string, EditPattern>> {
   patternsRequest ??= api<EditPattern[]>('/wp/v2/block-patterns/patterns')
     .then((list) => new Map(list.map((p) => [p.name, p])))
     .catch((error) => {

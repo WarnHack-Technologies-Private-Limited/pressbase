@@ -32,9 +32,12 @@ export function PublishButton({
   onRevert,
   onDiscardAll,
   openSignal = 0,
+  note,
 }: {
   /** Opens the list when it changes (the command palette's Publish, #33). */
   openSignal?: number;
+  /** Above the list: what's left on the "Before you publish" checklist (#61). */
+  note?: ReactNode;
   changes: PendingChange[];
   busy: 'publish' | 'discard' | 'revert' | null;
   disabled?: boolean;
@@ -139,6 +142,7 @@ export function PublishButton({
               'pressbase-admin',
             )}
           </p>
+          {note}
           <ul className={styles.changeList}>
             {changes.map((change) => (
               <li key={change.key} className={styles.changeItem}>

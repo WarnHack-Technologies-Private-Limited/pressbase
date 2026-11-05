@@ -16,6 +16,7 @@ import {
   type ThreadMessage,
 } from '../site-building/assistant';
 import { changesetFor, entriesOf } from '../site-building/changeset';
+import { quickEditRoutes } from './studio-ai-quick';
 
 /**
  * Studio's AI panel (v0.8, #62), `edit_pages`: `/pressbase/v1/studio/ai`.
@@ -158,6 +159,9 @@ export function studioAiRoutes() {
       return abilityError(c, error);
     }
   });
+
+  // Ask AI (#63): rewrite a selection, a prompt to a section or a page.
+  quickEditRoutes(app);
 
   app.post('/messages', async (c) => {
     const kernel = c.get('kernel');

@@ -8,6 +8,7 @@ import {
   Image,
   Layers,
   LayoutPanelTop,
+  ListChecks,
   type LucideIcon,
   Palette,
   Sparkles,
@@ -29,6 +30,7 @@ export const RAIL_ICONS: Record<RailPanelId, LucideIcon> = {
   media: Image,
   ai: Sparkles,
   history: History,
+  checklist: ListChecks,
 };
 
 /** The left rail: one button per panel. Pressing the open panel's button closes it. */

@@ -139,12 +139,22 @@ test('builds a site from a description, then publishes it from Studio', async ({
   const note = page.locator('[data-site-builder-note]');
   await expect(note).toContainText('things to fill in before you publish');
   await expect(page.getByLabel('Page', { exact: true })).toHaveValue('new:home');
+  // The "Before you publish" checklist (#61) is open, listing the gaps page by page.
+  const checklist = page.locator('#studio-panel[data-panel="checklist"]');
+  await expect(checklist.getByText(/\d+ placeholders? to fill in/)).toBeVisible({
+    timeout: 30_000,
+  });
   await note.getByRole('button', { name: /^Visit \(\d+\)$/ }).click();
   await expect(page.getByLabel('Page', { exact: true })).toHaveValue('new:visit');
 
-  // Publish: the site goes live.
+  // Publish: with gaps left, Studio asks first; then the site goes live.
   await page.getByRole('button', { name: /^Publish, \d+ changes?$/ }).click();
   await page.getByRole('button', { name: /^Publish \d+ changes?$/ }).click();
+  const confirm = page.getByRole('dialog', {
+    name: /^Publish with \d+ things? left to fill in\?$/,
+  });
+  await expect(confirm).toBeVisible({ timeout: 30_000 });
+  await confirm.getByRole('button', { name: 'Publish anyway' }).click();
   await expect(page.getByText('Published. Your changes are live.')).toBeVisible();
 
   await page.goto('/');
