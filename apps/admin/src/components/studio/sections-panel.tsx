@@ -13,7 +13,10 @@ import {
   groupSections,
   type RestPattern,
   type RestPatternCategory,
+  type RestSavedPattern,
+  SAVED_CATEGORY,
   type Section,
+  savedSectionsOf,
   sectionCategories,
   sectionsOf,
 } from './sections-model';
@@ -33,6 +36,22 @@ export function loadSectionLibrary() {
     });
   return library;
 }
+
+/**
+ * The site's saved sections (#36), loaded once until one is saved
+ * (forgetSavedSections()). Empty when the person can't read them or the
+ * route isn't there.
+ */
+let saved: Promise<Section[]> | null = null;
+export function loadSavedSections(): Promise<Section[]> {
+  saved ??= api<RestSavedPattern[]>('/wp/v2/blocks?per_page=100&context=edit')
+    .then((posts) => (Array.isArray(posts) ? savedSectionsOf(posts) : []))
+    .catch(() => []);
+  return saved;
+}
+export const forgetSavedSections = () => {
+  saved = null;
+};
 
 interface StoreSelectors {
   getBlocks: () => BlockInstance[];
@@ -80,7 +99,8 @@ export function sectionLabel(
 export function sectionBlocks(section: Pick<Section, 'name' | 'content'>): BlockInstance[] {
   const blocks = parse(section.content);
   const [root] = blocks;
-  if (root && blocks.length === 1) {
+  // A saved section isn't a layout of the library's, so it names no pattern.
+  if (root && blocks.length === 1 && !section.name.startsWith('core/block/')) {
     root.attributes = {
       ...root.attributes,
       metadata: { ...(root.attributes.metadata ?? {}), patternName: section.name },
@@ -172,8 +192,17 @@ export function SectionsPanel(props: SectionsPanelProps) {
 
   useEffect(() => {
     let live = true;
-    loadSectionLibrary()
-      .then((loaded) => live && setData(loaded))
+    Promise.all([loadSectionLibrary(), loadSavedSections()])
+      .then(([loaded, own]) => {
+        if (!live) return;
+        setData({
+          sections: [...loaded.sections, ...own],
+          categories: [
+            ...loaded.categories,
+            { name: SAVED_CATEGORY, label: __('Saved sections', 'pressbase-admin') },
+          ],
+        });
+      })
       .catch(() => live && setFailed(true));
     return () => {
       live = false;
@@ -371,6 +400,9 @@ const SectionTile = memo(function SectionTile({
         )}
         {section.source === 'plugin' && (
           <span className={styles.pageNote}>{__('Plugin', 'pressbase-admin')}</span>
+        )}
+        {section.synced && (
+          <span className={styles.pageNote}>{__('Synced', 'pressbase-admin')}</span>
         )}
       </button>
       {section.description && (

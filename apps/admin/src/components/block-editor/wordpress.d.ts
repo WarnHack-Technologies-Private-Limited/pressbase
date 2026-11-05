@@ -68,6 +68,10 @@ declare module '@wordpress/block-editor' {
     children?: ReactNode;
   }>;
   export const BlockIcon: ComponentType<{ icon?: unknown; showColors?: boolean }>;
+  // Studio's Paste and Save as section in the block toolbar's ⋯ menu (#36).
+  export const BlockSettingsMenuControls: ComponentType<{
+    children: (props: { selectedClientIds: string[]; onClose: () => void }) => ReactNode;
+  }>;
   export const BlockStyles: ComponentType<{ clientId: string }>;
   export function useBlockDisplayInformation(clientId?: string | null): {
     title?: string;
