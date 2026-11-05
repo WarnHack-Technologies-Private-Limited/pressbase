@@ -562,10 +562,10 @@ function BlocksScreen({ site, onOpen }: ScreenProps & { onOpen: (name: string) =
   const items = useMemo<BlockListItem[]>(
     () =>
       (getBlockTypes() as Json[])
+        // As WordPress's Styles → Blocks: child blocks too (a Button lives in Buttons).
         .filter(
           (type) =>
             type.supports?.inserter !== false &&
-            !type.parent &&
             hasStyleControls(blockStyleSupports(type.supports)),
         )
         .map((type) => ({

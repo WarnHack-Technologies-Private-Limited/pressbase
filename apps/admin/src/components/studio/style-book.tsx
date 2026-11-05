@@ -161,12 +161,12 @@ export function StyleBook({
                 type="button"
                 className={panelStyles.bookExample}
                 aria-pressed={selected === 'colors'}
+                aria-label={__('Your palette, change your colours', 'pressbase-admin')}
                 onClick={() => onOpen({ id: 'colors' })}
               >
                 <span className={panelStyles.bookLabel}>
                   {__('Your palette', 'pressbase-admin')}
                 </span>
-                <span className="visually-hidden">{__('Change colours', 'pressbase-admin')}</span>
               </button>
               <ul className={panelStyles.swatchGrid} aria-hidden="true">
                 {colors.map((c) => (
@@ -293,12 +293,14 @@ const Example = memo(function Example({
         className={panelStyles.bookExample}
         aria-pressed={selected}
         data-example={name}
+        aria-label={sprintf(
+          /* translators: %s: a kind of block, such as Quote. */
+          __('%s, change how it looks everywhere', 'pressbase-admin'),
+          title,
+        )}
         onClick={onOpen}
       >
         <span className={panelStyles.bookLabel}>{title}</span>
-        <span className="visually-hidden">
-          {sprintf(__('Change how every %s looks', 'pressbase-admin'), title)}
-        </span>
       </button>
       <div className={panelStyles.bookPreview} aria-hidden="true" inert>
         {blocks.length > 0 && (
