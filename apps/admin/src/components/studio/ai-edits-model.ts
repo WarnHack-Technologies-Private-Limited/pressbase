@@ -516,3 +516,34 @@ function plan<B extends EditBlock>(
   }
   return { regions, highlight: [...highlight], fields, menu, styles, unused };
 }
+
+/* ---------------------------------------------------------------- canvas */
+
+/** A copy of a block tree with some blocks' inner blocks replaced, by client ID. */
+export function withInnerBlocks<B extends EditBlock>(
+  tree: readonly B[],
+  replace: ReadonlyMap<string, readonly EditBlock[]>,
+): B[] {
+  return tree.map((block) => {
+    const inner = replace.get(block.clientId);
+    if (inner) return { ...block, innerBlocks: [...inner] };
+    if (!block.innerBlocks.length) return block;
+    const innerBlocks = withInnerBlocks(block.innerBlocks as B[], replace);
+    return innerBlocks.every((b, i) => b === block.innerBlocks[i])
+      ? block
+      : { ...block, innerBlocks };
+  });
+}
+
+/** The menu a header shows: its first Navigation block's `ref`, if it names one. */
+export function navigationRef(blocks: readonly EditBlock[]): number | null {
+  for (const block of blocks) {
+    if (block.name === 'core/navigation') {
+      const ref = Number(block.attributes.ref);
+      if (ref > 0) return ref;
+    }
+    const inner = navigationRef(block.innerBlocks);
+    if (inner) return inner;
+  }
+  return null;
+}

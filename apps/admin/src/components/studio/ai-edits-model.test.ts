@@ -9,8 +9,10 @@ import {
   type EditPattern,
   menuMarkup,
   mergeAttributes,
+  navigationRef,
   planEdits,
   renderPattern,
+  withInnerBlocks,
 } from './ai-edits-model';
 
 /**
@@ -426,5 +428,21 @@ describe('planEdits()', () => {
         locked,
       ),
     ).toEqual({ problem: { code: 'not_allowed', what: 'pages' } });
+  });
+});
+
+describe('withInnerBlocks() and navigationRef()', () => {
+  it('replaces a region’s inner blocks, keeping the rest of the tree', () => {
+    const tree = codec.fromMarkup(
+      `<!-- wp:group --><div class="wp-block-group"><!-- wp:post-content /--><!-- wp:navigation {"ref":7} /--></div><!-- /wp:group -->`,
+    );
+    const root = tree[0] as TestBlock;
+    const content = root.innerBlocks[0] as TestBlock;
+    const next = withInnerBlocks(tree, new Map([[content.clientId, page()]]));
+    expect(next[0]?.innerBlocks[0]?.innerBlocks).toHaveLength(2);
+    expect(next[0]?.innerBlocks[1]).toBe(root.innerBlocks[1]);
+    expect(tree[0]?.innerBlocks[0]?.innerBlocks).toHaveLength(0);
+    expect(navigationRef(tree)).toBe(7);
+    expect(navigationRef(page())).toBeNull();
   });
 });
