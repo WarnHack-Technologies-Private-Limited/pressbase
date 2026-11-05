@@ -4,8 +4,10 @@ import { streamSSE } from 'hono/streaming';
 import { z } from 'zod';
 import { validateJsonSchema } from '../abilities/json-schema';
 import { AbilityError } from '../abilities/registry';
-import { userCan } from '../auth/users';
+import { AiError } from '../ai/types';
+import { type CurrentUser, userCan } from '../auth/users';
 import { type AppEnv, invalidParams, readJson, requireCapability, restError } from '../http';
+import type { Kernel } from '../kernel';
 import { MAX_PAGES, MAX_SECTIONS, SITE_BUILDER_JOB } from '../site-builder/pipeline';
 import {
   createRun,
@@ -18,6 +20,13 @@ import {
   saveRun,
   waitForChange,
 } from '../site-builder/runs';
+import {
+  clarify,
+  designOptions,
+  draftBrief,
+  draftSitemap,
+  MAX_QUESTIONS,
+} from '../site-builder/steps';
 import { siteBriefSchema } from '../site-building/brief';
 import { changesetFor } from '../site-building/changeset';
 
@@ -31,25 +40,61 @@ import { changesetFor } from '../site-building/changeset';
  *                                                 from `Last-Event-ID` or `?after=`)
  *   DELETE /pressbase/v1/site-builder/runs/{id}   stop it
  *
+ * The guided flow's steps before a run (#60), one structured request each:
+ *
+ *   GET    /pressbase/v1/site-builder/status      AI on? a run to resume?
+ *   POST   /pressbase/v1/site-builder/clarify     at most three questions
+ *   POST   /pressbase/v1/site-builder/brief       the brief, from the form and the answers
+ *   POST   /pressbase/v1/site-builder/designs     three design directions
+ *   POST   /pressbase/v1/site-builder/sitemap     pages and their sections
+ *
  * See docs/architecture/site-builder.md.
  */
 
 const text = (max: number) => z.string().trim().max(max);
 
+/** The Describe step's form. */
+const formFields = {
+  description: text(4000).min(1),
+  name: text(200).optional(),
+  location: text(200).optional(),
+  phone: text(50).optional(),
+  email: text(200).optional(),
+  address: text(400).optional(),
+  facts: z.array(text(500)).max(50).optional(),
+  pages: z.array(text(100).min(1)).max(MAX_PAGES).optional(),
+  language: z
+    .string()
+    .regex(/^([a-z]{2,3}([-_][A-Za-z0-9]{2,8})*)?$/)
+    .optional(),
+};
+
+const clarifySchema = z.object(formFields).strict();
+
+const briefSchema = z
+  .object({
+    ...formFields,
+    /** The Clarify step's questions and the person's answers (empty answers are skipped). */
+    answers: z
+      .array(z.object({ question: text(300).min(1), answer: text(1000) }).strict())
+      .max(MAX_QUESTIONS)
+      .optional(),
+  })
+  .strict();
+
+const designsSchema = z
+  .object({
+    brief: siteBriefSchema,
+    /** Directions already shown ("Show three more"): the new ones differ. */
+    shown: z.array(z.record(z.string(), z.unknown())).max(30).optional(),
+  })
+  .strict();
+
+const sitemapSchema = z.object({ brief: siteBriefSchema }).strict();
+
 const startSchema = z
   .object({
-    description: text(4000).min(1),
-    name: text(200).optional(),
-    location: text(200).optional(),
-    phone: text(50).optional(),
-    email: text(200).optional(),
-    address: text(400).optional(),
-    facts: z.array(text(500)).max(50).optional(),
-    pages: z.array(text(100).min(1)).max(MAX_PAGES).optional(),
-    language: z
-      .string()
-      .regex(/^([a-z]{2,3}([-_][A-Za-z0-9]{2,8})*)?$/)
-      .optional(),
+    ...formFields,
     /** Steps the person already went through: the brief they edited… */
     brief: siteBriefSchema.optional(),
     /** …the design direction they picked… */
@@ -104,9 +149,94 @@ async function loadRun(c: Context<AppEnv>): Promise<SiteRun | Response> {
   return run;
 }
 
+const AI_OFF = 'AI isn’t set up on this site. Turn it on in Settings → AI.';
+
+/** A guided step's failure as a REST error: the AI client's code and status, or the ability's. */
+function stepError(c: Context<AppEnv>, error: unknown): Response {
+  if (error instanceof AiError) {
+    const message = error.code === 'prompt_prevented' ? AI_OFF : error.message;
+    return restError(c, (error.status ?? 500) as 500, error.code, message);
+  }
+  if (error instanceof AbilityError) {
+    return restError(c, (error.status ?? 400) as 400, error.code, error.message);
+  }
+  throw error;
+}
+
+/**
+ * A guided step (#60): parse the body, check AI is on, run the step as
+ * the person. Each is one structured request (two when the first answer
+ * doesn't fit), counted against the daily cap and logged as its ability.
+ */
+function step<S extends z.ZodTypeAny>(
+  schema: S,
+  run: (kernel: Kernel, user: CurrentUser, body: z.infer<S>) => Promise<object>,
+) {
+  return async (c: Context<AppEnv>) => {
+    const kernel = c.get('kernel');
+    const user = c.get('user');
+    if (!user) return restError(c, 401, 'rest_not_logged_in', 'You are not currently logged in.');
+    const parsed = schema.safeParse((await readJson(c)) ?? {});
+    if (!parsed.success) return invalidParams(c, parsed.error);
+    if (!(await kernel.ai.supportsAi())) return restError(c, 503, 'prompt_prevented', AI_OFF);
+    try {
+      return c.json(await run(kernel, user, parsed.data));
+    } catch (error) {
+      return stepError(c, error);
+    }
+  };
+}
+
 export function siteBuilderRoutes() {
   const app = new Hono<AppEnv>({ strict: false });
   app.use(requireCapability('edit_theme_options'));
+
+  /** Whether to offer the flow: AI on, who can turn it on, and a run in progress to resume. */
+  app.get('/status', async (c) => {
+    const kernel = c.get('kernel');
+    const user = c.get('user');
+    const runs = user ? await listRuns(kernel, user.id, 5) : [];
+    const active = runs.find((run) => run.status === 'queued' || run.status === 'running');
+    return c.json({
+      supports_ai: await kernel.ai.supportsAi(),
+      can_manage_ai: Boolean(user && userCan(user, 'manage_options')),
+      max_pages: MAX_PAGES,
+      max_questions: MAX_QUESTIONS,
+      active_run: active?.id ?? null,
+    });
+  });
+
+  app.post(
+    '/clarify',
+    step(clarifySchema, async (kernel, user, input) => clarify(kernel, user, input)),
+  );
+
+  app.post(
+    '/brief',
+    step(briefSchema, async (kernel, user, { answers, ...input }) =>
+      draftBrief(kernel, user, input, answers ?? []),
+    ),
+  );
+
+  app.post(
+    '/designs',
+    step(designsSchema, async (kernel, user, { brief, shown }) => {
+      const valid: DesignChoice[] = [];
+      for (const choice of shown ?? []) {
+        if (!validateJsonSchema(choice, DESIGN_CHOICE_SCHEMA, 'shown')) {
+          valid.push(choice as unknown as DesignChoice);
+        }
+      }
+      return designOptions(kernel, user, siteBriefSchema.parse(brief), valid);
+    }),
+  );
+
+  app.post(
+    '/sitemap',
+    step(sitemapSchema, async (kernel, user, { brief }) =>
+      draftSitemap(kernel, user, siteBriefSchema.parse(brief)),
+    ),
+  );
 
   app.post('/runs', async (c) => {
     const kernel = c.get('kernel');

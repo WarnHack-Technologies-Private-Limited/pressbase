@@ -47,8 +47,9 @@ const nextConfig: NextConfig = {
   // WordPress permalinks end with a slash; leave them to the public site.
   skipTrailingSlashRedirect: true,
   poweredByHeader: false,
-  // Workspace packages ship TypeScript sources (Studio's Swap layout uses slots, #45).
-  transpilePackages: ['@pressbase/blocks', '@pressbase/slots'],
+  // Workspace packages ship TypeScript sources (Studio's Swap layout uses slots, #45; the
+  // site builder's design previews use the design generator, #60).
+  transpilePackages: ['@pressbase/blocks', '@pressbase/design', '@pressbase/slots'],
   // The Docker image runs Next.js's standalone server (see the Dockerfile).
   // Tracing starts at the repository root so workspace packages are included.
   ...(process.env.PRESSBASE_STANDALONE
