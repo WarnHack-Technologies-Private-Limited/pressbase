@@ -1,4 +1,4 @@
-import { expect, type FrameLocator, type Page, test } from '@playwright/test';
+import { expect, type FrameLocator, type Locator, type Page, test } from '@playwright/test';
 import { logInAsAdmin, unique } from './helpers';
 
 /**
@@ -58,6 +58,17 @@ async function openStudio(page: Page, id: number): Promise<FrameLocator> {
   return canvas;
 }
 
+/**
+ * The first right-click after Studio opens: the menu listens once the
+ * canvas has drawn its blocks (a moment after the header shows).
+ */
+async function firstRightClick(page: Page, target: Locator) {
+  await expect(async () => {
+    await target.click({ button: 'right' });
+    await expect(page.getByRole('menu')).toBeVisible({ timeout: 1_000 });
+  }).toPass({ timeout: 20_000 });
+}
+
 test.beforeEach(async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await logInAsAdmin(page);
@@ -79,7 +90,7 @@ test('copy and paste across sections, paste style as one step, and the menu from
   const coffee = sections.nth(1).getByText('Coffee and cake', { exact: true });
 
   // Right-click a block: the menu, focus on its first item.
-  await bread.click({ button: 'right' });
+  await firstRightClick(page, bread);
   const menu = page.getByRole('menu', { name: 'Actions for Paragraph' });
   await expect(menu).toBeVisible();
   await expect(menu.getByRole('menuitem', { name: 'Copy' })).toBeFocused();
@@ -162,7 +173,7 @@ test('save a block as a section, then find it in the Sections panel', async ({ p
   const canvas = await openStudio(page, id);
   const name = unique('Our bakery');
 
-  await canvas.getByText('Fresh bread every morning', { exact: true }).click({ button: 'right' });
+  await firstRightClick(page, canvas.getByText('Fresh bread every morning', { exact: true }));
   await page.getByRole('menuitem', { name: 'Save as section…' }).click();
   const dialog = page.getByRole('dialog', { name: 'Save as section' });
   await expect(dialog).toBeVisible();

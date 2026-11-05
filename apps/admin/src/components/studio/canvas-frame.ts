@@ -2,29 +2,38 @@
 
 import { type RefObject, useEffect, useState } from 'react';
 
+export interface CanvasFrame {
+  iframe: HTMLIFrameElement;
+  /** Its document: listeners go here, and it can be replaced while the iframe stays. */
+  doc: Document;
+}
+
 /**
- * The canvas iframe, once the block editor has put it in the frame and
- * drawn the blocks (as the section toolbar finds it). For controls drawn in
- * Studio's document over the canvas: the right-click menu (#36) and the
- * handles (#37).
+ * The canvas iframe and its document, once the block editor has drawn the
+ * blocks there; followed when the editor replaces either (a new iframe, or
+ * the same one loading its document again), so listeners never stay on an
+ * old document. For controls drawn in Studio's document over the canvas:
+ * the right-click menu (#36) and the handles (#37).
  */
-export function useCanvasIframe(
-  frameRef: RefObject<HTMLDivElement | null>,
-): HTMLIFrameElement | null {
-  const [iframe, setIframe] = useState<HTMLIFrameElement | null>(null);
+export function useCanvasIframe(frameRef: RefObject<HTMLDivElement | null>): CanvasFrame | null {
+  const [frame, setFrame] = useState<CanvasFrame | null>(null);
   useEffect(() => {
-    let timer = 0;
-    const find = () => {
-      const found = frameRef.current?.querySelector<HTMLIFrameElement>(
+    let current: CanvasFrame | null = null;
+    const check = () => {
+      const iframe = frameRef.current?.querySelector<HTMLIFrameElement>(
         'iframe[name="editor-canvas"]',
       );
-      if (found?.contentDocument?.querySelector('.is-root-container')) setIframe(found);
-      else timer = window.setTimeout(find, 250);
+      const doc = iframe?.contentDocument;
+      const ready = iframe && doc?.querySelector('.is-root-container') ? { iframe, doc } : null;
+      if (ready?.iframe === current?.iframe && ready?.doc === current?.doc) return;
+      current = ready;
+      setFrame(ready);
     };
-    find();
-    return () => window.clearTimeout(timer);
+    check();
+    const timer = window.setInterval(check, 250);
+    return () => window.clearInterval(timer);
   }, [frameRef]);
-  return iframe;
+  return frame;
 }
 
 /** A point in the canvas iframe, in Studio's own window. */

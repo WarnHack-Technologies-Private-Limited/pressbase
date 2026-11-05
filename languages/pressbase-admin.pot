@@ -955,7 +955,7 @@ msgstr ""
 msgid "This is what Pressbase will build from. Change anything that’s off."
 msgstr ""
 
-#: apps/admin/src/components/site-builder/prompt-to-site.tsx:877 apps/admin/src/components/studio/context-menu.tsx:779
+#: apps/admin/src/components/site-builder/prompt-to-site.tsx:877 apps/admin/src/components/studio/context-menu.tsx:783
 msgid "Name"
 msgstr ""
 
@@ -1766,62 +1766,62 @@ msgstr ""
 msgid "Breadcrumb"
 msgstr ""
 
-#: apps/admin/src/components/studio/canvas-handles.tsx:327
+#: apps/admin/src/components/studio/canvas-handles.tsx:329
 #, js-format
 msgid "Changed padding of “%s”"
 msgstr ""
 
-#: apps/admin/src/components/studio/canvas-handles.tsx:328
+#: apps/admin/src/components/studio/canvas-handles.tsx:330
 #, js-format
 msgid "Changed margin of “%s”"
 msgstr ""
 
-#: apps/admin/src/components/studio/canvas-handles.tsx:353
+#: apps/admin/src/components/studio/canvas-handles.tsx:355
 msgid "Resized columns"
 msgstr ""
 
-#: apps/admin/src/components/studio/canvas-handles.tsx:377
+#: apps/admin/src/components/studio/canvas-handles.tsx:379
 #, js-format
 msgid "Width of columns %1$d and %2$d"
 msgstr ""
 
-#: apps/admin/src/components/studio/canvas-handles.tsx:409
+#: apps/admin/src/components/studio/canvas-handles.tsx:411
 msgid "Padding (top)"
 msgstr ""
 
-#: apps/admin/src/components/studio/canvas-handles.tsx:410
+#: apps/admin/src/components/studio/canvas-handles.tsx:412
 msgid "Padding (right)"
 msgstr ""
 
-#: apps/admin/src/components/studio/canvas-handles.tsx:411
+#: apps/admin/src/components/studio/canvas-handles.tsx:413
 msgid "Padding (bottom)"
 msgstr ""
 
-#: apps/admin/src/components/studio/canvas-handles.tsx:412
+#: apps/admin/src/components/studio/canvas-handles.tsx:414
 msgid "Padding (left)"
 msgstr ""
 
-#: apps/admin/src/components/studio/canvas-handles.tsx:415
+#: apps/admin/src/components/studio/canvas-handles.tsx:417
 msgid "Margin (top)"
 msgstr ""
 
-#: apps/admin/src/components/studio/canvas-handles.tsx:416
+#: apps/admin/src/components/studio/canvas-handles.tsx:418
 msgid "Margin (right)"
 msgstr ""
 
-#: apps/admin/src/components/studio/canvas-handles.tsx:417
+#: apps/admin/src/components/studio/canvas-handles.tsx:419
 msgid "Margin (bottom)"
 msgstr ""
 
-#: apps/admin/src/components/studio/canvas-handles.tsx:418
+#: apps/admin/src/components/studio/canvas-handles.tsx:420
 msgid "Margin (left)"
 msgstr ""
 
-#: apps/admin/src/components/studio/canvas-handles.tsx:425 apps/admin/src/components/studio/styles-panel.tsx:880 apps/admin/src/components/studio/styles-panel.tsx:1060
+#: apps/admin/src/components/studio/canvas-handles.tsx:427 apps/admin/src/components/studio/styles-panel.tsx:880 apps/admin/src/components/studio/styles-panel.tsx:1060
 msgid "None"
 msgstr ""
 
-#: apps/admin/src/components/studio/canvas-handles.tsx:426
+#: apps/admin/src/components/studio/canvas-handles.tsx:428
 #, js-format
 msgid "%spx"
 msgstr ""
@@ -2047,73 +2047,73 @@ msgstr ""
 msgid "Saved “%s”. It’s under Saved sections in the Sections panel."
 msgstr ""
 
-#: apps/admin/src/components/studio/context-menu.tsx:405 apps/admin/src/components/studio/pages-panel.tsx:366
+#: apps/admin/src/components/studio/context-menu.tsx:409 apps/admin/src/components/studio/pages-panel.tsx:366
 #, js-format
 msgid "Actions for %s"
 msgstr ""
 
-#: apps/admin/src/components/studio/context-menu.tsx:438
+#: apps/admin/src/components/studio/context-menu.tsx:442
 msgid "Copy"
 msgstr ""
 
-#: apps/admin/src/components/studio/context-menu.tsx:449
+#: apps/admin/src/components/studio/context-menu.tsx:453
 msgid "Paste"
 msgstr ""
 
-#: apps/admin/src/components/studio/context-menu.tsx:455
+#: apps/admin/src/components/studio/context-menu.tsx:459
 msgid "Paste style"
 msgstr ""
 
-#: apps/admin/src/components/studio/context-menu.tsx:463 apps/admin/src/components/studio/section-toolbar.tsx:337
+#: apps/admin/src/components/studio/context-menu.tsx:467 apps/admin/src/components/studio/section-toolbar.tsx:337
 msgid "Duplicate"
 msgstr ""
 
-#: apps/admin/src/components/studio/context-menu.tsx:474 apps/admin/src/components/studio/context-menu.tsx:672
+#: apps/admin/src/components/studio/context-menu.tsx:478 apps/admin/src/components/studio/context-menu.tsx:676
 msgid "Save as section…"
 msgstr ""
 
-#: apps/admin/src/components/studio/context-menu.tsx:493
+#: apps/admin/src/components/studio/context-menu.tsx:497
 msgid "Ask AI about this text…"
 msgstr ""
 
-#: apps/admin/src/components/studio/context-menu.tsx:494
+#: apps/admin/src/components/studio/context-menu.tsx:498
 #, js-format
 msgid "Ask AI about “%s”…"
 msgstr ""
 
-#: apps/admin/src/components/studio/context-menu.tsx:504
+#: apps/admin/src/components/studio/context-menu.tsx:508
 msgid "Delete"
 msgstr ""
 
-#: apps/admin/src/components/studio/context-menu.tsx:671
+#: apps/admin/src/components/studio/context-menu.tsx:675
 msgid "Paste after"
 msgstr ""
 
-#: apps/admin/src/components/studio/context-menu.tsx:740
+#: apps/admin/src/components/studio/context-menu.tsx:744
 msgid "Give the section a name."
 msgstr ""
 
-#: apps/admin/src/components/studio/context-menu.tsx:749
+#: apps/admin/src/components/studio/context-menu.tsx:753
 msgid "The section couldn’t be saved. Try again."
 msgstr ""
 
-#: apps/admin/src/components/studio/context-menu.tsx:756
+#: apps/admin/src/components/studio/context-menu.tsx:760
 msgid "Save as section"
 msgstr ""
 
-#: apps/admin/src/components/studio/context-menu.tsx:762 apps/admin/src/components/studio/pages-panel.tsx:246
+#: apps/admin/src/components/studio/context-menu.tsx:766 apps/admin/src/components/studio/pages-panel.tsx:246
 msgid "Cancel"
 msgstr ""
 
-#: apps/admin/src/components/studio/context-menu.tsx:765
+#: apps/admin/src/components/studio/context-menu.tsx:769
 msgid "Save"
 msgstr ""
 
-#: apps/admin/src/components/studio/context-menu.tsx:788 apps/admin/src/components/studio/sections-panel.tsx:405
+#: apps/admin/src/components/studio/context-menu.tsx:792 apps/admin/src/components/studio/sections-panel.tsx:405
 msgid "Synced"
 msgstr ""
 
-#: apps/admin/src/components/studio/context-menu.tsx:789
+#: apps/admin/src/components/studio/context-menu.tsx:793
 msgid "Keep every copy the same: a change to it shows everywhere it’s used. Otherwise each copy can be changed on its own."
 msgstr ""
 

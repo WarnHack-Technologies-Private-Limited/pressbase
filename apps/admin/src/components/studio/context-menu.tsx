@@ -291,7 +291,9 @@ export function CanvasContextMenu({
   canSaveSections: boolean;
 }) {
   const { __, sprintf } = useI18n();
-  const iframe = useCanvasIframe(frameRef);
+  const canvas = useCanvasIframe(frameRef);
+  const iframe = canvas?.iframe ?? null;
+  const canvasDoc = canvas?.doc ?? null;
   const askAi = useAskAiOpener();
   const block = useBlockActions();
   const { select, actions } = block;
@@ -336,7 +338,7 @@ export function CanvasContextMenu({
 
   // Right-click, Shift+F10 and the context-menu key in the canvas.
   useEffect(() => {
-    const doc = iframe?.contentDocument;
+    const doc = canvasDoc;
     if (!doc || !iframe) return;
     const onContextMenu = (event: MouseEvent) => {
       // Shift+right-click keeps the browser's own menu (spelling, copying text…).
@@ -384,7 +386,7 @@ export function CanvasContextMenu({
       doc.removeEventListener('contextmenu', onContextMenu);
       doc.removeEventListener('keydown', onKeyDown);
     };
-  }, [iframe, openFor, select, targetOf]);
+  }, [iframe, canvasDoc, openFor, select, targetOf]);
 
   const openRef = useRef(open);
   openRef.current = open;

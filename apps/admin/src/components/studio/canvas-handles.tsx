@@ -133,7 +133,9 @@ export function CanvasHandles({
   mode: StudioMode;
 }) {
   const { __, sprintf } = useI18n();
-  const iframe = useCanvasIframe(frameRef);
+  const canvas = useCanvasIframe(frameRef);
+  const iframe = canvas?.iframe ?? null;
+  const canvasDoc = canvas?.doc ?? null;
   const registry = useRegistry();
   const actions = useDispatch(blockEditorStore) as unknown as Actions;
   const events = useCanvasEvents();
@@ -175,7 +177,7 @@ export function CanvasHandles({
 
   // Each preset's size on the canvas now (they're often clamp() or rem).
   useLayoutEffect(() => {
-    const doc = iframe?.contentDocument;
+    const doc = canvasDoc;
     if (!doc?.body) return;
     const probe = doc.createElement('div');
     probe.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;';
@@ -186,11 +188,11 @@ export function CanvasHandles({
     });
     probe.remove();
     setPresets(out);
-  }, [iframe, presetNames, device]);
+  }, [canvasDoc, presetNames, device]);
 
   // Where the block and its columns are: again on scroll, resize and every change.
   useLayoutEffect(() => {
-    const doc = iframe?.contentDocument;
+    const doc = canvasDoc;
     const frame = frameRef.current;
     const ids = [target, columnsId].filter(Boolean) as string[];
     if (!doc || !frame || !iframe || !ids.length) {
@@ -262,7 +264,7 @@ export function CanvasHandles({
       window.removeEventListener('resize', schedule);
       observer.disconnect();
     };
-  }, [iframe, target, columnsId, blocks, frameRef, device, registry]);
+  }, [iframe, canvasDoc, target, columnsId, blocks, frameRef, device, registry]);
 
   if (!measured || hidden) return null;
 
