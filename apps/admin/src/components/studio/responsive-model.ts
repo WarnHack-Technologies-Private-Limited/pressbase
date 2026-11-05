@@ -24,7 +24,7 @@
  */
 
 import { msgid } from '../../lib/i18n/locale';
-import type { Device } from './layout-model';
+import type { Device, InspectorGroup, InspectorTab } from './layout-model';
 
 /* ------------------------------------------------------------ breakpoints */
 
@@ -128,6 +128,33 @@ export function deviceFrames(viewport: unknown): Record<Device, DeviceFrame> {
 export const deviceState = (device: Device): '@tablet' | '@mobile' | null =>
   device === 'desktop' ? null : `@${device}`;
 
+/**
+ * The inspector groups whose controls edit a style state, so they work per
+ * device: WordPress 7.1's style panels (typography with colour, background,
+ * dimensions, border, elements). Left out on Tablet and Mobile: style
+ * variations, shadows and duotone (one value for every size), and layout
+ * and position, whose per-device values the public site doesn't print yet
+ * (ADR 0023).
+ */
+export const DEVICE_GROUPS: readonly InspectorGroup['group'][] = [
+  'typography',
+  'color',
+  'background',
+  'elements',
+  'border',
+  'dimensions',
+];
+
+/** The inspector's tabs on a device: Content as it is, Style and Layout with per-device groups only. */
+export function deviceTabs(tabs: readonly InspectorTab[], device: Device): InspectorTab[] {
+  if (device === 'desktop') return [...tabs];
+  return tabs.map((tab) =>
+    tab.id === 'content'
+      ? tab
+      : { ...tab, groups: tab.groups.filter((g) => DEVICE_GROUPS.includes(g.group)) },
+  );
+}
+
 /* ------------------------------------------------------------ the values */
 
 export type Style = Record<string, unknown>;
@@ -162,7 +189,8 @@ function setPath(source: Style | undefined, path: Path, value: unknown): Style |
 export function leafValues(source: unknown, prefix: string[] = []): [string[], unknown][] {
   if (!isObject(source)) return source === undefined ? [] : [[prefix, source]];
   const out: [string[], unknown][] = [];
-  for (const [key, value] of Object.entries(source)) out.push(...leafValues(value, [...prefix, key]));
+  for (const [key, value] of Object.entries(source))
+    out.push(...leafValues(value, [...prefix, key]));
   return out;
 }
 

@@ -20,6 +20,8 @@ import { TEMPLATE_PART } from './canvas-model';
 import { INSPECTOR_TABS, type InspectorTab, type InspectorTabId } from './layout-model';
 import { MODES, modeTabs, type StudioMode, showsControl } from './mode-model';
 import { type PartInfo, useSelectedPart } from './regions';
+import { ResponsiveSettings, useStudioDevice } from './responsive';
+import { deviceTabs } from './responsive-model';
 import { contentRootId } from './sections-panel';
 import styles from './studio.module.css';
 import { SwapLayoutBox } from './swap-layout';
@@ -130,6 +132,8 @@ export function Inspector(props: InspectorProps) {
         {isSection && showsControl(props.mode, 'swap-layout') && (
           <SwapLayoutBox clientId={clientId} />
         )}
+        {/* Responsive editing (#49): what this block changes on the device shown, and where it shows. */}
+        <ResponsiveSettings clientId={clientId} />
         <BlockSettings
           clientId={clientId}
           tab={props.tab}
@@ -395,15 +399,17 @@ function BlockSettings({
   const hasControls = useTabsWithControls();
   const baseId = useId();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  // The tabs with only the groups this mode shows (mode-model.ts).
-  const tabs = modeTabs(mode);
+  // The tabs with only the groups this mode and device show (mode-model.ts, responsive-model.ts).
+  const device = useStudioDevice();
+  const tabs = deviceTabs(modeTabs(mode), device);
+  const showStyles = hasStyles && device === 'desktop';
   const active = tabs.find((t) => t.id === tab) ?? (tabs[0] as InspectorTab);
-  const activeHas = hasControls(active) || (active.id === 'style' && hasStyles);
+  const activeHas = hasControls(active) || (active.id === 'style' && showStyles);
   // In Simple, a tab can be empty while Advanced has settings for the block.
   const moreInAdvanced =
     !activeHas &&
     mode === 'simple' &&
-    hasControls(INSPECTOR_TABS.find((t) => t.id === active.id) as InspectorTab);
+    hasControls(deviceTabs(INSPECTOR_TABS, device).find((t) => t.id === active.id) as InspectorTab);
 
   const onTabKey = (event: ReactKeyboardEvent, index: number) => {
     const last = INSPECTOR_TABS.length - 1;
@@ -457,7 +463,7 @@ function BlockSettings({
         aria-labelledby={`${baseId}-${active.id}`}
         className={`${lightScope} ${styles.tabPanel}`}
       >
-        {active.id === 'style' && hasStyles && (
+        {active.id === 'style' && showStyles && (
           <PanelBody title={wp__('Styles')}>
             <BlockStyles clientId={clientId} />
           </PanelBody>

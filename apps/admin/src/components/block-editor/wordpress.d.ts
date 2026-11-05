@@ -48,7 +48,11 @@ declare module '@wordpress/block-editor' {
     showBlockMovers?: boolean;
     isExpanded?: boolean;
     description?: string;
+    showAppender?: boolean;
+    rootClientId?: string;
   }>;
+  /** Locked: read with unlock() from components/block-editor/private-apis.ts. */
+  export const privateApis: object;
   export function useBlockProps(props?: Record<string, unknown>): Record<string, unknown>;
   // What plugins' block edit functions get through window.pressbase.blocks (ADR 0020).
   export function useInnerBlocksProps(

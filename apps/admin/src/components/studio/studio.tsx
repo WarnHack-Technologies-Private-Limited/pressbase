@@ -106,6 +106,7 @@ import { ElementsPanel } from './elements-panel';
 import { useEntityEdits } from './entity-edits';
 import { type CanvasValue, HistoryPanel } from './history-panel';
 import { Inspector, type PageSummary } from './inspector';
+import { LayersPanel } from './layers-panel';
 import {
   DEVICES,
   type Device,
@@ -135,6 +136,8 @@ import {
   StudioRegionsProvider,
   useSelectedPart,
 } from './regions';
+import { deviceTypeKey, StudioResponsive } from './responsive';
+import { deviceFrames } from './responsive-model';
 import { SectionToolbar } from './section-toolbar';
 import { SectionsPanel } from './sections-panel';
 import {
@@ -1145,6 +1148,14 @@ export default function Studio(props: StudioProps) {
                   {__('Opening the page…', 'pressbase-admin')}
                 </p>
               )
+            ) : panel === 'layers' ? (
+              editorReady ? (
+                <LayersPanel />
+              ) : (
+                <p className={styles.pagesEmpty} aria-busy="true">
+                  {__('Opening the page…', 'pressbase-admin')}
+                </p>
+              )
             ) : panel === 'styles' ? (
               props.user.canEditTheme && (
                 <StylesPanel
@@ -1778,6 +1789,8 @@ function StudioEditor(props: StudioEditorProps) {
       styles: themeStyles,
       // Sections from patterns stay fully editable: Studio is for building pages.
       disableContentOnlyForUnsyncedPatterns: true,
+      // The device shown (#49): blocks hidden on it leave the canvas.
+      [deviceTypeKey]: props.device,
     };
     // Simple offers the theme's presets only (#32, mode-model.ts).
     return modeEditorSettings(base, props.mode);
@@ -1788,6 +1801,7 @@ function StudioEditor(props: StudioEditorProps) {
     props.library.theme,
     doc.page?.id,
     props.mode,
+    props.device,
   ]);
 
   const editor: EditorState = {
@@ -1858,7 +1872,11 @@ function StudioEditor(props: StudioEditorProps) {
     }),
     [history.labelNext, history.undo],
   );
-  const width = DEVICES.find((d) => d.id === props.device)?.width ?? null;
+  // The canvas width for the device, inside the theme's breakpoints (#49).
+  const width = deviceFrames(
+    (settings as { __experimentalFeatures?: { viewport?: unknown } }).__experimentalFeatures
+      ?.viewport,
+  )[props.device].width;
   const frameRef = useRef<HTMLDivElement>(null);
   const showInspector = !props.narrow || props.inspectorOpen;
 
@@ -1891,97 +1909,99 @@ function StudioEditor(props: StudioEditorProps) {
       <MediaCategories enabled={props.features.media} />
       <EditingModes blocks={doc.blocks} partsEditable={!props.partsLocked} />
       <StoreBridgeSetter bridge={store} />
-      <EditorCommands
-        canUndo={history.hasUndo}
-        canRedo={history.hasRedo}
-        undo={history.undo}
-        redo={history.redo}
-        onSectionAdded={(title, phase) => {
-          if (phase === 'before') {
-            history.labelNext(sprintf(__('Added section “%s”', 'pressbase-admin'), title));
-          }
-          props.onSectionAdded(title, phase);
-        }}
-      />
-      {/* React events bubble out of the canvas iframe's portal, so this sees typing there too. */}
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: listens for keys pressed in the canvas. */}
-      <div
-        className={styles.contents}
-        onKeyDownCapture={settle}
-        onPointerDownCapture={settle}
-        onKeyDown={(event) => {
-          // ⌘K / Ctrl+K in the canvas: Studio's own window doesn't hear key presses in the iframe.
-          const target = event.target as Node;
-          if (target.ownerDocument === document || event.nativeEvent.defaultPrevented) return;
-          if (!isPaletteShortcut(event)) return;
-          event.preventDefault();
-          props.onOpenPalette();
-        }}
-      >
-        <CanvasEventsProvider value={canvasEvents}>
-          <StudioRegionsProvider
-            value={{
-              parts: props.parts,
-              partLabel: (slug) =>
-                `${props.parts.get(slug)?.title ?? slug} · ${__('all pages', 'pressbase-admin')}`,
-            }}
-          >
-            <StudioFrame
-              chrome={props.chrome}
-              editor={editor}
-              notice={<PartNotice parts={props.parts} locked={props.partsLocked} />}
-              footer={
-                <Breadcrumb site={props.site} page={props.summary.title} parts={props.parts} />
-              }
-              inspector={
-                showInspector && (
-                  <Inspector
-                    page={props.summary}
-                    parts={props.parts}
-                    tab={props.tab}
-                    onTab={props.onTab}
-                    canReset={canReset}
-                    onReset={(slug) => {
-                      const region = regions.current.get(partKey(slug));
-                      if (region?.theme !== undefined) replaceRegion(region.key, region.theme);
-                    }}
-                    onClose={props.narrow ? props.onCloseInspector : undefined}
-                    partsLocked={props.partsLocked}
-                    mode={props.mode}
-                    onMode={props.onMode}
-                  />
-                )
-              }
+      <StudioResponsive device={props.device}>
+        <EditorCommands
+          canUndo={history.hasUndo}
+          canRedo={history.hasRedo}
+          undo={history.undo}
+          redo={history.redo}
+          onSectionAdded={(title, phase) => {
+            if (phase === 'before') {
+              history.labelNext(sprintf(__('Added section “%s”', 'pressbase-admin'), title));
+            }
+            props.onSectionAdded(title, phase);
+          }}
+        />
+        {/* React events bubble out of the canvas iframe's portal, so this sees typing there too. */}
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: listens for keys pressed in the canvas. */}
+        <div
+          className={styles.contents}
+          onKeyDownCapture={settle}
+          onPointerDownCapture={settle}
+          onKeyDown={(event) => {
+            // ⌘K / Ctrl+K in the canvas: Studio's own window doesn't hear key presses in the iframe.
+            const target = event.target as Node;
+            if (target.ownerDocument === document || event.nativeEvent.defaultPrevented) return;
+            if (!isPaletteShortcut(event)) return;
+            event.preventDefault();
+            props.onOpenPalette();
+          }}
+        >
+          <CanvasEventsProvider value={canvasEvents}>
+            <StudioRegionsProvider
+              value={{
+                parts: props.parts,
+                partLabel: (slug) =>
+                  `${props.parts.get(slug)?.title ?? slug} · ${__('all pages', 'pressbase-admin')}`,
+              }}
             >
-              <div className={styles.canvasArea} data-device={props.device}>
-                <div
-                  ref={frameRef}
-                  className={styles.canvasFrame}
-                  style={width ? { maxWidth: `${width}px` } : undefined}
-                >
-                  <BlockContextProvider
-                    value={
-                      typeof doc.page?.id === 'number'
-                        ? { postId: doc.page.id, postType: 'page' }
-                        : {}
-                    }
+              <StudioFrame
+                chrome={props.chrome}
+                editor={editor}
+                notice={<PartNotice parts={props.parts} locked={props.partsLocked} />}
+                footer={
+                  <Breadcrumb site={props.site} page={props.summary.title} parts={props.parts} />
+                }
+                inspector={
+                  showInspector && (
+                    <Inspector
+                      page={props.summary}
+                      parts={props.parts}
+                      tab={props.tab}
+                      onTab={props.onTab}
+                      canReset={canReset}
+                      onReset={(slug) => {
+                        const region = regions.current.get(partKey(slug));
+                        if (region?.theme !== undefined) replaceRegion(region.key, region.theme);
+                      }}
+                      onClose={props.narrow ? props.onCloseInspector : undefined}
+                      partsLocked={props.partsLocked}
+                      mode={props.mode}
+                      onMode={props.onMode}
+                    />
+                  )
+                }
+              >
+                <div className={styles.canvasArea} data-device={props.device}>
+                  <div
+                    ref={frameRef}
+                    className={styles.canvasFrame}
+                    style={width ? { maxWidth: `${width}px` } : undefined}
                   >
-                    <BlockCanvas height="100%" styles={settings.styles as never}>
-                      <BlockList className="wp-site-blocks" />
-                    </BlockCanvas>
-                  </BlockContextProvider>
-                  <CanvasDragAssist frameRef={frameRef} />
-                  <SectionToolbar
-                    frameRef={frameRef}
-                    onAddSection={props.onAddSection}
-                    onAskAi={props.onAskAi}
-                  />
+                    <BlockContextProvider
+                      value={
+                        typeof doc.page?.id === 'number'
+                          ? { postId: doc.page.id, postType: 'page' }
+                          : {}
+                      }
+                    >
+                      <BlockCanvas height="100%" styles={settings.styles as never}>
+                        <BlockList className="wp-site-blocks" />
+                      </BlockCanvas>
+                    </BlockContextProvider>
+                    <CanvasDragAssist frameRef={frameRef} />
+                    <SectionToolbar
+                      frameRef={frameRef}
+                      onAddSection={props.onAddSection}
+                      onAskAi={props.onAskAi}
+                    />
+                  </div>
                 </div>
-              </div>
-            </StudioFrame>
-          </StudioRegionsProvider>
-        </CanvasEventsProvider>
-      </div>
+              </StudioFrame>
+            </StudioRegionsProvider>
+          </CanvasEventsProvider>
+        </div>
+      </StudioResponsive>
       <div className={lightScope}>
         <Popover.Slot />
       </div>

@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { INSPECTOR_TABS } from './layout-model';
 import {
   blockVisibility,
   deviceFrames,
   deviceState,
+  deviceTabs,
   deviceValues,
   displayValue,
   hiddenOn,
@@ -206,11 +208,30 @@ describe('block visibility', () => {
     expect(both?.blockVisibility).toEqual({ viewport: { tablet: false, mobile: false } });
     expect(hiddenOn(blockVisibility(both))).toEqual(['tablet', 'mobile']);
     expect(withBlockVisibility(hidden, 'mobile', true)).toEqual({ name: 'Hero' });
-    expect(withBlockVisibility({ blockVisibility: { viewport: { mobile: false } } }, 'mobile', true))
-      .toBeUndefined();
+    expect(
+      withBlockVisibility({ blockVisibility: { viewport: { mobile: false } } }, 'mobile', true),
+    ).toBeUndefined();
     // Hidden everywhere, then shown on desktop.
     expect(withBlockVisibility({ blockVisibility: false }, 'desktop', true)).toEqual({
       blockVisibility: { viewport: { tablet: false, mobile: false } },
     });
+  });
+});
+
+describe('inspector tabs per device', () => {
+  const groups = (device: 'desktop' | 'mobile') =>
+    Object.fromEntries(
+      deviceTabs(INSPECTOR_TABS, device).map((t) => [t.id, t.groups.map((g) => g.group)]),
+    );
+
+  it('keep every group on desktop', () => {
+    expect(deviceTabs(INSPECTOR_TABS, 'desktop')).toEqual(INSPECTOR_TABS);
+  });
+
+  it('keep the groups that edit a style state on tablet and mobile', () => {
+    const mobile = groups('mobile');
+    expect(mobile.content).toEqual(groups('desktop').content);
+    expect(mobile.style).toEqual(['typography', 'color', 'background', 'elements', 'border']);
+    expect(mobile.layout).toEqual(['dimensions']);
   });
 });

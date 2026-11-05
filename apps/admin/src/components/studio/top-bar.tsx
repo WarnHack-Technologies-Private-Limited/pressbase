@@ -21,6 +21,7 @@ import { Button } from '../ui/button';
 import { paletteShortcutLabel } from './command-palette';
 import { DEVICES, type Device } from './layout-model';
 import { type PendingChange, PublishButton } from './publish-panel';
+import { frameRange, useDeviceFrames } from './responsive';
 import {
   type CanvasTarget,
   isNewPage,
@@ -87,6 +88,7 @@ export function TopBar(props: TopBarProps) {
   const { __, sprintf } = useI18n();
   const pickerId = useId();
   const tree = pageTree(props.pages);
+  const frames = useDeviceFrames();
   return (
     <header className={styles.topBar}>
       <a
@@ -140,9 +142,11 @@ export function TopBar(props: TopBarProps) {
 
       <fieldset className={styles.devices} disabled={props.disabled}>
         <legend className="visually-hidden">{__('Preview size', 'pressbase-admin')}</legend>
-        {DEVICES.map((device) => {
+        {/* The theme's breakpoints set each size (#49); a size it has none for isn't offered. */}
+        {DEVICES.filter((device) => frames[device.id].available).map((device) => {
           const Icon = DEVICE_ICONS[device.id];
           const label = __(device.label, 'pressbase-admin');
+          const range = frameRange(frames[device.id], __, sprintf);
           return (
             <button
               key={device.id}
@@ -150,7 +154,7 @@ export function TopBar(props: TopBarProps) {
               className={styles.deviceButton}
               aria-pressed={props.device === device.id}
               aria-label={label}
-              title={label}
+              title={range ? `${label}: ${range}` : label}
               onClick={() => props.onDevice(device.id)}
             >
               <Icon size={18} aria-hidden="true" />
