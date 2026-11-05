@@ -1,6 +1,6 @@
 # The site builder
 
-"Build my site from a prompt": a person describes their site, and Pressbase writes a brief, a design, a sitemap and every page into a [changeset](changesets.md) they review in Studio and publish themselves. It follows the [plan](../plans/visual-site-builder.md#building-with-ai) and [ADR 0024](../adr/0024-ai-site-building.md#pipeline-accepted). The [guided flow](#the-guided-flow) in the admin (#60) is built on the API below.
+"Build my site from a prompt": a person describes their site, and Pressbase writes a brief, a design, a sitemap and every page into a [changeset](changesets.md) they review in Studio and publish themselves. It follows the [plan](../plans/visual-site-builder.md#building-with-ai) and [ADR 0024](../adr/0024-ai-site-building.md#pipeline-accepted). The [guided flow](#the-guided-flow) in the admin (#60) is built on the API below. Once a site exists, Studio's [AI panel](ai-edits.md) takes requests for changes in the person's own words (#62), using the same abilities, and still offers *Build a new site*.
 
 Code: `apps/core/src/site-builder/` (`pipeline.ts` the stages, `steps.ts` the guided flow's steps before a run, `honest.ts` the honest-content rules, `runs.ts` the run record, `index.ts` the job), `apps/core/src/routes/site-builder.ts`. Tests: `apps/core/src/site-builder.test.ts`, `site-builder-steps.test.ts`; `e2e/tests/prompt-to-site.spec.ts`.
 

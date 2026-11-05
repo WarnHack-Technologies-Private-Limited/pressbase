@@ -76,8 +76,6 @@ describe('the mode map', () => {
     expect(CONTROLS.filter((c) => c.issue).map((c) => [c.id, c.issue])).toEqual([
       ['visibility', 49],
       ['per-device', 49],
-      ['states', 46],
-      ['additional-css', 46],
     ]);
   });
 

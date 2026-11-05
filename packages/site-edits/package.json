@@ -1,0 +1,23 @@
+{
+  "name": "@pressbase/site-edits",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Studio's edit operations (insertSection, setGlobalStyles, createPage…): their types, the JSON Schema a model answers with, and the checks core and the admin share.",
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@pressbase/design": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  }
+}

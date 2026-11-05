@@ -2,6 +2,12 @@ import type { ParsedBlock } from '@pressbase/blocks';
 import { schema } from '@pressbase/db';
 import { DESIGN_CHOICE_SCHEMA, type DesignChoice } from '@pressbase/design';
 import {
+  PATTERN_INPUT,
+  SECTION_OPERATION_SCHEMA,
+  type SectionOperation,
+  SLOTS_INPUT,
+} from '@pressbase/site-edits';
+import {
   extractSlots,
   fillSlots,
   type SlotValues,
@@ -90,7 +96,7 @@ interface PageView {
   fromChangeset: boolean;
 }
 
-async function pageBySlug(kernel: Kernel, slug: string): Promise<Post | undefined> {
+export async function pageBySlug(kernel: Kernel, slug: string): Promise<Post | undefined> {
   const [post] = await kernel.db
     .select()
     .from(schema.posts)
@@ -114,7 +120,7 @@ async function existingPage(kernel: Kernel, id: number): Promise<Post | undefine
 const invalidPage = () => new AbilityError('rest_post_invalid_id', 'Invalid page ID.', 404);
 
 /** A page as the changeset leaves it: its entry over the saved page, or a page the changeset creates. */
-async function pageView(
+export async function pageView(
   kernel: Kernel,
   data: ChangesetData,
   ref: { id?: number; slug?: string },
@@ -141,7 +147,7 @@ async function pageView(
 }
 
 /** edit_post on an existing page; edit_pages for a page a changeset creates (or a missing one, which 404s later). */
-async function canEditPage(
+export async function canEditPage(
   kernel: Kernel,
   context: AbilityContext,
   ref: { id?: number; slug?: string } | null,
@@ -165,18 +171,6 @@ const PAGE_REF_PROPERTIES = {
   },
 } as const;
 
-const SLOTS_INPUT = {
-  type: 'object',
-  description:
-    'Slot values by slot ID, in plain text (see the pattern’s slots in core/list-patterns). Slots left out keep the pattern’s text. Use a placeholder in square brackets, such as [Add your opening hours], for any fact you weren’t given.',
-} as const;
-
-const PATTERN_INPUT = {
-  type: 'string',
-  maxLength: 200,
-  description: 'A pattern’s name, from core/list-patterns.',
-} as const;
-
 const SECTION_INPUT = {
   type: 'object',
   properties: { pattern: PATTERN_INPUT, slots: SLOTS_INPUT },
@@ -184,68 +178,21 @@ const SECTION_INPUT = {
   additionalProperties: false,
 } as const;
 
-const op = (type: string, properties: Record<string, unknown>, required: string[]) => ({
-  type: 'object',
-  properties: { type: { type: 'string', enum: [type] }, ...properties },
-  required: ['type', ...required],
-  additionalProperties: false,
-});
-const INDEX = { type: 'integer', minimum: 0, description: 'A section’s position, from 0.' };
-
-const OPERATION_SCHEMA = {
-  oneOf: [
-    op(
-      'insertSection',
-      {
-        pattern: PATTERN_INPUT,
-        slots: SLOTS_INPUT,
-        index: { ...INDEX, description: 'Where to insert it; at the end by default.' },
-      },
-      ['pattern'],
-    ),
-    op(
-      'replaceSection',
-      {
-        index: INDEX,
-        pattern: PATTERN_INPUT,
-        slots: SLOTS_INPUT,
-        keep_content: {
-          type: 'boolean',
-          description:
-            'Move the section’s text, links and images into the new pattern (Swap layout). True by default.',
-        },
-      },
-      ['index', 'pattern'],
-    ),
-    op('moveSection', { index: INDEX, to: INDEX }, ['index', 'to']),
-    op('removeSection', { index: INDEX }, ['index']),
-    op('updateSlots', { index: INDEX, slots: SLOTS_INPUT }, ['index', 'slots']),
-  ],
-};
-
-type Operation =
-  | { type: 'insertSection'; pattern: string; slots?: SlotValues; index?: number }
-  | {
-      type: 'replaceSection';
-      index: number;
-      pattern: string;
-      slots?: SlotValues;
-      keep_content?: boolean;
-    }
-  | { type: 'moveSection'; index: number; to: number }
-  | { type: 'removeSection'; index: number }
-  | { type: 'updateSlots'; index: number; slots: SlotValues };
+/** `core/update-page-sections` names its page once; its operations' `page` isn't used. */
+type Operation = SectionOperation;
 
 /** Applies operations in order; each index is read after the operations before it. */
-function applyOperations(
+export function applyOperations(
   sections: ParsedBlock[],
   operations: Operation[],
   patterns: Patterns,
+  /** Where the first operation sits in the input, for error paths. */
+  first = 0,
 ): { sections: ParsedBlock[]; unused: string[] } {
   const out = [...sections];
   const unused: string[] = [];
   operations.forEach((operation, i) => {
-    const path = `input[operations][${i}]`;
+    const path = `input[operations][${first + i}]`;
     const check = (index: number, max: number, name = 'index') => {
       if (index > max) {
         throw new AbilityError(
@@ -274,7 +221,7 @@ function applyOperations(
           });
           const transfer = transferSlots(sectionSlots(current, patterns), next);
           carried = transfer.values;
-          unused.push(...transfer.unused.map((u) => `${i}.${u.path}`));
+          unused.push(...transfer.unused.map((u) => `${first + i}.${u.path}`));
         }
         out.splice(
           operation.index,
@@ -667,7 +614,7 @@ export function registerSiteAbilities(kernel: Kernel): void {
       type: 'object',
       properties: {
         ...PAGE_REF_PROPERTIES,
-        operations: { type: 'array', minItems: 1, maxItems: 30, items: OPERATION_SCHEMA },
+        operations: { type: 'array', minItems: 1, maxItems: 30, items: SECTION_OPERATION_SCHEMA },
         changeset_uuid: CHANGESET_UUID_INPUT,
       },
       required: ['operations'],
@@ -873,7 +820,7 @@ export function registerSiteAbilities(kernel: Kernel): void {
 
 /* --------------------------------------------------------- template parts */
 
-async function templatePartView(kernel: Kernel, data: ChangesetData, slug: string) {
+export async function templatePartView(kernel: Kernel, data: ChangesetData, slug: string) {
   const stylesheet = await kernel.themes.activeStylesheet();
   const template = await getBlockTemplate(
     kernel,

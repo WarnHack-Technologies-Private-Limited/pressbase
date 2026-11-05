@@ -2,7 +2,7 @@
 
 Studio is Pressbase's site editor: a full-screen screen at `/admin/studio` where a site owner edits their pages in the real theme, header and footer included. It does what WordPress's *Appearance → Editor* does, with the direct feel the [plan](../plans/visual-site-builder.md#the-screen) describes. The decision to build our own editor around `@wordpress/block-editor`, rather than use `@wordpress/edit-site`, is in [ADR 0021](../adr/0021-site-editor-and-templates-storage.md#studio-shell).
 
-This page covers the shell (#28), saving through the user's draft (#31), the header and footer in place (#30), the Pages panel (#29), the Elements panel (#35), the Sections panel and section toolbar (#44), Swap layout (#45), Simple and Advanced modes (#32), the command palette (#33), the History panel (#34), and where the rest of v0.8 plugs in.
+This page covers the shell (#28), saving through the user's draft (#31), the header and footer in place (#30), the Pages panel (#29), the Elements panel (#35), the Sections panel and section toolbar (#44), Swap layout (#45), Simple and Advanced modes (#32), the command palette (#33), the History panel (#34), the AI panel and AI edits (#62, #57, in [AI edits](ai-edits.md)), and where the rest of v0.8 plugs in.
 
 ![Studio, editing the home page](../assets/screenshots/studio-light.png)
 
@@ -21,7 +21,7 @@ This page covers the shell (#28), saving through the user's draft (#31), the hea
 
 ```
 ┌ TopBar ───────────────────────────────────────────────────────────────────────┐
-│ ← Dashboard  [Home ▾]  [▭ ▯ ▯]  ↶ ↷  ⌕ Find ⌘K  ✦ Ask AI (soon)  ✓ Draft saved  Preview  [Publish 2] │
+│ ← Dashboard  [Home ▾]  [▭ ▯ ▯]  ↶ ↷  ⌕ Find ⌘K  ✦ Ask AI  ✓ Draft saved  Preview  [Publish 2] │
 ├ Rail ┬ Panel ─────────┬ Canvas (iframe) ─────────────────────┬ Inspector ──────┤
 │Pages │ Pages          │  ┌ Header · all pages ────────────┐   │ Heading 3       │
 │Elem. │ Home     Home  │  └────────────────────────────────┘   │ Content Style   │
@@ -36,7 +36,7 @@ This page covers the shell (#28), saving through the user's draft (#31), the hea
 
 | Part | Component | What it does now | Built out by |
 | --- | --- | --- | --- |
-| Top bar | `top-bar.tsx`, `publish-panel.tsx` | Back to the dashboard; the page picker (a native `<select>` of the page tree, plus *Home (latest posts)* when there's no static front page); Desktop / Tablet / Mobile (canvas widths 100%, 768px, 390px); undo and redo; *Find* (the [command palette](#command-palette), #33); *Ask AI* (marked *Coming soon*, explains itself on click); whether the draft is saved; Preview; *Publish N* with the list of changes and *Discard all* | #63 (Ask AI), #49 (per-device styles) |
+| Top bar | `top-bar.tsx`, `publish-panel.tsx` | Back to the dashboard; the page picker (a native `<select>` of the page tree, plus *Home (latest posts)* when there's no static front page); Desktop / Tablet / Mobile (canvas widths 100%, 768px, 390px); undo and redo; *Find* (the [command palette](#command-palette), #33); *Ask AI* (opens the [AI panel](ai-edits.md#the-ai-panel), #62); whether the draft is saved; Preview; *Publish N* with the list of changes and *Discard all* | #63 (Ask AI), #49 (per-device styles) |
 | Left rail | `rail.tsx` | Eight panels; the open one sits beside the canvas (over it on narrow screens). Escape closes it and returns focus to its button | see below |
 | Canvas | `studio.tsx`, `regions.tsx` | The page in its template, in the active theme; the header and footer editable in place | #35–#37 |
 | Breadcrumb | `breadcrumb.tsx` | Site › Page › Section › Block for the selection; each step selects that level | — |
@@ -52,9 +52,9 @@ Listed in `RAIL_PANELS` (`layout-model.ts`). A built panel (`interim: 'built'`) 
 | Elements | Built (#35): blocks as large tiles, grouped, searchable, click or drag to add. See [The Elements panel](#the-elements-panel) | — |
 | Sections | Built (#44): the section library, searchable, click or drag to add. See [The Sections panel](#the-sections-panel) | — |
 | Layers | WordPress's list view | #50: rename, hide per device, drag to nest |
-| Styles | A note and a link to Appearance → Styles | #46, #47 |
+| Styles | Built (#46, #47): the site's design system, each block's styles, Additional CSS and the style book. See [The Styles panel](#the-styles-panel) | — |
 | Media | A note | #58 |
-| AI | A note, and *Build my site* ([the guided flow](site-builder.md#the-guided-flow), #60), or where to turn AI on | #62 |
+| AI | Built (#62): ask for changes in your own words; each set goes on the page highlighted, with Keep and Undo; *Build a new site* ([the guided flow](site-builder.md#the-guided-flow), #60). With AI off, where to turn it on. See [AI edits](ai-edits.md) | — |
 | History | Built (#34): this session's steps, then the published versions. See [History](#history) | — |
 
 ### Inspector tabs
@@ -219,7 +219,7 @@ Someone who can edit pages but not the site's design (`edit_pages` without `edit
 | ↑ / ↓ | Move the section up or down (`moveBlocksUp/Down`); disabled at the top or bottom |
 | ⧉ | Duplicate it |
 | ‹ 2/5 › | [Swap layout](#swap-layout): the previous or next layout of its kind (shown when it has others) |
-| ✦ | Ask AI: disabled until #63, and says so |
+| ✦ | Ask AI about the section: disabled until #63, and says so (the AI panel takes requests about any section now) |
 | ⋯ | Select section, Add a section above / below, Remove section |
 
 *＋ Add section* buttons sit above and below the section and open the Sections panel at that place. They never cover the page (`addButtonPlace()` in `sections-model.ts`): the pill sits in the gap beside the section (at most 20px from its edge) when it fits there; a narrower gap gets a round ＋; where sections touch, the round ＋ sits at the left end of the edge, outside the outline. Both are in the tab order, after the toolbar, with the full name (*Add a section below Breads*). Everything here is also in WordPress's block toolbar and Layers.
@@ -250,6 +250,38 @@ Swap layout (#45) changes a section to another pattern of its kind, keeping its 
 - **Drag:** a tile hands the canvas's drop zones the `wp-blocks` data WordPress's inserter does, so WordPress draws the drop line between blocks and inserts on drop (one undo step). `CanvasDragAssist` (`canvas-drag.tsx`) adds the rest while something is dragged over the canvas: the group, column or empty section the drop goes into gets a dashed outline and a tint (`data-studio-drop-target`, styled in `canvas.css`; the page's content itself only gets the line), and the canvas scrolls when the pointer is within 60px of its top or bottom edge, faster nearer the edge (`autoScrollSpeed()`).
 - **Keyboard:** every drag has a keyboard way. Select the place on the canvas (arrow keys, or Tab into it), then press Enter on a tile, or run *Add block: …* from the [command palette](#command-palette). To put a block in an empty column, select the column first.
 
+## The Styles panel
+
+![The Styles panel's Colours screen: the accent changed to red, and the header's button on the canvas red with it](../assets/screenshots/studio-styles.png)
+
+`styles-panel.tsx`, with the data and pure functions in `styles-model.ts` and the draft and canvas wiring in `use-site-styles.ts` (#46). It edits the user's global styles (the custom origin of theme.json) for people with `edit_theme_options`; others see why it's locked.
+
+- **Screens:** a list, then one screen at a time with a back button; a new screen starts on its heading, and going back returns focus to the button that opened it.
+  - *Looks*, *Colours*, *Fonts*: Appearance → Styles' own parts (`StylesTab`, `ColorsTab`, `TypographyTab` from `appearance/styles-editor.tsx`), so the two screens can't drift apart.
+  - *Spacing and corners*: room between blocks (`styles.spacing.blockGap`) and at the page edges (`styles.spacing.padding` left and right) from the theme's spacing presets; **corners** for the whole site (`CORNER_SCALES`: Square, Subtle, As designed, Round), which scale the theme's `border.radiusSizes` together so every card, image and button that uses them follows (pills stay pills); then the content and wide widths (`LayoutTab`).
+  - *Buttons*: the button element's colours (`styles.elements.button`), corners and size (`BUTTON_SIZES`, as padding). A new background keeps a hover colour that follows it (`setButtonColor()`), as Appearance → Styles does.
+  - *Blocks*: every block type with style supports, by group, searchable, child blocks included (Button lives in Buttons), with *Changed* on the ones the site styles. A block's screen offers what its `supports` allow (`blockStyleSupports()`, as `wp-includes/block-supports/*.php` reads them): text, background and link colours, font and size, space inside, corners. It shows the theme's value until one is chosen, falling back to the element the block is styled through (`BLOCK_ELEMENTS`: a Button's colours are the button element's). *Use the theme's design for this block* removes `styles.blocks.{name}`.
+  - *Additional CSS* (see below).
+- **Simple and Advanced:** the design system is in both. Advanced adds borders (width, style, colour), shadows (the theme's shadow presets), hover and focus colours for buttons, any colour beside the palette, and Additional CSS; in Simple, a screen that has more says so, with *Switch to Advanced*. These are `borders`, `shadows`, `states`, `custom-values` and `additional-css` in `CONTROLS` (`mode-model.ts`).
+- **Additional CSS:** for the whole site (`styles.css`) and per block (`styles.blocks.{name}.css`, where `&` is the block). Only in Advanced, and only for people with `edit_css` (WordPress maps it to `unfiltered_html`; core drops the CSS for anyone else, through REST and through the draft). Core checks it with `validate_custom_css()` as it's typed (`/pressbase/v1/global-styles/editor-settings`): CSS that could close the style element is refused with core's message and *Remove it to save your styles*, and nothing more reaches the draft until it's fixed.
+- **Live, into the draft:** an edit shows in the panel at once. After 150ms (`STYLES_DELAY`) core turns the styles into the block editor's settings (`POST /pressbase/v1/global-styles/editor-settings`, [themes.md](themes.md#the-live-preview)), the canvas and style book redraw with them (`withStyles(library)` lays them over the settings the canvas opened with, web fonts of a typography variation included), and the draft gets `wp_global_styles:{stylesheet}: { settings, styles }` through `useDraft().want()`. Styles back to what visitors see remove the entry. Preset colours are CSS variables, so changing the accent changes every block, button and link that uses it.
+- **Styles from elsewhere:** an entry the panel didn't write (History restoring a version, the site builder's draft from prompt-to-site, a resumed draft, an AI edit) is taken up the same way (`isForeignEntry()`), so the canvas always shows the draft's styles. After Publish or Discard, the panel reads the saved styles again.
+
+### The style book
+
+![The style book over the canvas: headings, text and lists in the site's styles, by category](../assets/screenshots/studio-style-book.png)
+
+*Open the style book* on the panel's first screen draws it over the canvas (`style-book.tsx`, #47); the page behind is `inert`. It's WordPress's style book (`StyleBookPreview` in `@wordpress/editor`) in plain words:
+
+- **What's in it** (`styleBookSections()`): your palette, then every block type WordPress's style book shows (`getExamples()`: one with an example and offered in the inserter; Headings at four levels), by category: *Text*, *Buttons and forms*, *Images and media*, *Layout*, *Site*, *Widgets*. Each starts with the blocks the Pressbase patterns use most (headings, paragraphs, lists, quotes, details, tables, buttons, search, images, separators, columns, groups); the rest follow by name. Embeds and RSS are left out, since their examples load other sites; Button is shown through Buttons.
+- **Drawn in the draft's styles:** each example is a `BlockPreview` inside Studio's editor, without its own `style` attribute (as WordPress removes it, so global styles show), with remote pictures swapped for a neutral one (`exampleAttributes()`). An example is drawn once it scrolls near view.
+- **Choosing an example** opens that block's screen in the panel (Buttons opens Button), and the book stays open so each change shows on it at once. The open one is marked (`aria-pressed`).
+- **Keyboard:** the book's heading takes focus when it opens; Tab moves through the category filters and the examples (each a button named *Quote, change how it looks everywhere*); Enter or Space opens one; Escape or *Back to the page* closes the book, and focus returns to *Open the style book* (or to the heading of the screen open in the panel).
+
+| Light | Dark |
+| --- | --- |
+| ![Blocks → Button in Advanced: colours, type, corners, border, shadow and Additional CSS](../assets/screenshots/studio-block-styles.png) | ![The style book in dark mode](../assets/screenshots/studio-style-book-dark.png) |
+
 ## Simple and Advanced
 
 ![Advanced mode: the Style tab adds background, elements and borders, and the font size takes any value](../assets/screenshots/studio-advanced.png)
@@ -262,7 +294,7 @@ Principle 3 of the [plan](../plans/visual-site-builder.md#principles): beginners
 | Part of the map | Simple | Advanced adds |
 | --- | --- | --- |
 | `GROUP_MODES`: the inspector groups (`modeTabs()`, `tabGroups()`) | `default`, `content`, `list`, `styles` (style variations), `typography`, `color`, `layout`, `dimensions` | `bindings`, `advanced` (anchor, CSS classes), `background`, `elements`, `border`, `effects` (shadows), `filter` (duotone), `position` |
-| `CONTROLS`: kinds of control, and features still to come (`showsControl()`) | presets, alignment, visibility (#49), [Swap layout](#swap-layout) (#45) | any colour or size, units, line height and letter spacing, values per device (#49), borders, shadows, hover and focus styles (#46), Additional CSS (#46) |
+| `CONTROLS`: kinds of control, and features still to come (`showsControl()`) | presets, alignment, visibility (#49), [Swap layout](#swap-layout) (#45) | any colour or size, units, line height and letter spacing, values per device (#49), borders, shadows, hover and focus styles, Additional CSS ([The Styles panel](#the-styles-panel)) |
 | `modeEditorSettings()`: the editor settings | the theme's presets only: `color.custom`, `color.customGradient`, `color.customDuotone`, `typography.customFontSize`, `spacing.customSpacingSize`, `typography.lineHeight`, `letterSpacing`, `textDecoration` and `writingMode` off; spacing units `px` only. Set in `__experimentalFeatures` (and any block's own settings there) and in the top-level switches core moves them to (`disableCustomColors`…), which the block editor reads when the features don't say | the theme's settings, unchanged |
 
 - **Nothing hidden without a word:** when a tab has nothing in Simple but has settings in Advanced (a heading's anchor, say), it says *More settings for this block are in Advanced*, with a button to switch.
@@ -283,10 +315,11 @@ Principle 3 of the [plan](../plans/visual-site-builder.md#principles): beginners
 | Actions (#45) | *Swap layout: next* and *previous* for the selected section (disabled, saying why, when no section with other layouts is selected); *Swap layout to: {layout}* once you type |
 | Add a section | *Add section: {name}* for every section in the library, listed once you type; added after the selected section, or last, as one undo step |
 | Add a block (#35) | *Add block: {name}* for every block in the Elements panel, listed once you type; added where a click on its tile puts it |
+| AI (#62) | Ask AI for a change (opens the AI panel, in its box), Keep and Undo the changes from AI (when a set waits), Start a new conversation with AI |
 | Panels | *Open the {name} panel* for each rail panel |
 | View and settings | Switch to Simple or Advanced settings; switch to Desktop, Tablet or Mobile view |
 
-**The registry.** `commands-model.ts` holds `CommandRegistry` and Studio's instance, `studioCommands`. A command is `{ id, label, group, keywords?, hint?, icon?, disabled?, searchOnly?, run }`; `register()` takes one or a list and returns a function that removes them (registering an id again replaces it). In React, `useStudioCommands(build, deps)` (`command-palette.tsx`) registers while the component is mounted. Studio registers its own in `studio.tsx`; the ones that need the canvas (undo, redo, sections) come from `EditorCommands` (`editor-commands.tsx`) inside the block editor. Groups other than the six above are listed last, under *More*. AI commands (#62) and, later, plugins add theirs the same way.
+**The registry.** `commands-model.ts` holds `CommandRegistry` and Studio's instance, `studioCommands`. A command is `{ id, label, group, keywords?, hint?, icon?, disabled?, searchOnly?, run }`; `register()` takes one or a list and returns a function that removes them (registering an id again replaces it). In React, `useStudioCommands(build, deps)` (`command-palette.tsx`) registers while the component is mounted. Studio registers its own in `studio.tsx`; the ones that need the canvas (undo, redo, sections) come from `EditorCommands` (`editor-commands.tsx`) inside the block editor. Groups other than the seven above are listed last, under *More*. The AI commands (#62, `ai-panel.tsx`) are registered the same way, and later plugins' too.
 
 **Search** (`filterCommands()`): every word must appear in the label, keywords or group name, ignoring case and accents. Within a group, a label that starts with the search comes first, then one with it at the start of a word, then one with every word starting a word; the group with the best match comes first. With no search, search-only commands (sections) are left out and the groups keep their order. Each group lists at most 20.
 
@@ -309,7 +342,7 @@ The *History* rail panel (Elementor's History panel) has two parts.
 **Published versions**, below the steps:
 
 - **The page** (a saved one; a page the draft adds has none yet): `GET /wp/v2/pages/{id}/revisions`, newest first, with the date and who published it. The newest, when it matches the live page, says *Live now*. *Preview* opens the version in a large dialog (`BlockPreview`, in the site's styles); *Restore* puts its content on the canvas as one named step, so it's in the draft (`page:{id}: { content }`) and goes live on Publish. The title, place and template aren't restored.
-- **The site's styles** (people with `edit_theme_options`): the active theme's user global styles (its `wp:user-global-styles` link) and `GET /wp/v2/global-styles/{id}/revisions`. *Preview* shows the home page with that version in a large dialog (`StylePreview`, core's `POST /pressbase/v1/global-styles/preview`); *Restore* writes `wp_global_styles:{stylesheet}: { styles, settings }` into the draft, listed as *Site styles* in Publish. Preview shows it; the canvas will once Studio's Styles panel reads the draft (#46).
+- **The site's styles** (people with `edit_theme_options`): the active theme's user global styles (its `wp:user-global-styles` link) and `GET /wp/v2/global-styles/{id}/revisions`. *Preview* shows the home page with that version in a large dialog (`StylePreview`, core's `POST /pressbase/v1/global-styles/preview`); *Restore* writes `wp_global_styles:{stylesheet}: { styles, settings }` into the draft, listed as *Site styles* in Publish. Preview and the canvas show it ([Styles from elsewhere](#the-styles-panel)).
 
 Nothing here writes to the live site: restoring is a draft change like any other, undone from the Publish list or with Discard all.
 
@@ -340,14 +373,13 @@ Nothing here writes to the live site: restoring is a draft change like any other
 
 | Issue | Where |
 | --- | --- |
-| #46, #47 Styles | a `wp_global_styles:{stylesheet}` entry through `useDraft().want()`; `describeChange()` already names it |
-| #46 Additional CSS and states; #49 per-device values and visibility | their entries in `CONTROLS` (`mode-model.ts`), read with `showsControl()` |
-| #62 AI commands; plugins | `studioCommands.register()` or `useStudioCommands()` (`commands-model.ts`, `command-palette.tsx`) |
-| #57 AI operations, Keep and Undo | `editor.labelNext()` names the step an operation makes in History |
+| #49 per-device values and visibility | their entries in `CONTROLS` (`mode-model.ts`), read with `showsControl()` |
+| Plugins' commands | `studioCommands.register()` or `useStudioCommands()` (`commands-model.ts`, `command-palette.tsx`); the AI commands (#62) are registered this way, in `ai-panel.tsx` |
+| #63 Ask AI on a selection | `useStudioAi().edits.apply()` applies any set of [operations](ai-edits.md#the-operations) with Keep and Undo; `editor.canvas` (`AiCanvas`) replaces regions as one named step |
 | #36 Context menu, #37 handles | the canvas in `StudioEditor` |
 | #50 Layers | its panel in `rail.tsx` |
 | #49 Responsive editing | `DEVICES` and the `device` state |
-| #62, #63 AI | the `ai` panel; `onAskAi` in the top bar |
+| #63 AI on a selection | `onAskAi` in the section toolbar (the top bar's opens the AI panel) |
 
 ## Tests
 
@@ -371,6 +403,10 @@ Nothing here writes to the live site: restoring is a draft change like any other
 - `apps/core/src/block-editor-settings.test.ts`: `/wp-block-editor/v1/settings`.
 - `e2e/tests/studio.spec.ts`: opening a page with its header and footer, inline editing, undo and redo, selecting the header, Publish through a changeset, and the keyboard path.
 - `e2e/tests/studio-swap-elements.spec.ts`: a hero swapped through three layouts and back with the same text, one undo step per swap, named in History, from the toolbar, the inspector and the palette; an Image dragged into an empty column (lit up while over it) and undone, a block added after the selection with the keyboard, and from the palette.
+- `components/studio/styles-model.test.ts` (#46, #47): the draft entry (only settings and styles, none when the styles are live, entries from elsewhere taken up), block supports read as WordPress reads them, resetting a block, presets by origin, corner scales (pills kept), button sizes and hover colours, Additional CSS in Advanced only and for `edit_css`, the style book's sections (every block with an example, common ones first, embeds, RSS and Button left out) and examples without their own styles or remote pictures.
+- `apps/core/src/studio-styles.test.ts` (#46): editor settings for unsaved styles (the new palette, nothing stored, starting from the saved styles, `edit_theme_options` only); Additional CSS for the site and each block kept with `edit_css` and dropped without it, through REST and a changeset; CSS that could close the style element refused for the site, a block and a block's style variation.
+- `e2e/tests/studio-styles.spec.ts`: the accent changed in Colours turns the header's button on the canvas and goes into the draft, then back to the theme's; a draft's styles made elsewhere (as the site builder makes them) on the canvas and in the panel; Advanced: the site's Additional CSS on the canvas, `</style>` refused with the draft keeping the last good CSS, a Quote's border; the style book's categories, a filter, an example opened with Enter and the book closed with Escape.
+- `components/studio/ai-edits-model.test.ts`, `ai-panel-model.test.ts` and `e2e/tests/studio-ai.spec.ts` (#57, #62): see [AI edits](ai-edits.md#tests).
 - `e2e/tests/studio-saving.spec.ts`: an edit saved to the draft, reopened, previewed and published; undoing one change from the list and Discard all; the footer edited on one page and shown on every page, then Reset to theme.
 
 ## Not yet
@@ -383,7 +419,8 @@ Nothing here writes to the live site: restoring is a draft change like any other
 - *Create new menu* in the Navigation block saves that menu straight away, as in WordPress; only pointing the header at it waits for Publish.
 - Telling apart "someone else published" from "you saved it in another screen": both show the note on reopening.
 - History starts again when another page opens (each page has its own canvas and undo history), and doesn't list edits outside the block tree (site title, menus).
-- A restored version of the site's styles shows in Preview, not yet on the canvas (#46).
+- The Styles panel has no per-device values (#49: `styles.blocks.{name}` will take `@tablet` and `@mobile` beside the desktop values, [ADR 0023](../adr/0023-responsive-styles-and-breakpoints.md)), no gradients or duotone, and no element styles besides buttons and links (captions, cites, headings by level). Fonts are the theme's and its variations' (no font library yet).
+- The style book draws theme blocks (post title, comments…) without a post, as WordPress's does, so some show placeholders.
 - Simple narrows the inspector, not the block toolbar.
 - Plugins can't reach `studioCommands` yet: it needs a place in the plugin SDK's admin API.
 - Swap layout swaps only sections of one block, and between patterns of one block, as WordPress's *Change design* does. Its memory of what a smaller layout left out lasts while the page is open.

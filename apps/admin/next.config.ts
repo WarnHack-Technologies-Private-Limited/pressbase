@@ -49,7 +49,12 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // Workspace packages ship TypeScript sources (Studio's Swap layout uses slots, #45; the
   // site builder's design previews use the design generator, #60).
-  transpilePackages: ['@pressbase/blocks', '@pressbase/design', '@pressbase/slots'],
+  transpilePackages: [
+    '@pressbase/blocks',
+    '@pressbase/design',
+    '@pressbase/site-edits',
+    '@pressbase/slots',
+  ],
   // The Docker image runs Next.js's standalone server (see the Dockerfile).
   // Tracing starts at the repository root so workspace packages are included.
   ...(process.env.PRESSBASE_STANDALONE

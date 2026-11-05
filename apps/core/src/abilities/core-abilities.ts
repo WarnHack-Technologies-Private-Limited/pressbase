@@ -1,6 +1,7 @@
 import type { Kernel } from '../kernel';
 import { registerCheckPageAbility } from '../quality/ability';
 import { registerSiteAbilities } from '../site-building/abilities';
+import { registerSiteEditsAbility } from '../site-building/edits';
 import { PRESSBASE_VERSION } from '../version';
 
 /**
@@ -105,4 +106,5 @@ export function registerCoreAbilities(kernel: Kernel): void {
 
   registerCheckPageAbility(kernel);
   registerSiteAbilities(kernel);
+  registerSiteEditsAbility(kernel);
 }

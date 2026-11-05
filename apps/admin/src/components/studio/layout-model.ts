@@ -159,10 +159,7 @@ export const RAIL_PANELS: readonly RailPanel[] = [
     label: msgid('Styles'),
     summary: msgid('Colours, fonts and spacing for the whole site'),
     issue: 46,
-    interim: 'none',
-    coming: msgid(
-      'Site styles in Studio arrive with #46 and #47. Until then, use Appearance → Styles.',
-    ),
+    interim: 'built',
   },
   {
     id: 'media',
@@ -179,10 +176,7 @@ export const RAIL_PANELS: readonly RailPanel[] = [
     label: msgid('AI'),
     summary: msgid('Ask for changes in your own words'),
     issue: 62,
-    interim: 'none',
-    coming: msgid(
-      'Asking for changes in your own words arrives with #62, with keep or undo for each one.',
-    ),
+    interim: 'built',
   },
   {
     id: 'history',
