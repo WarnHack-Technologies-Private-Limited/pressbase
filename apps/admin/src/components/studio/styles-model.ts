@@ -366,7 +366,7 @@ export interface StyleBookCategory {
  * (@wordpress/editor) in plain words, each led by the blocks the Pressbase
  * patterns use most (headings, text, buttons, images, lists, separators,
  * quotes, questions and answers, columns and groups). Embeds are left out:
- * their examples load other sites.
+ * their examples load other sites (STYLE_BOOK_LEFT_OUT has the rest).
  */
 export const STYLE_BOOK_CATEGORIES: readonly StyleBookCategory[] = [
   {
@@ -411,6 +411,13 @@ export const STYLE_BOOK_CATEGORIES: readonly StyleBookCategory[] = [
   { slug: 'widgets', title: msgid('Widgets'), categories: ['widgets'], blocks: [] },
 ];
 
+/**
+ * Blocks the style book leaves out besides embeds: a Button is shown (and
+ * styled) through the Buttons example, and the RSS example would make the
+ * server fetch another site's feed.
+ */
+export const STYLE_BOOK_LEFT_OUT: readonly string[] = ['core/button', 'core/rss'];
+
 /** The block whose styles an example opens: the Buttons example styles each Button. */
 export function styleTarget(name: string): string {
   return name === 'core/buttons' ? 'core/button' : name;
@@ -437,7 +444,11 @@ export function styleBookSections(
   types: readonly StyleBookType[],
 ): { slug: string; title: string; blocks: string[] }[] {
   const shown = types.filter(
-    (t) => t.inserter && (t.example || t.name === 'core/heading') && t.category !== 'embed',
+    (t) =>
+      t.inserter &&
+      (t.example || t.name === 'core/heading') &&
+      t.category !== 'embed' &&
+      !STYLE_BOOK_LEFT_OUT.includes(t.name),
   );
   const names = new Set(shown.map((t) => t.name));
   const placed = new Set<string>();

@@ -210,6 +210,9 @@ describe('the style book', () => {
       type('core/missing', 'text', 'Missing', { example: false }),
       type('core/hidden', 'text', 'Hidden', { inserter: false }),
       type('core/calendar', 'widgets', 'Calendar'),
+      // Shown through Buttons; would fetch another site's feed.
+      type('core/button', 'design', 'Button'),
+      type('core/rss', 'widgets', 'RSS'),
     ]);
     expect(sections.map((s) => [s.slug, s.blocks])).toEqual([
       ['text', ['core/heading', 'core/paragraph', 'core/code', 'core/verse']],

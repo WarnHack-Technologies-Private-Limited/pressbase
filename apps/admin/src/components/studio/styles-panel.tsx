@@ -231,9 +231,11 @@ export function StylesPanel({
           selected={screen.id === 'block' ? screen.name : screen.id}
           onClose={() => {
             setBookOpen(false);
-            requestAnimationFrame(() =>
-              document.querySelector<HTMLElement>('[data-style-book-toggle]')?.focus(),
-            );
+            // Back to the button that opened it, or to the screen open in the panel now.
+            requestAnimationFrame(() => {
+              const toggle = document.querySelector<HTMLElement>('[data-style-book-toggle]');
+              (toggle ?? headingRef.current)?.focus();
+            });
           }}
           onOpen={(target) => {
             from.current = null;
