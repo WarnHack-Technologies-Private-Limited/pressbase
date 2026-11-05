@@ -1,3 +1,4 @@
+import { type ParsedBlock, parseBlocks } from '@pressbase/blocks';
 import type { ChangesetData } from '../changesets/service';
 import type { Kernel } from '../kernel';
 import { pageView, templatePartView } from '../site-building/abilities';
@@ -63,6 +64,35 @@ export function checklistKind(finding: PageFinding): ChecklistKind | null {
   return finding.severity === 'error' ? 'check' : null;
 }
 
+const isWhitespace = (block: ParsedBlock) =>
+  block.blockName === null && block.innerHTML.trim() === '';
+
+/**
+ * A finding's path (as `parse_blocks()` counts, whitespace between blocks
+ * included) as the block editor counts: whitespace isn't a block there.
+ */
+export function editorPath(blocks: ParsedBlock[], path: number[]): number[] {
+  const out: number[] = [];
+  let level = blocks;
+  for (const index of path) {
+    const block = level[index];
+    if (!block) return out;
+    out.push(level.slice(0, index).filter((b) => !isWhitespace(b)).length);
+    level = block.innerBlocks;
+  }
+  return out;
+}
+
+/** Page order: by path, a block before the blocks inside it. */
+function byPath(a: ChecklistItem, b: ChecklistItem): number {
+  const x = a.block?.path ?? [];
+  const y = b.block?.path ?? [];
+  for (let i = 0; i < Math.min(x.length, y.length); i++) {
+    if (x[i] !== y[i]) return (x[i] ?? 0) - (y[i] ?? 0);
+  }
+  return x.length - y.length;
+}
+
 /** Pages first (in the changeset's order), then template parts. */
 function targets(data: ChangesetData) {
   const pages: { key: string; ref: { id?: number; slug?: string } }[] = [];
@@ -100,20 +130,25 @@ export async function changesetChecklist(kernel: Kernel, data: ChangesetData): P
       content,
       ...(globalStyles ? { global_styles: globalStyles } : {}),
     });
+    const blocks = parseBlocks(content);
+    const found: ChecklistItem[] = [];
     for (const finding of result.findings) {
       if (skip?.has(finding.rule)) continue;
       const kind = checklistKind(finding);
       if (!kind) continue;
-      items.push({
+      found.push({
         ...where,
         kind,
         rule: finding.rule,
         severity: finding.severity,
         message: finding.message,
         text: typeof finding.data?.text === 'string' ? finding.data.text : '',
-        block: finding.block,
+        block: finding.block
+          ? { ...finding.block, path: editorPath(blocks, finding.block.path) }
+          : null,
       });
     }
+    items.push(...found.sort(byPath));
   };
 
   for (const { key, ref } of pages) {
