@@ -62,28 +62,22 @@ async function openStudio(page: Page, id: number): Promise<FrameLocator> {
   return canvas;
 }
 
-/** A computed style on the public page at a given width, as a visitor's browser sees it. */
-async function publicStyle(
+/** The public page at a given width, as a visitor's browser (logged out) shows it. */
+async function asVisitor(
   page: Page,
   path: string,
   width: number,
-  selector: string,
-  property: string,
-): Promise<string> {
+  check: (visitor: Page) => Promise<void>,
+) {
   const context = await page
     .context()
     .browser()
-    ?.newContext({
-      viewport: { width, height: 900 },
-    });
+    ?.newContext({ viewport: { width, height: 900 } });
   if (!context) throw new Error('No browser');
   try {
     const visitor = await context.newPage();
     await visitor.goto(`${WEB_URL}${path}`);
-    return await visitor
-      .locator(selector)
-      .first()
-      .evaluate((el, prop) => getComputedStyle(el).getPropertyValue(prop), property);
+    await check(visitor);
   } finally {
     await context.close();
   }
@@ -170,14 +164,19 @@ test('a heading made smaller on Mobile is smaller on phones only, and a block ca
 
     await publishDraft(page);
 
-    // Visitors: smaller on a phone, as before on a computer.
-    const small = await publicStyle(page, path, 390, 'h2.wp-block-heading', 'font-size');
-    const large = await publicStyle(page, path, 1280, 'h2.wp-block-heading', 'font-size');
-    expect(small).toBe('14px');
-    expect(Number.parseFloat(large)).toBeGreaterThan(20);
-    // The paragraph is on phones, not on computers.
-    expect(await publicStyle(page, path, 390, '.entry-content p', 'display')).not.toBe('none');
-    expect(await publicStyle(page, path, 1280, '.entry-content p', 'display')).toBe('none');
+    // Visitors: the heading is Small (14px) on a phone and as before on a computer;
+    // the paragraph is on phones, not on computers.
+    await asVisitor(page, path, 390, async (visitor) => {
+      await expect(visitor.locator('h2.wp-block-heading').first()).toHaveCSS('font-size', '14px');
+      await expect(visitor.getByText('Only on small screens.')).toBeVisible();
+    });
+    await asVisitor(page, path, 1280, async (visitor) => {
+      await expect(visitor.locator('h2.wp-block-heading').first()).toHaveCSS(
+        'font-size',
+        /^([2-9]\d)(\.\d+)?px$/,
+      );
+      await expect(visitor.getByText('Only on small screens.')).toBeHidden();
+    });
   } finally {
     await page.request.delete(`/wp-json/wp/v2/pages/${id}?force=true`, { headers: writeHeaders });
   }
