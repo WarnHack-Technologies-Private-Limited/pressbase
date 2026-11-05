@@ -189,7 +189,9 @@ test('makes the buttons rounder and adds an FAQ, says what it can’t do, and sh
   // Something it can't do: said plainly, nothing proposed, nothing published.
   await ask(page, 'Publish everything now');
   await expect(panel.getByText(/I can’t do that from here/)).toBeVisible({ timeout: 30_000 });
-  await expect(panel.locator('[data-message]').last().getByRole('button', { name: 'Keep' })).toHaveCount(0);
+  await expect(
+    panel.locator('[data-message]').last().getByRole('button', { name: 'Keep' }),
+  ).toHaveCount(0);
   const live = await page.request.get(`/wp-json/wp/v2/pages/${id}?context=edit`);
   expect(((await live.json()) as { content: { raw: string } }).content.raw).not.toContain(
     'Questions people ask',

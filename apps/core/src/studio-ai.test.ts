@@ -235,7 +235,7 @@ describe('/pressbase/v1/studio/ai', () => {
     });
     const res = await ask(ctx, { message: 'Make it green' });
     expect(res.status).toBe(503);
-    expect(res.body.code).toBe('prompt_prevented');
+    expect((res.body as Json).code).toBe('prompt_prevented');
   });
 
   it('runs a request through the tool loop and streams the reply with the proposal', async () => {
@@ -308,7 +308,7 @@ describe('/pressbase/v1/studio/ai', () => {
       'wpab__core__propose-site-edits',
     ]);
     expect(first.systemInstruction).toContain(SYSTEM);
-    const prompt = (first.messages.at(-1)?.parts[0] as { text: string }).text;
+    const prompt = (first.messages.at(-1)?.parts[0] as { text: string } | undefined)?.text ?? '';
     expect(prompt).toContain('<studio_context>');
     expect(prompt).toContain(`"slug": "${page.slug}"`);
     expect(prompt.endsWith('The site owner asks:\nAdd an FAQ')).toBe(true);
@@ -336,7 +336,9 @@ describe('/pressbase/v1/studio/ai', () => {
     await ask(ctx, { message: 'Thanks' });
     const history = requests.at(-1)?.messages as AiMessage[];
     expect(history.map((m) => m.role)).toEqual(['user', 'model', 'user']);
-    expect((history[1]?.parts[0] as { text: string }).text).toContain('kept these changes');
+    expect((history[1]?.parts[0] as { text: string } | undefined)?.text).toContain(
+      'kept these changes',
+    );
 
     // Starting again clears it.
     await ctx.request('DELETE', '/pressbase/v1/studio/ai');
@@ -446,7 +448,7 @@ describe('historyMessages()', () => {
     ]);
     expect(history.map((m) => m.role)).toEqual(['user', 'model']);
     expect(history[0]?.parts).toHaveLength(2);
-    expect((history[1]?.parts[0] as { text: string }).text).toBe(
+    expect((history[1]?.parts[0] as { text: string } | undefined)?.text).toBe(
       'ok\n(Proposed: Did it.)\n(The person undid these changes.)',
     );
   });
