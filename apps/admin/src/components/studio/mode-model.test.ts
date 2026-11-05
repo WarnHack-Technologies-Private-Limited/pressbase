@@ -56,27 +56,16 @@ describe('the mode map', () => {
   it('lists the controls each mode shows, Advanced a superset of Simple', () => {
     const simple = CONTROLS.filter((c) => showsControl('simple', c.id)).map((c) => c.id);
     const advanced = CONTROLS.filter((c) => showsControl('advanced', c.id)).map((c) => c.id);
-    expect(simple).toEqual(['presets', 'alignment', 'visibility', 'swap-layout']);
+    expect(simple).toEqual(['presets', 'alignment', 'visibility', 'swap-layout', 'per-device']);
     expect(advanced).toEqual(CONTROLS.map((c) => c.id));
-    for (const id of [
-      'custom-values',
-      'units',
-      'per-device',
-      'borders',
-      'shadows',
-      'states',
-      'additional-css',
-    ]) {
+    for (const id of ['custom-values', 'units', 'borders', 'shadows', 'states', 'additional-css']) {
       expect(showsControl('simple', id)).toBe(false);
       expect(showsControl('advanced', id)).toBe(true);
     }
     // A control nobody listed is Advanced only.
     expect(showsControl('simple', 'something-new')).toBe(false);
-    // Controls still to come name their issue.
-    expect(CONTROLS.filter((c) => c.issue).map((c) => [c.id, c.issue])).toEqual([
-      ['visibility', 49],
-      ['per-device', 49],
-    ]);
+    // Controls still to come name their issue: none left.
+    expect(CONTROLS.filter((c) => c.issue)).toEqual([]);
   });
 
   it('ties every setting Simple switches off to a control Simple hides', () => {

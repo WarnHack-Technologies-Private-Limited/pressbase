@@ -116,6 +116,7 @@ import { ElementsPanel } from './elements-panel';
 import { useEntityEdits } from './entity-edits';
 import { type CanvasValue, HistoryPanel } from './history-panel';
 import { Inspector, type PageSummary } from './inspector';
+import { LayersPanel } from './layers-panel';
 import {
   DEVICES,
   type Device,
@@ -145,6 +146,8 @@ import {
   StudioRegionsProvider,
   useSelectedPart,
 } from './regions';
+import { deviceTypeKey, StudioResponsive } from './responsive';
+import { deviceFrames } from './responsive-model';
 import { SectionToolbar } from './section-toolbar';
 import { SectionsPanel } from './sections-panel';
 import {
@@ -1174,6 +1177,14 @@ export default function Studio(props: StudioProps) {
                   {__('Opening the page…', 'pressbase-admin')}
                 </p>
               )
+            ) : panel === 'layers' ? (
+              editorReady ? (
+                <LayersPanel />
+              ) : (
+                <p className={styles.pagesEmpty} aria-busy="true">
+                  {__('Opening the page…', 'pressbase-admin')}
+                </p>
+              )
             ) : panel === 'styles' ? (
               props.user.canEditTheme && (
                 <StylesPanel
@@ -1825,6 +1836,8 @@ function StudioEditor(props: StudioEditorProps) {
       styles: themeStyles,
       // Sections from patterns stay fully editable: Studio is for building pages.
       disableContentOnlyForUnsyncedPatterns: true,
+      // The device shown (#49): blocks hidden on it leave the canvas.
+      [deviceTypeKey]: props.device,
     };
     // Simple offers the theme's presets only (#32, mode-model.ts).
     return modeEditorSettings(base, props.mode);
@@ -1835,6 +1848,7 @@ function StudioEditor(props: StudioEditorProps) {
     props.library.theme,
     doc.page?.id,
     props.mode,
+    props.device,
   ]);
 
   const editor: EditorState = {
@@ -1905,7 +1919,11 @@ function StudioEditor(props: StudioEditorProps) {
     }),
     [history.labelNext, history.undo],
   );
-  const width = DEVICES.find((d) => d.id === props.device)?.width ?? null;
+  // The canvas width for the device, inside the theme's breakpoints (#49).
+  const width = deviceFrames(
+    (settings as { __experimentalFeatures?: { viewport?: unknown } }).__experimentalFeatures
+      ?.viewport,
+  )[props.device].width;
   const frameRef = useRef<HTMLDivElement>(null);
   const showInspector = !props.narrow || props.inspectorOpen;
 
@@ -1938,6 +1956,7 @@ function StudioEditor(props: StudioEditorProps) {
       <MediaCategories enabled={props.features.media} />
       <EditingModes blocks={doc.blocks} partsEditable={!props.partsLocked} />
       <StoreBridgeSetter bridge={store} />
+      <StudioResponsive device={props.device} />
       <EditorCommands
         canUndo={history.hasUndo}
         canRedo={history.hasRedo}

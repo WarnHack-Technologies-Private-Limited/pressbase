@@ -102,12 +102,15 @@ export interface ModeControl {
 export const CONTROLS: readonly ModeControl[] = [
   { id: 'presets', label: msgid('Colour, font and spacing presets'), mode: 'simple' },
   { id: 'alignment', label: msgid('Alignment'), mode: 'simple' },
-  { id: 'visibility', label: msgid('Hide on a device'), mode: 'simple', issue: 49 },
+  { id: 'visibility', label: msgid('Hide on a device'), mode: 'simple' },
   { id: 'swap-layout', label: msgid('Swap layout'), mode: 'simple' },
+  // Simple too: the device switch is in the top bar for everyone, and a
+  // change made while looking at Mobile shouldn't change Desktop (#49).
+  { id: 'per-device', label: msgid('Values per device'), mode: 'simple' },
   { id: 'custom-values', label: msgid('Any colour or size'), mode: 'advanced' },
   { id: 'units', label: msgid('Units (px, em, %…)'), mode: 'advanced' },
   { id: 'type-details', label: msgid('Line height and letter spacing'), mode: 'advanced' },
-  { id: 'per-device', label: msgid('Values per device'), mode: 'advanced', issue: 49 },
+
   { id: 'borders', label: msgid('Borders'), mode: 'advanced' },
   { id: 'shadows', label: msgid('Shadows'), mode: 'advanced' },
   { id: 'states', label: msgid('Hover and focus styles'), mode: 'advanced' },

@@ -434,7 +434,7 @@ Anything a theme does in `functions.php` doesn't happen; keep styles in `theme.j
 
 ## Not yet
 
-- The site editor: Studio, the screen that edits templates and parts (storage and REST are in place, see above). `/wp/v2/templates/lookup`, `register_block_template()` and block hooks inside templates. Global styles are edited in Appearance → Styles and in Studio's Styles panel (per-block styles, borders, shadows, Additional CSS and the style book: [Studio](studio.md#the-styles-panel)); still to come there: per-device values (#49), gradients and duotone presets, element styles other than buttons and links (captions, cites), and the font library.
+- The site editor: Studio, the screen that edits templates and parts (storage and REST are in place, see above). `/wp/v2/templates/lookup`, `register_block_template()` and block hooks inside templates. Global styles are edited in Appearance → Styles and in Studio's Styles panel (per-block styles, borders, shadows, Additional CSS and the style book: [Studio](studio.md#the-styles-panel)); still to come there: per-device site styles (blocks get per-device values in their own settings, [Studio](studio.md#responsive-editing)), gradients and duotone presets, element styles other than buttons and links (captions, cites), and the font library.
 - Responsive layout (`@mobile.layout`: flex orientation, grid columns, block gap per device), duotone; the image cropper for the site icon (the centre is used).
 - The admin bar, oEmbed.
 - Post formats, sticky-post styling beyond ordering, attachment pages, custom post type archives.
