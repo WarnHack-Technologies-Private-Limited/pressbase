@@ -21,6 +21,7 @@ import {
   prepareGlobalStyles,
   saveGlobalStyles,
 } from '../themes/global-styles';
+import { editorFeatureSettings, editorStyles } from './block-editor-settings';
 import { authStatus, rawText } from './rest-util';
 
 /**
@@ -34,6 +35,10 @@ import { authStatus, rawText } from './rest-util';
  * - GET /wp/v2/global-styles/{id}/revisions[/{revision}] — their history;
  * - POST /pressbase/v1/global-styles/preview — a public page rendered with
  *   unsaved styles. Nothing is stored.
+ * - POST /pressbase/v1/global-styles/editor-settings — the block editor's
+ *   global styles settings (as GET /wp-block-editor/v1/settings gives them)
+ *   for unsaved styles, so Studio's canvas shows a draft's styles live.
+ *   Nothing is stored.
  */
 
 /** get_theme_item_permissions_check(): anyone who can edit some content, or edit_theme_options. */
@@ -76,6 +81,11 @@ const previewBody = z.object({
     .refine((u) => u.startsWith('/') && !u.startsWith('//'), {
       message: 'Give a path on the site, starting with "/".',
     }),
+  styles: z.unknown().optional(),
+  settings: z.unknown().optional(),
+});
+
+const editorSettingsBody = z.object({
   styles: z.unknown().optional(),
   settings: z.unknown().optional(),
 });
@@ -354,6 +364,39 @@ export function globalStylesRoutes(kernel: Kernel) {
         'x-robots-tag': 'noindex, nofollow',
       },
       html: page.html,
+    });
+  });
+
+  // The editor's styles and features for unsaved styles: Studio's canvas and style book.
+  app.post('/pressbase/v1/global-styles/editor-settings', async (c) => {
+    const user = c.get('user');
+    if (!userCan(user, 'edit_theme_options')) {
+      return restError(
+        c,
+        authStatus(c),
+        'rest_cannot_edit',
+        'Sorry, you are not allowed to preview global styles.',
+      );
+    }
+    const body = await readJson(c);
+    const parsed = editorSettingsBody.safeParse(body ?? {});
+    if (!parsed.success) return invalidParams(c, parsed.error);
+    const active = await kernel.themes.active();
+    const prepared = prepareGlobalStyles(kernel, user, active.globalStyles.config, parsed.data);
+    if (!prepared.ok) {
+      return prepared.code === 'rest_invalid_param'
+        ? restError(c, 400, 'rest_invalid_param', `Invalid parameter(s): ${prepared.message}`)
+        : restError(c, 400, prepared.code, prepared.message);
+    }
+    const theme = await kernel.themes.withUserStyles(prepared.config as GlobalStylesConfig);
+    c.header('cache-control', 'no-store');
+    return c.json({
+      styles: editorStyles(theme),
+      ...editorFeatureSettings(theme.themeJson.tree.getSettings()),
+      // The web fonts these styles use (a typography variation brings its own).
+      fontFaces: theme.css.fontFaces,
+      // What would be stored: sanitised as a save sanitises it.
+      config: globalStylesForResponse(prepared.config),
     });
   });
 
