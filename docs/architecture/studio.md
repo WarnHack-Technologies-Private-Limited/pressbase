@@ -2,7 +2,7 @@
 
 Studio is Pressbase's site editor: a full-screen screen at `/admin/studio` where a site owner edits their pages in the real theme, header and footer included. It does what WordPress's *Appearance → Editor* does, with the direct feel the [plan](../plans/visual-site-builder.md#the-screen) describes. The decision to build our own editor around `@wordpress/block-editor`, rather than use `@wordpress/edit-site`, is in [ADR 0021](../adr/0021-site-editor-and-templates-storage.md#studio-shell).
 
-This page covers the shell (#28), saving through the user's draft (#31), the header and footer in place (#30), the Pages panel (#29), the Elements panel (#35), the Sections panel and section toolbar (#44), Swap layout (#45), Simple and Advanced modes (#32), the command palette (#33), the History panel (#34), the AI panel and AI edits (#62, #57, in [AI edits](ai-edits.md)), Ask AI (#63, in [AI edits](ai-edits.md#ask-ai)), the "Before you publish" checklist (#61, in [quality checks](quality-checks.md#before-you-publish)), [responsive editing](#responsive-editing) (#49), [Layers](#layers) (#50), and where the rest of v0.8 plugs in.
+This page covers the shell (#28), saving through the user's draft (#31), the header and footer in place (#30), the Pages panel (#29), the Elements panel (#35), the Sections panel and section toolbar (#44), Swap layout (#45), Simple and Advanced modes (#32), the command palette (#33), the History panel (#34), the AI panel and AI edits (#62, #57, in [AI edits](ai-edits.md)), Ask AI (#63, in [AI edits](ai-edits.md#ask-ai)), the "Before you publish" checklist (#61, in [quality checks](quality-checks.md#before-you-publish)), [responsive editing](#responsive-editing) (#49), [Layers](#layers) (#50), the [right-click menu](#the-right-click-menu) (#36), [handles on the canvas](#handles-on-the-canvas) (#37), and where the rest of v0.8 plugs in.
 
 ![Studio, editing the home page](../assets/screenshots/studio-light.png)
 
@@ -38,7 +38,7 @@ This page covers the shell (#28), saving through the user's draft (#31), the hea
 | --- | --- | --- | --- |
 | Top bar | `top-bar.tsx`, `publish-panel.tsx` | Back to the dashboard; the page picker (a native `<select>` of the page tree, plus *Home (latest posts)* when there's no static front page); Desktop / Tablet / Mobile (the canvas sized inside the theme's breakpoints, [Responsive editing](#responsive-editing)); undo and redo; *Find* (the [command palette](#command-palette), #33); *Ask AI* (opens the [AI panel](ai-edits.md#the-ai-panel), #62); whether the draft is saved; Preview; *Publish N* with the list of changes, what's left on the [checklist](quality-checks.md#before-you-publish) (#61) and *Discard all*; publishing with things left asks first | — |
 | Left rail | `rail.tsx` | Nine panels; the open one sits beside the canvas (over it on narrow screens). Escape closes it and returns focus to its button | see below |
-| Canvas | `studio.tsx`, `regions.tsx` | The page in its template, in the active theme; the header and footer editable in place | #35–#37 |
+| Canvas | `studio.tsx`, `regions.tsx`, `context-menu.tsx`, `canvas-handles.tsx` | The page in its template, in the active theme; the header and footer editable in place; the [right-click menu](#the-right-click-menu) and [handles](#handles-on-the-canvas) for spacing and column widths | — |
 | Breadcrumb | `breadcrumb.tsx` | Site › Page › Section › Block for the selection; each step selects that level | — |
 | Inspector | `inspector.tsx` | Nothing selected: the page (status, its template to choose, how to edit). A template part: that it's on every page, and *Reset to theme* once it differs from the theme's. A block: its card, *Show on* (and on Tablet or Mobile what it changes there, [Responsive editing](#responsive-editing)), and the Content / Style / Layout tabs, under a note when it sits in a part; a section also gets [Swap layout](#swap-layout) (#45). At its foot, [Simple and Advanced](#simple-and-advanced) (#32) | — |
 
@@ -161,6 +161,41 @@ A Mobile value equal to Tablet's counts as inherited, not as a change of Mobile'
 - **The keyboard:** the arrow keys move through the tree (WordPress's tree grid). Alt and the arrow keys move the focused row's block, as in the Pages panel: up and down among its siblings, right into the block above it (at its end), left out of its parent (just after it). The block editor's rules decide what's allowed (`canMoveBlock()` and `canInsertBlockType()`: locking, allowed blocks and editing modes, so a block can't leave the page for the template). A polite live region says what happened (*Heading moved into Group.*, *Heading can't move there.*), and focus stays on the moved row.
 - **Under the tree**, for the selected block: *Name in Layers* (`metadata.name`, as WordPress's Rename; a blank name, or the block type's title, removes it) and *Show on* ([Responsive editing](#responsive-editing)). The template's regions (header, footer, page content) can't be renamed or hidden here: their attributes belong to the template, which Studio doesn't save.
 
+## The right-click menu
+
+![The right-click menu on a heading: Copy, Paste, Paste style, Duplicate, Save as section, Ask AI about this text, Delete](../assets/screenshots/studio-context-menu.png)
+
+#36 is Elementor's right-click menu (`context-menu.tsx`, with the rules in `clipboard-model.ts`). Right-click a block on the canvas, or press Shift+F10 or the context-menu key with a block selected. The menu acts on the innermost block people can work on (never the template's regions or locked blocks), and selects it.
+
+| Item | Does |
+| --- | --- |
+| Copy | The block's markup to the clipboard (`serialize()`), as WordPress's *Copy* does, so Ctrl+V and other editors take it too. Studio also keeps its own copy, for when the browser won't let the page read the clipboard |
+| Paste | What's on the clipboard, just after the block, in its parent when the parent takes it; otherwise after the parent, and so on up to the page's content (`pastePlace()`, with the block editor's `canInsertBlockType()`). A copied section goes after the section, never inside one. Words (not blocks) paste as paragraphs |
+| Paste style | The copied block's style onto this one, and its inner blocks' onto the inner blocks at the same place (below). One change, so one undo step, named in History (*Pasted style onto “Paragraph”*) |
+| Duplicate | `duplicateBlocks()`, where the block's parent takes another |
+| Save as section… | Saves the block as a pattern (`POST /wp/v2/blocks`, a `wp_block`) with a name, synced or not (WordPress's *Create pattern*). It's saved straight away, as WordPress saves patterns, and listed under *Saved sections* in the [Sections panel](#the-sections-panel). A synced one replaces the block with a reference to it (`core/block`, `ref`) |
+| Ask AI… | On a text block in the page: *Ask AI about this text…* (`textTarget()`, as its toolbar's ✦). On any other block in a section: *Ask AI about “Hero”…* (`readSection()`, as the section toolbar's ✦). See [Ask AI](ai-edits.md#ask-ai) |
+| Delete | `removeBlocks()`, where the block can be removed |
+
+Only what can be done to the block is listed: a block whose content alone can be edited (inside a synced section, say) offers Copy and Ask AI; a locked header (#29) keeps the browser's menu. Shift+right-click, or a right-click on selected words, keeps the browser's own menu (spelling, copying words). The block toolbar's ⋯ menu gets *Paste after* and *Save as section…* (through `BlockSettingsMenuControls`); it already has WordPress's Copy, Duplicate, Copy styles, Paste styles and Delete.
+
+**Paste style** is WordPress's (`usePasteStyles()` in `@wordpress/block-editor`): the style attributes block supports add (`align`, `borderColor`, `backgroundColor`, `textAlign`, `textColor`, `gradient`, `className`, `fontFamily`, `fontSize`, `layout`, `style`) are copied when both blocks support them, and one the source doesn't have is cleared on the target, so it looks like the source. Studio's (`styleAttributes()`) is stricter, so a block never gets styles it can't show or edit: `style` keeps only the parts the target supports (no typography on an image, no top margin on a column), per device too (`style["@tablet"]`, `["@mobile"]`); `align` only when the target offers that alignment; `layout` only between blocks of one type (a row stays a row); a child's size in a row (`style.layout`) stays behind.
+
+**Keyboard and screen readers:** the WAI-ARIA menu pattern, drawn in Studio's document. Focus goes to the first item; ↑/↓ (wrapping), Home, End and a letter move; Enter or Space chooses; Escape or Tab closes it and focus goes back to the block. Items with a shortcut say it (`aria-keyshortcuts`). Clicking elsewhere, or scrolling the canvas, closes it.
+
+## Handles on the canvas
+
+![Handles on a selected section: the top padding in use, its area shaded and its value (Padding (top): Large · 62px) beside it](../assets/screenshots/studio-handles.png)
+
+#37 brings Elementor's spacing handles and column resizing (`canvas-handles.tsx`, with snapping and the stored values in `handles-model.ts`).
+
+- **Spacing:** a selected container (a section, a group, a column: a block with blocks inside, so a heading's text isn't crowded) shows a handle on each side it can have padding on (blue, on the inner edge) and margin on (amber, on the outer edge), as its `supports.spacing` says (`spacingSides()`). Dragging shades the area and shows the value beside the handle (*Padding (top): Large · 62px*). In Simple it snaps to the theme's spacing presets (or none), stored as WordPress stores them (`var:preset|spacing|60`); in Advanced it takes whole pixels, up to 400px (`snapSpacing()`). Presets are measured on the canvas, so a `clamp()` preset snaps at the size it has there.
+- **Columns:** with a Columns block or one of its columns selected, the gap between each two columns side by side has a handle. Dragging it resizes those two; the others keep their widths. Widths snap to common fractions (1/6, 1/5, 1/4, 1/3, 2/5, 1/2…): always in Simple, within 2% in Advanced (else a whole percent), never under a tenth of the row (`resizeColumns()`). The label shows both (*1/3 · 2/3*); each column gets WordPress's `width` (`"33.33%"`).
+- **Per device:** on Tablet or Mobile, spacing goes into `style["@tablet"]` or `["@mobile"]` through `inheritDown()`, exactly as the inspector's changes do ([Responsive editing](#responsive-editing)), and the presets are measured at that width. Column widths have one value for every size in WordPress 7.1 (and columns stack on phones), so their handles show on Desktop only.
+- **One step:** a drag, or a run of key presses on one handle, is one undo step (the block editor joins changes to the same attribute), named in History (*Changed padding of “Group”*, *Resized columns*).
+- **Keyboard:** each spacing handle is a WAI-ARIA slider (`aria-valuetext`: *Large · 62px*), each column gap a focusable separator (the window-splitter pattern, *1/3 · 2/3*), after the section toolbar in the tab order. The arrow keys move to the next preset or fraction (a pixel or a percent in Advanced, ten with Shift; Page Up and Down too), Home and End to the ends. The inspector's Dimensions panel and the Column block's *Width* do the same, for anyone who'd rather type.
+- **Hidden** while typing or dragging blocks. Under `prefers-reduced-motion` the handles don't animate.
+
 ## Saving: the draft, Publish, Preview, Discard
 
 Studio never writes to the live site on its own ([Principle 4](../plans/visual-site-builder.md#principles)). Every edit goes into the user's open [changeset](changesets.md), and only *Publish* makes it live.
@@ -248,6 +283,7 @@ Someone who can edit pages but not the site's design (`edit_pages` without `edit
 - **Previews:** `BlockPreview` from `@wordpress/block-editor`, inside Studio's editor, so they're drawn in the site's own styles. Each is drawn only once it scrolls near view (`IntersectionObserver`), so the panel opens fast.
 - **Adding:** click a section (or Enter on it) to add it after the selected section, or at the end; or at the place ＋ *Add section* chose (*"Adding after “Breads”."*, with a button to clear it). Or drag it onto the page: the tile hands the canvas's drop zones the same `wp-blocks` data WordPress's inserter does. Each add is one undo step, saved to the draft like any edit.
 - **Its pattern:** a section of one block is added with `metadata.patternName` (`sectionBlocks()`), as WordPress's inserter does, so [Swap layout](#swap-layout) knows where it came from. The name is saved with the page, as WordPress saves it.
+- **Saved sections** (#36): the site's own patterns (`/wp/v2/blocks`, made with *Save as section…* in the [right-click menu](#the-right-click-menu)) are listed last, under *Saved sections* (`savedSectionsOf()`), as WordPress lists "My patterns". A synced one is marked *Synced* and goes in as a reference (`core/block`); an unsynced one as a copy. They name no pattern, so Swap layout leaves them alone.
 
 ### The section toolbar
 
@@ -400,6 +436,7 @@ Nothing here writes to the live site: restoring is a draft change like any other
 
 - The first Tab stop is *Skip to the page*, then the top bar, the rail, the canvas, the breadcrumb and the inspector, in that order.
 - ⌘K / Ctrl+K opens the [command palette](#command-palette) from anywhere, the canvas included.
+- Shift+F10 or the context-menu key opens the [right-click menu](#the-right-click-menu) for the selected block; Escape returns to the block. The [handles](#handles-on-the-canvas) are sliders and splitters moved with the arrow keys.
 - In the canvas, WordPress's keyboard model applies: Tab enters at the first selectable block (the header), the arrow keys move between blocks, Enter starts editing, Escape returns to selecting. Ctrl/⌘+Z and Ctrl/⌘+Shift+Z (or Ctrl+Y) undo and redo from anywhere.
 - The device switch is a fieldset of toggle buttons (`aria-pressed`), each with its range in its tooltip; *Show on* is a fieldset of checkboxes; the per-device resets name what they reset (*Reset Font size for mobile*); Layers moves blocks with Alt and the arrow keys and says what happened; the rail buttons have `aria-expanded`; the inspector tabs are a WAI-ARIA tablist (arrow keys, Home, End); the breadcrumb is a `nav` with `aria-current="location"` on the last step, and each step says its level to screen readers ("Section: Hero").
 - Landmarks: the top bar (`header`, with a visually hidden `h1`), `nav` *Studio panels*, the open panel (`aside`, labelled by its heading), `main` (the canvas and breadcrumb), `aside` *Settings*.
@@ -415,7 +452,7 @@ Nothing here writes to the live site: restoring is a draft change like any other
 | Issue | Where |
 | --- | --- |
 | Plugins' commands | `studioCommands.register()` or `useStudioCommands()` (`commands-model.ts`, `command-palette.tsx`); the AI commands (#62) are registered this way, in `ai-panel.tsx` |
-| #36 Context menu, #37 handles | the canvas in `StudioEditor`; the menu's *Ask AI* calls `useAskAiOpener()` (`ask-ai.tsx`) with `{ kind: 'section', section: readSection(…) }` or a `text` target, as the section toolbar does |
+| More items in the right-click menu | `menuItems()` in `context-menu.tsx`; an action shared with the ⋯ menu goes in `useBlockActions()` |
 | Anything that proposes changes | `useStudioAi().edits.apply()` applies any set of [operations](ai-edits.md#the-operations) with Keep and Undo; `editor.canvas` (`AiCanvas`) replaces regions as one named step |
 | Per-device site styles and layout | `deviceTabs()` and `DEVICE_GROUPS` (`responsive-model.ts`) say which inspector groups edit one size; the Styles panel would write `styles.blocks.{name}["@mobile"]` |
 
@@ -434,6 +471,11 @@ Nothing here writes to the live site: restoring is a draft change like any other
 - `e2e/tests/studio-panels.spec.ts`: add a page, nest it (drag and keyboard), set the home page, publish; Edit with Studio from Pages and the editor; an editor with the header, footer and styles locked; a pricing section added between two others, moved with the toolbar and undone, then published.
 - `components/studio/layout-model.test.ts`: the tabs cover every inspector group; the rail's panels each name their issue; device widths.
 - `components/studio/responsive-model.test.ts` (#49): breakpoints sanitised as WordPress does, canvas widths inside the theme's ranges (a size without a breakpoint left out), the inspector's groups per device, values inheriting downward (copied, kept, updated, removed, reset to Tablet's), a device's values and resets, labels, `blockVisibility` read and written.
+- `components/studio/clipboard-model.test.ts` (#36): which attributes Paste style copies between block types (with WordPress's own `block.json` supports: a heading onto a paragraph, onto an image, a group onto a column, layout and alignment), per device, inner blocks by place, several blocks one to one; where Paste puts blocks (in the parent, up out of one that won't take them, a section after the section, never into the template).
+- `components/studio/handles-model.test.ts` (#37): the sides a block supports, spacing snapped to presets (Simple) or pixels (Advanced), arrow-key steps (presets the same size taken once), stored values read and written per device (Tablet carried down to Mobile), column widths snapped to fractions, kept above a tenth, stepped and written as WordPress does.
+- `components/studio/sections-model.test.ts` also covers saved sections (#36).
+- `e2e/tests/studio-context-menu.spec.ts` (#36): a block copied and pasted into another section, Paste style as one undo step, the menu from the keyboard (Shift+F10, arrows, Home, End, Escape back to the block), a whole section copied and pasted after the first; Save as section, then listed in the Sections panel.
+- `e2e/tests/studio-handles.spec.ts` (#37): a section's top padding moved a preset with the keyboard and undone, dragged (the label on the way) as one undo step, in pixels in Advanced, and for Mobile only; the gap between two columns to 3/5 with the keyboard and dragged to 1/3; no transition under `prefers-reduced-motion`.
 - `components/studio/layers-model.test.ts` (#50): Alt and the arrow keys as moves, where each move goes (or nowhere), the template's regions left alone.
 - `e2e/tests/studio-responsive.spec.ts` (#49, #50): a heading made smaller on Mobile (the dot, the reset, the draft's `@mobile`) and a paragraph hidden on desktop, published and checked at a phone's and a computer's width; a Tablet value carried down to Mobile and shown there as inherited; Layers following the selection both ways, moving a block with Alt and the arrow keys (announced, focus kept), renaming it and hiding it on mobile.
 - `components/studio/mode-model.test.ts` (#32): every group in a mode, what Simple and Advanced show, no controls left to come, the editor settings Simple turns off (blocks' own settings included).
@@ -472,3 +514,6 @@ Nothing here writes to the live site: restoring is a draft change like any other
 - A block hidden on a size is still in the page's HTML there (WordPress's `display: none` classes); only `blockVisibility: false` leaves it out.
 - The private block-editor APIs Studio opens for responsive editing can change with a WordPress release: the packages are pinned, and the e2e tests cover them.
 - The Elements panel has no "most used" row yet, and its tiles can't be dragged by keyboard (Enter on a tile after selecting the place does the same).
+- The right-click menu acts on one block (WordPress's ⋯ menu handles a multi-selection). Paste style copies every device's values at once. *Save as section* saves the pattern straight away, outside the draft (as WordPress does); saved sections aren't in the command palette yet, and can't be renamed or deleted from Studio.
+- The block toolbar's ⋯ keeps WordPress's own *Paste styles*, which reads only the system clipboard and copies the whole `style`; the right-click menu's is Studio's stricter one.
+- Handles: no handle for the gap between blocks (`blockGap`), and column widths for every size at once (Desktop only).

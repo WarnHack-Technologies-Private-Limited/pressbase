@@ -201,8 +201,7 @@ test('the gap between columns snaps to fractions, from the keyboard and by dragg
   expect(await draftContent(page, id)).toContain('<!-- wp:column {"width":"66.67%"} -->');
 
   // prefers-reduced-motion: the handles don't animate.
-  const duration = () => gap.evaluate((element) => getComputedStyle(element).transitionDuration);
-  expect(await duration()).not.toBe('0s');
+  await expect(gap).not.toHaveCSS('transition-duration', '0s');
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  expect(await duration()).toBe('0s');
+  await expect(gap).toHaveCSS('transition-duration', '0s');
 });
