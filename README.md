@@ -5,18 +5,55 @@
 
 **The open-source WordPress alternative built on TypeScript, Next.js and PostgreSQL.**
 
-Pressbase keeps what made WordPress win — posts and pages, custom post types, taxonomies, meta, roles, actions and filters, themes, plugins, a five-minute install — and rebuilds it for today: typed end to end, PostgreSQL-native, and with plugins that install at runtime without a rebuild.
+Pressbase keeps what made WordPress win — posts and pages, custom post types, taxonomies, meta, roles, actions and filters, themes, plugins, a five-minute install — and rebuilds it for today: typed end to end, PostgreSQL-native, and with plugins that install at runtime without a rebuild. **Studio**, its visual site editor, lets you edit every page, the header and the footer in your real theme, and can start a whole site from a prompt if you turn AI on.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/dashboard-dark.png">
   <img alt="The Pressbase dashboard: post, draft, page and comment counts, a setup checklist and site health" src="docs/assets/screenshots/dashboard.png">
 </picture>
 
-> **Status: developer preview (v0.7).** Write in the Gutenberg block editor and publish with Pressbase's own animated block theme. Install plugins at runtime, move a WordPress site over with its users and passwords, and get a built-in SEO plugin and an optional AI assistant. See the [roadmap](docs/roadmap.md).
+> **Status: developer preview, v0.8 in progress.** Up to v0.7: the Gutenberg block editor, Pressbase's own animated block theme, plugins installed at runtime, moving a WordPress site over with its users and passwords, a built-in SEO plugin and an optional AI client. v0.8 adds Studio and building a site from a prompt; most of it is on `main`. Still to come in v0.8: starter sites, exporting a site as a block theme, Openverse images, an AI evaluation suite, Studio's end-to-end tests and accessibility audit, a performance budget, and Studio user docs. See the [roadmap](docs/roadmap.md).
 >
 > Pressbase is an independent project. It isn't affiliated with or endorsed by the WordPress Foundation or Automattic; "WordPress" is their trademark.
 
 ## See it in action
+
+### Studio: edit your site visually
+
+Studio is the site editor at `/admin/studio` (**Design → Studio**, or **Edit with Studio** on any page). Click the page to change it, in your theme, header and footer included.
+
+- **Pages and sections.** Manage the page tree in **Pages**. Add blocks from **Elements** and ready-made sections from **Sections**, then use **Swap layout** to try another layout of a section with the same text. Right-click a block to copy it, paste its style or save it as a section, and drag handles on the canvas to set spacing and column widths.
+- **Styles.** The **Styles** tab sets the site's colours, fonts and each block's look; the style book shows them all in one place.
+- **Every screen size.** Switch to Tablet or Mobile to change a value for that size only, or hide a block on one. **Layers** shows the page as a tree.
+- **Simple or Advanced.** Simple offers your theme's presets; Advanced adds any value, borders and Additional CSS. **Find** (Ctrl+K, or ⌘K on a Mac) opens a command palette, and **History** lists your steps in plain words and the versions published before.
+- **Nothing goes live until you press Publish.** Edits to pages, templates, styles and menus go into one draft (a changeset). Preview it on the real site, then publish it all at once, or discard it. The **Before you publish** checklist lists placeholders to fill, images to choose and checks that failed.
+
+Sections come from the **Pressbase pattern library**: 42 patterns, from heroes to opening hours, with two to four layouts of each kind. They use only core blocks and theme presets, so they work in any block theme, and each declares **slots** (its text, links and images as typed values) that Swap layout and AI fill without touching the design.
+
+![Studio editing a page for Mobile: the heading's font size changed for phones only, with a reset, and Show on Desktop, Tablet and Mobile](docs/assets/screenshots/studio-responsive.png)
+
+### Build a site from a prompt, if you want AI
+
+AI is optional and off until an administrator turns it on in **Settings → AI** with their own API key. Pressbase ships a provider for Claude (Anthropic); a plugin can register another.
+
+**Build my site** asks what the site is for and for your details, asks up to three questions, then shows the brief, three looks to choose from and the pages it plans. It then writes the pages, header, footer and menu into a draft for you to review in Studio. It doesn't publish anything.
+
+- **Honest content.** The site states as facts only what you gave. Anything else becomes a placeholder such as `[Add a customer quote]`, listed on the Before you publish checklist.
+- **Checked in code.** The model picks a mood and a hue; code builds the palette, and it always passes WCAG AA contrast. Quality checks (contrast, headings, alt text, placeholders, link text) run on every page.
+
+Once the site exists, Studio's **AI panel** takes changes in your own words ("add an FAQ to this page"). Each set goes on the page highlighted, with **Keep** and **Undo**. **Ask AI** on a section or selected text rewrites, shortens, changes the tone, translates or fixes spelling, and can add a section or a page from a prompt.
+
+<table>
+  <tr>
+    <td>
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/prompt-to-site-dark.png">
+        <img alt="Build my site, step 4 of 7: choose a look from six live previews of a bakery's site, then adjust the colour, fonts, corners and spacing" src="docs/assets/screenshots/prompt-to-site-design.png">
+      </picture>
+    </td>
+    <td><img alt="Studio's AI panel: two requests, the first kept, the second's FAQ section on the page, highlighted, with Keep and Undo" src="docs/assets/screenshots/studio-ai-panel.png"></td>
+  </tr>
+</table>
 
 ### The block editor you already know
 
@@ -78,7 +115,7 @@ Upload a plugin as a `.zip` and activate it, as in WordPress, with no restart an
 
 Each plugin declares the permissions it needs, and you approve them when you activate it. `npx create-pressbase-plugin` scaffolds a new one.
 
-Pressbase also ports two WordPress 7 APIs: the **AI client** and the **Abilities API**. AI is off until an administrator adds a provider key in **Settings → AI**. Claude (Anthropic) is the first provider. Pressbase SEO uses it to suggest titles and descriptions, and every ability can be run from the REST API, the CLI or an AI model, behind the same permission checks.
+Pressbase also ports two WordPress 7 APIs: the **AI client** and the **Abilities API**. AI is off until an administrator adds a provider key in **Settings → AI**. Claude (Anthropic) is the first provider. Pressbase SEO uses it to suggest titles and descriptions, Studio uses it to build and edit sites, and every ability can be run from the REST API, the CLI or an AI model, behind the same permission checks.
 
 <table>
   <tr>
@@ -101,7 +138,8 @@ Once it's moved, **Tools → Site Health** checks the site's security and perfor
 - **PostgreSQL-native.** Or try it with no database server at all: the built-in database runs PostgreSQL in-process.
 - **One command to run.** `pnpm dev` or one Docker image. No PHP, no MySQL, no web server config.
 - **Plugins without a rebuild.** Install and activate them at runtime, as in WordPress, with a typed SDK and declared permissions.
-- **Batteries included.** SEO, a WordPress migrator, a wp-cli-style CLI, Site Health and an optional AI client ship in the box.
+- **A visual editor on standard blocks.** Studio saves block markup, `theme.json` styles and templates, not a page-builder format, so pages stay server-rendered and editable in the block editor.
+- **Batteries included.** Studio, SEO, a WordPress migrator, a wp-cli-style CLI, Site Health and an optional AI client ship in the box.
 - **GPL, in the open.** The same license as WordPress, so Gutenberg packages and the theme ecosystem stay compatible.
 
 ## Quick start
@@ -146,10 +184,12 @@ Leave out `--dry-run` to migrate. More detail is in [Getting started](docs/devel
 
 ### Run with Docker
 
-One image runs everything. With the built-in database, to try it:
+One image runs everything. Images are published to the GitHub Container Registry from release tags; until the first one, build it from a checkout. With the built-in database, to try it:
 
 ```bash
-docker run -p 3000:3000 -v pressbase:/data ghcr.io/warnhack-technologies-private-limited/pressbase
+git clone https://github.com/WarnHack-Technologies-Private-Limited/pressbase.git && cd pressbase
+docker build -t pressbase .
+docker run -p 3000:3000 -v pressbase:/data pressbase
 ```
 
 With PostgreSQL 17, for a real site:
@@ -157,7 +197,7 @@ With PostgreSQL 17, for a real site:
 ```bash
 git clone https://github.com/WarnHack-Technologies-Private-Limited/pressbase.git && cd pressbase
 echo "PRESSBASE_SETUP_TOKEN=$(openssl rand -hex 16)" > .env   # the installer will ask for it
-docker compose up -d
+docker compose up -d --build
 ```
 
 Open <http://localhost:3000> and follow the installer. Configuration, SMTP and how the image is built are in [Getting started](docs/development/getting-started.md#run-with-docker).
@@ -166,13 +206,17 @@ Open <http://localhost:3000> and follow the installer. Configuration, SMTP and h
 
 | Path                  | What it is                                                                                                          |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `apps/core`           | The core server (Hono on Node.js): REST API at `/wp-json`, content, media, people, comments, themes, rendering, plugins, cron, the AI client and Abilities API. |
-| `apps/admin`          | The admin app (Next.js): installer, dashboard, block editor, media, comments, users, appearance, plugins, tools (import, export, Site Health) and settings. |
+| `apps/core`           | The core server (Hono on Node.js): REST API at `/wp-json`, content, media, people, comments, themes, rendering, plugins, cron, changesets, the AI client and Abilities API, the site builder and quality checks. |
+| `apps/admin`          | The admin app (Next.js): installer, dashboard, block editor, Studio and Build my site, media, comments, users, appearance, plugins, tools (import, export, Site Health) and settings. |
 | `apps/web`            | The public site (Next.js): serves pages rendered by core, with a tagged page cache.                                 |
 | `packages/db`         | PostgreSQL schema (Drizzle ORM), migrations and the connection factory. Also runs on the built-in database (PGlite). |
 | `packages/hooks`      | Actions and filters: the extension system, modelled on `WP_Hook`.                                                   |
 | `packages/blocks`     | Block parsing and serialising, a port of `WP_Block_Parser`.                                                         |
 | `packages/theme-json` | The `theme.json` engine: presets, global styles, layout and fonts.                                                  |
+| `packages/patterns`   | The Pressbase pattern library: section patterns in core blocks and theme presets, for Studio and AI.                |
+| `packages/slots`      | Pattern slots: a section's content as typed values that Swap layout and AI read and fill.                           |
+| `packages/design`     | The design generator: palettes from a hue and a mood that pass WCAG AA, font pairs, corner and spacing presets.     |
+| `packages/site-edits` | Studio's edit operations (insert a section, set styles, create a page…) and the checks core and the admin share.   |
 | `packages/cli`        | The `pressbase` command line, similar to wp-cli: install, posts, users, options, plugins, import, export and migrate. |
 | `packages/plugin-sdk` | Types and helpers for writing plugins; `packages/create-pressbase-plugin` scaffolds a new one.                       |
 | `plugins/`            | Bundled plugins: Pressbase SEO, and Daily Tips, an example plugin.                                                   |
@@ -187,7 +231,11 @@ Start at the **[documentation index](docs/README.md)**. Highlights:
 - [Architecture overview](docs/architecture/overview.md): how the pieces fit.
 - [WordPress → Pressbase map](docs/architecture/wordpress-mapping.md): where each WordPress concept lives here.
 - [Writing plugins](docs/development/writing-plugins.md) and the [plugin architecture](docs/architecture/plugins.md).
+- [Studio](docs/architecture/studio.md), [changesets](docs/architecture/changesets.md), and [patterns and slots](docs/architecture/patterns.md): the site editor and how its drafts and sections work.
+- [The site builder](docs/architecture/site-builder.md), [AI edits](docs/architecture/ai-edits.md), the [design generator](docs/architecture/design-generator.md) and [quality checks](docs/architecture/quality-checks.md): building and editing a site with AI.
+- [Themes and the public site](docs/architecture/themes.md): block themes, the Pressbase theme, and installing a theme from a .zip.
 - [Pressbase SEO](docs/architecture/seo-plugin.md) and the [AI client and Abilities API](docs/architecture/ai.md).
+- [Plan: the visual site builder](docs/plans/visual-site-builder.md): what v0.8 sets out to build, and why.
 - [Design system](docs/design/principles.md): UX principles, tokens and components.
 - [Decision records](docs/adr/README.md): the reasoning behind the big choices.
 
@@ -199,10 +247,11 @@ Good places to start:
 
 - **Issues labelled [`good first issue`](https://github.com/WarnHack-Technologies-Private-Limited/pressbase/labels/good%20first%20issue)**: small, well-scoped tasks.
 - **[Write a plugin](docs/development/writing-plugins.md).** The SDK is typed, and Pressbase SEO and the Daily Tips example show the extension points in use.
-- **The [first-party plugins plan](docs/plans/first-party-plugins.md)**: forms, anti-spam, analytics, backups and security are next.
+- **The [v0.8: Studio milestone](https://github.com/WarnHack-Technologies-Private-Limited/pressbase/milestone/1)**: starter sites, exporting a site as a block theme, Openverse images and the AI evaluation suite are open.
+- **The [first-party plugins plan](docs/plans/first-party-plugins.md)**: forms, anti-spam, analytics, backups and security come later.
 - **Translate the admin.** See [Translating Pressbase](docs/development/translating.md).
 - **Port a WordPress feature.** The [WordPress → Pressbase map](docs/architecture/wordpress-mapping.md) shows where each piece goes.
-- **Try it and tell us what broke.** Install it, write a post, switch styles, then [open an issue](https://github.com/WarnHack-Technologies-Private-Limited/pressbase/issues/new).
+- **Try it and tell us what broke.** Install it, write a post, build a page in Studio, then [open an issue](https://github.com/WarnHack-Technologies-Private-Limited/pressbase/issues/new).
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) to get set up, and follow the [Code of Conduct](CODE_OF_CONDUCT.md) when you take part. To report a security problem, follow [SECURITY.md](SECURITY.md) and don't open a public issue.
 

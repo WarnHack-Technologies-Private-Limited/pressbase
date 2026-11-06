@@ -106,10 +106,12 @@ Plan: [The visual site builder and building with AI](plans/visual-site-builder.m
 
 - [x] The **Pressbase theme**, the new default: a modern, animated block theme in Pressbase's brand (CSS-only motion, Paper and Midnight looks, a landing page pattern) that also runs in WordPress. Twenty Twenty-Five is no longer bundled. See [Themes](architecture/themes.md#the-pressbase-theme).
 - [x] Theme upload and delete: Appearance, `POST`/`DELETE /pressbase/v1/themes`, `pressbase theme install|delete`. See [ADR 0025](adr/0025-theme-install-and-delete.md).
-- [ ] Studio (`/admin/studio`): templates and template parts (`wp_template`, `wp_template_part`), header and footer edited in place, page tree, Simple and Advanced modes, Elementor-style drag and drop.
-- [ ] Changesets (`customize_changeset`): one draft across styles, templates, pages and menus; Preview, Publish, Discard.
-- [ ] Design: section library with Swap layout, style book, per-block styles, Additional CSS, responsive styles and breakpoints (WordPress 7.1), starter sites, export as a block theme.
-- [ ] AI: prompt to site, page and section; Ask AI on a selection; site-building abilities; quality checks and honest placeholders; an evaluation suite.
+- [x] Studio (`/admin/studio`): templates and template parts (`wp_template`, `wp_template_part`), header and footer edited in place, page tree, Simple and Advanced modes, sections and Swap layout, Layers, the right-click menu and canvas handles, History. See [Studio](architecture/studio.md).
+- [x] Changesets (`customize_changeset`): one draft across styles, templates, pages and menus; Preview, Publish, Discard. See [Changesets](architecture/changesets.md).
+- [x] Design: the section library (42 patterns with slots) and Swap layout, the style book, per-block styles, Additional CSS, responsive styles and breakpoints (WordPress 7.1), the design generator. See [Patterns](architecture/patterns.md), [Design generator](architecture/design-generator.md).
+- [ ] Starter sites (#51) and exporting a site as a block theme (#52).
+- [x] AI: prompt to site, page and section; the AI panel with Keep and Undo; Ask AI on a selection; site-building abilities; quality checks and honest placeholders; the "Before you publish" checklist. See [Site builder](architecture/site-builder.md), [AI edits](architecture/ai-edits.md).
+- [ ] Openverse images (#58), an AI evaluation suite (#64), Studio's end-to-end tests and accessibility audit (#65), a performance budget (#66) and Studio's user docs (#67).
 
 ## v1.0: Stable
 

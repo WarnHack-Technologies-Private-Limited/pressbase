@@ -141,7 +141,7 @@ The [recorded provider](ai.md#testing-without-a-provider) plays a few conversati
 
 ## Not yet
 
-- *Ask AI* in a right-click menu (#36 adds the menu), on the header and footer's text, and on several blocks selected together.
+- *Ask AI* on the header and footer's text, and on several blocks selected together.
 - Rewriting keeps the meaning but not inline formatting inside a changed text.
 - The canvas showing a style change before Studio's Styles panel (#46) lands: until then it's in the draft and in Preview.
 - Undo after later edits to the same region puts the region back as it was before the set, so those edits go too (they're one undo away).
