@@ -40,3 +40,7 @@ Constraints:
 - **Drizzle's MySQL dialect.** A schema for WordPress's tables to run ten SELECTs, and the same peer-dependency problem.
 - **Asking for a `mysqldump` file.** No server needed, but parsing MySQL's SQL dialect is a project in itself, and dumps are as big as the site. A database URL works with a local copy as well as a live server.
 - **Raw SQL against a fake that parses SQL** (an in-memory SQL engine). Heavier than the interface, and still not MySQL; the CI job covers the real thing.
+
+## Update (2026-11-06)
+
+The `wordpress-mysql` CI job was removed along with the CI workflow. `wordpress-db.mysql.test.ts` still compares the SQL with the fake against a real MySQL, but only when run by hand with `PRESSBASE_TEST_MYSQL_URL` set (see [import and export](../architecture/import-export.md)).

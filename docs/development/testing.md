@@ -68,9 +68,9 @@ E2E_CORE_PORT=4124 E2E_ADMIN_PORT=3124 E2E_WEB_PORT=3224 E2E_CHROME=/usr/bin/goo
 
 After a failure, `e2e/playwright-report/` has the HTML report and `e2e/test-results/` the traces and screenshots (`pnpm --filter @pressbase/e2e exec playwright show-trace <trace.zip>`).
 
-### In CI
+### Before a pull request
 
-The `e2e` job in `.github/workflows/ci.yml` runs after the `check` job: it builds, installs Chromium with `npx playwright install --with-deps chromium` and runs `pnpm e2e`. When it fails, the report and traces are uploaded as the `playwright-report` artifact.
+There's no CI workflow that runs these checks on GitHub, so run them locally before opening a pull request: `pnpm lint`, `pnpm typecheck`, `pnpm test`, then `pnpm build` and `pnpm e2e`. Chromium for the browser tests comes from `npx playwright install chromium` (in `e2e/`) or an installed Chrome via `E2E_CHROME`.
 
 ### Writing one
 

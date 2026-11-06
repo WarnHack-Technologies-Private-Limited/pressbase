@@ -24,7 +24,7 @@ import type {
  * migration leaves out (a revision, an auto-draft, a spam comment, a
  * WooCommerce product).
  *
- * The same rows are loaded into a real MySQL in CI (wordpress-db.mysql.test.ts).
+ * The same rows can be loaded into a real MySQL (wordpress-db.mysql.test.ts).
  */
 
 /** Passwords for the hashes below. */
@@ -705,7 +705,7 @@ export function memoryWordPressDatabase(
 /**
  * The tables the fixture fills, as WordPress 7.1.3 creates them
  * (wp_get_db_schema() in wp-admin/includes/schema.php, single site; wp_links
- * left out). For the CI job that loads the fixture into MySQL.
+ * left out). For the test that loads the fixture into MySQL.
  */
 export function wordpressSchemaSql(prefix = 'wp_'): string[] {
   const idx = 191; // $max_index_length
