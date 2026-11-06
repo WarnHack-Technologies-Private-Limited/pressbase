@@ -1,0 +1,39 @@
+{
+  "title": "Questions and answers, beside the heading",
+  "description": "A heading, an introduction and a button beside a column of questions, each opening to its answer. Stacks on small screens.",
+  "categories": ["faq"],
+  "keywords": ["faq", "questions", "answers", "help", "accordion", "columns"],
+  "viewportWidth": 1400,
+  "slots": {
+    "eyebrow": {
+      "label": "Label",
+      "description": "A few words above the heading: what the section is about.",
+      "maxLength": 40
+    },
+    "title": {
+      "label": "Heading",
+      "maxLength": 60
+    },
+    "body": {
+      "label": "Introduction"
+    },
+    "actions": {
+      "label": "Button",
+      "maxItems": 1
+    },
+    "questions": {
+      "label": "Questions",
+      "description": "Questions customers really ask, each with a short, plain answer.",
+      "minItems": 1,
+      "maxItems": 12
+    },
+    "questions.summary": {
+      "label": "Question",
+      "maxLength": 100
+    },
+    "questions.body": {
+      "label": "Answer",
+      "maxLength": 320
+    }
+  }
+}

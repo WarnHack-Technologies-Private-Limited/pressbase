@@ -1,0 +1,48 @@
+{
+  "title": "Pricing, plans in rows",
+  "description": "A heading and introduction above plans in rows separated by lines, each with a name, who it is for, a price and a button.",
+  "categories": ["pricing"],
+  "keywords": ["pricing", "prices", "plans", "packages", "rows", "list", "cost"],
+  "viewportWidth": 1400,
+  "slots": {
+    "eyebrow": {
+      "label": "Label",
+      "description": "A few words above the heading: what the section is about.",
+      "maxLength": 40
+    },
+    "title": {
+      "label": "Heading",
+      "maxLength": 60
+    },
+    "body": {
+      "label": "Introduction"
+    },
+    "plans": {
+      "label": "Plans",
+      "description": "One row per plan or package, the simplest first.",
+      "minItems": 1,
+      "maxItems": 6
+    },
+    "plans.title": {
+      "label": "Plan",
+      "maxLength": 40
+    },
+    "plans.body": {
+      "label": "Who it is for",
+      "maxLength": 120
+    },
+    "plans.price": {
+      "label": "Price",
+      "role": "price",
+      "description": "The price with its unit or period, such as “€40 a month”.",
+      "maxLength": 30,
+      "facts": true,
+      "placeholder": "[Add a price]"
+    },
+    "plans.actions": {
+      "label": "Button",
+      "description": "Usually a link to the contact or booking page.",
+      "maxItems": 1
+    }
+  }
+}

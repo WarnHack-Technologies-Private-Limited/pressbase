@@ -85,7 +85,8 @@ const AskAiContext = createContext<((target: AskTarget) => void) | null>(null);
 export const AskAiProvider = AskAiContext.Provider;
 export const useAskAiOpener = () => useContext(AskAiContext);
 
-interface Select {
+/** The block-editor selectors Ask AI reads. */
+export interface Select {
   getBlocks: () => BlockInstance[];
   getBlock: (id: string) => BlockInstance | null;
   getBlockOrder: (root?: string) => string[];
@@ -134,34 +135,47 @@ function plainText(value: unknown): string {
   return doc.body.textContent ?? '';
 }
 
-function AskAiControl({ clientId, name }: { clientId: string; name: string }) {
+/** Whether Ask AI works on this block's text (paragraphs, headings, list items, buttons…). */
+export const isTextBlock = (name: string) => name in TEXT_ATTRIBUTES;
+
+/**
+ * Ask AI's target for a text block in the page's content: its section, its
+ * path there, its text and the selected part. Null outside the content.
+ * Shared by the text toolbar's ✦ and the canvas's right-click menu (#36).
+ */
+export function textTarget(select: Select, clientId: string): AskTarget | null {
+  const name = select.getBlockName(clientId) ?? '';
+  const root = contentRootId(select);
+  const section = root ? sectionOf(select, root, clientId) : null;
+  const read = section ? readSection(select, section) : null;
+  if (!section || !read || !isTextBlock(name)) return null;
+  // Its path within the section: [0], then each block's index under its parent.
+  const chain = [...select.getBlockParents(clientId), clientId];
+  const from = chain.indexOf(section);
+  const path = [0, ...chain.slice(from + 1).map((id) => select.getBlockIndex(id))];
+  const attribute = TEXT_ATTRIBUTES[name] ?? 'content';
+  const text = plainText(select.getBlockAttributes(clientId)?.[attribute]);
+  const start = select.getSelectionStart();
+  const end = select.getSelectionEnd();
+  const range =
+    start.clientId === clientId &&
+    end.clientId === clientId &&
+    typeof start.offset === 'number' &&
+    typeof end.offset === 'number' &&
+    start.offset !== end.offset
+      ? { start: Math.min(start.offset, end.offset), end: Math.max(start.offset, end.offset) }
+      : null;
+  return { kind: 'text', section: read, path, text, range };
+}
+
+function AskAiControl({ clientId }: { clientId: string; name: string }) {
   const { __ } = useI18n();
   const open = useAskAiOpener();
   const registry = useRegistry();
   if (!open) return null;
   const onClick = () => {
-    const select = registry.select(blockEditorStore) as unknown as Select;
-    const root = contentRootId(select);
-    const section = root ? sectionOf(select, root, clientId) : null;
-    const read = section ? readSection(select, section) : null;
-    if (!section || !read) return;
-    // Its path within the section: [0], then each block's index under its parent.
-    const chain = [...select.getBlockParents(clientId), clientId];
-    const from = chain.indexOf(section);
-    const path = [0, ...chain.slice(from + 1).map((id) => select.getBlockIndex(id))];
-    const attribute = TEXT_ATTRIBUTES[name] ?? 'content';
-    const text = plainText(select.getBlockAttributes(clientId)?.[attribute]);
-    const start = select.getSelectionStart();
-    const end = select.getSelectionEnd();
-    const range =
-      start.clientId === clientId &&
-      end.clientId === clientId &&
-      typeof start.offset === 'number' &&
-      typeof end.offset === 'number' &&
-      start.offset !== end.offset
-        ? { start: Math.min(start.offset, end.offset), end: Math.max(start.offset, end.offset) }
-        : null;
-    open({ kind: 'text', section: read, path, text, range });
+    const target = textTarget(registry.select(blockEditorStore) as unknown as Select, clientId);
+    if (target) open(target);
   };
   return (
     <BlockControls group="other">

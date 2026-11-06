@@ -458,11 +458,17 @@ export async function proposeSection(
   // The person's words first: a kind of section they name, else patterns they describe.
   let plan: SectionPlan | null = null;
   const named = namedCategory(input.prompt, labels);
-  const found = named
-    ? []
-    : searchPatterns(input.prompt, patterns, new Set([...categories.values()].flat()));
-  if (named) plan = { category: named, intent: input.prompt };
-  else if (found.length) {
+  // Within a kind of section they name, the layouts their words describe come first
+  // ("pricing with three tiers": the three-plan cards), then the kind's others.
+  const found = searchPatterns(
+    input.prompt,
+    patterns,
+    new Set(named ? (categories.get(named) ?? []) : [...categories.values()].flat()),
+  );
+  if (named) {
+    const rest = (categories.get(named) ?? []).filter((name) => !found.includes(name));
+    plan = { category: named, intent: input.prompt, patterns: [...found, ...rest] };
+  } else if (found.length) {
     const first = patterns.get(found[0] as string);
     const category = first?.categories?.find((c) => categories.has(c)) ?? names[0] ?? '';
     plan = { category, intent: input.prompt, patterns: found };

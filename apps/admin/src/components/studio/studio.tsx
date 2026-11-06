@@ -72,6 +72,7 @@ import { AiPanel, AiReview } from './ai-panel';
 import { AskAiDialog, AskAiProvider, registerAskAiControls, useAskAi } from './ask-ai';
 import { Breadcrumb } from './breadcrumb';
 import { CanvasDragAssist } from './canvas-drag';
+import { CanvasHandles } from './canvas-handles';
 import {
   type CanvasBlock,
   composeCanvas,
@@ -111,6 +112,7 @@ import {
   usePaletteShortcut,
   useStudioCommands,
 } from './command-palette';
+import { CanvasContextMenu } from './context-menu';
 import { EditorCommands } from './editor-commands';
 import { ElementsPanel } from './elements-panel';
 import { useEntityEdits } from './entity-edits';
@@ -2038,6 +2040,12 @@ function StudioEditor(props: StudioEditorProps) {
                   </BlockContextProvider>
                   <CanvasDragAssist frameRef={frameRef} />
                   <SectionToolbar frameRef={frameRef} onAddSection={props.onAddSection} />
+                  {/* Handles (#37) and the right-click menu (#36). */}
+                  <CanvasHandles frameRef={frameRef} device={props.device} mode={props.mode} />
+                  <CanvasContextMenu
+                    frameRef={frameRef}
+                    canSaveSections={props.features.syncedPatterns !== null}
+                  />
                 </div>
               </div>
             </StudioFrame>

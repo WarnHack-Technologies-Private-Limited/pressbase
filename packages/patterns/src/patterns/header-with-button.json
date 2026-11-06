@@ -1,0 +1,15 @@
+{
+  "title": "Header, with a button",
+  "description": "The site logo and title on the left; the menu and one button on the right. The menu folds into a button on small screens.",
+  "categories": ["header"],
+  "blockTypes": ["core/template-part/header"],
+  "keywords": ["header", "navigation", "menu", "button", "call to action", "booking"],
+  "viewportWidth": 1400,
+  "slots": {
+    "actions": {
+      "label": "Button",
+      "description": "The one thing most visitors come to do: book, call or get in touch.",
+      "maxItems": 1
+    }
+  }
+}

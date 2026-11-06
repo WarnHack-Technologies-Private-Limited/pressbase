@@ -186,19 +186,23 @@ describe('POST /pressbase/v1/studio/ai/section and /page', () => {
       index: 1,
     });
     expect(res.status).toBe(200);
-    // Found by the pattern's keywords ("pricing"): no call needed to choose it.
-    expect(res.body.pattern).toEqual({ name: 'pressbase/pricing', title: 'Pricing, three tiers' });
+    // Found by the pattern's title and keywords ("pricing", "three", "tiers"): no call needed
+    // to choose it. The theme's "Pricing, three tiers" matches as well; the library's comes first.
+    expect(res.body.pattern).toEqual({
+      name: 'pressbase/pricing-three-plans',
+      title: 'Pricing, three plans',
+    });
     const [operation] = res.body.operations as Json[];
     expect(operation).toMatchObject({
       type: 'insertSection',
       page: home.id,
       index: 1,
-      pattern: 'pressbase/pricing',
+      pattern: 'pressbase/pricing-three-plans',
     });
     expect(requests).toHaveLength(1);
     // Prices are facts: nobody gave any, so they're placeholders.
     expect(JSON.stringify(operation?.slots)).toMatch(/\[Add/);
-    expect(res.body.summary).toBe('Adds a section: Pricing, three tiers.');
+    expect(res.body.summary).toBe('Adds a section: Pricing, three plans.');
     // Nothing was written.
     expect((await ctx.request('GET', '/pressbase/v1/changesets')).body).toEqual([]);
   });

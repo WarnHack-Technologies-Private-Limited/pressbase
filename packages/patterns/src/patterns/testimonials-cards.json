@@ -1,0 +1,42 @@
+{
+  "title": "Testimonials, three cards",
+  "description": "A centred heading above three customer quotes in cards, each with the customer’s name. Cards wrap on small screens.",
+  "categories": ["testimonials"],
+  "keywords": ["testimonials", "reviews", "quotes", "customers", "feedback", "cards"],
+  "viewportWidth": 1400,
+  "slots": {
+    "eyebrow": {
+      "label": "Label",
+      "description": "A few words above the heading: what the section is about.",
+      "maxLength": 40
+    },
+    "title": {
+      "label": "Heading",
+      "maxLength": 60
+    },
+    "body": {
+      "label": "Introduction"
+    },
+    "testimonials": {
+      "label": "Testimonials",
+      "description": "Quotes from real customers, in their own words, with their permission.",
+      "minItems": 1,
+      "maxItems": 6,
+      "facts": true,
+      "placeholder": "[Add a customer quote]"
+    },
+    "testimonials.body": {
+      "label": "Quote",
+      "maxLength": 240,
+      "facts": true,
+      "placeholder": "[Add a customer quote]"
+    },
+    "testimonials.citation": {
+      "label": "Name",
+      "description": "Who said it: a name, and where they are from or what they bought.",
+      "maxLength": 60,
+      "facts": true,
+      "placeholder": "[Customer name]"
+    }
+  }
+}

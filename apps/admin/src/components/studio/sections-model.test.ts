@@ -4,6 +4,8 @@ import {
   groupSections,
   matches,
   type RestPattern,
+  SAVED_CATEGORY,
+  savedSectionsOf,
   sectionCategories,
   sectionsOf,
   sourceOf,
@@ -144,5 +146,35 @@ describe('addButtonPlace', () => {
     expect(place.top).toBe(500);
     // Its right side (12px from its centre) stays left of the section.
     expect(place.left + 12).toBeLessThan(box.left);
+  });
+});
+
+describe('saved sections', () => {
+  it('lists the site’s saved sections: synced ones by reference, unsynced ones as a copy', () => {
+    const saved = savedSectionsOf([
+      { id: 7, title: { raw: 'Our hours' }, content: { raw: '<!-- wp:group /-->' } },
+      {
+        id: 8,
+        title: { raw: '', rendered: 'Price list' },
+        content: { raw: '<!-- wp:paragraph --><p>€5</p><!-- /wp:paragraph -->' },
+        wp_pattern_sync_status: 'unsynced',
+      },
+      { id: 9, title: { raw: 'Draft' }, content: { raw: '' }, status: 'draft' },
+    ]);
+    expect(saved.map((s) => [s.name, s.title, s.synced, s.source])).toEqual([
+      ['core/block/7', 'Our hours', true, 'saved'],
+      ['core/block/8', 'Price list', false, 'saved'],
+    ]);
+    expect(saved[0]?.content).toBe('<!-- wp:block {"ref":7} /-->');
+    expect(saved[1]?.content).toContain('€5');
+    // After the library's, in their own group.
+    const groups = groupSections(
+      [
+        ...sectionsOf([pattern('pressbase/hero', { categories: ['banner'], source: 'core' })]),
+        ...saved,
+      ],
+      [{ name: SAVED_CATEGORY, label: 'Saved sections' }],
+    );
+    expect(groups.map((g) => g.label)).toEqual(['banner', 'Saved sections']);
   });
 });

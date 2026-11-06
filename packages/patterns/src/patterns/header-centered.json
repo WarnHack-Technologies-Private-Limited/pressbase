@@ -1,0 +1,8 @@
+{
+  "title": "Header, centred",
+  "description": "The site title and tagline centred, with the menu below. The menu folds into a button on small screens.",
+  "categories": ["header"],
+  "blockTypes": ["core/template-part/header"],
+  "keywords": ["header", "navigation", "menu", "site title", "tagline", "centred"],
+  "viewportWidth": 1400
+}

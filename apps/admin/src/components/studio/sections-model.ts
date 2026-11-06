@@ -32,8 +32,8 @@ export interface RestPatternCategory {
   description?: string;
 }
 
-/** Where a pattern comes from, in the order the panel lists them. */
-export type SectionSource = 'library' | 'theme' | 'plugin';
+/** Where a pattern comes from, in the order the panel lists them; `saved`: the site's own (#36). */
+export type SectionSource = 'library' | 'theme' | 'plugin' | 'saved';
 
 export interface Section {
   name: string;
@@ -48,6 +48,8 @@ export interface Section {
   source: SectionSource;
   /** Declared slots, when the pattern has any (#45). */
   slots?: SlotDeclarations;
+  /** A saved section that stays the same everywhere it's used (a synced pattern, #36). */
+  synced?: boolean;
 }
 
 export interface SectionGroup {
@@ -77,7 +79,7 @@ export function sourceOf(pattern: Pick<RestPattern, 'name' | 'source'>): Section
   return 'plugin';
 }
 
-const SOURCE_RANK: Record<SectionSource, number> = { library: 0, theme: 1, plugin: 2 };
+const SOURCE_RANK: Record<SectionSource, number> = { library: 0, theme: 1, plugin: 2, saved: 3 };
 
 /**
  * The patterns that are page sections: shown in inserters, not for a
@@ -120,6 +122,45 @@ export function sectionsOf(patterns: readonly RestPattern[]): Section[] {
       (a, b) => SOURCE_RANK[a.section.source] - SOURCE_RANK[b.section.source] || a.index - b.index,
     )
     .map(({ section }) => section);
+}
+
+/** The category saved sections are listed under. */
+export const SAVED_CATEGORY = 'pressbase-saved';
+
+/** A pattern the site saved (`wp_block`, /wp/v2/blocks?context=edit): the fields Studio reads. */
+export interface RestSavedPattern {
+  id: number;
+  title: { raw?: string; rendered?: string };
+  content: { raw?: string };
+  /** '' (synced, WordPress's default), 'partial' or 'unsynced'. */
+  wp_pattern_sync_status?: string;
+  status?: string;
+}
+
+/**
+ * The site's saved sections (#36: *Save as section* on the canvas), as
+ * WordPress's inserter lists "My patterns": named `core/block/{id}`; a
+ * synced one goes in as a reference to it (`core/block` with `ref`), an
+ * unsynced one as a copy of its blocks. Listed after the others.
+ */
+export function savedSectionsOf(posts: readonly RestSavedPattern[]): Section[] {
+  return posts
+    .filter((post) => !post.status || post.status === 'publish')
+    .map((post) => {
+      const synced = !post.wp_pattern_sync_status;
+      return {
+        name: `core/block/${post.id}`,
+        title: post.title.raw || post.title.rendered || `#${post.id}`,
+        description: '',
+        content: synced ? `<!-- wp:block {"ref":${post.id}} /-->` : (post.content.raw ?? ''),
+        category: SAVED_CATEGORY,
+        categories: [SAVED_CATEGORY],
+        keywords: [],
+        viewportWidth: 1200,
+        source: 'saved' as const,
+        synced,
+      };
+    });
 }
 
 const normalize = (text: string) => text.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase();

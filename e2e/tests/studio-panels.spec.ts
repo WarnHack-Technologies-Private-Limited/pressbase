@@ -255,21 +255,22 @@ test('the Sections panel adds a pricing section between two others; the section 
     const search = panel.getByRole('searchbox', { name: 'Search sections' });
     await expect(search).toBeFocused();
     await search.fill('pricing');
-    const pricing = panel.getByRole('button', { name: /^Add section: Pricing/ }).first();
+    // The library's pricing layouts lead; this one opens with the label "Prices".
+    const pricing = panel.getByRole('button', { name: /^Add section: Pricing, three plans/ });
     await expect(pricing).toBeVisible();
     await pricing.press('Enter');
     await expect(page.getByText(/^Section added: Pricing/)).toBeVisible();
-    await expect.poll(sections).toEqual(['Sourdough an', 'Simple plans', 'Carrot cake ']);
+    await expect.poll(sections).toEqual(['Sourdough an', 'PricesSimple', 'Carrot cake ']);
 
     // The toolbar moves it up; undo puts it back.
-    await canvas.getByText('Simple plans', { exact: false }).first().hover();
+    await canvas.getByText('Simple prices, no surprises').first().hover();
     await page
       .getByRole('toolbar', { name: /^Section 2 of 3/ })
       .getByRole('button', { name: 'Move section up' })
       .click();
-    await expect.poll(sections).toEqual(['Simple plans', 'Sourdough an', 'Carrot cake ']);
+    await expect.poll(sections).toEqual(['PricesSimple', 'Sourdough an', 'Carrot cake ']);
     await page.keyboard.press('Control+z');
-    await expect.poll(sections).toEqual(['Sourdough an', 'Simple plans', 'Carrot cake ']);
+    await expect.poll(sections).toEqual(['Sourdough an', 'PricesSimple', 'Carrot cake ']);
 
     // Published: visitors get the three sections in that order.
     await expect(page.getByText('Draft saved')).toBeVisible();
@@ -278,8 +279,8 @@ test('the Sections panel adds a pricing section between two others; the section 
     const content = live.content.raw as string;
     const at = (text: string) => content.indexOf(text);
     expect(at('Sourdough')).toBeGreaterThan(-1);
-    expect(at('Sourdough')).toBeLessThan(at('Simple plans'));
-    expect(at('Simple plans')).toBeLessThan(at('Carrot cake'));
+    expect(at('Sourdough')).toBeLessThan(at('Simple prices'));
+    expect(at('Simple prices')).toBeLessThan(at('Carrot cake'));
   } finally {
     await discardDrafts(page);
   }
