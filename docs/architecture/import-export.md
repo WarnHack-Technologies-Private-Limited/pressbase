@@ -195,7 +195,7 @@ Files keep their `YYYY/MM` folder from `_wp_attached_file` (WordPress files an u
 
 **No admin screen.** Taking database credentials in a web form (and letting the server connect wherever a browser says) is a security decision for later. For now the migration is the CLI and the core function.
 
-**Tests without MySQL.** The reader talks to a small query interface (`WordPressDatabase`, one method per query). `memoryWordPressDatabase()` answers it from hand-written rows modelled on a WordPress 7.1 database (`wordpress-db-fixture.ts`, with an image in `fixtures/wp-uploads`), and `wordpress-migrate.test.ts` migrates them into PGlite. The `wordpress-mysql` CI job loads the same rows into MySQL 8 with WordPress's schema, checks that the SQL returns what the fake does, record for record, and migrates as a SELECT-only user (`wordpress-db.mysql.test.ts`, skipped unless `PRESSBASE_TEST_MYSQL_URL` is set).
+**Tests without MySQL.** The reader talks to a small query interface (`WordPressDatabase`, one method per query). `memoryWordPressDatabase()` answers it from hand-written rows modelled on a WordPress 7.1 database (`wordpress-db-fixture.ts`, with an image in `fixtures/wp-uploads`), and `wordpress-migrate.test.ts` migrates them into PGlite. With a MySQL 8 to hand, `wordpress-db.mysql.test.ts` loads the same rows into it with WordPress's schema, checks that the SQL returns what the fake does, record for record, and migrates as a SELECT-only user. It's skipped unless `PRESSBASE_TEST_MYSQL_URL` is set, and nothing runs it automatically: run it by hand when the SQL changes (`PRESSBASE_TEST_MYSQL_URL=mysql://root:root@127.0.0.1:3306/wordpress pnpm --filter @pressbase/core exec vitest run src/wordpress-db.mysql.test.ts`).
 
 ## Not yet
 

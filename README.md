@@ -1,6 +1,5 @@
 # Pressbase
 
-[![CI](https://github.com/WarnHack-Technologies-Private-Limited/pressbase/actions/workflows/ci.yml/badge.svg)](https://github.com/WarnHack-Technologies-Private-Limited/pressbase/actions/workflows/ci.yml)
 [![License: GPL v2+](https://img.shields.io/badge/license-GPL--2.0--or--later-blue.svg)](LICENSE)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 

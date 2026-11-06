@@ -14,8 +14,8 @@ import { migrateFromWordPressDatabase } from './import-export/wordpress-migrate'
 import { setup } from './test-utils';
 
 /**
- * The WordPress database migration against a real MySQL (the `wordpress-mysql`
- * CI job, with `services: mysql:8`). Skipped unless PRESSBASE_TEST_MYSQL_URL
+ * The WordPress database migration against a real MySQL 8, run by hand when
+ * the SQL changes. Skipped unless PRESSBASE_TEST_MYSQL_URL
  * names a database the test may fill, as a user who can create tables and
  * users: mysql://root:root@127.0.0.1:3306/wordpress.
  *
