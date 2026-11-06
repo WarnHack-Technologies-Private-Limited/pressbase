@@ -36,6 +36,8 @@ Full instructions, including PostgreSQL and resetting a site, are in [Getting st
    pnpm typecheck
    pnpm test
    ```
+
+   There's no CI workflow on GitHub, so these run on your machine. For changes to the admin, the public site or anything a browser test covers, also run `pnpm build` and `pnpm e2e` (see [Testing](docs/development/testing.md)).
 4. Commit with [Conventional Commits](https://www.conventionalcommits.org/): `feat(core): add posts endpoint`, `fix(admin): keep focus on error`, `docs: explain hook priorities`.
 5. Open a pull request and fill in the template.
 
@@ -65,7 +67,7 @@ See [conventions](docs/development/conventions.md). The short version:
 
 - A maintainer reviews within a few working days.
 - Expect questions; they're about the code, not you.
-- A pull request needs one approving review and green checks to merge, and is squash-merged.
+- A pull request needs one approving review, with the checks above passing on your machine, and is squash-merged.
 
 ## License of contributions
 

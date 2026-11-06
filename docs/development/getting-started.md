@@ -40,11 +40,11 @@ With `DATABASE_URL` set, the installer skips the database step. Without it, you 
 
 ## Run with Docker
 
-The official image runs core, the admin and the public site in one container. Only port 3000 needs publishing: the admin forwards the API and the public pages internally.
+The image runs core, the admin and the public site in one container. Only port 3000 needs publishing: the admin forwards the API and the public pages internally. Images are published to `ghcr.io/warnhack-technologies-private-limited/pressbase` from release tags (`v*`); until the first one, build it from a checkout:
 
 ```bash
-docker run -d --name pressbase -p 3000:3000 -v pressbase:/data \
-  ghcr.io/warnhack-technologies-private-limited/pressbase:latest
+docker build -t pressbase .
+docker run -d --name pressbase -p 3000:3000 -v pressbase:/data pressbase
 ```
 
 Open <http://localhost:3000> and follow the installer. Without `DATABASE_URL` it offers the built-in database (kept in the `/data` volume, good for trying Pressbase) or the details of your PostgreSQL server (saved to `/data/config.json`). For a real site, use PostgreSQL and a setup code:
